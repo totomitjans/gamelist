@@ -86,9 +86,9 @@ async function init() {
   bindEvents();
   await loadData();
   await pullCloudData();
-  await refreshUnreleasedGamesOnOpen();
-  refreshMissingDescriptionsOnOpen();
   render();
+  refreshUnreleasedGamesOnOpen();
+  refreshMissingDescriptionsOnOpen();
 }
 
 function bindEvents() {

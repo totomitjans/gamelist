@@ -536,8 +536,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .game-card {
   position: relative;
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
   min-height: 240px;
   height: 100%;
   padding: 12px;
@@ -619,7 +619,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .playing-section .game-card {
-  grid-template-columns: clamp(148px, 34%, 184px) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   min-height: 292px;
 }
 
@@ -652,8 +652,9 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 
 .cover-button {
   position: relative;
-  width: 82px;
-  height: 112px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 126px;
   padding: 0;
   overflow: hidden;
   color: var(--dim);
@@ -673,6 +674,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  width: 100%;
 }
 
 .title-line {
@@ -1428,13 +1430,15 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .game-card {
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
     min-height: 214px;
   }
 
   .cover-button {
-    width: 72px;
-    height: 98px;
+    width: 100%;
+    height: auto;
+    min-height: 150px;
   }
 
   .card-list {
