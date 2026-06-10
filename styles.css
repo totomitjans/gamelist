@@ -440,7 +440,7 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
   background:
     linear-gradient(90deg, rgba(9, 10, 13, 0.58), rgba(9, 10, 13, 0.34)),
     var(--card-art) center / cover no-repeat;
-  filter: blur(12px) saturate(1.12);
+  filter: blur(4px) saturate(1.12);
   opacity: 0.24;
   transform: scale(1.04);
 }
@@ -710,10 +710,9 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 }
 
 .chip.genre {
-  color: #101114;
-  background: #d7dbe8;
-  border-color: transparent;
-  font-weight: 820;
+    color: #777777;
+    background: #15151680;
+    border-color: transparent;
 }
 
 .chip.store {
