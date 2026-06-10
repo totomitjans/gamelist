@@ -11,7 +11,7 @@ let titleLookupTimer = 0;
 
 const state = {
   games: [],
-  filters: { query: "", platform: "all", tag: "all", sort: "title", direction: "asc", preordered: false },
+  filters: { query: "", platform: "all", tag: "all", sort: "time", direction: "asc", preordered: false },
   editingId: "",
   pendingDescription: "",
   canEdit: sessionStorage.getItem(SESSION_KEY) === "true",
@@ -206,6 +206,7 @@ function render() {
   renderSection("wanted");
   renderSection("upcoming");
   renderCompleted();
+  el.sortFilter.value = state.filters.sort;
   el.sortDirectionButton.textContent = state.filters.direction === "asc" ? "↑" : "↓";
   el.sortDirectionButton.title = state.filters.direction === "asc" ? "Sort ascending" : "Sort descending";
   el.sortDirectionButton.setAttribute("aria-label", el.sortDirectionButton.title);

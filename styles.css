@@ -486,6 +486,11 @@ textarea {
   padding: 11px 12px;
 }
 
+select option {
+  color: var(--text);
+  background: #161619;
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -680,6 +685,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .title-line {
@@ -687,6 +693,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: start;
+  width: 100%;
 }
 
 .studio-line {
@@ -703,7 +710,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .meta {
@@ -946,6 +954,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
   margin-top: auto;
   padding: 6px;
   background: rgba(255, 255, 255, 0.055);
