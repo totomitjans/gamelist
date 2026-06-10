@@ -236,13 +236,13 @@ function renderStats() {
     backlog: active.filter((game) => game.section === "backlog").length,
     completed: state.games.filter((game) => game.completedAt && !game.deletedAt).length,
   };
-  const platformStats = statGroup("Platforms", topCounts(active, (game) => game.platform), total);
-  const categoryStats = statGroup("Categories", topCounts(active, (game) => game.genres || []), total);
+  const platformStats = statGroup("Platforms", topCounts(active, (game) => game.platform), total, "platform");
+  const categoryStats = statGroup("Categories", topCounts(active, (game) => game.genres || []), total, "category");
   el.stats.innerHTML = [
-    stat("Available", counts.wanted),
-    stat("To Release", counts.upcoming),
-    stat("Backlog", counts.backlog),
-    stat("Done", counts.completed),
+    stat("Available", counts.wanted, "available"),
+    stat("To Release", counts.upcoming, "release"),
+    stat("Backlog", counts.backlog, "backlog"),
+    stat("Done", counts.completed, "done"),
     platformStats,
     categoryStats,
   ].join("");
@@ -252,22 +252,26 @@ function renderStats() {
   }
 }
 
-function stat(label, value) {
-  return `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`;
+function stat(label, value, tone = "") {
+  return `<div class="stat ${tone ? `stat-${tone}` : ""}"><strong>${value}</strong><span>${label}</span></div>`;
 }
 
-function statGroup(label, counts, total) {
+function statGroup(label, counts, total, type) {
   const body = counts.length
     ? counts.map(([name, count]) => {
       const share = Math.round((count / total) * 100);
+      const icon = type === "platform"
+        ? `<img class="stat-chip-icon" src="${escapeHtml(platformLogo(name))}" alt="" loading="lazy">`
+        : "";
       return `
-        <span class="stat-chip">
+        <span class="stat-chip stat-chip-${escapeHtml(type)}" title="${escapeHtml(`${name}: ${count} games · ${share}%`)}">
+          ${icon}
           <b>${escapeHtml(name)}</b>
-          <small>${count} · ${share}%</small>
+          <small>${count}</small>
         </span>
       `;
     }).join("")
-    : `<span class="stat-chip"><b>None</b><small>0 · 0%</small></span>`;
+    : `<span class="stat-chip stat-chip-${escapeHtml(type)}" title="None: 0 games · 0%"><b>None</b><small>0</small></span>`;
   return `<div class="stat stat-wide stat-group"><strong>${escapeHtml(label)}</strong><div>${body}</div></div>`;
 }
 

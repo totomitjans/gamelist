@@ -220,6 +220,8 @@ h3 {
 }
 
 .stat {
+  position: relative;
+  overflow: hidden;
   padding: 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--line);
@@ -227,15 +229,52 @@ h3 {
   text-align: center;
 }
 
+.stat::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--stat-glow, rgba(255, 255, 255, 0.12)), transparent 68%);
+  opacity: 0.84;
+  pointer-events: none;
+}
+
+.stat > * {
+  position: relative;
+  z-index: 1;
+}
+
 .stat strong {
   display: block;
-  font-size: 24px;
+  font-size: clamp(30px, 3vw, 46px);
+  line-height: 0.9;
+  color: var(--stat-color, var(--text));
+  text-shadow: 0 0 24px var(--stat-glow, rgba(255, 255, 255, 0.12));
 }
 
 .stat span {
   color: var(--muted);
   font-size: 11px;
   text-transform: uppercase;
+}
+
+.stat-available {
+  --stat-color: #79f2ce;
+  --stat-glow: rgba(121, 242, 206, 0.28);
+}
+
+.stat-release {
+  --stat-color: #f7df69;
+  --stat-glow: rgba(247, 223, 105, 0.26);
+}
+
+.stat-backlog {
+  --stat-color: #6fa8ff;
+  --stat-glow: rgba(111, 168, 255, 0.27);
+}
+
+.stat-done {
+  --stat-color: #ff9ed2;
+  --stat-glow: rgba(255, 158, 210, 0.26);
 }
 
 .stat-wide {
@@ -260,17 +299,34 @@ h3 {
 .stat-chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 30px;
-  padding: 6px 8px;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 999px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045)),
+    linear-gradient(135deg, rgba(255, 0, 81, 0.12), rgba(255, 255, 255, 0.055)),
     rgba(12, 13, 18, 0.36);
   color: var(--text);
   text-transform: none;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.stat-chip-platform {
+  padding-left: 7px;
+}
+
+.stat-chip-category {
+  background:
+    linear-gradient(135deg, rgba(121, 242, 206, 0.12), rgba(255, 255, 255, 0.05)),
+    rgba(12, 13, 18, 0.36);
+}
+
+.stat-chip-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.28));
 }
 
 .stat-chip b {
@@ -279,11 +335,17 @@ h3 {
 }
 
 .stat-chip small {
-  color: var(--muted);
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 11px;
   font-weight: 780;
   line-height: 1;
-  text-transform: uppercase;
 }
 
 .glass {
