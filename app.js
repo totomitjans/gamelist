@@ -124,13 +124,13 @@ function bindEvents() {
 async function loadData() {
   const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
   if (saved) {
-    state.games = JSON.parse(saved);
+    state.games = normalizeGameRecords(JSON.parse(saved));
     persistLocal(false);
     return;
   }
   const response = await fetch("data/seed-games.json");
   const seed = await response.json();
-  state.games = seed.games;
+  state.games = normalizeGameRecords(seed.games);
   persistLocal();
 }
 
@@ -140,7 +140,7 @@ async function pullCloudData() {
     if (!response.ok) return;
     const data = await response.json();
     if (Array.isArray(data.games) && data.games.length) {
-      state.games = data.games;
+      state.games = normalizeGameRecords(data.games);
       persistLocal(false);
     }
   } catch {
@@ -149,6 +149,7 @@ async function pullCloudData() {
 }
 
 function persistLocal(shouldRender = true) {
+  state.games = normalizeGameRecords(state.games);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.games));
   if (shouldRender) render();
 }
@@ -509,6 +510,21 @@ function ownerInputValues(value) {
   return owners.length ? owners : ["Xavi"];
 }
 
+function normalizeGameRecords(games) {
+  return Array.isArray(games) ? games.map(normalizeGameRecord) : [];
+}
+
+function normalizeGameRecord(game) {
+  const normalized = { ...game };
+  normalized.digital = Boolean(normalized.digital);
+  normalized.playing = Boolean(normalized.playing);
+  normalized.owners = ownerTags(normalized);
+  normalized.statuses = gameStatuses(normalized);
+  normalized.genres = Array.isArray(normalized.genres) ? normalized.genres : [];
+  normalized.prices = Array.isArray(normalized.prices) ? normalized.prices : [];
+  return normalized;
+}
+
 function statusType(status) {
   if (status === "Scarce") return "scarce";
   if (status === "Waiting for Physical") return "waiting";
@@ -681,6 +697,7 @@ function syncDialogPriceVisibility() {
 }
 
 function upsertGame(game) {
+  game = normalizeGameRecord(game);
   const index = state.games.findIndex((item) => item.id === game.id);
   if (index >= 0) state.games[index] = game;
   else state.games.push(game);
