@@ -229,14 +229,15 @@ function renderPlayingSection() {
 
 function renderStats() {
   const active = activeGames();
+  const total = active.length || 1;
   const counts = {
     wanted: active.filter((game) => game.section === "wanted").length,
     upcoming: active.filter((game) => game.section === "upcoming").length,
     backlog: active.filter((game) => game.section === "backlog").length,
     completed: state.games.filter((game) => game.completedAt && !game.deletedAt).length,
   };
-  const platformStats = statGroup("Platforms", topCounts(active, (game) => game.platform));
-  const categoryStats = statGroup("Categories", topCounts(active, (game) => game.genres || []));
+  const platformStats = statGroup("Platforms", topCounts(active, (game) => game.platform), total);
+  const categoryStats = statGroup("Categories", topCounts(active, (game) => game.genres || []), total);
   el.stats.innerHTML = [
     stat("Available", counts.wanted),
     stat("To Release", counts.upcoming),
@@ -255,11 +256,19 @@ function stat(label, value) {
   return `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`;
 }
 
-function statGroup(label, counts) {
+function statGroup(label, counts, total) {
   const body = counts.length
-    ? counts.map(([name, count]) => `<span>${escapeHtml(name)} <strong>${count}</strong></span>`).join("")
-    : `<span>None <strong>0</strong></span>`;
-  return `<div class="stat stat-wide"><strong>${escapeHtml(label)}</strong><div>${body}</div></div>`;
+    ? counts.map(([name, count]) => {
+      const share = Math.round((count / total) * 100);
+      return `
+        <span class="stat-chip">
+          <b>${escapeHtml(name)}</b>
+          <small>${count} · ${share}%</small>
+        </span>
+      `;
+    }).join("")
+    : `<span class="stat-chip"><b>None</b><small>0 · 0%</small></span>`;
+  return `<div class="stat stat-wide stat-group"><strong>${escapeHtml(label)}</strong><div>${body}</div></div>`;
 }
 
 function topCounts(games, mapper) {
@@ -631,10 +640,11 @@ function normalizeGameRecord(game) {
   const normalized = { ...game };
   normalized.digital = Boolean(normalized.digital);
   normalized.playing = Boolean(normalized.playing);
+  normalized.platform = String(normalized.platform || "").trim();
   normalized.description = String(normalized.description || "");
   normalized.owners = ownerTags(normalized);
   normalized.statuses = gameStatuses(normalized);
-  normalized.genres = Array.isArray(normalized.genres) ? normalized.genres : [];
+  normalized.genres = unique((Array.isArray(normalized.genres) ? normalized.genres : []).map((genre) => String(genre || "").trim()).filter(Boolean));
   normalized.prices = Array.isArray(normalized.prices) ? normalized.prices : [];
   return normalized;
 }
