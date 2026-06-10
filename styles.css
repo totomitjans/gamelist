@@ -51,13 +51,11 @@ button {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.045), transparent 38%),
-    radial-gradient(circle at 72% 9%, rgba(255, 0, 81, 0.22), transparent 31%),
-    radial-gradient(circle at 12% 86%, rgba(0, 0, 255, 0.13), transparent 36%),
-    linear-gradient(rgba(22, 22, 25, 0.28), rgba(22, 22, 25, 0.84)),
-    url("https://cdn.myportfolio.com/9ec86fd7-b8ae-4899-8de8-a4f0e7b32ebb/1b7d38b0-699d-4024-a8bd-6d8cf8b46e16_rwc_0x0x2480x3355x4096.png?h=994f09e241b33623ff8d952bba77dcb7") top left / auto repeat,
-    #161619;
+  background-color: #161619;
+  background-image: url("https://cdn.myportfolio.com/9ec86fd7-b8ae-4899-8de8-a4f0e7b32ebb/1b7d38b0-699d-4024-a8bd-6d8cf8b46e16_rwc_0x0x2480x3355x4096.png?h=994f09e241b33623ff8d952bba77dcb7");
+  background-position: top left;
+  background-repeat: repeat;
+  background-size: auto;
 }
 
 .topbar {
