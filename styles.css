@@ -984,7 +984,9 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 body:not(.can-edit) .edit-action,
 body:not(.can-edit) .card-actions,
 body:not(.can-edit) .restore-action,
-body:not(.can-edit) #addButton {
+body:not(.can-edit) #addButton,
+body:not(.can-edit) #fetchDataButton,
+body:not(.can-edit) #fetchPricesButton {
   display: none;
 }
 
