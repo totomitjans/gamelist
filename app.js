@@ -42,6 +42,7 @@ const el = {
   detailStudio: document.querySelector("#detailStudio"),
   detailMeta: document.querySelector("#detailMeta"),
   detailChips: document.querySelector("#detailChips"),
+  detailStoreLinks: document.querySelector("#detailStoreLinks"),
   detailDescription: document.querySelector("#detailDescription"),
   detailPrices: document.querySelector("#detailPrices"),
   detailCover: document.querySelector(".detail-cover img"),
@@ -74,6 +75,11 @@ const el = {
     genres: document.querySelector("#genresInput"),
     developer: document.querySelector("#developerInput"),
     publisher: document.querySelector("#publisherInput"),
+    description: document.querySelector("#descriptionInput"),
+    igdbUrl: document.querySelector("#igdbUrlInput"),
+    playstationUrl: document.querySelector("#playstationUrlInput"),
+    nintendoUrl: document.querySelector("#nintendoUrlInput"),
+    steamUrl: document.querySelector("#steamUrlInput"),
     cover: document.querySelector("#coverInput"),
     notes: document.querySelector("#notesInput"),
   },
@@ -315,7 +321,9 @@ function renderSection(section) {
     list.innerHTML = `<div class="empty">No games here.</div>`;
     return;
   }
-  games.forEach((game) => list.appendChild(cardFor(game)));
+  const fragment = document.createDocumentFragment();
+  games.forEach((game) => fragment.appendChild(cardFor(game)));
+  list.appendChild(fragment);
   if (section === "backlog" && state.filters.sort === "custom") setupDrag(list);
 }
 
@@ -383,7 +391,7 @@ function cardFor(game, options = {}) {
   card.classList.toggle("playing-card", Boolean(game.playing));
   const img = card.querySelector("img");
   img.hidden = !game.cover;
-  img.src = game.cover || "";
+  img.src = game.cover ? coverDisplayUrl(game.cover) : "";
   img.alt = game.cover ? `${game.title} cover` : "";
   img.loading = "lazy";
   img.decoding = "async";
@@ -453,6 +461,7 @@ function openDetail(id) {
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = metaFor(game).join("");
   el.detailChips.innerHTML = chipsFor(game).join("");
+  el.detailStoreLinks.innerHTML = storeLinksFor(game);
   el.detailDescription.textContent = game.description || "No description yet.";
   if (game.section === "backlog") {
     el.detailPrices.hidden = true;
@@ -462,7 +471,7 @@ function openDetail(id) {
     el.detailPrices.innerHTML = pricesFor(game);
   }
   el.detailCover.hidden = !game.cover;
-  el.detailCover.src = game.cover || "";
+  el.detailCover.src = game.cover ? coverDisplayUrl(game.cover, "large") : "";
   el.detailCover.alt = game.cover ? `${game.title} cover` : "";
   el.detailDialog.showModal();
   syncScrollLock();
@@ -646,6 +655,8 @@ function normalizeGameRecord(game) {
   normalized.playing = Boolean(normalized.playing);
   normalized.platform = String(normalized.platform || "").trim();
   normalized.description = String(normalized.description || "");
+  normalized.igdbUrl = String(normalized.igdbUrl || "");
+  normalized.storeLinks = normalizeStoreLinks(normalized.storeLinks);
   normalized.owners = ownerTags(normalized);
   normalized.statuses = gameStatuses(normalized);
   normalized.genres = unique((Array.isArray(normalized.genres) ? normalized.genres : []).map((genre) => String(genre || "").trim()).filter(Boolean));
@@ -674,10 +685,52 @@ function cssUrl(value) {
 }
 
 function backgroundCoverUrl(value) {
+  const url = coverDisplayUrl(value, "tiny");
+  return url || String(value || "");
+}
+
+function coverDisplayUrl(value, size = "card") {
+  const replacement = size === "tiny" ? "t_thumb" : "t_cover_big";
   return String(value || "").replace(
     /images\.igdb\.com\/igdb\/image\/upload\/[^/]+\//,
-    "images.igdb.com/igdb/image/upload/t_cover_small/"
+    `images.igdb.com/igdb/image/upload/${replacement}/`
   );
+}
+
+function normalizeStoreLinks(links) {
+  const value = links && typeof links === "object" ? links : {};
+  return {
+    playstation: String(value.playstation || ""),
+    nintendo: String(value.nintendo || ""),
+    steam: String(value.steam || ""),
+  };
+}
+
+function storeLinksFor(game) {
+  const links = storeLinksWithFallbacks(game);
+  return [
+    storeButton("PlayStation", links.playstation, "store-playstation"),
+    storeButton("Nintendo", links.nintendo, "store-nintendo"),
+    storeButton("Steam", links.steam, "store-steam"),
+  ].join("");
+}
+
+function storeButton(label, url, cls) {
+  return `
+    <a class="store-button ${cls}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+      ${escapeHtml(label)}
+    </a>
+  `;
+}
+
+function storeLinksWithFallbacks(game) {
+  const links = normalizeStoreLinks(game.storeLinks);
+  const q = encodeURIComponent(retailTitle(game.title));
+  return {
+    playstation: links.playstation || `https://store.playstation.com/search/${q}`,
+    nintendo: links.nintendo || `https://www.nintendo.com/search/?q=${q}`,
+    steam: links.steam || `https://store.steampowered.com/search/?term=${q}`,
+  };
 }
 
 function pricesFor(game) {
@@ -774,6 +827,11 @@ function openEditor(id = "") {
   el.fields.genres.value = (game.genres || []).join(", ");
   el.fields.developer.value = game.developer || "";
   el.fields.publisher.value = game.publisher || "";
+  el.fields.description.value = game.description || "";
+  el.fields.igdbUrl.value = game.igdbUrl || "";
+  el.fields.playstationUrl.value = game.storeLinks?.playstation || "";
+  el.fields.nintendoUrl.value = game.storeLinks?.nintendo || "";
+  el.fields.steamUrl.value = game.storeLinks?.steam || "";
   el.fields.cover.value = game.cover || "";
   el.fields.notes.value = game.notes || "";
   syncDialogPriceVisibility();
@@ -799,6 +857,8 @@ function blankGame() {
     genres: [],
     developer: "",
     publisher: "",
+    igdbUrl: "",
+    storeLinks: { playstation: "", nintendo: "", steam: "" },
     owners: ["Xavi"],
     preorderStore: "",
     preferredStore: "",
@@ -841,9 +901,15 @@ async function saveCurrentFormGame() {
     genres: listFrom(el.fields.genres.value),
     developer: el.fields.developer.value.trim(),
     publisher: el.fields.publisher.value.trim(),
+    description: el.fields.description.value.trim() || state.pendingDescription || existing?.description || "",
+    igdbUrl: el.fields.igdbUrl.value.trim(),
+    storeLinks: {
+      playstation: el.fields.playstationUrl.value.trim(),
+      nintendo: el.fields.nintendoUrl.value.trim(),
+      steam: el.fields.steamUrl.value.trim(),
+    },
     cover: el.fields.cover.value.trim(),
     notes: el.fields.notes.value.trim(),
-    description: existing?.description || state.pendingDescription || "",
     order: existing?.section === section ? existing.order : nextOrder(section),
     updatedAt: new Date().toISOString(),
   };
@@ -1020,7 +1086,7 @@ function renderLookupResults(results) {
     const row = document.createElement("div");
     row.className = "lookup-result";
     row.innerHTML = `
-      <img src="${escapeHtml(result.cover || "")}" alt="" loading="lazy" decoding="async" ${result.cover ? "" : "hidden"}>
+      <img src="${escapeHtml(result.cover ? coverDisplayUrl(result.cover) : "")}" alt="" loading="lazy" decoding="async" ${result.cover ? "" : "hidden"}>
       <div>
         <strong>${escapeHtml(result.title)}</strong>
         <p>${escapeHtml([result.releaseDate || result.releaseText, result.lengthHours ? `${result.lengthHours} hrs` : ""].filter(Boolean).join(" · "))}</p>
@@ -1041,6 +1107,12 @@ function applyLookup(result) {
   el.fields.releaseText.value = result.releaseDate ? "" : (result.releaseText || el.fields.releaseText.value);
   el.fields.length.value = result.lengthHours || el.fields.length.value;
   el.fields.cover.value = result.cover || el.fields.cover.value;
+  el.fields.description.value = result.description || el.fields.description.value;
+  el.fields.igdbUrl.value = result.igdbUrl || el.fields.igdbUrl.value;
+  const links = normalizeStoreLinks(result.storeLinks);
+  el.fields.playstationUrl.value = links.playstation || el.fields.playstationUrl.value;
+  el.fields.nintendoUrl.value = links.nintendo || el.fields.nintendoUrl.value;
+  el.fields.steamUrl.value = links.steam || el.fields.steamUrl.value;
   const current = state.games.find((game) => game.id === el.fields.id.value);
   if (current && !current.description && result.description) current.description = result.description;
   if (!current) state.pendingDescription = result.description || "";
@@ -1062,7 +1134,7 @@ function queueTitleLookup() {
 
 async function normalizeGameBeforeSave(game) {
   try {
-    const result = await lookupFirstResult(game.title);
+    const result = await lookupFirstResult(game.igdbUrl || game.title);
     if (!result) return;
     if (!game.releaseDate && !game.releaseText) {
       game.releaseDate = result.releaseDate || "";
@@ -1070,6 +1142,8 @@ async function normalizeGameBeforeSave(game) {
     }
     game.cover = game.cover || result.cover || "";
     game.description = game.description || result.description || "";
+    game.igdbUrl = game.igdbUrl || result.igdbUrl || "";
+    mergeStoreLinks(game, result.storeLinks);
     game.lengthHours = game.lengthHours || result.lengthHours || null;
     if (!game.genres?.length || game.genres.some((genre) => genre.toLowerCase().includes("video game"))) {
       game.genres = result.genres || game.genres || [];
@@ -1100,7 +1174,7 @@ async function refreshUnreleasedGamesOnOpen() {
         }
         continue;
       }
-      const result = await lookupFirstResult(game.title);
+      const result = await lookupFirstResult(game.igdbUrl || game.title);
       if (!result) continue;
       if (result.releaseDate && result.releaseDate !== game.releaseDate) {
         game.releaseDate = result.releaseDate;
@@ -1145,7 +1219,7 @@ async function refreshMissingDescriptionsOnOpen() {
   let changed = false;
   for (const game of games) {
     try {
-      const result = await lookupFirstResult(game.title);
+      const result = await lookupFirstResult(game.igdbUrl || game.title);
       if (!result?.description) continue;
       changed = applyFetchedGameData(game, result) || changed;
     } catch {
@@ -1174,7 +1248,7 @@ async function refreshAllGameData() {
   for (const [index, game] of games.entries()) {
     el.fetchDataButton.textContent = `Data ${index + 1}/${games.length}`;
     try {
-      const result = await lookupFirstResult(game.title);
+      const result = await lookupFirstResult(game.igdbUrl || game.title);
       if (result && applyFetchedGameData(game, result, { refreshTextAndTags: true })) updated += 1;
     } catch {
       failed += 1;
@@ -1205,6 +1279,8 @@ function applyFetchedGameData(game, result, options = {}) {
   setIfEmpty("lengthHours", result.lengthHours);
   setIfEmpty("developer", result.developer);
   setIfEmpty("publisher", result.publisher);
+  setIfEmpty("igdbUrl", result.igdbUrl);
+  changed = mergeStoreLinks(game, result.storeLinks) || changed;
   if (refreshTextAndTags && result.description) {
     const nextDescription = shortDescription(result.description);
     if (nextDescription && game.description !== nextDescription) {
@@ -1235,6 +1311,20 @@ function applyFetchedGameData(game, result, options = {}) {
     changed = true;
   }
   if (changed) game.updatedAt = new Date().toISOString();
+  return changed;
+}
+
+function mergeStoreLinks(game, links) {
+  const current = normalizeStoreLinks(game.storeLinks);
+  const next = normalizeStoreLinks(links);
+  let changed = false;
+  for (const key of Object.keys(current)) {
+    if (!current[key] && next[key]) {
+      current[key] = next[key];
+      changed = true;
+    }
+  }
+  game.storeLinks = current;
   return changed;
 }
 
@@ -1350,13 +1440,16 @@ function compressImage(file) {
     const image = new Image();
     image.onload = () => {
       const maxWidth = 720;
+      const maxHeight = 960;
       const scale = Math.min(1, maxWidth / image.width);
+      const heightScale = Math.min(1, maxHeight / image.height);
+      const finalScale = Math.min(scale, heightScale);
       const canvas = document.createElement("canvas");
-      canvas.width = Math.round(image.width * scale);
-      canvas.height = Math.round(image.height * scale);
+      canvas.width = Math.round(image.width * finalScale);
+      canvas.height = Math.round(image.height * finalScale);
       const context = canvas.getContext("2d");
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/webp", 0.82));
+      resolve(canvas.toDataURL("image/webp", 0.72));
     };
     image.onerror = reject;
     image.src = URL.createObjectURL(file);

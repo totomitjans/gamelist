@@ -145,8 +145,8 @@
         <input type="hidden" id="gameId">
         <div class="lookup-row">
           <label>
-            <span>Search DB</span>
-            <input id="lookupInput" type="search" placeholder="Type a game name">
+            <span>Search DB or IGDB URL</span>
+            <input id="lookupInput" type="search" placeholder="Type a game name or paste an IGDB page">
           </label>
           <button class="ghost-button" id="lookupButton" type="button">Lookup</button>
         </div>
@@ -222,6 +222,26 @@
             <input id="publisherInput" placeholder="Publisher">
           </label>
           <label class="wide">
+            <span>Description</span>
+            <textarea id="descriptionInput" rows="4" placeholder="Manual description or fetched game summary"></textarea>
+          </label>
+          <label class="wide">
+            <span>IGDB Page</span>
+            <input id="igdbUrlInput" placeholder="https://www.igdb.com/games/...">
+          </label>
+          <label>
+            <span>PlayStation Store URL</span>
+            <input id="playstationUrlInput" placeholder="https://store.playstation.com/...">
+          </label>
+          <label>
+            <span>Nintendo Store URL</span>
+            <input id="nintendoUrlInput" placeholder="https://www.nintendo.com/...">
+          </label>
+          <label class="wide">
+            <span>Steam URL</span>
+            <input id="steamUrlInput" placeholder="https://store.steampowered.com/app/...">
+          </label>
+          <label class="wide">
             <span>Cover URL</span>
             <input id="coverInput" placeholder="https://...">
           </label>
@@ -283,6 +303,7 @@
           <div class="studio-line" id="detailStudio"></div>
           <div class="meta" id="detailMeta"></div>
           <div class="chips" id="detailChips"></div>
+          <div class="store-links" id="detailStoreLinks"></div>
           <p id="detailDescription"></p>
           <div class="prices detail-prices" id="detailPrices"></div>
         </div>

@@ -8,13 +8,14 @@ let igdbTokenCache;
 
 export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
-  const query = cleanTitle(url.searchParams.get("q") || "");
+  const lookup = parseLookup(url.searchParams.get("q") || "");
+  const query = cleanTitle(lookup.query || "");
   if (!query) return json({ results: [] });
 
   const igdb = igdbCredentials(env);
   if (igdb) {
     try {
-      const results = await igdbSearch(query, igdb);
+      const results = await igdbSearch(query, igdb, lookup);
       if (results.length) return json({ results });
     } catch {
       // Fall through to HowLongToBeat when IGDB credentials or API are unavailable.
@@ -30,16 +31,46 @@ export async function onRequestGet({ request, env = {} }) {
   }
 }
 
+function parseLookup(value) {
+  const raw = String(value || "").trim();
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./, "");
+    if (host === "igdb.com") {
+      const parts = url.pathname.split("/").filter(Boolean);
+      const gameIndex = parts.indexOf("games");
+      const slug = gameIndex >= 0 ? parts[gameIndex + 1] || "" : "";
+      if (slug) {
+        return {
+          raw,
+          igdbSlug: slug,
+          query: titleFromSlug(slug),
+          igdbUrl: `https://www.igdb.com/games/${slug}`,
+        };
+      }
+    }
+  } catch {
+    // Plain title search.
+  }
+  return { raw, query: raw, igdbSlug: "", igdbUrl: "" };
+}
+
 function igdbCredentials(env) {
   const clientId = env.IGDB_CLIENT_ID || globalThis.process?.env?.IGDB_CLIENT_ID || "";
   const clientSecret = env.IGDB_CLIENT_SECRET || globalThis.process?.env?.IGDB_CLIENT_SECRET || "";
   return clientId && clientSecret ? { clientId, clientSecret } : null;
 }
 
-async function igdbSearch(query, credentials) {
+async function igdbSearch(query, credentials, lookup = {}) {
   const token = await getIgdbToken(credentials);
+  const fields = "fields name,slug,summary,storyline,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.date,release_dates.platform.name,websites.url,websites.category;";
+  const slugBody = lookup.igdbSlug ? [
+    fields,
+    `where slug = "${escapeIgdbString(lookup.igdbSlug)}";`,
+    "limit 1;",
+  ].join(" ") : "";
   const body = [
-    "fields name,summary,storyline,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.date,release_dates.platform.name;",
+    fields,
     `search "${escapeIgdbString(searchAlias(query))}";`,
     "where version_parent = null;",
     "limit 10;",
@@ -53,13 +84,14 @@ async function igdbSearch(query, credentials) {
       "Client-ID": credentials.clientId,
       Authorization: `Bearer ${token}`,
     },
-    body,
+    body: slugBody || body,
   });
   if (!response.ok) return [];
   const games = await response.json();
+  if (slugBody && !games.length) return igdbSearch(query, credentials, { ...lookup, igdbSlug: "" });
   const hltbResults = await safeHltbResults(query);
   return games
-    .map((game) => igdbResult(game, query, hltbResults))
+    .map((game) => igdbResult(game, query, hltbResults, lookup))
     .filter(Boolean)
     .sort((a, b) => b.score - a.score)
     .map(({ score, ...game }) => game);
@@ -81,9 +113,9 @@ async function getIgdbToken({ clientId, clientSecret }) {
   return igdbTokenCache.token;
 }
 
-function igdbResult(game, query, hltbResults) {
+function igdbResult(game, query, hltbResults, lookup = {}) {
   const title = game.name || "";
-  const textScore = matchScore(query, title);
+  const textScore = lookup.igdbSlug && game.slug === lookup.igdbSlug ? 1 : matchScore(query, title);
   if (!title || textScore < 0.28) return null;
   const hltbMatch = bestExternalMatch(title, hltbResults);
   const companies = game.involved_companies || [];
@@ -93,6 +125,7 @@ function igdbResult(game, query, hltbResults) {
     id: game.id ? `igdb:${game.id}` : title,
     igdbId: game.id || null,
     hltbId: hltbMatch?.hltbId || null,
+    igdbUrl: lookup.igdbUrl || (game.slug ? `https://www.igdb.com/games/${game.slug}` : ""),
     title,
     releaseDate: release.date,
     releaseText: release.text,
@@ -103,6 +136,7 @@ function igdbResult(game, query, hltbResults) {
     developer: companyName(companies, "developer"),
     publisher: companyName(companies, "publisher"),
     description: fullDescription(game.summary || game.storyline || ""),
+    storeLinks: storeLinksFromWebsites(game.websites),
     lengthHours: hltbMatch?.lengthHours || null,
     source: "IGDB",
     score,
@@ -149,7 +183,19 @@ function companyName(companies, role) {
 }
 
 function igdbCover(imageId) {
-  return imageId ? `https://images.igdb.com/igdb/image/upload/t_cover_big_2x/${imageId}.jpg` : "";
+  return imageId ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${imageId}.jpg` : "";
+}
+
+function storeLinksFromWebsites(websites = []) {
+  const links = { playstation: "", nintendo: "", steam: "" };
+  for (const website of websites || []) {
+    const url = String(website.url || "");
+    const normalized = url.toLowerCase();
+    if (!links.steam && normalized.includes("store.steampowered.com")) links.steam = url;
+    if (!links.playstation && normalized.includes("store.playstation.com")) links.playstation = url;
+    if (!links.nintendo && (normalized.includes("nintendo.com") || normalized.includes("nintendo.es"))) links.nintendo = url;
+  }
+  return links;
 }
 
 function bestIgdbRelease(releaseDates = []) {
@@ -316,6 +362,14 @@ function searchAlias(query) {
     .replace(/007:\s*First\s*Light/i, "007 First Light")
     .replace(/FirstLight/g, "First Light")
     .replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function titleFromSlug(slug) {
+  return String(slug || "")
+    .replace(/--\d+$/g, "")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function enrichMetadata(result) {
