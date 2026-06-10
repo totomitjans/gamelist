@@ -332,7 +332,8 @@ h3 {
 }
 
 .toolbar {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 12;
   display: grid;
   grid-template-columns: minmax(220px, 1fr) 136px 150px 150px 190px;
@@ -402,8 +403,8 @@ h3 {
 }
 
 .mobile-section-tabs {
-  position: relative;
-  top: auto;
+  position: sticky;
+  top: 86px;
   z-index: 11;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1383,7 +1384,7 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .mobile-section-tabs {
-    top: auto;
+    top: 0;
     margin: 12px 0 16px;
   }
 
