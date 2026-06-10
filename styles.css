@@ -883,9 +883,6 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   margin-top: 9px;
 }
 
-.chip {
-  margin: 2px 2px 0 0;
-}
 
 .chip.accent {
   color: #15140c;
