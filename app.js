@@ -350,6 +350,9 @@ function cardFor(game, options = {}) {
   card.querySelector("h3").textContent = game.title;
   card.querySelector("h3").classList.toggle("owner-judy", owners.includes("Judy"));
   card.querySelector("h3").classList.toggle("owner-jordi", owners.includes("Jordi"));
+  const studioLine = card.querySelector(".studio-line");
+  studioLine.textContent = studioText(game);
+  studioLine.hidden = !studioLine.textContent;
   card.querySelector(".meta").innerHTML = metaFor(game).join("");
   card.querySelector(".chips").innerHTML = chipsFor(game).join("");
   card.querySelector(".notes").textContent = "";
@@ -381,9 +384,11 @@ function metaFor(game) {
   if (game.lengthHours) values.push(timeBadge(game.lengthHours));
   if (game.playing) values.push(`<span class="playing-pill">Playing</span>`);
   if (game.digital) values.push(`<span class="digital-pill">Digital</span>`);
-  if (game.developer) values.push(`<span class="studio-pill">${escapeHtml(game.developer)}</span>`);
-  if (game.publisher) values.push(`<span class="studio-pill">${escapeHtml(game.publisher)}</span>`);
   return values;
+}
+
+function studioText(game) {
+  return [game.developer, game.publisher].filter(Boolean).join(" / ");
 }
 
 function compareGames(a, b, section) {
@@ -890,10 +895,10 @@ async function normalizeGameBeforeSave(game) {
   try {
     const result = await lookupFirstResult(game.title);
     if (!result) return;
-    game.title = result.title || game.title;
-    game.releaseDate = result.releaseDate || game.releaseDate;
-    if (result.releaseDate) game.releaseText = "";
-    else game.releaseText = game.releaseText || result.releaseText || "";
+    if (!game.releaseDate && !game.releaseText) {
+      game.releaseDate = result.releaseDate || "";
+      game.releaseText = result.releaseDate ? "" : (result.releaseText || "");
+    }
     game.cover = game.cover || result.cover || "";
     game.lengthHours = game.lengthHours || result.lengthHours || null;
     if (!game.genres?.length || game.genres.some((genre) => genre.toLowerCase().includes("video game"))) {

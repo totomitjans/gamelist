@@ -489,6 +489,13 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
   align-items: start;
 }
 
+.studio-line {
+  margin-top: 3px;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
 .meta,
 .chips,
 .prices,
@@ -509,8 +516,7 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 .release-pill,
 .time-pill,
 .digital-pill,
-.playing-pill,
-.studio-pill {
+.playing-pill {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
@@ -564,8 +570,7 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 
 .release-pill,
 .digital-pill,
-.playing-pill,
-.studio-pill {
+.playing-pill {
   padding: 4px 8px;
   color: var(--muted);
 }
