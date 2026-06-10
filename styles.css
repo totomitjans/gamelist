@@ -319,19 +319,6 @@ h3 {
   gap: 5px;
 }
 
-.stat-platform small {
-  display: inline-grid;
-  min-width: 24px;
-  height: 24px;
-  place-items: center;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 780;
-}
-
 .glass {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -699,7 +686,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .studio-line {
   margin-top: 3px;
   color: var(--dim);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.25;
 }
 
@@ -717,7 +704,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .meta {
   margin-top: 7px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .platform-badge,
@@ -730,7 +717,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .playing-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  min-height: 31px;
   border-radius: 7px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.07);
@@ -738,9 +725,22 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 
 .platform-badge {
   gap: 7px;
-  padding: 3px 8px 3px 4px;
+  padding: 4px 8px 4px 4px;
   color: var(--text);
   font-weight: 740;
+}
+
+.platform-count {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 6px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .platform-nintendo .platform-label {
@@ -785,7 +785,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .digital-pill,
 .coop-pill,
 .playing-pill {
-  padding: 4px 8px;
+  padding: 5px 9px;
   color: var(--muted);
 }
 
@@ -877,12 +877,12 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  padding: 4px 7px;
+  padding: 5px 8px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   text-decoration: none;
 }
 

@@ -86,7 +86,7 @@ async function init() {
   bindEvents();
   await loadData();
   await pullCloudData();
-  refreshUnreleasedGamesOnOpen();
+  await refreshUnreleasedGamesOnOpen();
   refreshMissingDescriptionsOnOpen();
   render();
 }
@@ -262,8 +262,7 @@ function statGroup(label, counts, total) {
       const share = Math.round((count / total) * 100);
       return `
         <span class="stat-platform" title="${escapeHtml(`${name}: ${count} games · ${share}%`)}">
-          ${platformBadge(name)}
-          <small>${count}</small>
+          ${platformBadge(name, count)}
         </span>
       `;
     }).join("")
@@ -527,7 +526,7 @@ function stringCompare(a = "", b = "") {
   return a.localeCompare(b, undefined, { sensitivity: "base" });
 }
 
-function platformBadge(platform) {
+function platformBadge(platform, count = null) {
   const cls = platformClass(platform);
   const logo = platformLogo(platform);
   return `
@@ -536,6 +535,7 @@ function platformBadge(platform) {
         <img src="${escapeHtml(logo)}" alt="" loading="lazy">
       </span>
       <span class="platform-label">${escapeHtml(platform)}</span>
+      ${count == null ? "" : `<span class="platform-count">${count}</span>`}
     </span>
   `;
 }
@@ -872,6 +872,7 @@ function upsertGame(game) {
 function moveToBacklog(id) {
   const game = getGame(id);
   game.section = "backlog";
+  game.preorderStore = "";
   game.prices = [];
   game.order = nextOrder("backlog");
   game.updatedAt = new Date().toISOString();
