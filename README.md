@@ -14,7 +14,7 @@ Then visit `http://127.0.0.1:8790`.
 
 Use this server instead of `python3 -m http.server` when you want autocomplete or price lookup, because it also routes `/api/search` and `/api/prices` to the local function code.
 
-The base editor password is `shabii` while running locally. When hosted on Cloudflare, set `EDIT_PASSWORD` so the password is checked by the Pages Function instead.
+Edit mode requires `EDIT_PASSWORD` to be configured in the Worker environment.
 
 ## What It Does
 
@@ -40,12 +40,12 @@ Create a KV namespace and bind it to the Pages project as:
 GAMELIST
 ```
 
-Set these environment variables:
+Set these Wrangler secrets:
 
-```txt
-EDIT_PASSWORD=your-password
-IGDB_CLIENT_ID=your-twitch-client-id
-IGDB_CLIENT_SECRET=your-twitch-client-secret
+```sh
+npx wrangler secret put EDIT_PASSWORD
+npx wrangler secret put IGDB_CLIENT_ID
+npx wrangler secret put IGDB_CLIENT_SECRET
 ```
 
 IGDB is used first for game metadata such as genres, developer, publisher, platform releases, and covers. HowLongToBeat remains the fallback and is also used to enrich game length.

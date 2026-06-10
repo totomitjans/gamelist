@@ -1,6 +1,7 @@
 export async function onRequestPost({ request, env }) {
   const body = await request.json().catch(() => ({}));
-  const password = env.EDIT_PASSWORD || "shabii";
+  const password = env.EDIT_PASSWORD || "";
+  if (!password) return json({ ok: false, error: "EDIT_PASSWORD is not configured" }, 503);
   if (body.password === password) {
     return json({ ok: true });
   }

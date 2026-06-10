@@ -1,7 +1,6 @@
 const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
-const DEFAULT_PASSWORD = "shabii";
 const PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es"];
 const STATUS_OPTIONS = [
   "To Collect",
@@ -807,9 +806,9 @@ async function verifyPassword(password) {
     });
     if (response.ok) return true;
   } catch {
-    // Local static preview falls back to the default base password.
+    // Local static preview cannot authenticate without the API server.
   }
-  return password === DEFAULT_PASSWORD;
+  return false;
 }
 
 async function lookupGame() {

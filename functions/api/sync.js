@@ -8,8 +8,9 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPut({ request, env }) {
   if (!env.GAMELIST) return json({ error: "Missing GAMELIST KV binding" }, 501);
+  if (!env.EDIT_PASSWORD) return json({ error: "Missing EDIT_PASSWORD secret" }, 503);
   const password = request.headers.get("x-edit-password") || "";
-  if (password !== (env.EDIT_PASSWORD || "shabii")) {
+  if (password !== env.EDIT_PASSWORD) {
     return json({ error: "Unauthorized" }, 401);
   }
   const body = await request.json().catch(() => null);
