@@ -339,6 +339,13 @@ h3 {
   box-shadow: var(--shadow), 0 10px 24px rgba(0, 0, 0, 0.24);
 }
 
+.toolbar input,
+.toolbar select {
+  padding: 10px 11px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
 .check-filter {
   display: flex;
   align-items: center;
