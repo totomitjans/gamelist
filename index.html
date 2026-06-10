@@ -182,6 +182,14 @@
             <input id="lengthInput" type="number" min="0" step="0.5" placeholder="Hours">
           </label>
           <label>
+            <span>Started</span>
+            <input id="startedAtInput" type="date">
+          </label>
+          <label>
+            <span>Finished</span>
+            <input id="completedAtInput" type="date">
+          </label>
+          <label>
             <span>Preordered Where</span>
             <input id="preorderStoreInput" placeholder="Xtralife, Game, Amazon...">
           </label>
@@ -307,6 +315,20 @@
           <p id="detailDescription"></p>
           <div class="prices detail-prices" id="detailPrices"></div>
         </div>
+      </article>
+    </dialog>
+
+    <dialog id="historyDialog">
+      <article class="history-modal glass">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Finished games</p>
+            <h2>Done by year</h2>
+          </div>
+          <button class="icon-button" id="historyCloseButton" type="button" title="Close">×</button>
+        </div>
+        <div class="year-tabs" id="historyYearTabs"></div>
+        <div class="history-list" id="historyList"></div>
       </article>
     </dialog>
 

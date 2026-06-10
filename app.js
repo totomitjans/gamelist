@@ -17,6 +17,7 @@ const state = {
   canEdit: sessionStorage.getItem(SESSION_KEY) === "true",
   draggingId: "",
   mobileSection: "backlog",
+  historyYear: String(new Date().getFullYear()),
 };
 
 const el = {
@@ -38,6 +39,10 @@ const el = {
   mobileTabs: document.querySelectorAll("[data-mobile-section]"),
   detailDialog: document.querySelector("#detailDialog"),
   detailCloseButton: document.querySelector("#detailCloseButton"),
+  historyDialog: document.querySelector("#historyDialog"),
+  historyCloseButton: document.querySelector("#historyCloseButton"),
+  historyYearTabs: document.querySelector("#historyYearTabs"),
+  historyList: document.querySelector("#historyList"),
   detailTitle: document.querySelector("#detailTitle"),
   detailStudio: document.querySelector("#detailStudio"),
   detailMeta: document.querySelector("#detailMeta"),
@@ -65,6 +70,8 @@ const el = {
     releaseDate: document.querySelector("#releaseDateInput"),
     releaseText: document.querySelector("#releaseTextInput"),
     length: document.querySelector("#lengthInput"),
+    startedAt: document.querySelector("#startedAtInput"),
+    completedAt: document.querySelector("#completedAtInput"),
     preorderStore: document.querySelector("#preorderStoreInput"),
     preferredStore: document.querySelector("#preferredStoreInput"),
     owners: document.querySelector("#ownersInput"),
@@ -132,6 +139,11 @@ function bindEvents() {
     if (event.target === el.detailDialog) el.detailDialog.close();
   });
   el.detailDialog.addEventListener("close", syncScrollLock);
+  el.historyCloseButton.addEventListener("click", () => el.historyDialog.close());
+  el.historyDialog.addEventListener("click", (event) => {
+    if (event.target === el.historyDialog) el.historyDialog.close();
+  });
+  el.historyDialog.addEventListener("close", syncScrollLock);
   el.dialog.addEventListener("close", syncScrollLock);
   el.mobileTabs.forEach((button) => button.addEventListener("click", () => {
     state.mobileSection = button.dataset.mobileSection;
@@ -223,7 +235,7 @@ function render() {
 }
 
 function syncScrollLock() {
-  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open);
+  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open);
 }
 
 function renderPlayingSection() {
@@ -238,6 +250,8 @@ function renderPlayingSection() {
 function renderStats() {
   const active = activeGames();
   const total = active.length || 1;
+  const currentYear = String(new Date().getFullYear());
+  const completedThisYear = completedGamesForYear(currentYear).length;
   const counts = {
     wanted: active.filter((game) => game.section === "wanted").length,
     upcoming: active.filter((game) => game.section === "upcoming").length,
@@ -249,17 +263,26 @@ function renderStats() {
     stat("Backlog", counts.backlog, "backlog"),
     stat("To Release", counts.upcoming, "release"),
     stat("Available", counts.wanted, "available"),
-    stat("Done", counts.completed, "done"),
+    stat(`Done ${currentYear}`, completedThisYear, "done", { action: "history" }),
     platformStats,
   ].join("");
+  const historyStat = el.stats.querySelector("[data-stat-action='history']");
+  historyStat?.addEventListener("click", openHistoryDialog);
+  historyStat?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openHistoryDialog();
+    }
+  });
   for (const [section, count] of Object.entries(counts)) {
     const node = document.querySelector(`#${section}Count`);
     if (node) node.textContent = `${count} ${count === 1 ? "game" : "games"}`;
   }
 }
 
-function stat(label, value, tone = "") {
-  return `<div class="stat ${tone ? `stat-${tone}` : ""}"><strong>${value}</strong><span>${label}</span></div>`;
+function stat(label, value, tone = "", options = {}) {
+  const attrs = options.action ? ` role="button" tabindex="0" data-stat-action="${escapeHtml(options.action)}"` : "";
+  return `<div class="stat ${tone ? `stat-${tone}` : ""} ${options.action ? "stat-action" : ""}"${attrs}><strong>${value}</strong><span>${label}</span></div>`;
 }
 
 function statGroup(label, counts, total) {
@@ -337,13 +360,108 @@ function renderCompleted() {
       <div>
         <strong>${escapeHtml(game.title)}</strong>
         <span>${escapeHtml(game.platform || "")}</span>
+        <span class="completed-dates">${escapeHtml(historyRangeText(game))}</span>
+        <div class="completed-date-edit">
+          <label><span>Start</span><input class="completed-start-input" type="date" value="${escapeHtml(dateOnly(game.startedAt))}"></label>
+          <label><span>Done</span><input class="completed-end-input" type="date" value="${escapeHtml(dateOnly(game.completedAt))}"></label>
+        </div>
       </div>
+      <button class="ghost-button completed-edit-action" type="button">Edit</button>
       <button class="ghost-button restore-action" type="button">Backlog</button>
     </div>
   `).join("") : `<div class="empty">Completed games will stay saved here.</div>`;
+  list.querySelectorAll(".completed-edit-action").forEach((button) => {
+    button.addEventListener("click", () => openEditor(button.closest(".completed-row").dataset.id));
+  });
   list.querySelectorAll(".restore-action").forEach((button) => {
     button.addEventListener("click", () => restoreCompletedToBacklog(button.closest(".completed-row").dataset.id));
   });
+  list.querySelectorAll(".completed-row").forEach((row) => {
+    row.querySelector(".completed-start-input").addEventListener("change", (event) => updateCompletedDate(row.dataset.id, "startedAt", event.target.value));
+    row.querySelector(".completed-end-input").addEventListener("change", (event) => updateCompletedDate(row.dataset.id, "completedAt", event.target.value));
+  });
+}
+
+function openHistoryDialog() {
+  state.historyYear = completedYears()[0] || String(new Date().getFullYear());
+  renderHistoryDialog();
+  el.historyDialog.showModal();
+  syncScrollLock();
+}
+
+function renderHistoryDialog() {
+  const years = completedYears();
+  if (!years.includes(state.historyYear)) state.historyYear = years[0] || String(new Date().getFullYear());
+  el.historyYearTabs.innerHTML = years.length ? years.map((year) => `
+    <button class="year-tab ${year === state.historyYear ? "active" : ""}" type="button" data-year="${escapeHtml(year)}">
+      ${escapeHtml(year)}
+      <span>${completedGamesForYear(year).length}</span>
+    </button>
+  `).join("") : `<span class="empty-inline">No finished games yet.</span>`;
+  el.historyYearTabs.querySelectorAll(".year-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.historyYear = button.dataset.year;
+      renderHistoryDialog();
+    });
+  });
+
+  const games = completedGamesForYear(state.historyYear);
+  el.historyList.innerHTML = games.length ? games.map((game) => `
+    <div class="history-row" data-id="${escapeHtml(game.id)}">
+      <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
+      <div>
+        <strong>${escapeHtml(game.title)}</strong>
+        <span>${escapeHtml(historyRangeText(game))}</span>
+      </div>
+      <button class="ghost-button history-edit-action" type="button">Edit</button>
+    </div>
+  `).join("") : `<div class="empty">No games finished in ${escapeHtml(state.historyYear)}.</div>`;
+  el.historyList.querySelectorAll(".history-edit-action").forEach((button) => {
+    button.addEventListener("click", () => {
+      el.historyDialog.close();
+      openEditor(button.closest(".history-row").dataset.id);
+    });
+  });
+}
+
+function completedYears() {
+  return unique(state.games
+    .filter((game) => game.completedAt && !game.deletedAt)
+    .map((game) => completionYear(game))
+    .filter(Boolean))
+    .sort((a, b) => Number(b) - Number(a));
+}
+
+function completedGamesForYear(year) {
+  return state.games
+    .filter((game) => !game.deletedAt && game.completedAt && completionYear(game) === String(year))
+    .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title));
+}
+
+function completionYear(game) {
+  const date = dateOnly(game.completedAt);
+  return date ? date.slice(0, 4) : "";
+}
+
+function historyRangeText(game) {
+  const start = formatShortDate(game.startedAt);
+  const done = formatShortDate(game.completedAt);
+  if (start && done) return `${start} -> ${done}`;
+  if (done) return `Done ${done}`;
+  if (start) return `Started ${start}`;
+  return "No dates";
+}
+
+function updateCompletedDate(id, key, value) {
+  if (!state.canEdit) return;
+  const game = getGame(id);
+  if (!game) return;
+  game[key] = value;
+  if (key === "completedAt" && !value) {
+    game.section = "backlog";
+  }
+  game.updatedAt = new Date().toISOString();
+  upsertGame(game);
 }
 
 function activeGames() {
@@ -365,6 +483,8 @@ function filteredGames() {
       game.digital ? "digital" : "",
       game.coop ? "coop" : "",
       game.playing ? "playing" : "",
+      game.startedAt,
+      game.completedAt,
       ...(game.genres || []),
       ...(game.statuses || []),
       ...(game.tags || []),
@@ -492,6 +612,8 @@ function metaFor(game) {
   if (game.lengthHours) values.push(timeBadge(game.lengthHours));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.playing) values.push(`<span class="playing-pill">Playing</span>`);
+  if (game.startedAt) values.push(`<span class="history-pill">Started ${escapeHtml(formatShortDate(game.startedAt))}</span>`);
+  if (game.completedAt) values.push(`<span class="history-pill">Done ${escapeHtml(formatShortDate(game.completedAt))}</span>`);
   return values;
 }
 
@@ -653,6 +775,8 @@ function normalizeGameRecord(game) {
   normalized.digital = Boolean(normalized.digital);
   normalized.coop = Boolean(normalized.coop);
   normalized.playing = Boolean(normalized.playing);
+  normalized.startedAt = dateOnly(normalized.startedAt);
+  normalized.completedAt = dateOnly(normalized.completedAt);
   normalized.platform = String(normalized.platform || "").trim();
   normalized.description = String(normalized.description || "");
   normalized.igdbUrl = String(normalized.igdbUrl || "");
@@ -802,6 +926,28 @@ function releaseStatus(game) {
   return game.section === "upcoming" ? "???" : "";
 }
 
+function dateOnly(value) {
+  if (!value) return "";
+  if (typeof value === "string") {
+    const iso = value.match(/\d{4}-\d{2}-\d{2}/);
+    if (iso) return iso[0];
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function todayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatShortDate(value) {
+  const date = dateOnly(value);
+  if (!date) return "";
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 function openEditor(id = "") {
   if (!state.canEdit) return;
   state.editingId = id;
@@ -818,6 +964,8 @@ function openEditor(id = "") {
   el.fields.releaseDate.value = game.releaseDate || "";
   el.fields.releaseText.value = game.releaseText || "";
   el.fields.length.value = game.lengthHours || "";
+  el.fields.startedAt.value = dateOnly(game.startedAt);
+  el.fields.completedAt.value = dateOnly(game.completedAt);
   el.fields.preorderStore.value = game.preorderStore || "";
   el.fields.preferredStore.value = game.preferredStore || "";
   el.fields.owners.value = ownerTags(game).join(", ");
@@ -855,6 +1003,7 @@ function blankGame() {
     digital: false,
     coop: false,
     playing: false,
+    startedAt: "",
     genres: [],
     developer: "",
     publisher: "",
@@ -881,8 +1030,10 @@ async function saveFromForm(event) {
 async function saveCurrentFormGame() {
   const id = el.fields.id.value || crypto.randomUUID();
   const existing = state.games.find((game) => game.id === id);
-  const playing = el.fields.playing.checked;
+  const completedAt = el.fields.completedAt.value || "";
+  const playing = el.fields.playing.checked && !completedAt;
   const section = playing ? "backlog" : el.fields.section.value;
+  const startedAt = el.fields.startedAt.value || (playing && !existing?.startedAt ? todayDate() : existing?.startedAt || "");
   const game = {
     ...(existing || blankGame()),
     id,
@@ -892,6 +1043,8 @@ async function saveCurrentFormGame() {
     releaseDate: el.fields.releaseDate.value,
     releaseText: el.fields.releaseText.value.trim(),
     lengthHours: el.fields.length.value ? Number(el.fields.length.value) : null,
+    startedAt,
+    completedAt,
     preorderStore: el.fields.preorderStore.value.trim(),
     preferredStore: el.fields.preferredStore.value.trim(),
     owners: ownerInputValues(el.fields.owners.value),
@@ -948,8 +1101,10 @@ function moveToBacklog(id) {
 
 function completeGame(id) {
   const game = getGame(id);
-  game.completedAt = new Date().toISOString();
-  game.updatedAt = game.completedAt;
+  game.startedAt = game.startedAt || todayDate();
+  game.completedAt = todayDate();
+  game.playing = false;
+  game.updatedAt = new Date().toISOString();
   upsertGame(game);
 }
 

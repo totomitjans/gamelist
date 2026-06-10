@@ -266,6 +266,17 @@ h3 {
   text-transform: uppercase;
 }
 
+.stat-action {
+  cursor: pointer;
+}
+
+.stat-action:hover,
+.stat-action:focus-visible {
+  border-color: rgba(255, 0, 81, 0.44);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 0, 81, 0.12), 0 14px 34px rgba(255, 0, 81, 0.16);
+}
+
 .stat-available {
   --stat-color: #79f2ce;
   --stat-glow: rgba(121, 242, 206, 0.28);
@@ -748,7 +759,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .time-pill,
 .digital-pill,
 .coop-pill,
-.playing-pill {
+.playing-pill,
+.history-pill {
   display: inline-flex;
   align-items: center;
   min-height: 31px;
@@ -818,7 +830,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .status-pill,
 .digital-pill,
 .coop-pill,
-.playing-pill {
+.playing-pill,
+.history-pill {
   padding: 5px 9px;
   color: var(--muted);
 }
@@ -880,6 +893,12 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   background: var(--accent);
   border-color: transparent;
   font-weight: 860;
+}
+
+.history-pill {
+  color: var(--accent-2);
+  border-color: rgba(121, 242, 206, 0.28);
+  background: rgba(121, 242, 206, 0.08);
 }
 
 .time-pill {
@@ -1143,6 +1162,9 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 body:not(.can-edit) .edit-action,
 body:not(.can-edit) .card-actions,
 body:not(.can-edit) .restore-action,
+body:not(.can-edit) .completed-edit-action,
+body:not(.can-edit) .completed-date-edit,
+body:not(.can-edit) .history-edit-action,
 body:not(.can-edit) #addButton,
 body:not(.can-edit) #fetchDataButton,
 body:not(.can-edit) #fetchPricesButton {
@@ -1166,7 +1188,7 @@ body:not(.can-edit) #fetchPricesButton {
 
 .completed-row {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
@@ -1188,10 +1210,34 @@ body:not(.can-edit) #fetchPricesButton {
 
 .completed-row > div {
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
 
-.completed-row .restore-action {
+.completed-dates {
+  color: var(--accent-2);
+  font-size: 12px;
+}
+
+.completed-date-edit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.completed-date-edit label span {
+  margin-bottom: 3px;
+  font-size: 9px;
+}
+
+.completed-date-edit input {
+  min-height: 30px;
+  padding: 6px 7px;
+  font-size: 11px;
+}
+
+.completed-row .restore-action,
+.completed-row .completed-edit-action {
   min-height: 30px;
   padding: 6px 9px;
 }
@@ -1206,6 +1252,10 @@ dialog {
 
 #detailDialog {
   width: min(980px, calc(100vw - 24px));
+}
+
+#historyDialog {
+  width: min(720px, calc(100vw - 24px));
 }
 
 dialog::backdrop {
@@ -1240,6 +1290,81 @@ body.dialog-open .mobile-section-tabs {
   padding: 18px;
   background: var(--panel-strong);
   border-radius: 8px;
+}
+
+.history-modal {
+  max-height: calc(100vh - 30px);
+  overflow: auto;
+  padding: 18px;
+  background: var(--panel-strong);
+  border-radius: 8px;
+}
+
+.year-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.year-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.year-tab.active {
+  color: #ffffff;
+  background: rgba(255, 0, 57, 0.22);
+  border-color: rgba(255, 0, 57, 0.42);
+}
+
+.year-tab span {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.history-row > div {
+  display: grid;
+  gap: 3px;
+}
+
+.history-row strong {
+  color: var(--text);
+}
+
+.empty-inline {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .detail-close {
@@ -1411,6 +1536,15 @@ body.dialog-open .mobile-section-tabs {
 @media (max-width: 1120px) {
   .completed-list {
     grid-template-columns: 1fr;
+  }
+
+  .completed-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .completed-row .completed-edit-action,
+  .completed-row .restore-action {
+    grid-column: 1 / -1;
   }
 
   .card-list {
