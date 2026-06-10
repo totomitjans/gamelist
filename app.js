@@ -69,6 +69,7 @@ const el = {
     owners: document.querySelector("#ownersInput"),
     statuses: document.querySelector("#statusesInput"),
     digital: document.querySelector("#digitalInput"),
+    coop: document.querySelector("#coopInput"),
     playing: document.querySelector("#playingInput"),
     genres: document.querySelector("#genresInput"),
     developer: document.querySelector("#developerInput"),
@@ -324,7 +325,7 @@ function renderCompleted() {
   games.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
   list.innerHTML = games.length ? games.map((game) => `
     <div class="completed-row" data-id="${escapeHtml(game.id)}">
-      <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" ${game.cover ? "" : "hidden"}>
+      <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
       <div>
         <strong>${escapeHtml(game.title)}</strong>
         <span>${escapeHtml(game.platform || "")}</span>
@@ -354,6 +355,7 @@ function filteredGames() {
       game.developer,
       game.publisher,
       game.digital ? "digital" : "",
+      game.coop ? "coop" : "",
       game.playing ? "playing" : "",
       ...(game.genres || []),
       ...(game.statuses || []),
@@ -383,9 +385,11 @@ function cardFor(game, options = {}) {
   img.hidden = !game.cover;
   img.src = game.cover || "";
   img.alt = game.cover ? `${game.title} cover` : "";
+  img.loading = "lazy";
+  img.decoding = "async";
   card.classList.toggle("has-art", Boolean(game.cover));
   if (game.cover) {
-    card.style.setProperty("--card-art", `url("${cssUrl(game.cover)}")`);
+    card.style.setProperty("--card-art", `url("${cssUrl(backgroundCoverUrl(game.cover))}")`);
     setupCardParallax(card);
   }
   card.querySelector("h3").textContent = game.title;
@@ -477,6 +481,7 @@ function metaFor(game) {
   const release = releaseStatus(game);
   if (release) values.push(`<span class="release-pill">${escapeHtml(release)}</span>`);
   if (game.lengthHours) values.push(timeBadge(game.lengthHours));
+  if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.playing) values.push(`<span class="playing-pill">Playing</span>`);
   return values;
 }
@@ -636,6 +641,7 @@ function normalizeGameRecords(games) {
 function normalizeGameRecord(game) {
   const normalized = { ...game };
   normalized.digital = Boolean(normalized.digital);
+  normalized.coop = Boolean(normalized.coop);
   normalized.playing = Boolean(normalized.playing);
   normalized.platform = String(normalized.platform || "").trim();
   normalized.description = String(normalized.description || "");
@@ -664,6 +670,13 @@ function previewDescription(value, maxLength = 180) {
 
 function cssUrl(value) {
   return String(value || "").replace(/["\\\n\r]/g, "");
+}
+
+function backgroundCoverUrl(value) {
+  return String(value || "").replace(
+    /images\.igdb\.com\/igdb\/image\/upload\/[^/]+\//,
+    "images.igdb.com/igdb/image/upload/t_cover_small/"
+  );
 }
 
 function pricesFor(game) {
@@ -755,6 +768,7 @@ function openEditor(id = "") {
   el.fields.owners.value = ownerTags(game).join(", ");
   el.fields.statuses.value = gameStatuses(game).join(", ");
   el.fields.digital.checked = Boolean(game.digital);
+  el.fields.coop.checked = Boolean(game.coop);
   el.fields.playing.checked = Boolean(game.playing);
   el.fields.genres.value = (game.genres || []).join(", ");
   el.fields.developer.value = game.developer || "";
@@ -779,6 +793,7 @@ function blankGame() {
     description: "",
     statuses: [],
     digital: false,
+    coop: false,
     playing: false,
     genres: [],
     developer: "",
@@ -820,6 +835,7 @@ async function saveCurrentFormGame() {
     owners: ownerInputValues(el.fields.owners.value),
     statuses: listFrom(el.fields.statuses.value).map(canonicalStatus).filter(Boolean),
     digital: el.fields.digital.checked,
+    coop: el.fields.coop.checked,
     playing,
     genres: listFrom(el.fields.genres.value),
     developer: el.fields.developer.value.trim(),
@@ -1002,7 +1018,7 @@ function renderLookupResults(results) {
     const row = document.createElement("div");
     row.className = "lookup-result";
     row.innerHTML = `
-      <img src="${escapeHtml(result.cover || "")}" alt="">
+      <img src="${escapeHtml(result.cover || "")}" alt="" loading="lazy" decoding="async" ${result.cover ? "" : "hidden"}>
       <div>
         <strong>${escapeHtml(result.title)}</strong>
         <p>${escapeHtml([result.releaseDate || result.releaseText, result.lengthHours ? `${result.lengthHours} hrs` : ""].filter(Boolean).join(" · "))}</p>

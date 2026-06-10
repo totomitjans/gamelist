@@ -93,9 +93,9 @@ button {
   width: 34px;
   height: 34px;
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-  box-shadow: 0 0 24px rgba(255, 0, 81, 0.2);
+  filter:
+    drop-shadow(0 0 10px rgba(255, 0, 81, 0.44))
+    drop-shadow(0 7px 18px rgba(0, 0, 0, 0.32));
 }
 
 .nav-tabs {
@@ -631,6 +631,11 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   min-height: 292px;
 }
 
+.playing-section .game-card h3 {
+  font-size: clamp(20px, 2.6vw, 30px);
+  line-height: 1.04;
+}
+
 .playing-section .cover-button {
   width: 100%;
   height: auto;
@@ -713,6 +718,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .status-pill,
 .time-pill,
 .digital-pill,
+.coop-pill,
 .playing-pill {
   display: inline-flex;
   align-items: center;
@@ -769,6 +775,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .owner-pill,
 .status-pill,
 .digital-pill,
+.coop-pill,
 .playing-pill {
   padding: 4px 8px;
   color: var(--muted);
@@ -817,6 +824,13 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   color: #eef0f5;
   border-color: rgba(225, 230, 240, 0.28);
   background: rgba(225, 230, 240, 0.1);
+}
+
+.coop-pill {
+  color: var(--accent-2);
+  border-color: rgba(121, 242, 206, 0.32);
+  background: rgba(121, 242, 206, 0.1);
+  font-weight: 820;
 }
 
 .playing-pill {
