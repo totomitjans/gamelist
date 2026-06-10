@@ -519,7 +519,9 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 
 .playing-section .cover-button {
   width: 124px;
-  height: 168px;
+  height: auto;
+  min-height: 268px;
+  align-self: stretch;
 }
 
 .game-card.dragging {
