@@ -203,8 +203,8 @@ function render() {
   renderStats();
   renderMobileTabs();
   renderSection("backlog");
-  renderSection("wanted");
   renderSection("upcoming");
+  renderSection("wanted");
   renderCompleted();
   el.sortFilter.value = state.filters.sort;
   el.sortDirectionButton.textContent = state.filters.direction === "asc" ? "↑" : "↓";
@@ -241,8 +241,8 @@ function renderStats() {
   const platformStats = statGroup("Platforms", topCounts(active, (game) => game.platform), total);
   el.stats.innerHTML = [
     stat("Backlog", counts.backlog, "backlog"),
-    stat("Available", counts.wanted, "available"),
     stat("To Release", counts.upcoming, "release"),
+    stat("Available", counts.wanted, "available"),
     stat("Done", counts.completed, "done"),
     platformStats,
   ].join("");
@@ -416,7 +416,7 @@ function cardFor(game, options = {}) {
     boughtAction.addEventListener("click", () => moveToBacklog(game.id));
   }
   card.querySelector(".edit-action").addEventListener("click", () => openEditor(game.id));
-  card.querySelector(".cover-button").addEventListener("click", () => openEditor(game.id));
+  card.querySelector(".cover-button").addEventListener("click", () => openDetail(game.id));
   card.querySelector(".complete-action").hidden = game.section !== "backlog";
   card.querySelector(".complete-action").addEventListener("click", () => completeGame(game.id));
   card.querySelector(".delete-action").addEventListener("click", () => deleteGame(game.id));
@@ -469,7 +469,7 @@ function openDetail(id) {
 }
 
 function sectionRank(section) {
-  return { backlog: 0, wanted: 1, upcoming: 2 }[section] ?? 3;
+  return { backlog: 0, upcoming: 1, wanted: 2 }[section] ?? 3;
 }
 
 function metaFor(game) {

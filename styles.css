@@ -117,7 +117,8 @@ button {
 
 .nav-tabs a:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 0, 81, 0.16);
+  border-color: rgba(255, 0, 81, 0.32);
 }
 
 .top-actions,
@@ -342,7 +343,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 12px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.07);
@@ -351,8 +352,8 @@ h3 {
 }
 
 .check-filter input {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   accent-color: var(--accent);
 }
@@ -366,6 +367,7 @@ h3 {
 
 .toolbar-check {
   align-self: end;
+  min-height: 44px;
 }
 
 .order-control {
@@ -398,6 +400,17 @@ h3 {
   border-color: rgba(247, 223, 105, 0.34);
 }
 
+button:hover,
+.ghost-button:hover,
+.primary-button:hover,
+.icon-button:hover,
+.danger-button:hover,
+.direction-toggle:hover,
+.check-filter:hover {
+  border-color: rgba(255, 0, 81, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 0, 81, 0.12), 0 10px 28px rgba(255, 0, 81, 0.12);
+}
+
 .mobile-section-tabs {
   position: sticky;
   top: 100px;
@@ -428,11 +441,11 @@ h3 {
   transition: transform 180ms ease;
 }
 
-body[data-mobile-section="wanted"] .mobile-section-tabs::before {
+body[data-mobile-section="upcoming"] .mobile-section-tabs::before {
   transform: translateX(calc(100% + 6px));
 }
 
-body[data-mobile-section="upcoming"] .mobile-section-tabs::before {
+body[data-mobile-section="wanted"] .mobile-section-tabs::before {
   transform: translateX(calc(200% + 12px));
 }
 
@@ -619,12 +632,18 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .playing-section .game-card {
+  grid-template-columns: 132px minmax(0, 1fr);
   min-height: 292px;
 }
 
 .playing-section .game-card h3 {
   font-size: clamp(20px, 2.6vw, 30px);
   line-height: 1.04;
+}
+
+.playing-section .cover-button {
+  width: 132px;
+  height: 180px;
 }
 
 .game-card.dragging {
@@ -689,7 +708,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .completed-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
   justify-content: flex-start;
 }
@@ -880,7 +899,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .chips {
-  margin-top: 9px;
+  margin-top: 7px;
 }
 
 
@@ -932,29 +951,27 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .notes {
   grid-column: 1 / -1;
   margin: 0;
-  padding: 9px 10px;
+  padding: 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 7px;
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .playing-section .notes {
-  margin-top: 0;
+  display: none;
 }
 
 .prices {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
-  margin-top: auto;
+  margin-top: 0;
   padding: 6px;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.11);
@@ -1431,16 +1448,27 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .game-card {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: 96px minmax(0, 1fr);
     min-height: 214px;
   }
 
   .cover-button {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 9;
-    min-height: 150px;
+    width: 96px;
+    height: 131px;
+    min-height: 0;
+  }
+
+  .playing-section .cover-button {
+    width: 112px;
+    height: 153px;
+  }
+
+  .playing-section .game-card {
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .notes {
+    display: none;
   }
 
   .card-list {

@@ -83,8 +83,8 @@
 
       <nav class="mobile-section-tabs" aria-label="Mobile sections">
         <button type="button" data-mobile-section="backlog">Backlog</button>
-        <button type="button" data-mobile-section="wanted">Available</button>
         <button type="button" data-mobile-section="upcoming">To Release</button>
+        <button type="button" data-mobile-section="wanted">Available</button>
       </nav>
 
       <section class="board" aria-live="polite">
@@ -98,16 +98,6 @@
           <div class="card-list sortable" data-section="backlog"></div>
         </article>
 
-        <article class="column" id="wanted">
-          <div class="column-head">
-            <div>
-              <h2>Available now</h2>
-            </div>
-            <span id="wantedCount"></span>
-          </div>
-          <div class="card-list" data-section="wanted"></div>
-        </article>
-
         <article class="column" id="upcoming">
           <div class="column-head">
             <div>
@@ -116,6 +106,16 @@
             <span id="upcomingCount"></span>
           </div>
           <div class="card-list" data-section="upcoming"></div>
+        </article>
+
+        <article class="column" id="wanted">
+          <div class="column-head">
+            <div>
+              <h2>Available now</h2>
+            </div>
+            <span id="wantedCount"></span>
+          </div>
+          <div class="card-list" data-section="wanted"></div>
         </article>
       </section>
 
@@ -321,9 +321,9 @@
               </svg>
             </button>
           </div>
-          <div class="prices"></div>
         </div>
         <p class="notes"></p>
+        <div class="prices"></div>
       </article>
     </template>
 
