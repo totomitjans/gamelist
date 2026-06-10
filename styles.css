@@ -536,7 +536,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .game-card {
   position: relative;
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: 10px 12px;
   min-height: 240px;
   height: 100%;
@@ -619,21 +619,12 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .playing-section .game-card {
-  grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0, 1fr);
   min-height: 292px;
 }
 
 .playing-section .game-card h3 {
   font-size: clamp(20px, 2.6vw, 30px);
   line-height: 1.04;
-}
-
-.playing-section .cover-button {
-  width: 100%;
-  height: auto;
-  min-height: 268px;
-  align-self: stretch;
 }
 
 .game-card.dragging {
@@ -653,8 +644,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 
 .cover-button {
   position: relative;
-  width: 82px;
-  height: 112px;
+  width: 104px;
+  height: 142px;
   padding: 0;
   overflow: hidden;
   color: var(--dim);
