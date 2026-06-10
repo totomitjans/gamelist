@@ -1530,9 +1530,37 @@ body.dialog-open .mobile-section-tabs {
 
 .modal-head {
   display: flex;
-  justify-content: space-between;
+  align-items: start;
   gap: 16px;
   margin-bottom: 14px;
+}
+
+.modal-head > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-playing-check {
+  align-self: center;
+  min-width: 132px;
+}
+
+.form-group {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.form-group:first-of-type {
+  margin-top: 12px;
+}
+
+.form-group h3 {
+  margin: 0 0 11px;
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 860;
+  text-transform: uppercase;
 }
 
 .form-grid {
@@ -1708,6 +1736,15 @@ body.dialog-open .mobile-section-tabs {
   .toolbar,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-head {
+    flex-wrap: wrap;
+  }
+
+  .modal-playing-check {
+    order: 3;
+    width: 100%;
   }
 
   .order-control {
