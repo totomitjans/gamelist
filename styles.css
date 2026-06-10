@@ -634,8 +634,9 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .playing-section .game-card {
-  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   min-height: 292px;
+  align-items: stretch;
 }
 
 .playing-section .game-card h3 {
@@ -644,8 +645,11 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .playing-section .cover-button {
-  width: 132px;
-  height: 180px;
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  aspect-ratio: 104 / 142;
+  min-height: 0;
 }
 
 .game-card.dragging {
@@ -1500,12 +1504,12 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .playing-section .cover-button {
-    width: 112px;
-    height: 153px;
+    width: auto;
+    height: auto;
   }
 
   .playing-section .game-card {
-    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .notes {
