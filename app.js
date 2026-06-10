@@ -709,15 +709,16 @@ function normalizeStoreLinks(links) {
 function storeLinksFor(game) {
   const links = storeLinksWithFallbacks(game);
   return [
-    storeButton("PlayStation", links.playstation, "store-playstation"),
-    storeButton("Nintendo", links.nintendo, "store-nintendo"),
-    storeButton("Steam", links.steam, "store-steam"),
+    storeButton("PlayStation", links.playstation, "store-playstation", platformLogo("PS5")),
+    storeButton("Nintendo", links.nintendo, "store-nintendo", platformLogo("Switch")),
+    storeButton("Steam", links.steam, "store-steam", platformLogo("PC")),
   ].join("");
 }
 
-function storeButton(label, url, cls) {
+function storeButton(label, url, cls, icon) {
   return `
     <a class="store-button ${cls}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
+      <img src="${escapeHtml(icon)}" alt="">
       ${escapeHtml(label)}
     </a>
   `;
@@ -727,8 +728,8 @@ function storeLinksWithFallbacks(game) {
   const links = normalizeStoreLinks(game.storeLinks);
   const q = encodeURIComponent(retailTitle(game.title));
   return {
-    playstation: links.playstation || `https://store.playstation.com/search/${q}`,
-    nintendo: links.nintendo || `https://www.nintendo.com/search/?q=${q}`,
+    playstation: links.playstation || `https://www.playstation.com/es-es/search/?q=${q}`,
+    nintendo: links.nintendo || `https://www.nintendo.com/es-es/search/#q=${q}`,
     steam: links.steam || `https://store.steampowered.com/search/?term=${q}`,
   };
 }

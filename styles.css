@@ -656,6 +656,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   width: auto;
   height: auto;
   aspect-ratio: 104 / 142;
+  max-height: 220px;
   min-height: 0;
 }
 
@@ -1281,6 +1282,7 @@ body.dialog-open .mobile-section-tabs {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   min-height: 34px;
   padding: 7px 11px;
   color: #ffffff;
@@ -1289,6 +1291,12 @@ body.dialog-open .mobile-section-tabs {
   text-decoration: none;
   font-size: 12px;
   font-weight: 820;
+}
+
+.store-button img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .store-button:hover {
