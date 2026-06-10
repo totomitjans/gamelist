@@ -4,15 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>gamelist</title>
+    <title>Shabii's Gamelist</title>
+    <link rel="icon" type="image/png" href="assets/Icon.png">
+    <link rel="apple-touch-icon" href="assets/Icon.png">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="backdrop"></div>
     <header class="topbar">
-      <a class="brand" href="#backlog" aria-label="gamelist">
-        <span class="brand-mark">GL</span>
-        <span>gamelist</span>
+      <a class="brand" href="#backlog" aria-label="Shabii's Gamelist">
+        <img class="brand-mark" src="assets/Icon.png" alt="">
+        <span>Shabii's Gamelist</span>
       </a>
       <nav class="nav-tabs" aria-label="Sections">
 
@@ -32,14 +34,16 @@
     </header>
 
     <main class="shell">
-      <section class="playing-section glass" id="playingSection" hidden>
+      <section class="playing-section" id="playingSection" hidden>
         <div class="column-head">
           <div>
             <h2>Currently Playing</h2>
           </div>
           <span id="playingCount"></span>
         </div>
-        <div class="card-list playing-list" data-section="playing"></div>
+        <div class="playing-panel glass">
+          <div class="card-list playing-list" data-section="playing"></div>
+        </div>
       </section>
 
       <section class="hero">
@@ -115,14 +119,16 @@
         </article>
       </section>
 
-      <section class="completed glass" id="completed">
+      <section class="completed" id="completed">
         <div class="column-head">
           <div>
             <h2>Completed</h2>
           </div>
           <span id="completedCount"></span>
         </div>
-        <div class="completed-list" data-section="completed"></div>
+        <div class="completed-panel glass">
+          <div class="completed-list" data-section="completed"></div>
+        </div>
       </section>
     </main>
 
