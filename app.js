@@ -13,6 +13,7 @@ const state = {
   games: [],
   filters: { query: "", platform: "all", tag: "all", sort: "title", direction: "asc", preordered: false },
   editingId: "",
+  pendingDescription: "",
   canEdit: sessionStorage.getItem(SESSION_KEY) === "true",
   draggingId: "",
   mobileSection: "wanted",
@@ -75,6 +76,7 @@ async function init() {
   await loadData();
   await pullCloudData();
   refreshUnreleasedGamesOnOpen();
+  refreshMissingDescriptionsOnOpen();
   render();
 }
 
@@ -311,6 +313,7 @@ function filteredGames() {
     const haystack = [
       game.title,
       game.platform,
+      game.description,
       game.notes,
       game.preorderStore,
       game.preferredStore,
@@ -346,6 +349,8 @@ function cardFor(game, options = {}) {
   img.hidden = !game.cover;
   img.src = game.cover || "";
   img.alt = game.cover ? `${game.title} cover` : "";
+  card.classList.toggle("has-art", Boolean(game.cover));
+  if (game.cover) card.style.setProperty("--card-art", `url("${cssUrl(game.cover)}")`);
   card.querySelector(".cover-button span").hidden = Boolean(game.cover);
   card.querySelector("h3").textContent = game.title;
   card.querySelector("h3").classList.toggle("owner-judy", owners.includes("Judy"));
@@ -355,8 +360,9 @@ function cardFor(game, options = {}) {
   studioLine.hidden = !studioLine.textContent;
   card.querySelector(".meta").innerHTML = metaFor(game).join("");
   card.querySelector(".chips").innerHTML = chipsFor(game).join("");
-  card.querySelector(".notes").textContent = "";
-  card.querySelector(".notes").hidden = true;
+  const description = card.querySelector(".notes");
+  description.textContent = shortDescription(game.description || "");
+  description.hidden = !description.textContent;
   const prices = card.querySelector(".prices");
   prices.hidden = game.section === "backlog";
   prices.innerHTML = game.section === "backlog" ? "" : pricesFor(game);
@@ -523,6 +529,7 @@ function normalizeGameRecord(game) {
   const normalized = { ...game };
   normalized.digital = Boolean(normalized.digital);
   normalized.playing = Boolean(normalized.playing);
+  normalized.description = String(normalized.description || "");
   normalized.owners = ownerTags(normalized);
   normalized.statuses = gameStatuses(normalized);
   normalized.genres = Array.isArray(normalized.genres) ? normalized.genres : [];
@@ -535,6 +542,14 @@ function statusType(status) {
   if (status === "Waiting for Physical") return "waiting";
   if (status === "To Collect") return "collect";
   return "";
+}
+
+function shortDescription(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function cssUrl(value) {
+  return String(value || "").replace(/["\\\n\r]/g, "");
 }
 
 function pricesFor(game) {
@@ -608,6 +623,7 @@ function releaseStatus(game) {
 function openEditor(id = "") {
   if (!state.canEdit) return;
   state.editingId = id;
+  state.pendingDescription = "";
   const game = state.games.find((item) => item.id === id) || blankGame();
   el.dialogTitle.textContent = id ? "Edit Game" : "Add Game";
   el.deleteButton.hidden = !id;
@@ -645,6 +661,7 @@ function blankGame() {
     releaseText: "",
     lengthHours: null,
     notes: "",
+    description: "",
     statuses: [],
     digital: false,
     playing: false,
@@ -688,6 +705,7 @@ async function saveFromForm(event) {
     publisher: el.fields.publisher.value.trim(),
     cover: el.fields.cover.value.trim(),
     notes: el.fields.notes.value.trim(),
+    description: existing?.description || state.pendingDescription || "",
     order: existing?.section === section ? existing.order : nextOrder(section),
     updatedAt: new Date().toISOString(),
   };
@@ -861,6 +879,7 @@ function renderLookupResults(results) {
         <strong>${escapeHtml(result.title)}</strong>
         <p>${escapeHtml([result.releaseDate || result.releaseText, result.lengthHours ? `${result.lengthHours} hrs` : ""].filter(Boolean).join(" · "))}</p>
         <p>${escapeHtml([...(result.genres || []), result.developer, result.publisher].filter(Boolean).join(" · "))}</p>
+        <p>${escapeHtml(shortDescription(result.description || ""))}</p>
       </div>
       <button class="ghost-button" type="button">Use</button>
     `;
@@ -875,6 +894,9 @@ function applyLookup(result) {
   el.fields.releaseText.value = result.releaseDate ? "" : (result.releaseText || el.fields.releaseText.value);
   el.fields.length.value = result.lengthHours || el.fields.length.value;
   el.fields.cover.value = result.cover || el.fields.cover.value;
+  const current = state.games.find((game) => game.id === el.fields.id.value);
+  if (current && !current.description && result.description) current.description = result.description;
+  if (!current) state.pendingDescription = result.description || "";
   if (result.genres?.length) el.fields.genres.value = result.genres.join(", ");
   if (result.developer) el.fields.developer.value = result.developer;
   if (result.publisher) el.fields.publisher.value = result.publisher;
@@ -900,6 +922,7 @@ async function normalizeGameBeforeSave(game) {
       game.releaseText = result.releaseDate ? "" : (result.releaseText || "");
     }
     game.cover = game.cover || result.cover || "";
+    game.description = game.description || result.description || "";
     game.lengthHours = game.lengthHours || result.lengthHours || null;
     if (!game.genres?.length || game.genres.some((genre) => genre.toLowerCase().includes("video game"))) {
       game.genres = result.genres || game.genres || [];
@@ -932,6 +955,10 @@ async function refreshUnreleasedGamesOnOpen() {
         game.cover = result.cover;
         localChanged = true;
       }
+      if (!game.description && result.description) {
+        game.description = result.description;
+        localChanged = true;
+      }
       if ((!game.genres || !game.genres.length) && result.genres?.length) {
         game.genres = result.genres;
         localChanged = true;
@@ -948,6 +975,27 @@ async function refreshUnreleasedGamesOnOpen() {
         game.updatedAt = new Date().toISOString();
         changed = true;
       }
+    } catch {
+      return;
+    }
+  }
+  if (changed) {
+    persistLocal();
+    persistCloud();
+  }
+}
+
+async function refreshMissingDescriptionsOnOpen() {
+  const games = activeGames().filter((game) => !game.description && game.title).slice(0, 20);
+  if (!games.length) return;
+  let changed = false;
+  for (const game of games) {
+    try {
+      const result = await lookupFirstResult(game.title);
+      if (!result?.description) continue;
+      game.description = result.description;
+      game.updatedAt = new Date().toISOString();
+      changed = true;
     } catch {
       return;
     }

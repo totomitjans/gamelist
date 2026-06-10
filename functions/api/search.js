@@ -39,7 +39,7 @@ function igdbCredentials(env) {
 async function igdbSearch(query, credentials) {
   const token = await getIgdbToken(credentials);
   const body = [
-    "fields name,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.date,release_dates.platform.name;",
+    "fields name,summary,storyline,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.date,release_dates.platform.name;",
     `search "${escapeIgdbString(searchAlias(query))}";`,
     "where version_parent = null;",
     "limit 8;",
@@ -102,10 +102,21 @@ function igdbResult(game, query, hltbResults) {
     genres: cleanGenreLabels((game.genres || []).map((genre) => genre.name).filter(Boolean)),
     developer: companyName(companies, "developer"),
     publisher: companyName(companies, "publisher"),
+    description: shortDescription(game.summary || game.storyline || ""),
     lengthHours: hltbMatch?.lengthHours || null,
     source: "IGDB",
     score,
   };
+}
+
+function shortDescription(value) {
+  const text = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length <= 240) return text;
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+  const summary = sentences.slice(0, 3).join(" ").trim();
+  return (summary && summary.length <= 280 ? summary : `${text.slice(0, 237).trim()}...`);
 }
 
 function igdbQualityScore(game, hltbMatch) {
