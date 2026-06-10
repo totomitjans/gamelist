@@ -186,9 +186,6 @@ h2 {
   color: var(--text);
   font-weight: 900;
   letter-spacing: 0;
-  text-shadow:
-    0 0 18px rgba(255, 0, 57, 0.28),
-    0 1px 18px rgba(0, 0, 0, 0.42);
 }
 
 .column-head h2 {
@@ -197,7 +194,7 @@ h2 {
   align-items: center;
   padding: 4px 0;
   color: transparent;
-  background: linear-gradient(135deg, #ffffff 0%, #ffdfe7 46%, var(--accent) 100%);
+  background: linear-gradient(135deg, #ee32b3 0%, var(--accent) 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -299,7 +296,7 @@ h3 {
 .stat-group > strong {
   display: block;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 20px;
   letter-spacing: 0;
   text-transform: uppercase;
   text-shadow: 0 0 16px rgba(255, 0, 81, 0.24);
@@ -426,7 +423,7 @@ h3 {
   width: calc((100% - 24px) / 3);
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 8px 24px rgba(247, 223, 105, 0.22);
+  box-shadow: 0px 3px 24px 3px rgb(255 0 0 / 40%);
   transform: translateX(0);
   transition: transform 180ms ease;
 }
@@ -730,8 +727,8 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 }
 
 .platform-playstation {
-  background: rgba(111, 168, 255, 0.13);
-  border-color: rgba(111, 168, 255, 0.28);
+    background: rgb(111 120 255 / 22%);
+    border-color: rgb(75 73 225 / 86%);
 }
 
 .platform-icon {
@@ -861,7 +858,7 @@ body[data-mobile-section="backlog"] .column:not(#backlog) {
 
 .chip.accent {
   color: #15140c;
-  background: var(--accent);
+  background: #f7df69;
   border-color: transparent;
   font-weight: 780;
 }
