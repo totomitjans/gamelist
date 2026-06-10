@@ -393,7 +393,7 @@ function cardFor(game, options = {}) {
   img.hidden = !game.cover;
   img.src = game.cover ? coverDisplayUrl(game.cover) : "";
   img.alt = game.cover ? `${game.title} cover` : "";
-  img.loading = "lazy";
+  img.loading = "eager";
   img.decoding = "async";
   card.classList.toggle("has-art", Boolean(game.cover));
   if (game.cover) {
