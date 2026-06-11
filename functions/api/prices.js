@@ -25,14 +25,15 @@ export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
   const title = url.searchParams.get("title")?.trim();
   const platform = url.searchParams.get("platform")?.trim() || "";
+  const debug = url.searchParams.has("debug");
   if (!title) return json({ prices: [] });
 
   const query = `${retailTitle(title)} ${platform}`.trim();
-  const prices = await Promise.all(PROVIDERS.map((provider) => findPrice(provider, title, platform, query, env)));
+  const prices = await Promise.all(PROVIDERS.map((provider) => findPrice(provider, title, platform, query, env, debug)));
   return json({ prices });
 }
 
-async function findPrice(provider, title, platform, query, env = {}) {
+async function findPrice(provider, title, platform, query, env = {}, debug = false) {
   const url = provider.search(query);
   if (provider.store === "Playasia" && env.PLAYASIA_API_KEY && env.PLAYASIA_USER_ID) {
     try {
@@ -76,7 +77,7 @@ async function findPrice(provider, title, platform, query, env = {}) {
     const html = await response.text();
     let result = provider.parse(html, title, platform);
     if (provider.store === "Playasia" && !result.price) {
-      result = await lookupPlayasiaReader(title, platform, query);
+      result = await lookupPlayasiaReader(title, platform, query, debug);
     }
     const price = result.price || "";
     return {
@@ -85,6 +86,7 @@ async function findPrice(provider, title, platform, query, env = {}) {
       numericPrice: parsePrice(price),
       matchedTitle: result.matchedTitle || "",
       url: result.url || url,
+      ...(debug && provider.store === "Playasia" ? { debug: result.debug || null } : {}),
       checkedAt: new Date().toISOString(),
     };
   } catch {
@@ -92,8 +94,9 @@ async function findPrice(provider, title, platform, query, env = {}) {
   }
 }
 
-async function lookupPlayasiaReader(title, platform, query) {
+async function lookupPlayasiaReader(title, platform, query, debug = false) {
   const url = playasiaSearchUrl(query);
+  const diagnostics = [];
   const readerUrls = [
     `https://r.jina.ai/http://${url}`,
     `https://r.jina.ai/${encodeURIComponent(`http://${url}`)}`,
@@ -109,17 +112,22 @@ async function lookupPlayasiaReader(title, platform, query) {
         },
         cf: { cacheTtl: 60, cacheEverything: true },
       });
-      if (!response.ok) continue;
+      if (!response.ok) {
+        diagnostics.push({ url: readerUrl, status: response.status });
+        continue;
+      }
       const markdown = await response.text();
+      diagnostics.push({ url: readerUrl, status: response.status, length: markdown.length, sample: markdown.slice(0, 120) });
       const product = bestProduct(playasiaMarkdownProducts(markdown), title, platform);
-      if (product?.price) return product;
+      if (product?.price) return { ...product, ...(debug ? { debug: diagnostics } : {}) };
       const generic = parseGeneric(markdown, title, platform);
-      if (generic.price) return generic;
-    } catch {
+      if (generic.price) return { ...generic, ...(debug ? { debug: diagnostics } : {}) };
+    } catch (error) {
+      diagnostics.push({ url: readerUrl, error: error?.message || "reader failed" });
       // Try the next reader URL shape.
     }
   }
-  return { price: "", matchedTitle: "" };
+  return { price: "", matchedTitle: "", ...(debug ? { debug: diagnostics } : {}) };
 }
 
 function parseAmazon(html, title, platform) {
