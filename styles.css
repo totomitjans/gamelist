@@ -769,34 +769,39 @@ h3 {
 .release-day.release-platform-nintendo {
   background: rgba(255, 0, 57, 0.2);
   border-color: rgba(255, 0, 57, 0.48);
+  box-shadow: 0 8px 20px rgba(255, 0, 57, 0.18), 0 0 18px rgba(255, 0, 57, 0.1);
 }
 
 .release-day.release-platform-playstation {
   background: rgba(65, 126, 255, 0.22);
   border-color: rgba(65, 126, 255, 0.5);
+  box-shadow: 0 8px 20px rgba(65, 126, 255, 0.18), 0 0 18px rgba(65, 126, 255, 0.1);
 }
 
 .release-day.release-platform-pc {
   background: rgba(121, 242, 206, 0.16);
   border-color: rgba(121, 242, 206, 0.38);
+  box-shadow: 0 8px 20px rgba(121, 242, 206, 0.15), 0 0 18px rgba(121, 242, 206, 0.09);
 }
 
 .release-day.release-platform-xbox {
   background: rgba(83, 214, 110, 0.16);
   border-color: rgba(83, 214, 110, 0.42);
+  box-shadow: 0 8px 20px rgba(83, 214, 110, 0.15), 0 0 18px rgba(83, 214, 110, 0.09);
 }
 
 .release-day.release-platform-mixed,
 .release-day.release-platform-generic {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.08), 0 0 18px rgba(255, 255, 255, 0.06);
 }
 
 .release-day.has-preorder {
   color: #15140c;
   background: #f7df69;
   border-color: transparent;
-  box-shadow: 0 8px 18px rgba(247, 223, 105, 0.18);
+  box-shadow: 0 8px 20px rgba(247, 223, 105, 0.22), 0 0 20px rgba(247, 223, 105, 0.12);
 }
 
 .release-day em {
