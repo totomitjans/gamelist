@@ -175,6 +175,8 @@ function titleSummary(title, sourceUrl) {
       earnedAt: title.lastUpdatedDateTime ? formatPsnDate(title.lastUpdatedDateTime) : "",
       rarity: title.trophyTitlePlatform || "",
       icon: title.trophyTitleIconUrl || "",
+      npCommunicationId: title.npCommunicationId || "",
+      npServiceName: title.npServiceName || serviceNameFor(title),
       url: sourceUrl,
     };
   }

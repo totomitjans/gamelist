@@ -21,6 +21,7 @@ const state = {
   mobileSection: "backlog",
   historyYear: String(new Date().getFullYear()),
   releaseCalendarOffset: 0,
+  detailTrophyRequest: "",
 };
 
 const el = {
@@ -62,6 +63,9 @@ const el = {
   detailStoreLinks: document.querySelector("#detailStoreLinks"),
   detailDescription: document.querySelector("#detailDescription"),
   detailPrices: document.querySelector("#detailPrices"),
+  detailTrophies: document.querySelector("#detailTrophies"),
+  detailTrophyCount: document.querySelector("#detailTrophyCount"),
+  detailTrophyList: document.querySelector("#detailTrophyList"),
   detailCover: document.querySelector(".detail-cover img"),
   dialog: document.querySelector("#gameDialog"),
   form: document.querySelector("#gameForm"),
@@ -284,7 +288,7 @@ function renderPlayingSection() {
 async function refreshAchievements() {
   el.achievementProfileLink.href = `https://psnprofiles.com/${encodeURIComponent(PSN_PROFILE_USER)}`;
   try {
-    const response = await fetch(`/api/achievements?user=${encodeURIComponent(PSN_PROFILE_USER)}`);
+    const response = await fetch(`/api/achievements?user=${encodeURIComponent(PSN_PROFILE_USER)}&schema=2`);
     const data = await response.json();
     renderAchievements(data);
     render();
@@ -1020,8 +1024,59 @@ function openDetail(id) {
   el.detailCover.hidden = !game.cover;
   el.detailCover.src = game.cover ? coverDisplayUrl(game.cover, "large") : "";
   el.detailCover.alt = game.cover ? `${game.title} cover` : "";
+  renderDetailTrophies(game);
   el.detailDialog.showModal();
   syncScrollLock();
+}
+
+async function renderDetailTrophies(game) {
+  const psn = matchedPsnGame(game);
+  const trophyId = psn?.npCommunicationId;
+  if (!trophyId) {
+    state.detailTrophyRequest = "";
+    el.detailTrophies.hidden = true;
+    el.detailTrophyCount.textContent = "";
+    el.detailTrophyList.innerHTML = "";
+    return;
+  }
+
+  const requestKey = `${game.id}:${trophyId}:${Date.now()}`;
+  state.detailTrophyRequest = requestKey;
+  el.detailTrophies.hidden = false;
+  el.detailTrophyCount.textContent = "Loading...";
+  el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned trophies...</div>`;
+
+  try {
+    const params = new URLSearchParams({
+      id: trophyId,
+      service: psn.npServiceName || "trophy",
+    });
+    const response = await fetch(`/api/trophies?${params}`);
+    const data = await response.json();
+    if (state.detailTrophyRequest !== requestKey) return;
+    const trophies = Array.isArray(data.trophies) ? data.trophies : [];
+    el.detailTrophyCount.textContent = trophies.length ? `${trophies.length} earned` : "";
+    el.detailTrophyList.innerHTML = trophies.length
+      ? trophies.map(detailTrophyCard).join("")
+      : `<div class="detail-trophy-empty">No earned trophies found for this game yet.</div>`;
+  } catch {
+    if (state.detailTrophyRequest !== requestKey) return;
+    el.detailTrophyCount.textContent = "";
+    el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Could not load trophies right now.</div>`;
+  }
+}
+
+function detailTrophyCard(trophy) {
+  return `
+    <article class="detail-trophy-card trophy-${escapeHtml(trophyTone(trophy.type))}">
+      <img src="${escapeHtml(trophy.icon || platformLogo("PS5"))}" alt="">
+      <div>
+        <strong>${escapeHtml(trophy.title || "Trophy")}</strong>
+        <span>${escapeHtml([trophy.type, trophy.earnedAt, trophy.rarity].filter(Boolean).join(" · "))}</span>
+        ${trophy.description ? `<p>${escapeHtml(trophy.description)}</p>` : ""}
+      </div>
+    </article>
+  `;
 }
 
 function sectionRank(section) {

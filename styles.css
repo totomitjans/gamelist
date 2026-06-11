@@ -276,7 +276,7 @@ button {
 .rarity-bar strong {
   position: absolute;
   inset: auto 0 18px;
-  color: #ffffff;
+  color: #15140c;
   font-size: 13px;
   line-height: 1;
   opacity: 0;
@@ -285,7 +285,6 @@ button {
 }
 
 .rarity-bar:hover strong {
-  color: #15140c;
   opacity: 1;
   transform: translateY(0);
 }
@@ -2132,6 +2131,98 @@ body.dialog-open .mobile-section-tabs {
   line-height: 1.55;
 }
 
+.detail-trophies {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.detail-trophies-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-trophies-head h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.detail-trophies-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.detail-trophy-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.detail-trophy-card {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  min-width: 0;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+}
+
+.detail-trophy-card img {
+  width: 46px;
+  height: 46px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.detail-trophy-card strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.detail-trophy-card span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.detail-trophy-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.detail-trophy-empty {
+  grid-column: 1 / -1;
+  padding: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 12px;
+}
+
 .store-links {
   display: flex;
   flex-wrap: wrap;
@@ -2412,15 +2503,20 @@ body.dialog-open .mobile-section-tabs {
 
   #addButton,
   body.can-edit #addButton {
+    align-items: center;
+    justify-content: center;
     min-width: 0;
     padding: 0;
     font-size: 0;
+    line-height: 1;
   }
 
   #addButton .button-icon,
   body.can-edit #addButton .button-icon {
+    display: block;
     margin: 0;
     font-size: 22px;
+    line-height: 1;
   }
 
   .complete-action .check-icon {
@@ -2553,6 +2649,11 @@ body.dialog-open .mobile-section-tabs {
 
   .detail-body {
     padding-right: 0;
+  }
+
+  .detail-trophy-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 420px;
   }
 
   .stats {
