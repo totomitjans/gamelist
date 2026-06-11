@@ -27,3 +27,15 @@ npx wrangler deploy
 ```
 
 Treat the NPSSO token like a password. Do not commit it, paste it in chat, or put it in `wrangler.toml`. If the widget says the token needs refreshing, repeat the same steps and overwrite the secret.
+
+## Playasia prices
+
+Playasia blocks normal Worker-side scraping, so production price fetching should use Playasia's affiliate/API credentials. Set both secrets in Cloudflare:
+
+```bash
+npx wrangler secret put PLAYASIA_USER_ID
+npx wrangler secret put PLAYASIA_API_KEY
+npx wrangler deploy
+```
+
+Without those secrets, the app still links to the Playasia search page, but prices may show as unavailable.
