@@ -20,6 +20,7 @@ const state = {
   draggingId: "",
   mobileSection: "backlog",
   historyYear: String(new Date().getFullYear()),
+  releaseCalendarOffset: 0,
 };
 
 const el = {
@@ -483,7 +484,24 @@ function renderReleaseCalendar() {
   const releases = releaseGamesByDate();
   const months = releaseCalendarMonths(4);
   const today = localDateKey(new Date());
-  el.releaseCalendar.innerHTML = months.map((month) => releaseMonthMarkup(month, releases, today)).join("");
+  el.releaseCalendar.innerHTML = `
+    <div class="release-calendar-head">
+      <h2>Next Releases</h2>
+      <div class="release-calendar-actions">
+        <button class="icon-button" type="button" data-calendar-shift="-1" title="Previous month" aria-label="Previous month">←</button>
+        <button class="icon-button" type="button" data-calendar-shift="1" title="Next month" aria-label="Next month">→</button>
+      </div>
+    </div>
+    <div class="release-months">
+      ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
+    </div>
+  `;
+  el.releaseCalendar.querySelectorAll("[data-calendar-shift]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.releaseCalendarOffset += Number(button.dataset.calendarShift || 0);
+      renderReleaseCalendar();
+    });
+  });
   el.releaseCalendar.querySelectorAll(".release-day.has-release").forEach((button) => {
     button.addEventListener("click", () => openReleaseDialog(button.dataset.date));
   });
@@ -506,7 +524,7 @@ function releaseCalendarMonths(count) {
   const start = new Date();
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
-  return Array.from({ length: count }, (_, index) => new Date(start.getFullYear(), start.getMonth() + index, 1));
+  return Array.from({ length: count }, (_, index) => new Date(start.getFullYear(), start.getMonth() + state.releaseCalendarOffset + index, 1));
 }
 
 function releaseMonthMarkup(monthDate, releases, today) {
