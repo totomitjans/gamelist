@@ -1763,14 +1763,25 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .trash-icon,
 .search-icon,
 .pause-icon,
-.euro-icon {
+.euro-icon,
+.reload-icon,
+.check-icon {
   width: 18px;
   height: 18px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.euro-icon,
+.pause-icon {
+  stroke-width: 3;
+}
+
+.complete-action .check-icon {
+  display: none;
 }
 
 .trophy-icon {
@@ -2336,7 +2347,9 @@ body.dialog-open .mobile-section-tabs {
   .top-actions {
     display: flex;
     grid-column: 2;
+    grid-row: 1;
     justify-self: end;
+    align-self: center;
     width: auto;
     gap: 6px;
   }
@@ -2391,7 +2404,8 @@ body.dialog-open .mobile-section-tabs {
 
   .top-actions .pause-icon,
   .top-actions .euro-icon,
-  .top-actions .pencil-icon {
+  .top-actions .pencil-icon,
+  .top-actions .reload-icon {
     width: 20px;
     height: 20px;
   }
@@ -2409,13 +2423,13 @@ body.dialog-open .mobile-section-tabs {
     font-size: 22px;
   }
 
-  .complete-action .checkmark-icon {
-    font-size: 18px;
-    font-weight: 950;
-    line-height: 1;
+  .complete-action .check-icon {
+    display: block;
+    width: 19px;
+    height: 19px;
   }
 
-  .complete-action .checkmark-icon + .action-label {
+  .complete-action .check-icon + .action-label {
     display: none;
   }
 

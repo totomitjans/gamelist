@@ -954,7 +954,7 @@ function cardFor(game, options = {}) {
     priceRefreshAction.remove();
     boughtAction.remove();
     completeAction.innerHTML = game.playing
-      ? `<span class="action-icon checkmark-icon" aria-hidden="true">✓</span><span class="action-label">Finished</span>`
+      ? `${checkIcon()}<span class="action-label">Finished</span>`
       : `<span class="action-label">Play</span>`;
     completeAction.addEventListener("click", () => {
       if (game.playing) completeGame(game.id);
@@ -1173,8 +1173,8 @@ function pencilIcon() {
 function pauseIcon() {
   return `
     <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 5v14"></path>
-      <path d="M16 5v14"></path>
+      <path d="M8 4.5v15"></path>
+      <path d="M16 4.5v15"></path>
     </svg>
   `;
 }
@@ -1185,6 +1185,14 @@ function euroIcon() {
       <path d="M19 5.5A7 7 0 0 0 8.2 7.1 7.4 7.4 0 0 0 7 12a7.4 7.4 0 0 0 1.2 4.9A7 7 0 0 0 19 18.5"></path>
       <path d="M4 10h10"></path>
       <path d="M4 14h10"></path>
+    </svg>
+  `;
+}
+
+function checkIcon() {
+  return `
+    <svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12.5l4.2 4.2L19 7"></path>
     </svg>
   `;
 }
