@@ -12,6 +12,7 @@ let titleLookupTimer = 0;
 
 const state = {
   games: [],
+  psnActivity: { achievements: [], games: [], sourceUrl: "" },
   filters: { query: "", platform: "all", tag: "all", sort: "time", direction: "asc", preordered: false },
   editingId: "",
   pendingDescription: "",
@@ -271,6 +272,7 @@ async function refreshAchievements() {
     const response = await fetch(`/api/achievements?user=${encodeURIComponent(PSN_PROFILE_USER)}`);
     const data = await response.json();
     renderAchievements(data);
+    render();
   } catch {
     renderAchievements({ user: PSN_PROFILE_USER, achievements: [], sourceUrl: "https://www.playstation.com/", source: "psn", authError: true });
   }
@@ -279,6 +281,11 @@ async function refreshAchievements() {
 function renderAchievements(data = {}) {
   const user = data.user || PSN_PROFILE_USER;
   const sourceUrl = data.sourceUrl || "https://www.playstation.com/";
+  state.psnActivity = {
+    achievements: Array.isArray(data.achievements) ? data.achievements : [],
+    games: Array.isArray(data.games) ? data.games : [],
+    sourceUrl,
+  };
   el.achievementProfileLink.href = sourceUrl;
   el.achievementProfileLink.textContent = data.source === "psn" ? "PSN activity" : user;
   const achievements = Array.isArray(data.achievements) ? data.achievements.slice(0, 6) : [];
@@ -304,7 +311,7 @@ function renderAchievements(data = {}) {
   }
 
   const trophyCards = achievements.map((item, index) => `
-    <a class="achievement-card ${index === 0 ? "latest" : ""}" href="${escapeHtml(item.url || sourceUrl)}" target="_blank" rel="noreferrer">
+    <a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escapeHtml(trophyTone(item.rarity))}" href="${escapeHtml(item.url || sourceUrl)}" target="_blank" rel="noreferrer">
       <img class="achievement-icon" src="${escapeHtml(item.icon || platformLogo("PS5"))}" alt="">
       <div>
         <strong>${escapeHtml(item.title || "Trophy unlocked")}</strong>
@@ -312,6 +319,7 @@ function renderAchievements(data = {}) {
       </div>
     </a>
   `).join("");
+  const dashboard = achievementDashboard(achievements, games, sourceUrl);
   const gameCards = games.length ? `
     <div class="achievement-games">
       <span class="achievement-subtitle">Latest games</span>
@@ -320,7 +328,43 @@ function renderAchievements(data = {}) {
       </div>
     </div>
   ` : "";
-  el.achievementPanel.innerHTML = `${trophyCards}${gameCards}`;
+  el.achievementPanel.innerHTML = `${dashboard}${trophyCards}${gameCards}`;
+}
+
+function achievementDashboard(achievements, games, sourceUrl) {
+  const counts = ["Platinum", "Gold", "Silver", "Bronze"].map((type) => [
+    type,
+    achievements.filter((item) => trophyTone(item.rarity) === type.toLowerCase()).length,
+  ]);
+  const total = Math.max(1, achievements.length);
+  const latestPlatinum = achievements.find((item) => trophyTone(item.rarity) === "platinum");
+  const average = games.length
+    ? Math.round(games.reduce((sum, game) => sum + progressValue(game.game), 0) / games.length)
+    : 0;
+  return `
+    <div class="achievement-summary">
+      <a class="achievement-kpi" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">
+        <strong>${escapeHtml(String(achievements.length))}</strong>
+        <span>latest trophies</span>
+      </a>
+      <a class="achievement-kpi platinum-highlight ${latestPlatinum ? "has-platinum" : ""}" href="${escapeHtml(latestPlatinum?.url || sourceUrl)}" target="_blank" rel="noreferrer">
+        <strong>${latestPlatinum ? "Platinum" : "No platinum"}</strong>
+        <span>${escapeHtml(latestPlatinum ? [latestPlatinum.title, latestPlatinum.game].filter(Boolean).join(" · ") : "in latest trophies")}</span>
+      </a>
+      <div class="achievement-kpi">
+        <strong>${average}%</strong>
+        <span>latest game avg</span>
+      </div>
+      <div class="rarity-graph" aria-label="Trophy rarity graph">
+        ${counts.map(([type, count]) => `
+          <span class="rarity-bar rarity-${escapeHtml(type.toLowerCase())}" title="${escapeHtml(`${type}: ${count}`)}">
+            <em style="--bar:${Math.round((count / total) * 100)}%"></em>
+            <small>${escapeHtml(type[0])}</small>
+          </span>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 function achievementGameCard(game, sourceUrl) {
@@ -341,6 +385,15 @@ function progressValue(text) {
   const match = String(text || "").match(/(\d+(?:\.\d+)?)%/);
   if (!match) return 0;
   return Math.max(0, Math.min(100, Number(match[1])));
+}
+
+function trophyTone(value) {
+  const text = String(value || "").toLowerCase();
+  if (text.includes("platinum")) return "platinum";
+  if (text.includes("gold")) return "gold";
+  if (text.includes("silver")) return "silver";
+  if (text.includes("bronze")) return "bronze";
+  return "generic";
 }
 
 function renderStats() {
@@ -770,10 +823,32 @@ function metaFor(game) {
   const release = releaseStatus(game);
   if (release) values.push(`<span class="release-pill">${escapeHtml(release)}</span>`);
   if (game.lengthHours) values.push(timeBadge(game.lengthHours));
+  const psn = matchedPsnGame(game);
+  if (psn) values.push(psnProgressBadge(psn));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.platinum) values.push(`<span class="platinum-pill">${trophyIcon()} Completed</span>`);
   if (game.playing) values.push(`<span class="playing-pill">Playing</span>`);
   return values;
+}
+
+function matchedPsnGame(game) {
+  const title = normalizeTag(game.title);
+  if (!title) return null;
+  return (state.psnActivity.games || []).find((psnGame) => {
+    const psnTitle = normalizeTag(psnGame.title);
+    return psnTitle && (psnTitle === title || psnTitle.includes(title) || title.includes(psnTitle));
+  }) || null;
+}
+
+function psnProgressBadge(game) {
+  const progress = progressValue(game.game);
+  return `
+    <span class="psn-progress-pill" title="${escapeHtml([game.title, game.game].filter(Boolean).join(" · "))}">
+      <img src="${escapeHtml(platformLogo("PS5"))}" alt="">
+      <em style="--progress:${progress}%"></em>
+      <strong>${progress}%</strong>
+    </span>
+  `;
 }
 
 function completedBadges(game) {

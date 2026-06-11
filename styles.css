@@ -190,6 +190,90 @@ button {
   border-radius: 8px;
 }
 
+.achievement-summary {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) 1.4fr;
+  gap: 8px;
+}
+
+.achievement-kpi,
+.rarity-graph {
+  min-height: 54px;
+  padding: 8px;
+  color: var(--text);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+}
+
+.achievement-kpi strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.05;
+}
+
+.achievement-kpi span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.platinum-highlight.has-platinum {
+  border-color: rgba(229, 232, 255, 0.34);
+  background: linear-gradient(135deg, rgba(229, 232, 255, 0.18), rgba(255, 255, 255, 0.05));
+}
+
+.rarity-graph {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+}
+
+.rarity-bar {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 4px;
+  height: 38px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.rarity-bar em {
+  align-self: end;
+  min-height: 3px;
+  height: var(--bar);
+  border-radius: 999px 999px 3px 3px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.rarity-platinum em,
+.trophy-platinum {
+  border-color: rgba(229, 232, 255, 0.34);
+}
+
+.rarity-platinum em {
+  background: linear-gradient(180deg, #ffffff, #aeb8ff);
+}
+
+.rarity-gold em {
+  background: linear-gradient(180deg, #fff0a3, #ffbf38);
+}
+
+.rarity-silver em {
+  background: linear-gradient(180deg, #f6f7fb, #9ca8bc);
+}
+
+.rarity-bronze em {
+  background: linear-gradient(180deg, #ffc28b, #c3713f);
+}
+
 .achievement-card,
 .achievement-fallback {
   position: relative;
@@ -210,6 +294,23 @@ button {
 .achievement-card.latest {
   border-color: rgba(255, 0, 57, 0.38);
   background: linear-gradient(135deg, rgba(255, 0, 57, 0.16), rgba(255, 255, 255, 0.055));
+}
+
+.achievement-card.trophy-platinum {
+  border-color: rgba(229, 232, 255, 0.42);
+  background: linear-gradient(135deg, rgba(229, 232, 255, 0.16), rgba(255, 255, 255, 0.055));
+}
+
+.achievement-card.trophy-gold {
+  border-color: rgba(255, 225, 101, 0.38);
+}
+
+.achievement-card.trophy-silver {
+  border-color: rgba(190, 202, 220, 0.34);
+}
+
+.achievement-card.trophy-bronze {
+  border-color: rgba(210, 125, 70, 0.34);
 }
 
 .achievement-card strong,
@@ -925,6 +1026,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .digital-pill,
 .coop-pill,
 .platinum-pill,
+.psn-progress-pill,
 .playing-pill,
 .history-pill {
   display: inline-flex;
@@ -997,10 +1099,44 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .digital-pill,
 .coop-pill,
 .platinum-pill,
+.psn-progress-pill,
 .playing-pill,
 .history-pill {
   padding: 5px 9px;
   color: var(--muted);
+}
+
+.psn-progress-pill {
+  gap: 6px;
+  color: #ffffff;
+  border-color: rgba(121, 242, 206, 0.28);
+  background: rgba(121, 242, 206, 0.08);
+}
+
+.psn-progress-pill img {
+  width: 16px;
+  height: 16px;
+}
+
+.psn-progress-pill em {
+  width: 34px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.psn-progress-pill em::before {
+  content: "";
+  display: block;
+  width: var(--progress);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-2), #ffe985);
+}
+
+.psn-progress-pill strong {
+  font-size: 11px;
 }
 
 .owner-pill {
@@ -1986,9 +2122,14 @@ body.dialog-open .mobile-section-tabs {
     grid-template-columns: 1fr;
   }
 
+  .achievement-summary,
+  .achievement-game-list {
+    grid-template-columns: 1fr;
+  }
+
   .card-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) 42px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) 42px;
     align-items: stretch;
   }
 
