@@ -18,10 +18,10 @@ export async function onRequestGet({ request, env = {} }) {
 
   try {
     const accessToken = await getPsnAccessToken(env.PSN_NPSSO);
-    const achievements = await getRecentPsnTitles(accessToken);
-    return json({ user, sourceUrl: "https://www.playstation.com/", achievements, source: "psn", blocked: false });
+    const achievements = await getRecentPsnTitles(accessToken, sourceUrl);
+    return json({ user, sourceUrl, achievements, source: "psn", blocked: false });
   } catch {
-    return json({ user, sourceUrl: "https://www.playstation.com/", achievements: [], source: "psn", authError: true });
+    return json({ user, sourceUrl, achievements: [], source: "psn", authError: true });
   }
 }
 
@@ -61,9 +61,51 @@ async function getPsnAccessToken(npsso) {
   return token.access_token;
 }
 
-async function getRecentPsnTitles(accessToken) {
+async function getRecentPsnTitles(accessToken, sourceUrl) {
   const requestUrl = `${PSN_TROPHY_BASE}/v1/users/me/trophyTitles?${new URLSearchParams({ limit: "6", offset: "0" })}`;
-  const response = await fetch(requestUrl, {
+  const data = await psnGet(requestUrl, accessToken);
+  const titles = (data.trophyTitles || []).slice(0, 6);
+  const trophies = (await Promise.all(titles.slice(0, 4).map((title) => getRecentTrophiesForTitle(accessToken, title, sourceUrl)))).flat();
+  trophies.sort((a, b) => String(b.rawEarnedAt || "").localeCompare(String(a.rawEarnedAt || "")));
+  if (trophies.length) return trophies.slice(0, 6);
+  return titles.map((title) => titleSummary(title, sourceUrl));
+}
+
+async function getRecentTrophiesForTitle(accessToken, title, sourceUrl) {
+  try {
+    const params = new URLSearchParams({
+      npServiceName: title.npServiceName || serviceNameFor(title),
+      limit: "200",
+      offset: "0",
+    });
+    const earnedUrl = `${PSN_TROPHY_BASE}/v1/users/me/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies?${params}`;
+    const metaUrl = `${PSN_TROPHY_BASE}/v1/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies?${params}`;
+    const [earnedData, metaData] = await Promise.all([
+      psnGet(earnedUrl, accessToken),
+      psnGet(metaUrl, accessToken),
+    ]);
+    const metaById = new Map((metaData.trophies || []).map((trophy) => [String(trophy.trophyId), trophy]));
+    return (earnedData.trophies || [])
+      .filter((trophy) => trophy.earned && trophy.earnedDateTime)
+      .map((earned) => {
+        const meta = metaById.get(String(earned.trophyId)) || {};
+        return {
+          title: meta.trophyName || trophyTypeLabel(earned.trophyType),
+          game: title.trophyTitleName || "",
+          earnedAt: formatPsnDate(earned.earnedDateTime),
+          rawEarnedAt: earned.earnedDateTime,
+          rarity: [trophyTypeLabel(earned.trophyType), earned.trophyEarnedRate ? `${earned.trophyEarnedRate}%` : ""].filter(Boolean).join(" · "),
+          icon: meta.trophyIconUrl || earned.trophyRewardImageUrl || title.trophyTitleIconUrl || "",
+          url: sourceUrl,
+        };
+      });
+  } catch {
+    return [titleSummary(title, sourceUrl)];
+  }
+}
+
+async function psnGet(url, accessToken) {
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
@@ -71,9 +113,13 @@ async function getRecentPsnTitles(accessToken) {
     },
     cf: { cacheTtl: 900, cacheEverything: true },
   });
-  if (!response.ok) throw new Error("PSN trophy titles failed");
-  const data = await response.json();
-  return (data.trophyTitles || []).map((title) => {
+  if (!response.ok) throw new Error("PSN request failed");
+  return response.json();
+}
+
+function titleSummary(title, sourceUrl) {
+  if (!title) return {};
+  {
     const earned = title.earnedTrophies || {};
     const total = title.definedTrophies || {};
     const earnedCount = trophyTotal(earned);
@@ -85,9 +131,18 @@ async function getRecentPsnTitles(accessToken) {
       earnedAt: title.lastUpdatedDateTime ? formatPsnDate(title.lastUpdatedDateTime) : "",
       rarity: title.trophyTitlePlatform || "",
       icon: title.trophyTitleIconUrl || "",
-      url: "https://www.playstation.com/",
+      url: sourceUrl,
     };
-  });
+  }
+}
+
+function serviceNameFor(title) {
+  return String(title.trophyTitlePlatform || "").toUpperCase().includes("PS5") ? "trophy2" : "trophy";
+}
+
+function trophyTypeLabel(value) {
+  const text = String(value || "").toLowerCase();
+  return text ? text[0].toUpperCase() + text.slice(1) : "Trophy";
 }
 
 function trophyTotal(value = {}) {
