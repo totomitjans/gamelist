@@ -1,7 +1,7 @@
 const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
-const PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es"];
+const PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Playasia"];
 const PSN_PROFILE_USER = "ShabiiEXE";
 const STATUS_OPTIONS = [
   "To Collect",
@@ -229,7 +229,7 @@ function render() {
   el.loginButton.innerHTML = state.canEdit ? "Stop Editing" : pencilIcon();
   el.loginButton.title = state.canEdit ? "Stop Editing" : "Edit";
   el.loginButton.setAttribute("aria-label", el.loginButton.title);
-  el.addButton.hidden = !state.canEdit;
+  el.addButton.hidden = false;
   if (el.fetchDataButton) el.fetchDataButton.hidden = true;
   el.fetchPricesButton.hidden = !state.canEdit;
   renderFilters();
@@ -985,6 +985,7 @@ function fallbackPriceLinks(game) {
     { store: "Amazon.es", url: `https://www.amazon.es/s?k=${q}` },
     { store: "Xtralife", url: `https://www.xtralife.com/buscar/${q}` },
     { store: "GAME.es", url: `https://www.game.es/buscar/${q}` },
+    { store: "Playasia", url: `https://www.play-asia.com/search/${q}` },
   ];
 }
 
@@ -1015,6 +1016,7 @@ function storeIcon(store) {
   if (store === "Amazon.es") return "https://www.amazon.es/favicon.ico";
   if (store === "Xtralife") return "https://www.xtralife.com/favicon.ico";
   if (store === "GAME.es") return "https://www.game.es/favicon.ico";
+  if (store === "Playasia") return "https://www.play-asia.com/favicon.ico";
   return "";
 }
 
@@ -1061,8 +1063,8 @@ function formatLongDate(value) {
   return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(parsed);
 }
 
-function openEditor(id = "") {
-  if (!state.canEdit) return;
+async function openEditor(id = "") {
+  if (!await ensureEditMode()) return;
   state.editingId = id;
   state.pendingDescription = "";
   const game = state.games.find((item) => item.id === id) || blankGame();
@@ -1312,17 +1314,23 @@ async function toggleEditMode() {
     render();
     return;
   }
+  await ensureEditMode();
+}
+
+async function ensureEditMode() {
+  if (state.canEdit) return true;
   const password = prompt("Editor password");
-  if (!password) return;
+  if (!password) return false;
   const ok = await verifyPassword(password);
   if (!ok) {
     alert("Wrong password.");
-    return;
+    return false;
   }
   state.canEdit = true;
   sessionStorage.setItem(SESSION_KEY, "true");
   sessionStorage.setItem(`${SESSION_KEY}:password`, password);
   render();
+  return true;
 }
 
 async function verifyPassword(password) {
@@ -1436,7 +1444,11 @@ async function normalizeGameBeforeSave(game) {
 }
 
 async function refreshUnreleasedGamesOnOpen() {
-  const games = state.games.filter((game) => !game.deletedAt && !game.completedAt && (shouldRefreshRelease(game) || shouldMoveReleasedToAvailable(game)));
+  const games = state.games.filter((game) => !game.deletedAt && !game.completedAt && (
+    shouldRefreshRelease(game)
+    || shouldMoveReleasedToAvailable(game)
+    || shouldMoveUnreleasedToUpcoming(game)
+  ));
   if (!games.length) return;
   let changed = false;
   for (const game of games.slice(0, 25)) {
@@ -1445,6 +1457,10 @@ async function refreshUnreleasedGamesOnOpen() {
       if (shouldMoveReleasedToAvailable(game)) {
         game.section = "wanted";
         game.prices = game.prices || [];
+        localChanged = true;
+      }
+      if (shouldMoveUnreleasedToUpcoming(game)) {
+        game.section = "upcoming";
         localChanged = true;
       }
       if (!shouldRefreshRelease(game)) {
@@ -1470,6 +1486,10 @@ async function refreshUnreleasedGamesOnOpen() {
         game.prices = game.prices || [];
         localChanged = true;
       }
+      if (shouldMoveUnreleasedToUpcoming(game)) {
+        game.section = "upcoming";
+        localChanged = true;
+      }
       if (localChanged) {
         game.updatedAt = new Date().toISOString();
         changed = true;
@@ -1491,6 +1511,15 @@ function shouldMoveReleasedToAvailable(game) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Number.isFinite(releaseTime) && releaseTime <= today.getTime();
+}
+
+function shouldMoveUnreleasedToUpcoming(game) {
+  if (game.section !== "wanted" || game.preorderStore) return false;
+  if (!game.releaseDate) return false;
+  const releaseTime = new Date(`${game.releaseDate}T00:00:00`).getTime();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Number.isFinite(releaseTime) && releaseTime > today.getTime();
 }
 
 async function refreshMissingDescriptionsOnOpen() {

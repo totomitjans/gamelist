@@ -14,6 +14,11 @@ const PROVIDERS = [
     search: (q) => `https://www.game.es/buscar/${encodeURIComponent(q)}`,
     lookup: lookupGameEs,
   },
+  {
+    store: "Playasia",
+    search: (q) => `https://www.play-asia.com/search/${encodeURIComponent(q)}`,
+    parse: parseGeneric,
+  },
 ];
 
 export async function onRequestGet({ request }) {
@@ -220,6 +225,8 @@ function platformMatches(wanted, found) {
   if (wanted === "switch 2" && found.includes("switch 2")) return true;
   if (wanted === "ps5" && /ps5|playstation 5/.test(found)) return true;
   if (wanted === "ps4" && /ps4|playstation 4/.test(found)) return true;
+  if (wanted === "ps3" && /ps3|playstation 3/.test(found)) return true;
+  if (wanted === "ps2" && /ps2|playstation 2/.test(found)) return true;
   if (wanted === "pc" && /pc|windows|steam/.test(found)) return true;
   return false;
 }
