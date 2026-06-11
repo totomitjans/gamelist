@@ -1046,12 +1046,23 @@ function metaFor(game) {
 }
 
 function matchedPsnGame(game) {
-  const title = normalizeTag(game.title);
+  const title = normalizeTitleForMatch(game.title);
   if (!title) return null;
   return (state.psnActivity.games || []).find((psnGame) => {
-    const psnTitle = normalizeTag(psnGame.title);
+    const psnTitle = normalizeTitleForMatch(psnGame.title);
     return psnTitle && (psnTitle === title || psnTitle.includes(title) || title.includes(psnTitle));
   }) || null;
+}
+
+function normalizeTitleForMatch(value) {
+  return normalizeTag(String(value || "")
+    .replace(/\bVIII\b/gi, "8")
+    .replace(/\bVII\b/gi, "7")
+    .replace(/\bVI\b/gi, "6")
+    .replace(/\bIV\b/gi, "4")
+    .replace(/\bIX\b/gi, "9")
+    .replace(/\bIII\b/gi, "3")
+    .replace(/\bII\b/gi, "2"));
 }
 
 function psnProgressBadge(game) {
