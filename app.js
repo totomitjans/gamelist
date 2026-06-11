@@ -169,6 +169,7 @@ function bindEvents() {
     render();
   }));
   el.fields.section.addEventListener("change", syncDialogPriceVisibility);
+  el.fields.replayCount.addEventListener("input", syncReplaySection);
   el.form.addEventListener("submit", saveFromForm);
   el.deleteButton.addEventListener("click", deleteCurrentGame);
   el.closeDialogButton.addEventListener("click", () => el.dialog.close());
@@ -1405,10 +1406,11 @@ async function saveCurrentFormGame() {
   const existing = state.games.find((game) => game.id === id);
   const completedAt = el.fields.completedAt.value || "";
   const replayInput = el.fields.replayCount.value.trim();
+  const replayCount = replayInput ? replayCountValue(replayInput) : (!existing ? nextReplayCountForTitle(el.fields.title.value.trim(), id) : 0);
   const platinum = el.fields.platinum.checked;
   const effectiveCompletedAt = completedAt || (platinum ? todayDate() : "");
   const playing = el.fields.playing.checked && !effectiveCompletedAt;
-  const section = playing ? "backlog" : el.fields.section.value;
+  const section = playing || replayCount ? "backlog" : el.fields.section.value;
   const startedAt = el.fields.startedAt.value || (playing && !existing?.playing && !existing?.startedAt ? todayDate() : "");
   const game = {
     ...(existing || blankGame()),
@@ -1429,7 +1431,7 @@ async function saveCurrentFormGame() {
     coop: el.fields.coop.checked,
     platinum,
     playing,
-    replayCount: replayInput ? replayCountValue(replayInput) : (!existing ? nextReplayCountForTitle(el.fields.title.value.trim(), id) : 0),
+    replayCount,
     genres: listFrom(el.fields.genres.value),
     developer: el.fields.developer.value.trim(),
     publisher: el.fields.publisher.value.trim(),
@@ -1456,6 +1458,12 @@ async function saveCurrentFormGame() {
 
 function syncDialogPriceVisibility() {
   el.pricesButton.hidden = el.fields.section.value === "backlog";
+}
+
+function syncReplaySection() {
+  if (!replayCountValue(el.fields.replayCount.value)) return;
+  el.fields.section.value = "backlog";
+  syncDialogPriceVisibility();
 }
 
 function upsertGame(game) {
@@ -1685,7 +1693,10 @@ function applyLookup(result) {
   if (result.platform && !el.fields.platform.value) el.fields.platform.value = result.platform;
   if (!el.fields.id.value && !el.fields.replayCount.value) {
     const replayCount = nextReplayCountForTitle(el.fields.title.value);
-    if (replayCount) el.fields.replayCount.value = replayCount;
+    if (replayCount) {
+      el.fields.replayCount.value = replayCount;
+      syncReplaySection();
+    }
   }
 }
 
