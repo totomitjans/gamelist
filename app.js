@@ -50,6 +50,7 @@ const el = {
   detailTitle: document.querySelector("#detailTitle"),
   detailStudio: document.querySelector("#detailStudio"),
   detailMeta: document.querySelector("#detailMeta"),
+  detailDates: document.querySelector("#detailDates"),
   detailChips: document.querySelector("#detailChips"),
   detailStoreLinks: document.querySelector("#detailStoreLinks"),
   detailDescription: document.querySelector("#detailDescription"),
@@ -411,11 +412,11 @@ function renderCompleted() {
   const games = filteredGames().filter((game) => game.completedAt);
   games.sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)));
   list.innerHTML = games.length ? games.map((game) => `
-    <div class="completed-row" data-id="${escapeHtml(game.id)}">
+    <div class="completed-row" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
       <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
       <div>
         <strong>${escapeHtml(game.title)}</strong>
-        <span>${escapeHtml(game.platform || "")}</span>
+        <span class="completed-platform">${game.platform ? platformBadge(game.platform) : ""}</span>
         <span class="completed-dates">${escapeHtml(historyRangeText(game))}</span>
       </div>
       <button class="ghost-button completed-edit-action" type="button">Edit</button>
@@ -431,6 +432,12 @@ function renderCompleted() {
   list.querySelectorAll(".completed-row").forEach((row) => {
     row.addEventListener("click", (event) => {
       if (event.target.closest("button, input, a")) return;
+      openDetail(row.dataset.id);
+    });
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (event.target.closest("button, input, a")) return;
+      event.preventDefault();
       openDetail(row.dataset.id);
     });
   });
@@ -465,6 +472,7 @@ function renderHistoryDialog() {
       <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
       <div>
         <strong>${escapeHtml(game.title)}</strong>
+        <span class="completed-platform">${game.platform ? platformBadge(game.platform) : ""}</span>
         <span>${escapeHtml(historyRangeText(game))}</span>
       </div>
       <button class="ghost-button history-edit-action" type="button">Edit</button>
@@ -581,6 +589,9 @@ function cardFor(game, options = {}) {
   studioLine.textContent = studioText(game);
   studioLine.hidden = !studioLine.textContent;
   card.querySelector(".meta").innerHTML = metaFor(game).join("");
+  const playDates = card.querySelector(".play-dates");
+  playDates.innerHTML = playDatesFor(game).join("");
+  playDates.hidden = !playDates.innerHTML;
   card.querySelector(".chips").innerHTML = chipsFor(game).join("");
   const description = card.querySelector(".notes");
   description.textContent = shortDescription(game.description || "");
@@ -639,6 +650,8 @@ function openDetail(id) {
   el.detailStudio.textContent = studioText(game);
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = metaFor(game).join("");
+  el.detailDates.innerHTML = playDatesFor(game).join("");
+  el.detailDates.hidden = !el.detailDates.innerHTML;
   el.detailChips.innerHTML = chipsFor(game).join("");
   el.detailStoreLinks.innerHTML = storeLinksFor(game);
   el.detailDescription.textContent = game.description || "No description yet.";
@@ -671,6 +684,11 @@ function metaFor(game) {
   if (game.lengthHours) values.push(timeBadge(game.lengthHours));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.playing) values.push(`<span class="playing-pill">Playing</span>`);
+  return values;
+}
+
+function playDatesFor(game) {
+  const values = [];
   if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>`);
   if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Done</small><strong>${escapeHtml(formatShortDate(game.completedAt))}</strong></span>`);
   return values;

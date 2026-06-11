@@ -831,6 +831,17 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   font-size: 13px;
 }
 
+.play-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.play-dates[hidden] {
+  display: none;
+}
+
 .platform-badge,
 .release-pill,
 .owner-pill,
@@ -1321,6 +1332,22 @@ body:not(.can-edit) #fetchPricesButton {
 .completed-dates {
   color: var(--accent-2);
   font-size: 12px;
+}
+
+.completed-platform {
+  display: flex;
+  margin-top: 2px;
+}
+
+.completed-platform .platform-badge {
+  min-height: 25px;
+  padding: 3px 7px 3px 3px;
+  font-size: 11px;
+}
+
+.completed-platform .platform-icon {
+  width: 17px;
+  height: 17px;
 }
 
 .completed-row .restore-action,
