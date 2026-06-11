@@ -7,11 +7,12 @@ export async function onRequestPost({ request, env = {} }) {
   if (password !== env.EDIT_PASSWORD) return json({ error: "Unauthorized" }, 401);
 
   const body = await request.json().catch(() => null);
-  const game = body?.game || {};
-  const releaseDate = dateOnly(game.releaseDate);
-  if (!game.title || !releaseDate) return json({ error: "Expected game title and releaseDate" }, 400);
-  if (!game.preorderStore) return json({ ok: true, skipped: true });
+  const games = Array.isArray(body?.games) ? body.games : [body?.game].filter(Boolean);
+  if (!games.length) return json({ error: "Expected game or games" }, 400);
+  return syncCalendarGames(games, env);
+}
 
+async function syncCalendarGames(games, env) {
   const calendarId = env.GOOGLE_CALENDAR_ID || "primary";
   const serviceEmail = env.GOOGLE_SERVICE_ACCOUNT_EMAIL || env.GOOGLE_CLIENT_EMAIL;
   const privateKey = normalizePrivateKey(env.GOOGLE_PRIVATE_KEY);
@@ -21,46 +22,64 @@ export async function onRequestPost({ request, env = {} }) {
 
   try {
     const accessToken = await getGoogleAccessToken(serviceEmail, privateKey);
-    const eventId = await preorderEventId(game);
-    const event = {
-      id: eventId,
-      summary: `Preorder ${game.title}`,
-      description: [
-        game.platform ? `Platform: ${game.platform}` : "",
-        game.preorderStore ? `Preordered at: ${game.preorderStore}` : "",
-        game.preferredStore ? `Preferred store: ${game.preferredStore}` : "",
-      ].filter(Boolean).join("\n"),
-      start: { date: releaseDate },
-      end: { date: nextDate(releaseDate) },
-    };
+    const results = [];
+    for (const game of games.slice(0, 100)) {
+      const releaseDate = dateOnly(game.releaseDate);
+      if (!game.title || !releaseDate || !game.preorderStore) {
+        results.push({ title: game.title || "", skipped: true });
+        continue;
+      }
+      results.push(await upsertPreorderEvent(accessToken, calendarId, game, releaseDate));
+    }
+    return json({
+      ok: true,
+      created: results.filter((result) => result.ok).length,
+      skipped: results.filter((result) => result.skipped).length,
+      results,
+    });
+  } catch (error) {
+    return json({ error: "Google Calendar event failed", detail: error?.message || "Unknown error" }, 500);
+  }
+}
 
-    let response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
-      method: "POST",
+async function upsertPreorderEvent(accessToken, calendarId, game, releaseDate) {
+  const eventId = await preorderEventId(game);
+  const event = {
+    id: eventId,
+    summary: `Preorder ${game.title}`,
+    description: [
+      game.platform ? `Platform: ${game.platform}` : "",
+      game.preorderStore ? `Preordered at: ${game.preorderStore}` : "",
+      game.preferredStore ? `Preferred store: ${game.preferredStore}` : "",
+    ].filter(Boolean).join("\n"),
+    start: { date: releaseDate },
+    end: { date: nextDate(releaseDate) },
+  };
+
+  let response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(event),
+  });
+  if (response.status === 409) {
+    response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`, {
+      method: "PUT",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(event),
     });
-    if (response.status === 409) {
-      response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(event),
-      });
-    }
-    if (!response.ok) {
-      const error = await response.text();
-      return json({ error: "Google Calendar event failed", detail: error }, response.status);
-    }
-    const data = await response.json();
-    return json({ ok: true, eventId: data.id, htmlLink: data.htmlLink || "" });
-  } catch (error) {
-    return json({ error: "Google Calendar event failed", detail: error?.message || "Unknown error" }, 500);
   }
+  if (!response.ok) {
+    const error = await response.text();
+    return { title: game.title || "", ok: false, error };
+  }
+  const data = await response.json();
+  return { title: game.title || "", ok: true, eventId: data.id, htmlLink: data.htmlLink || "" };
 }
 
 async function getGoogleAccessToken(serviceEmail, privateKey) {
