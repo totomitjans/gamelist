@@ -9,20 +9,29 @@ const PSN_CACHE_SECONDS = 60 * 60;
 
 export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
+  const debug = url.searchParams.has("debug");
   const user = cleanUser(url.searchParams.get("user") || env.PSN_PROFILE_USER || DEFAULT_USER);
   const sourceUrl = `${PSNP_BASE}/${encodeURIComponent(user)}`;
-  if (!user) return json({ user: DEFAULT_USER, achievements: [], sourceUrl: `${PSNP_BASE}/${DEFAULT_USER}` });
+  if (!user) return json({ user: DEFAULT_USER, achievements: [], sourceUrl: `${PSNP_BASE}/${DEFAULT_USER}` }, 200, { cache: false });
 
-  if (!env.PSN_NPSSO) {
-    return json({ user, sourceUrl: "https://www.playstation.com/", achievements: [], source: "psn", needsSetup: true });
+  const npsso = cleanNpsso(env.PSN_NPSSO);
+  if (!npsso) {
+    return json({ user, sourceUrl: "https://www.playstation.com/", achievements: [], source: "psn", needsSetup: true }, 200, { cache: false });
   }
 
   try {
-    const accessToken = await getPsnAccessToken(env.PSN_NPSSO);
+    const accessToken = await getPsnAccessToken(npsso);
     const activity = await getRecentPsnActivity(accessToken, sourceUrl);
     return json({ user, sourceUrl, ...activity, source: "psn", blocked: false });
-  } catch {
-    return json({ user, sourceUrl, achievements: [], source: "psn", authError: true });
+  } catch (error) {
+    return json({
+      user,
+      sourceUrl,
+      achievements: [],
+      source: "psn",
+      authError: true,
+      ...(debug ? { debug: error?.message || "PSN authentication failed" } : {}),
+    }, 200, { cache: false });
   }
 }
 
@@ -39,7 +48,7 @@ async function getPsnAccessToken(npsso) {
     redirect: "manual",
   });
   const location = codeResponse.headers.get("location") || "";
-  if (!location.includes("?code=")) throw new Error("Missing PSN access code");
+  if (!location.includes("?code=")) throw new Error(`Missing PSN access code (${codeResponse.status})`);
   const code = new URLSearchParams(location.split("redirect/")[1]).get("code");
   if (!code) throw new Error("Missing PSN code");
 
@@ -56,7 +65,7 @@ async function getPsnAccessToken(npsso) {
       token_format: "jwt",
     }).toString(),
   });
-  if (!tokenResponse.ok) throw new Error("PSN token exchange failed");
+  if (!tokenResponse.ok) throw new Error(`PSN token exchange failed (${tokenResponse.status})`);
   const token = await tokenResponse.json();
   if (!token.access_token) throw new Error("Missing PSN access token");
   return token.access_token;
@@ -253,16 +262,32 @@ function cleanUser(value) {
   return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
 }
 
+function cleanNpsso(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.npsso) return cleanNpsso(parsed.npsso);
+  } catch {
+    // The secret is usually just the token, not JSON.
+  }
+  return raw
+    .replace(/^npsso\s*=/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+
 function isBlocked(html) {
   return /Attention Required|Just a moment|cf-error|challenge-platform|Cloudflare/i.test(html);
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, options = {}) {
+  const cache = options.cache !== false;
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": `public, max-age=${PSN_CACHE_SECONDS}`,
+      "Cache-Control": cache ? `public, max-age=${PSN_CACHE_SECONDS}` : "no-store",
     },
   });
 }
