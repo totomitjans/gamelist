@@ -272,23 +272,30 @@ async function refreshAchievements() {
     const data = await response.json();
     renderAchievements(data);
   } catch {
-    renderAchievements({ user: PSN_PROFILE_USER, achievements: [], sourceUrl: `https://psnprofiles.com/${PSN_PROFILE_USER}`, blocked: true });
+    renderAchievements({ user: PSN_PROFILE_USER, achievements: [], sourceUrl: "https://www.playstation.com/", source: "psn", authError: true });
   }
 }
 
 function renderAchievements(data = {}) {
   const user = data.user || PSN_PROFILE_USER;
-  const sourceUrl = data.sourceUrl || `https://psnprofiles.com/${user}`;
+  const sourceUrl = data.sourceUrl || "https://www.playstation.com/";
   el.achievementProfileLink.href = sourceUrl;
-  el.achievementProfileLink.textContent = user;
+  el.achievementProfileLink.textContent = data.source === "psn" ? "PSN activity" : user;
   const achievements = Array.isArray(data.achievements) ? data.achievements.slice(0, 4) : [];
   if (!achievements.length) {
+    const fallbackText = data.needsSetup
+      ? "Set PSN_NPSSO in Cloudflare to show recent PSN trophy activity here."
+      : data.authError
+        ? "PSN token needs refreshing. Update PSN_NPSSO in Cloudflare."
+        : data.blocked
+          ? "The public tracker is blocking embedded scraping, but your profile is one click away."
+          : "No recent trophy activity found yet.";
     el.achievementPanel.innerHTML = `
       <a class="achievement-fallback" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">
         <img src="${escapeHtml(platformLogo("PS5"))}" alt="">
         <div>
           <strong>PSN activity</strong>
-          <span>${data.blocked ? "PSNProfiles blocks embedded scraping, but your profile is one click away." : "No recent trophies found yet."}</span>
+          <span>${escapeHtml(fallbackText)}</span>
         </div>
       </a>
     `;
@@ -645,28 +652,29 @@ function cardFor(game, options = {}) {
   const prices = card.querySelector(".prices");
   const priceRefreshAction = card.querySelector(".price-refresh-action");
   const boughtAction = card.querySelector(".bought-action");
+  const completeAction = card.querySelector(".complete-action");
+  const trophyAction = card.querySelector(".trophy-action");
   if (game.section === "backlog") {
     prices.remove();
     priceRefreshAction.remove();
     boughtAction.remove();
+    completeAction.textContent = game.playing ? "Finished" : "Play";
+    completeAction.addEventListener("click", () => {
+      if (game.playing) completeGame(game.id);
+      else startPlaying(game.id);
+    });
+    trophyAction.hidden = !game.playing;
+    trophyAction.classList.toggle("active", Boolean(game.platinum));
+    trophyAction.addEventListener("click", () => completeGameWithTrophy(game.id));
   } else {
+    completeAction.remove();
+    trophyAction.remove();
     prices.innerHTML = pricesFor(game);
     priceRefreshAction.addEventListener("click", () => refreshPricesForGame(game.id));
     boughtAction.addEventListener("click", () => moveToBacklog(game.id));
   }
   card.querySelector(".edit-action").addEventListener("click", () => openEditor(game.id));
   card.querySelector(".cover-button").addEventListener("click", () => openDetail(game.id));
-  const completeAction = card.querySelector(".complete-action");
-  const trophyAction = card.querySelector(".trophy-action");
-  completeAction.hidden = game.section !== "backlog";
-  completeAction.textContent = game.playing ? "Finished" : "Play";
-  completeAction.addEventListener("click", () => {
-    if (game.playing) completeGame(game.id);
-    else startPlaying(game.id);
-  });
-  trophyAction.hidden = !game.playing;
-  trophyAction.classList.toggle("active", Boolean(game.platinum));
-  trophyAction.addEventListener("click", () => completeGameWithTrophy(game.id));
   card.querySelector(".delete-action").addEventListener("click", () => deleteGame(game.id));
   card.addEventListener("click", (event) => {
     if (event.target.closest("button, a")) return;
@@ -842,11 +850,11 @@ function trophyIcon() {
 
 function platformLogo(platform) {
   const value = platform.toLowerCase();
-  if (value.includes("switch")) return "assets/platforms/switch.png?v=official";
-  if (/\bps\d+\b/.test(value) || value.includes("playstation")) return "assets/platforms/playstation.png?v=official";
-  if (value.includes("xbox")) return "assets/platforms/xbox.png?v=png";
-  if (value.includes("pc")) return "assets/platforms/steam.png?v=official";
-  return "assets/platforms/game.png?v=png";
+  if (value.includes("switch")) return "assets/platforms/switch.png";
+  if (/\bps\d+\b/.test(value) || value.includes("playstation")) return "assets/platforms/playstation.png";
+  if (value.includes("xbox")) return "assets/platforms/xbox.png";
+  if (value.includes("pc")) return "assets/platforms/steam.png";
+  return "assets/Icon.png";
 }
 
 function platformClass(platform) {
@@ -1083,10 +1091,10 @@ function normalizedPrices(game) {
 }
 
 function storeIcon(store) {
-  if (store === "Amazon.es") return "https://www.amazon.es/favicon.ico";
-  if (store === "Xtralife") return "https://www.xtralife.com/favicon.ico";
-  if (store === "GAME.es") return "https://www.game.es/favicon.ico";
-  if (store === "Playasia") return "https://www.play-asia.com/favicon.ico";
+  if (store === "Amazon.es") return "assets/stores/amazon.ico";
+  if (store === "Xtralife") return "assets/stores/xtralife.ico";
+  if (store === "GAME.es") return "assets/stores/game.ico";
+  if (store === "Playasia") return "assets/stores/playasia.ico";
   return "";
 }
 

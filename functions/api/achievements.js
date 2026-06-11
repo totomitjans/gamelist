@@ -1,5 +1,10 @@
 const DEFAULT_USER = "ShabiiEXE";
 const PSNP_BASE = "https://psnprofiles.com";
+const PSN_AUTH_BASE = "https://ca.account.sony.com/api/authz/v3/oauth";
+const PSN_TROPHY_BASE = "https://m.np.playstation.com/api/trophy";
+const PSN_CLIENT_ID = "09515159-7237-4370-9b40-3806e67c0891";
+const PSN_REDIRECT_URI = "com.scee.psxandroid.scecompcall://redirect";
+const PSN_BASIC_AUTH = "Basic MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=";
 
 export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
@@ -7,24 +12,92 @@ export async function onRequestGet({ request, env = {} }) {
   const sourceUrl = `${PSNP_BASE}/${encodeURIComponent(user)}`;
   if (!user) return json({ user: DEFAULT_USER, achievements: [], sourceUrl: `${PSNP_BASE}/${DEFAULT_USER}` });
 
-  try {
-    const response = await fetch(sourceUrl, {
-      headers: {
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-        "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
-      },
-      cf: { cacheTtl: 900, cacheEverything: true },
-    });
-    const html = await response.text();
-    const blocked = isBlocked(html);
-    if (!response.ok || blocked) {
-      return json({ user, sourceUrl, achievements: [], blocked: true, status: response.status });
-    }
-    return json({ user, sourceUrl, achievements: parseAchievements(html, sourceUrl), blocked: false });
-  } catch {
-    return json({ user, sourceUrl, achievements: [], blocked: true });
+  if (!env.PSN_NPSSO) {
+    return json({ user, sourceUrl: "https://www.playstation.com/", achievements: [], source: "psn", needsSetup: true });
   }
+
+  try {
+    const accessToken = await getPsnAccessToken(env.PSN_NPSSO);
+    const achievements = await getRecentPsnTitles(accessToken);
+    return json({ user, sourceUrl: "https://www.playstation.com/", achievements, source: "psn", blocked: false });
+  } catch {
+    return json({ user, sourceUrl: "https://www.playstation.com/", achievements: [], source: "psn", authError: true });
+  }
+}
+
+async function getPsnAccessToken(npsso) {
+  const codeUrl = `${PSN_AUTH_BASE}/authorize?${new URLSearchParams({
+    access_type: "offline",
+    client_id: PSN_CLIENT_ID,
+    redirect_uri: PSN_REDIRECT_URI,
+    response_type: "code",
+    scope: "psn:mobile.v2.core psn:clientapp",
+  })}`;
+  const codeResponse = await fetch(codeUrl, {
+    headers: { Cookie: `npsso=${npsso}` },
+    redirect: "manual",
+  });
+  const location = codeResponse.headers.get("location") || "";
+  if (!location.includes("?code=")) throw new Error("Missing PSN access code");
+  const code = new URLSearchParams(location.split("redirect/")[1]).get("code");
+  if (!code) throw new Error("Missing PSN code");
+
+  const tokenResponse = await fetch(`${PSN_AUTH_BASE}/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: PSN_BASIC_AUTH,
+    },
+    body: new URLSearchParams({
+      code,
+      redirect_uri: PSN_REDIRECT_URI,
+      grant_type: "authorization_code",
+      token_format: "jwt",
+    }).toString(),
+  });
+  if (!tokenResponse.ok) throw new Error("PSN token exchange failed");
+  const token = await tokenResponse.json();
+  if (!token.access_token) throw new Error("Missing PSN access token");
+  return token.access_token;
+}
+
+async function getRecentPsnTitles(accessToken) {
+  const requestUrl = `${PSN_TROPHY_BASE}/v1/users/me/trophyTitles?${new URLSearchParams({ limit: "6", offset: "0" })}`;
+  const response = await fetch(requestUrl, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "Accept-Language": "en-US",
+    },
+    cf: { cacheTtl: 900, cacheEverything: true },
+  });
+  if (!response.ok) throw new Error("PSN trophy titles failed");
+  const data = await response.json();
+  return (data.trophyTitles || []).map((title) => {
+    const earned = title.earnedTrophies || {};
+    const total = title.definedTrophies || {};
+    const earnedCount = trophyTotal(earned);
+    const totalCount = trophyTotal(total);
+    const progress = Number.isFinite(Number(title.progress)) ? `${title.progress}%` : "";
+    return {
+      title: title.trophyTitleName || "Recent trophy activity",
+      game: [progress, totalCount ? `${earnedCount}/${totalCount} trophies` : ""].filter(Boolean).join(" · "),
+      earnedAt: title.lastUpdatedDateTime ? formatPsnDate(title.lastUpdatedDateTime) : "",
+      rarity: title.trophyTitlePlatform || "",
+      icon: title.trophyTitleIconUrl || "",
+      url: "https://www.playstation.com/",
+    };
+  });
+}
+
+function trophyTotal(value = {}) {
+  return ["bronze", "silver", "gold", "platinum"].reduce((sum, key) => sum + Number(value[key] || 0), 0);
+}
+
+function formatPsnDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
 function parseAchievements(html, sourceUrl) {

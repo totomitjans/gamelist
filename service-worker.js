@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gamelist-cache-v1";
+const CACHE_VERSION = "gamelist-cache-v2";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const MEDIA_CACHE = `${CACHE_VERSION}:media`;
 const STATIC_ASSETS = [
@@ -12,6 +12,10 @@ const STATIC_ASSETS = [
   "/assets/platforms/steam.png",
   "/assets/platforms/switch.png",
   "/assets/platforms/xbox.png",
+  "/assets/stores/amazon.ico",
+  "/assets/stores/game.ico",
+  "/assets/stores/playasia.ico",
+  "/assets/stores/xtralife.ico",
 ];
 
 self.addEventListener("install", (event) => {
@@ -55,7 +59,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 function shouldCacheMedia(request, url) {
-  if (request.destination === "image" || request.destination === "font") return true;
+  if (url.origin === location.origin && (request.destination === "image" || request.destination === "font")) return true;
   return [
     "howlongtobeat.com",
     "images.igdb.com",
@@ -67,7 +71,7 @@ function shouldCacheMedia(request, url) {
 }
 
 function shouldCacheStatic(url) {
-  return /\.(?:css|js|json|png|webp|woff2?)$/i.test(url.pathname)
+  return /\.(?:css|js|json|png|ico|webp|woff2?)$/i.test(url.pathname)
     || url.pathname === "/"
     || url.pathname === "/index.html";
 }
