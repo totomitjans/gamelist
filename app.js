@@ -124,7 +124,7 @@ function bindEvents() {
   el.loginButton.addEventListener("click", toggleEditMode);
   el.addButton.addEventListener("click", () => openEditor());
   el.syncButton.addEventListener("click", syncNow);
-  el.fetchDataButton.addEventListener("click", refreshAllGameData);
+  el.fetchDataButton?.addEventListener("click", refreshAllGameData);
   el.fetchPricesButton.addEventListener("click", refreshAllPrices);
   el.searchInput.addEventListener("input", (event) => {
     state.filters.query = event.target.value.trim().toLowerCase();
@@ -226,11 +226,11 @@ async function persistCloud() {
 
 function render() {
   document.body.classList.toggle("can-edit", state.canEdit);
-  el.loginButton.innerHTML = state.canEdit ? "View" : pencilIcon();
-  el.loginButton.title = state.canEdit ? "View" : "Edit";
+  el.loginButton.innerHTML = state.canEdit ? "Stop Editing" : pencilIcon();
+  el.loginButton.title = state.canEdit ? "Stop Editing" : "Edit";
   el.loginButton.setAttribute("aria-label", el.loginButton.title);
   el.addButton.hidden = !state.canEdit;
-  el.fetchDataButton.hidden = !state.canEdit;
+  if (el.fetchDataButton) el.fetchDataButton.hidden = true;
   el.fetchPricesButton.hidden = !state.canEdit;
   renderFilters();
   renderPlayingSection();
@@ -315,7 +315,7 @@ function renderStats() {
     backlog: active.filter((game) => game.section === "backlog").length,
     completed: state.games.filter((game) => game.completedAt && !game.deletedAt).length,
   };
-  const platformStats = statGroup("Platforms", topCounts(active, (game) => game.platform), total);
+  const platformStats = statGroup("Platforms", platformCounts(active), total);
   el.stats.innerHTML = [
     stat("Backlog", counts.backlog, "backlog"),
     stat("To Release", counts.upcoming, "release"),
@@ -356,13 +356,18 @@ function statGroup(label, counts, total) {
   return `<div class="stat stat-wide stat-group"><strong>${escapeHtml(label)}</strong><div>${body}</div></div>`;
 }
 
-function topCounts(games, mapper) {
+function topCounts(games, mapper, limit = 0) {
   const counts = new Map();
   games.forEach((game) => {
     const values = [mapper(game)].flat().filter(Boolean);
     values.forEach((value) => counts.set(value, (counts.get(value) || 0) + 1));
   });
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || stringCompare(a[0], b[0])).slice(0, 5);
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || stringCompare(a[0], b[0]));
+  return limit ? sorted.slice(0, limit) : sorted;
+}
+
+function platformCounts(games) {
+  return topCounts(games, (game) => canonicalPlatform(game.platform));
 }
 
 function renderMobileTabs() {
@@ -375,7 +380,7 @@ function renderMobileTabs() {
 
 function renderFilters() {
   const active = state.games.filter((game) => !game.deletedAt);
-  const platforms = unique(active.map((game) => game.platform).filter(Boolean));
+  const platforms = unique(active.map((game) => canonicalPlatform(game.platform)).filter(Boolean));
   const genres = unique(active.flatMap((game) => game.genres || []));
   fillSelect(el.platformFilter, ["all", ...platforms], state.filters.platform, "All platforms");
   fillSelect(el.tagFilter, ["all", ...genres], state.filters.tag, "All categories");
@@ -506,8 +511,8 @@ function completionYear(game) {
 }
 
 function historyRangeText(game) {
-  const start = formatShortDate(game.startedAt);
-  const done = formatShortDate(game.completedAt);
+  const start = formatLongDate(game.startedAt);
+  const done = formatLongDate(game.completedAt);
   if (start && done) return `${start} -> ${done}`;
   if (done) return `Done ${done}`;
   if (start) return `Started ${start}`;
@@ -554,7 +559,7 @@ function filteredGames() {
     ].join(" ").toLowerCase();
     const tagText = [...(game.genres || []), ...gameStatuses(game), canonicalStatus(game.preorderStore), canonicalStatus(game.preferredStore)].filter(Boolean);
     return (!state.filters.query || haystack.includes(state.filters.query))
-      && (state.filters.platform === "all" || game.platform === state.filters.platform)
+      && (state.filters.platform === "all" || canonicalPlatform(game.platform) === state.filters.platform)
       && (state.filters.tag === "all" || tagText.includes(state.filters.tag))
       && (!state.filters.preordered || Boolean(game.preorderStore));
   });
@@ -689,8 +694,9 @@ function metaFor(game) {
 
 function playDatesFor(game) {
   const values = [];
-  if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>`);
-  if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Done</small><strong>${escapeHtml(formatShortDate(game.completedAt))}</strong></span>`);
+  const formatDate = game.completedAt ? formatLongDate : formatShortDate;
+  if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatDate(game.startedAt))}</strong></span>`);
+  if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Done</small><strong>${escapeHtml(formatDate(game.completedAt))}</strong></span>`);
   return values;
 }
 
@@ -708,7 +714,7 @@ function compareGames(a, b, section) {
     return (a.order ?? 0) - (b.order ?? 0);
   }
   if (state.filters.sort === "platform") {
-    return direction * (stringCompare(a.platform, b.platform) || stringCompare(a.title, b.title));
+    return direction * (stringCompare(canonicalPlatform(a.platform), canonicalPlatform(b.platform)) || stringCompare(a.title, b.title));
   }
   if (state.filters.sort === "time") {
     return direction * (((a.lengthHours ?? Number.POSITIVE_INFINITY) - (b.lengthHours ?? Number.POSITIVE_INFINITY))
@@ -768,7 +774,7 @@ function pencilIcon() {
 function platformLogo(platform) {
   const value = platform.toLowerCase();
   if (value.includes("switch")) return "assets/platforms/switch.png?v=official";
-  if (value.includes("ps5") || value.includes("ps4") || value.includes("playstation")) return "assets/platforms/playstation.png?v=official";
+  if (/\bps\d+\b/.test(value) || value.includes("playstation")) return "assets/platforms/playstation.png?v=official";
   if (value.includes("xbox")) return "assets/platforms/xbox.png?v=png";
   if (value.includes("pc")) return "assets/platforms/steam.png?v=official";
   return "assets/platforms/game.png?v=png";
@@ -777,7 +783,7 @@ function platformLogo(platform) {
 function platformClass(platform) {
   const value = platform.toLowerCase();
   if (value.includes("switch")) return "platform-nintendo";
-  if (value.includes("ps5") || value.includes("ps4") || value.includes("playstation")) return "platform-playstation";
+  if (/\bps\d+\b/.test(value) || value.includes("playstation")) return "platform-playstation";
   if (value.includes("xbox")) return "platform-xbox";
   if (value.includes("pc")) return "platform-pc";
   return "platform-generic";
@@ -843,6 +849,28 @@ function ownerInputValues(value) {
   return owners.length ? owners : ["Xavi"];
 }
 
+function canonicalPlatform(value) {
+  const text = String(value || "").trim();
+  const normalized = normalizeTag(text);
+  const aliases = {
+    playstation2: "PS2",
+    ps2: "PS2",
+    playstation3: "PS3",
+    ps3: "PS3",
+    playstation4: "PS4",
+    ps4: "PS4",
+    playstation5: "PS5",
+    ps5: "PS5",
+    nintendoswitch: "Switch",
+    switch: "Switch",
+    nintendoswitch2: "Switch 2",
+    switch2: "Switch 2",
+    steam: "PC",
+    pc: "PC",
+  };
+  return aliases[normalized] || text;
+}
+
 function normalizeGameRecords(games) {
   return Array.isArray(games) ? games.map(normalizeGameRecord) : [];
 }
@@ -854,7 +882,7 @@ function normalizeGameRecord(game) {
   normalized.playing = Boolean(normalized.playing);
   normalized.startedAt = dateOnly(normalized.startedAt);
   normalized.completedAt = dateOnly(normalized.completedAt);
-  normalized.platform = String(normalized.platform || "").trim();
+  normalized.platform = canonicalPlatform(normalized.platform);
   normalized.description = String(normalized.description || "");
   normalized.igdbUrl = String(normalized.igdbUrl || "");
   normalized.storeLinks = normalizeStoreLinks(normalized.storeLinks);
@@ -1025,6 +1053,14 @@ function formatShortDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function formatLongDate(value) {
+  const date = dateOnly(value);
+  if (!date) return "";
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(parsed);
+}
+
 function openEditor(id = "") {
   if (!state.canEdit) return;
   state.editingId = id;
@@ -1115,7 +1151,7 @@ async function saveCurrentFormGame() {
     ...(existing || blankGame()),
     id,
     title: el.fields.title.value.trim(),
-    platform: el.fields.platform.value.trim(),
+    platform: canonicalPlatform(el.fields.platform.value),
     section,
     releaseDate: el.fields.releaseDate.value,
     releaseText: el.fields.releaseText.value.trim(),
@@ -1478,6 +1514,7 @@ async function refreshMissingDescriptionsOnOpen() {
 
 async function refreshAllGameData() {
   if (!state.canEdit) return;
+  if (!el.fetchDataButton) return;
   const games = state.games.filter((game) => !game.deletedAt && game.title);
   if (!games.length) {
     alert("No games to refresh.");

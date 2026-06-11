@@ -1276,7 +1276,6 @@ body:not(.can-edit) .completed-edit-action,
 body:not(.can-edit) .completed-date-edit,
 body:not(.can-edit) .history-edit-action,
 body:not(.can-edit) #addButton,
-body:not(.can-edit) #fetchDataButton,
 body:not(.can-edit) #fetchPricesButton {
   display: none;
 }
@@ -1732,6 +1731,10 @@ body.dialog-open .mobile-section-tabs {
     grid-column: 2;
   }
 
+  body.can-edit #loginButton {
+    grid-column: 3;
+  }
+
   body.can-edit .topbar {
     align-items: start;
   }
@@ -1739,23 +1742,18 @@ body.dialog-open .mobile-section-tabs {
   body.can-edit .top-actions {
     grid-column: 1 / -1;
     justify-self: stretch;
-    grid-template-columns: 42px minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
     width: 100%;
   }
 
   #addButton {
-    grid-column: 3;
-  }
-
-  body.can-edit #fetchDataButton {
-    grid-column: 1 / span 2;
+    grid-column: 1 / -1;
   }
 
   body.can-edit #fetchPricesButton {
-    grid-column: 3;
+    grid-column: 2;
   }
 
-  body.can-edit #fetchDataButton,
   body.can-edit #fetchPricesButton {
     justify-content: center;
     font-size: 11px;
