@@ -1349,10 +1349,18 @@ body:not(.can-edit) #fetchPricesButton {
   height: 17px;
 }
 
-.completed-row .restore-action,
-.completed-row .completed-edit-action {
+.completed-row .restore-action {
   min-height: 30px;
   padding: 6px 9px;
+}
+
+.completed-row .completed-edit-action,
+.history-row .history-edit-action {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
 }
 
 dialog {

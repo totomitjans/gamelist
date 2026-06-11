@@ -424,7 +424,7 @@ function renderCompleted() {
         <span class="completed-platform">${game.platform ? platformBadge(game.platform) : ""}</span>
         <span class="completed-dates">${escapeHtml(historyRangeText(game))}</span>
       </div>
-      <button class="ghost-button completed-edit-action" type="button">Edit</button>
+      <button class="icon-button completed-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
       <button class="ghost-button restore-action" type="button">Backlog</button>
     </div>
   `).join("") : `<div class="empty">Completed games will stay saved here.</div>`;
@@ -480,7 +480,7 @@ function renderHistoryDialog() {
         <span class="completed-platform">${game.platform ? platformBadge(game.platform) : ""}</span>
         <span>${escapeHtml(historyRangeText(game))}</span>
       </div>
-      <button class="ghost-button history-edit-action" type="button">Edit</button>
+      <button class="icon-button history-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
     </div>
   `).join("") : `<div class="empty">No games finished in ${escapeHtml(state.historyYear)}.</div>`;
   el.historyList.querySelectorAll(".history-edit-action").forEach((button) => {
