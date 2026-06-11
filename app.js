@@ -442,7 +442,7 @@ function renderStats() {
     stat("Backlog", counts.backlog, "backlog", { detail: sectionStatDetail("backlog", active, total) }),
     stat("To Release", counts.upcoming, "release", { detail: sectionStatDetail("upcoming", active, total) }),
     stat("Available", counts.wanted, "available", { detail: sectionStatDetail("wanted", active, total) }),
-    stat(`Done ${currentYear}`, completedThisYear, "done", { action: "history" }),
+    stat(`Finished ${currentYear}`, completedThisYear, "done", { action: "history" }),
   ].join("");
   const historyStat = el.stats.querySelector("[data-stat-action='history']");
   historyStat?.addEventListener("click", openHistoryDialog);
@@ -707,7 +707,7 @@ function renderCompleted() {
       <button class="icon-button completed-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
       <button class="ghost-button restore-action" type="button">Backlog</button>
     </div>
-  `).join("") : `<div class="empty">Completed games will stay saved here.</div>`;
+  `).join("") : `<div class="empty">Finished games will stay saved here.</div>`;
   list.querySelectorAll(".completed-edit-action").forEach((button) => {
     button.addEventListener("click", () => openEditor(button.closest(".completed-row").dataset.id));
   });
@@ -795,7 +795,7 @@ function historyRangeText(game) {
   const start = formatLongDate(game.startedAt);
   const done = formatLongDate(game.completedAt);
   if (start && done) return `${start} -> ${done}`;
-  if (done) return `Done ${done}`;
+  if (done) return `Finished ${done}`;
   if (start) return `Started ${start}`;
   return "No dates";
 }
@@ -1144,7 +1144,7 @@ function playDatesFor(game) {
   const values = [];
   const formatDate = game.completedAt ? formatLongDate : formatShortDate;
   if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatDate(game.startedAt))}</strong></span>`);
-  if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Done</small><strong>${escapeHtml(formatDate(game.completedAt))}</strong></span>`);
+  if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatDate(game.completedAt))}</strong></span>`);
   const duration = finishedDurationText(game.startedAt, game.completedAt);
   if (duration) values.push(`<span class="history-pill history-date-pill"><small>Time</small><strong>${escapeHtml(duration)}</strong></span>`);
   return values;
