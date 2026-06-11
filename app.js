@@ -336,7 +336,7 @@ function renderAchievements(data = {}) {
   const dashboard = achievementDashboard(achievements, games, sourceUrl, data.summary);
   const gameCards = games.length ? `
     <div class="achievement-games">
-      <span class="achievement-subtitle">Latest games</span>
+      <span class="achievement-subtitle">Lastest PlayStation games</span>
       <div class="achievement-game-list">
         ${games.map((game) => achievementGameCard(game, sourceUrl)).join("")}
       </div>
