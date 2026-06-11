@@ -63,7 +63,7 @@ async function getPsnAccessToken(npsso) {
 }
 
 async function getRecentPsnActivity(accessToken, sourceUrl) {
-  const requestUrl = `${PSN_TROPHY_BASE}/v1/users/me/trophyTitles?${new URLSearchParams({ limit: "100", offset: "0" })}`;
+  const requestUrl = `${PSN_TROPHY_BASE}/v1/users/me/trophyTitles?${new URLSearchParams({ limit: "999", offset: "0" })}`;
   const [data, summary] = await Promise.all([
     psnGet(requestUrl, accessToken),
     getPsnTrophySummary(accessToken),
