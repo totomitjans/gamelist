@@ -48,6 +48,11 @@ const el = {
   historyCloseButton: document.querySelector("#historyCloseButton"),
   historyYearTabs: document.querySelector("#historyYearTabs"),
   historyList: document.querySelector("#historyList"),
+  releaseCalendar: document.querySelector("#releaseCalendar"),
+  releaseDialog: document.querySelector("#releaseDialog"),
+  releaseCloseButton: document.querySelector("#releaseCloseButton"),
+  releaseDialogTitle: document.querySelector("#releaseDialogTitle"),
+  releaseDialogList: document.querySelector("#releaseDialogList"),
   detailTitle: document.querySelector("#detailTitle"),
   detailStudio: document.querySelector("#detailStudio"),
   detailMeta: document.querySelector("#detailMeta"),
@@ -163,6 +168,11 @@ function bindEvents() {
     if (event.target === el.historyDialog) el.historyDialog.close();
   });
   el.historyDialog.addEventListener("close", syncScrollLock);
+  el.releaseCloseButton.addEventListener("click", () => el.releaseDialog.close());
+  el.releaseDialog.addEventListener("click", (event) => {
+    if (event.target === el.releaseDialog) el.releaseDialog.close();
+  });
+  el.releaseDialog.addEventListener("close", syncScrollLock);
   el.dialog.addEventListener("close", syncScrollLock);
   el.mobileTabs.forEach((button) => button.addEventListener("click", () => {
     state.mobileSection = button.dataset.mobileSection;
@@ -239,6 +249,7 @@ function render() {
   renderFilters();
   renderPlayingSection();
   renderStats();
+  renderReleaseCalendar();
   syncMobileSectionToResults();
   renderMobileTabs();
   renderSection("backlog");
@@ -256,7 +267,7 @@ function render() {
 }
 
 function syncScrollLock() {
-  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open);
+  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open || el.releaseDialog.open);
 }
 
 function renderPlayingSection() {
@@ -466,6 +477,110 @@ function sectionCountLabel(section, games, count) {
     `${count} ${count === 1 ? "game" : "games"}`,
     preordered ? `<span class="preorder-count-pill">${preordered} preordered</span>` : "",
   ].filter(Boolean).join("");
+}
+
+function renderReleaseCalendar() {
+  const releases = releaseGamesByDate();
+  const months = releaseCalendarMonths(4);
+  const today = localDateKey(new Date());
+  el.releaseCalendar.innerHTML = months.map((month) => releaseMonthMarkup(month, releases, today)).join("");
+  el.releaseCalendar.querySelectorAll(".release-day.has-release").forEach((button) => {
+    button.addEventListener("click", () => openReleaseDialog(button.dataset.date));
+  });
+}
+
+function releaseGamesByDate() {
+  const groups = new Map();
+  state.games
+    .filter((game) => !game.deletedAt && !game.completedAt && game.section === "upcoming" && validReleaseDate(game.releaseDate))
+    .forEach((game) => {
+      const key = dateOnly(game.releaseDate);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(game);
+    });
+  groups.forEach((games) => games.sort((a, b) => stringCompare(a.title, b.title)));
+  return groups;
+}
+
+function releaseCalendarMonths(count) {
+  const start = new Date();
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  return Array.from({ length: count }, (_, index) => new Date(start.getFullYear(), start.getMonth() + index, 1));
+}
+
+function releaseMonthMarkup(monthDate, releases, today) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const leading = mondayWeekdayIndex(new Date(year, month, 1));
+  const cells = [];
+  for (let index = 0; index < leading; index += 1) {
+    cells.push(`<span class="release-day empty" aria-hidden="true"></span>`);
+  }
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = localDateKey(new Date(year, month, day));
+    const games = releases.get(date) || [];
+    const preordered = games.some((game) => game.preorderStore);
+    const titles = games.map((game) => game.title).join("\n");
+    cells.push(`
+      <button
+        class="release-day ${games.length ? "has-release" : ""} ${preordered ? "has-preorder" : ""} ${date === today ? "today" : ""}"
+        type="button"
+        data-date="${escapeHtml(date)}"
+        data-games="${escapeHtml(games.map((game) => game.title).join(" · "))}"
+        title="${escapeHtml(titles)}"
+        ${games.length ? "" : "disabled"}
+      >
+        <span>${day}</span>
+        ${games.length > 1 ? `<em>${games.length}</em>` : ""}
+      </button>
+    `);
+  }
+  return `
+    <article class="release-month">
+      <header>
+        <strong>${escapeHtml(monthName(monthDate))}</strong>
+        <span>${year}</span>
+      </header>
+      <div class="release-weekdays" aria-hidden="true">
+        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+      </div>
+      <div class="release-days">${cells.join("")}</div>
+    </article>
+  `;
+}
+
+function openReleaseDialog(date) {
+  const games = releaseGamesByDate().get(date) || [];
+  if (!games.length) return;
+  el.releaseDialogTitle.textContent = formatLongDate(date);
+  el.releaseDialogList.innerHTML = "";
+  games.forEach((game) => el.releaseDialogList.appendChild(cardFor(game, { staticCard: true })));
+  el.releaseDialog.showModal();
+  syncScrollLock();
+}
+
+function mondayWeekdayIndex(date) {
+  return (date.getDay() + 6) % 7;
+}
+
+function monthName(date) {
+  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(date);
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function validReleaseDate(value) {
+  const date = dateOnly(value);
+  if (!date) return false;
+  const year = Number(date.slice(0, 4));
+  return year >= 1990;
 }
 
 function topCounts(games, mapper, limit = 0) {

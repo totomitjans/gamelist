@@ -66,6 +66,7 @@
 
       <section class="hero">
         <div class="stats" id="stats" aria-live="polite"></div>
+        <div class="release-calendar glass" id="releaseCalendar" aria-label="Upcoming release calendar"></div>
       </section>
 
       <section class="toolbar glass">
@@ -378,6 +379,19 @@
         </div>
         <div class="year-tabs" id="historyYearTabs"></div>
         <div class="history-list" id="historyList"></div>
+      </article>
+    </dialog>
+
+    <dialog id="releaseDialog">
+      <article class="release-modal glass">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Release day</p>
+            <h2 id="releaseDialogTitle"></h2>
+          </div>
+          <button class="icon-button" id="releaseCloseButton" type="button" title="Close">×</button>
+        </div>
+        <div class="card-list release-dialog-list" id="releaseDialogList"></div>
       </article>
     </dialog>
 

@@ -646,6 +646,152 @@ h3 {
   --stat-glow: rgba(255, 158, 210, 0.26);
 }
 
+.release-calendar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.release-month {
+  min-width: 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.release-month header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.release-month header strong {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.release-month header span {
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.release-weekdays,
+.release-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.release-weekdays {
+  margin-bottom: 5px;
+}
+
+.release-weekdays span {
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.release-day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.release-day.empty {
+  background: transparent;
+}
+
+.release-day:disabled {
+  opacity: 0.42;
+}
+
+.release-day.today {
+  border-color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+}
+
+.release-day.today:disabled {
+  opacity: 1;
+}
+
+.release-day.has-release {
+  color: #ffffff;
+  cursor: pointer;
+  background: rgba(255, 0, 57, 0.18);
+  border-color: rgba(255, 0, 57, 0.4);
+  box-shadow: 0 8px 20px rgba(255, 0, 57, 0.1);
+}
+
+.release-day.has-preorder {
+  color: #15140c;
+  background: #f7df69;
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(247, 223, 105, 0.18);
+}
+
+.release-day em {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  min-width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.42);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.release-day.has-release::after {
+  content: attr(data-games);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 6;
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 9px;
+  color: #ffffff;
+  background: rgba(10, 12, 16, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  box-shadow: var(--shadow);
+  font-size: 11px;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+@media (hover: hover) {
+  .release-day.has-release:hover::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 .stat-wide {
   grid-column: 1 / -1;
   text-align: left;
@@ -1761,6 +1907,10 @@ dialog {
   width: min(720px, calc(100vw - 24px));
 }
 
+#releaseDialog {
+  width: min(1160px, calc(100vw - 24px));
+}
+
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(12px);
@@ -1795,12 +1945,17 @@ body.dialog-open .mobile-section-tabs {
   border-radius: 8px;
 }
 
-.history-modal {
+.history-modal,
+.release-modal {
   max-height: calc(100vh - 30px);
   overflow: auto;
   padding: 18px;
   background: var(--panel-strong);
   border-radius: 8px;
+}
+
+.release-dialog-list {
+  margin-top: 12px;
 }
 
 .year-tabs {
@@ -2217,6 +2372,14 @@ body.dialog-open .mobile-section-tabs {
 
   .stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .release-calendar {
+    grid-template-columns: 1fr;
+  }
+
+  .release-month:nth-child(n + 2) {
+    display: none;
   }
 
   .game-card {
