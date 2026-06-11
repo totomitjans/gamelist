@@ -5,6 +5,7 @@ const PSN_TROPHY_BASE = "https://m.np.playstation.com/api/trophy";
 const PSN_CLIENT_ID = "09515159-7237-4370-9b40-3806e67c0891";
 const PSN_REDIRECT_URI = "com.scee.psxandroid.scecompcall://redirect";
 const PSN_BASIC_AUTH = "Basic MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=";
+const PSN_CACHE_SECONDS = 60 * 60;
 
 export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
@@ -133,7 +134,7 @@ async function psnGet(url, accessToken) {
       "Content-Type": "application/json",
       "Accept-Language": "en-US",
     },
-    cf: { cacheTtl: 900, cacheEverything: true },
+    cf: { cacheTtl: PSN_CACHE_SECONDS, cacheEverything: true },
   });
   if (!response.ok) throw new Error("PSN request failed");
   return response.json();
@@ -260,7 +261,7 @@ function json(data, status = 200) {
     status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=900",
+      "Cache-Control": `public, max-age=${PSN_CACHE_SECONDS}`,
     },
   });
 }
