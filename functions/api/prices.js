@@ -94,18 +94,32 @@ async function findPrice(provider, title, platform, query, env = {}) {
 
 async function lookupPlayasiaReader(title, platform, query) {
   const url = playasiaSearchUrl(query);
-  const readerUrl = `https://r.jina.ai/http://${url}`;
-  const response = await fetch(readerUrl, {
-    headers: {
-      "Accept": "text/plain,text/markdown",
-      "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
-    },
-    cf: { cacheTtl: 900, cacheEverything: true },
-  });
-  if (!response.ok) return { price: "", matchedTitle: "" };
-  const markdown = await response.text();
-  const product = bestProduct(playasiaMarkdownProducts(markdown), title, platform);
-  return product || parseGeneric(markdown, title, platform);
+  const readerUrls = [
+    `https://r.jina.ai/http://${url}`,
+    `https://r.jina.ai/${encodeURIComponent(`http://${url}`)}`,
+    `https://r.jina.ai/http://r.jina.ai/http://${url}`,
+  ];
+  for (const readerUrl of readerUrls) {
+    try {
+      const response = await fetch(readerUrl, {
+        headers: {
+          "Accept": "text/plain,text/markdown",
+          "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
+          "X-Return-Format": "markdown",
+        },
+        cf: { cacheTtl: 60, cacheEverything: true },
+      });
+      if (!response.ok) continue;
+      const markdown = await response.text();
+      const product = bestProduct(playasiaMarkdownProducts(markdown), title, platform);
+      if (product?.price) return product;
+      const generic = parseGeneric(markdown, title, platform);
+      if (generic.price) return generic;
+    } catch {
+      // Try the next reader URL shape.
+    }
+  }
+  return { price: "", matchedTitle: "" };
 }
 
 function parseAmazon(html, title, platform) {
