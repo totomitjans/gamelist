@@ -1549,6 +1549,28 @@ function todayDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function shouldCreatePreorderCalendarEvent(existing, game) {
+  return Boolean(game?.preorderStore)
+    && !existing?.preorderStore
+    && validReleaseDate(game.releaseDate);
+}
+
+async function createPreorderCalendarEvent(game) {
+  const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
+  try {
+    await fetch("/api/calendar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-edit-password": password,
+      },
+      body: JSON.stringify({ game }),
+    });
+  } catch {
+    // Calendar sync is best-effort; the game save should never be blocked by it.
+  }
+}
+
 function formatShortDate(value) {
   const date = dateOnly(value);
   if (!date) return "";
@@ -1643,7 +1665,11 @@ function blankGame() {
 
 async function saveFromForm(event) {
   event.preventDefault();
-  await saveCurrentFormGame();
+  const existing = state.games.find((game) => game.id === el.fields.id.value);
+  const game = await saveCurrentFormGame();
+  if (shouldCreatePreorderCalendarEvent(existing, game)) {
+    createPreorderCalendarEvent(game);
+  }
   el.dialog.close();
 }
 
