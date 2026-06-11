@@ -417,10 +417,6 @@ function renderCompleted() {
         <strong>${escapeHtml(game.title)}</strong>
         <span>${escapeHtml(game.platform || "")}</span>
         <span class="completed-dates">${escapeHtml(historyRangeText(game))}</span>
-        <div class="completed-date-edit">
-          <label><span>Start</span><input class="completed-start-input" type="date" value="${escapeHtml(dateOnly(game.startedAt))}"></label>
-          <label><span>Done</span><input class="completed-end-input" type="date" value="${escapeHtml(dateOnly(game.completedAt))}"></label>
-        </div>
       </div>
       <button class="ghost-button completed-edit-action" type="button">Edit</button>
       <button class="ghost-button restore-action" type="button">Backlog</button>
@@ -433,8 +429,10 @@ function renderCompleted() {
     button.addEventListener("click", () => restoreCompletedToBacklog(button.closest(".completed-row").dataset.id));
   });
   list.querySelectorAll(".completed-row").forEach((row) => {
-    row.querySelector(".completed-start-input").addEventListener("change", (event) => updateCompletedDate(row.dataset.id, "startedAt", event.target.value));
-    row.querySelector(".completed-end-input").addEventListener("change", (event) => updateCompletedDate(row.dataset.id, "completedAt", event.target.value));
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("button, input, a")) return;
+      openDetail(row.dataset.id);
+    });
   });
 }
 
@@ -673,8 +671,8 @@ function metaFor(game) {
   if (game.lengthHours) values.push(timeBadge(game.lengthHours));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.playing) values.push(`<span class="playing-pill">Playing</span>`);
-  if (game.startedAt) values.push(`<span class="history-pill">Started ${escapeHtml(formatShortDate(game.startedAt))}</span>`);
-  if (game.completedAt) values.push(`<span class="history-pill">Done ${escapeHtml(formatShortDate(game.completedAt))}</span>`);
+  if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>`);
+  if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Done</small><strong>${escapeHtml(formatShortDate(game.completedAt))}</strong></span>`);
   return values;
 }
 
@@ -1094,7 +1092,7 @@ async function saveCurrentFormGame() {
   const completedAt = el.fields.completedAt.value || "";
   const playing = el.fields.playing.checked && !completedAt;
   const section = playing ? "backlog" : el.fields.section.value;
-  const startedAt = el.fields.startedAt.value || (playing && !existing?.startedAt ? todayDate() : existing?.startedAt || "");
+  const startedAt = el.fields.startedAt.value || (playing && !existing?.playing && !existing?.startedAt ? todayDate() : "");
   const game = {
     ...(existing || blankGame()),
     id,

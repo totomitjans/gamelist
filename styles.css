@@ -980,6 +980,26 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   background: rgba(121, 242, 206, 0.08);
 }
 
+.history-date-pill {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.05;
+}
+
+.history-date-pill small {
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.history-date-pill strong {
+  color: var(--accent-2);
+  font-size: 12px;
+  font-weight: 860;
+}
+
 .time-pill {
   gap: 4px;
   padding: 4px 10px;
@@ -1276,6 +1296,12 @@ body:not(.can-edit) #fetchPricesButton {
   border: 1px solid var(--line);
   border-radius: 7px;
   color: var(--muted);
+  cursor: pointer;
+}
+
+.completed-row:hover {
+  border-color: rgba(255, 0, 57, 0.32);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .completed-cover {
@@ -1295,24 +1321,6 @@ body:not(.can-edit) #fetchPricesButton {
 .completed-dates {
   color: var(--accent-2);
   font-size: 12px;
-}
-
-.completed-date-edit {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.completed-date-edit label span {
-  margin-bottom: 3px;
-  font-size: 9px;
-}
-
-.completed-date-edit input {
-  min-height: 30px;
-  padding: 6px 7px;
-  font-size: 11px;
 }
 
 .completed-row .restore-action,
@@ -1530,7 +1538,7 @@ body.dialog-open .mobile-section-tabs {
 
 .modal-head {
   display: flex;
-  align-items: start;
+  align-items: center;
   gap: 16px;
   margin-bottom: 14px;
 }
@@ -1543,6 +1551,7 @@ body.dialog-open .mobile-section-tabs {
 .modal-playing-check {
   align-self: center;
   min-width: 132px;
+  margin-left: auto;
 }
 
 .form-group {
