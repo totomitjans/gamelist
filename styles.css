@@ -321,6 +321,43 @@ button:disabled {
   background: linear-gradient(90deg, var(--accent), #f7df69);
 }
 
+.playing-finished {
+  display: grid;
+  gap: 7px;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.playing-finished[hidden] {
+  display: none;
+}
+
+.playing-finished-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.playing-finished-game {
+  min-height: 52px;
+  padding: 7px;
+  text-align: left;
+}
+
+.playing-finished-game img {
+  width: 30px;
+  height: 30px;
+}
+
+.playing-finished-game strong {
+  font-size: 12px;
+}
+
+.playing-finished-game span {
+  font-size: 10px;
+}
+
 .playing-section[hidden] {
   display: none;
 }
@@ -3231,6 +3268,10 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .achievement-game-list {
+    grid-template-columns: 1fr;
+  }
+
+  .playing-finished-list {
     grid-template-columns: 1fr;
   }
 

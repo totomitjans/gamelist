@@ -37,6 +37,8 @@ const el = {
   playingSection: document.querySelector("#playingSection"),
   playingCount: document.querySelector("#playingCount"),
   playingList: document.querySelector(".playing-list"),
+  playingFinished: document.querySelector("#playingFinished"),
+  playingFinishedList: document.querySelector(".playing-finished-list"),
   playingPrevButton: document.querySelector("#playingPrevButton"),
   playingNextButton: document.querySelector("#playingNextButton"),
   achievementSection: document.querySelector("#achievementSection"),
@@ -353,8 +355,29 @@ function renderPlayingSection() {
   el.playingList.innerHTML = "";
   games.forEach((game) => el.playingList.appendChild(cardFor(game, { staticCard: true, imagePriority: "eager" })));
   bindPlayingTrailerFocus();
+  renderPlayingFinished();
   requestAnimationFrame(updatePlayingSliderControls);
   requestAnimationFrame(updateFocusedPlayingTrailer);
+}
+
+function renderPlayingFinished() {
+  const games = filteredGames()
+    .filter((game) => game.completedAt)
+    .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
+    .slice(0, 3);
+  el.playingFinished.hidden = !games.length;
+  el.playingFinishedList.innerHTML = games.map((game) => `
+    <button class="achievement-game playing-finished-game" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`Open ${game.title}`)}">
+      <img src="${escapeHtml(game.cover || platformLogo(game.platform || "PS5"))}" alt="" loading="lazy" decoding="async">
+      <div>
+        <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
+        <span>${escapeHtml([formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "))}</span>
+      </div>
+    </button>
+  `).join("");
+  el.playingFinishedList.querySelectorAll(".playing-finished-game").forEach((button) => {
+    button.addEventListener("click", () => openDetail(button.dataset.id));
+  });
 }
 
 function slidePlaying(direction) {
