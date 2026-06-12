@@ -63,7 +63,7 @@ function igdbCredentials(env) {
 
 async function igdbSearch(query, credentials, lookup = {}) {
   const token = await getIgdbToken(credentials);
-  const fields = "fields name,slug,summary,storyline,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.date,release_dates.platform.name,websites.url,websites.category;";
+  const fields = "fields name,slug,summary,storyline,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.date,release_dates.platform.name,websites.url,websites.category,videos.name,videos.video_id;";
   const slugBody = lookup.igdbSlug ? [
     fields,
     `where slug = "${escapeIgdbString(lookup.igdbSlug)}";`,
@@ -136,6 +136,7 @@ function igdbResult(game, query, hltbResults, lookup = {}) {
     developer: companyName(companies, "developer"),
     publisher: companyName(companies, "publisher"),
     description: fullDescription(game.summary || game.storyline || ""),
+    trailerUrl: igdbTrailer(game.videos),
     storeLinks: storeLinksFromWebsites(game.websites),
     lengthHours: hltbMatch?.lengthHours || null,
     source: "IGDB",
@@ -184,6 +185,12 @@ function companyName(companies, role) {
 
 function igdbCover(imageId) {
   return imageId ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${imageId}.jpg` : "";
+}
+
+function igdbTrailer(videos = []) {
+  const list = Array.isArray(videos) ? videos : [];
+  const trailer = list.find((video) => /trailer|launch|announcement|reveal/i.test(video.name || "")) || list[0];
+  return trailer?.video_id ? `https://www.youtube.com/watch?v=${trailer.video_id}` : "";
 }
 
 function storeLinksFromWebsites(websites = []) {

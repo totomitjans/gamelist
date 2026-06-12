@@ -112,6 +112,7 @@ const el = {
     publisher: document.querySelector("#publisherInput"),
     description: document.querySelector("#descriptionInput"),
     igdbUrl: document.querySelector("#igdbUrlInput"),
+    trailerUrl: document.querySelector("#trailerUrlInput"),
     playstationUrl: document.querySelector("#playstationUrlInput"),
     nintendoUrl: document.querySelector("#nintendoUrlInput"),
     steamUrl: document.querySelector("#steamUrlInput"),
@@ -126,6 +127,7 @@ async function init() {
   registerServiceWorker();
   document.body.classList.toggle("can-edit", state.canEdit);
   bindEvents();
+  bindTextureParallax();
   await loadData();
   render();
   const cloudChanged = await pullCloudData();
@@ -133,6 +135,21 @@ async function init() {
   refreshAchievements();
   refreshUnreleasedGamesOnOpen();
   refreshMissingDescriptionsOnOpen();
+}
+
+function bindTextureParallax() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let frame = 0;
+  window.addEventListener("pointermove", (event) => {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const x = ((event.clientX / window.innerWidth) - 0.5) * -14;
+      const y = ((event.clientY / window.innerHeight) - 0.5) * -14;
+      document.documentElement.style.setProperty("--grid-x", `${x.toFixed(2)}px`);
+      document.documentElement.style.setProperty("--grid-y", `${y.toFixed(2)}px`);
+    });
+  }, { passive: true });
 }
 
 function registerServiceWorker() {
@@ -1006,6 +1023,14 @@ function cardFor(game, options = {}) {
   card.classList.toggle("owner-card-jordi", owners.includes("Jordi"));
   card.classList.toggle("digital-card", Boolean(game.digital));
   card.classList.toggle("playing-card", Boolean(game.playing));
+  const trailer = card.querySelector(".card-trailer");
+  const trailerUrl = shouldShowCardTrailer(game) ? trailerEmbedUrl(game.trailerUrl) : "";
+  if (trailerUrl) {
+    card.classList.add("has-trailer");
+    trailer.innerHTML = `<iframe src="${escapeHtml(trailerUrl)}" title="" tabindex="-1" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
+  } else {
+    trailer.remove();
+  }
   const img = card.querySelector("img");
   img.hidden = !game.cover;
   img.src = game.cover ? coverDisplayUrl(game.cover) : "";
@@ -1033,6 +1058,10 @@ function cardFor(game, options = {}) {
   const trophyStrip = card.querySelector(".card-trophies");
   trophyStrip.innerHTML = game.playing ? cardTrophiesFor(game) : "";
   trophyStrip.hidden = !trophyStrip.innerHTML;
+  trophyStrip.addEventListener("click", (event) => {
+    event.preventDefault();
+    openDetail(game.id);
+  }, true);
   const description = card.querySelector(".notes");
   description.textContent = shortDescription(game.description || "");
   description.hidden = !description.textContent;
@@ -1066,11 +1095,60 @@ function cardFor(game, options = {}) {
   card.querySelector(".edit-action").addEventListener("click", () => openEditor(game.id));
   card.querySelector(".cover-button").addEventListener("click", () => openDetail(game.id));
   card.querySelector(".delete-action").addEventListener("click", () => deleteGame(game.id));
+  card.querySelectorAll(".psn-progress-pill").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openDetail(game.id);
+    });
+  });
   card.addEventListener("click", (event) => {
     if (event.target.closest("button, a")) return;
     openDetail(game.id);
   });
   return card;
+}
+
+function shouldShowCardTrailer(game) {
+  return Boolean(game.playing && game.trailerUrl && window.matchMedia("(min-width: 900px)").matches);
+}
+
+function trailerEmbedUrl(value) {
+  const url = String(value || "").trim();
+  if (!url) return "";
+  const videoId = youtubeVideoId(url);
+  if (videoId) {
+    const params = new URLSearchParams({
+      autoplay: "1",
+      mute: "1",
+      controls: "0",
+      loop: "1",
+      playlist: videoId,
+      playsinline: "1",
+      modestbranding: "1",
+      rel: "0",
+    });
+    return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+  }
+  return url;
+}
+
+function youtubeVideoId(value) {
+  const text = String(value || "").trim();
+  const direct = text.match(/^[a-zA-Z0-9_-]{11}$/);
+  if (direct) return direct[0];
+  try {
+    const url = new URL(text);
+    if (url.hostname.includes("youtu.be")) return url.pathname.split("/").filter(Boolean)[0] || "";
+    if (url.hostname.includes("youtube.com") || url.hostname.includes("youtube-nocookie.com")) {
+      if (url.searchParams.get("v")) return url.searchParams.get("v");
+      const parts = url.pathname.split("/").filter(Boolean);
+      const embedIndex = parts.findIndex((part) => ["embed", "shorts", "live"].includes(part));
+      if (embedIndex >= 0) return parts[embedIndex + 1] || "";
+    }
+  } catch {
+    return "";
+  }
+  return "";
 }
 
 function setupCardParallax(card) {
@@ -1574,6 +1652,7 @@ function normalizeGameRecord(game) {
   normalized.platform = canonicalPlatform(normalized.platform);
   normalized.description = String(normalized.description || "");
   normalized.igdbUrl = String(normalized.igdbUrl || "");
+  normalized.trailerUrl = String(normalized.trailerUrl || "");
   normalized.storeLinks = normalizeStoreLinks(normalized.storeLinks);
   normalized.owners = ownerTags(normalized);
   normalized.statuses = gameStatuses(normalized);
@@ -1824,6 +1903,7 @@ async function openEditor(id = "") {
   el.fields.publisher.value = game.publisher || "";
   el.fields.description.value = game.description || "";
   el.fields.igdbUrl.value = game.igdbUrl || "";
+  el.fields.trailerUrl.value = game.trailerUrl || "";
   el.fields.playstationUrl.value = game.storeLinks?.playstation || "";
   el.fields.nintendoUrl.value = game.storeLinks?.nintendo || "";
   el.fields.steamUrl.value = game.storeLinks?.steam || "";
@@ -1856,6 +1936,7 @@ function blankGame() {
     developer: "",
     publisher: "",
     igdbUrl: "",
+    trailerUrl: "",
     storeLinks: { playstation: "", nintendo: "", steam: "" },
     owners: ["Xavi"],
     preorderStore: "",
@@ -1915,6 +1996,7 @@ async function saveCurrentFormGame() {
     publisher: el.fields.publisher.value.trim(),
     description: el.fields.description.value.trim() || state.pendingDescription || existing?.description || "",
     igdbUrl: el.fields.igdbUrl.value.trim(),
+    trailerUrl: el.fields.trailerUrl.value.trim(),
     storeLinks: {
       playstation: el.fields.playstationUrl.value.trim(),
       nintendo: el.fields.nintendoUrl.value.trim(),
@@ -2158,6 +2240,7 @@ function applyLookup(result) {
   el.fields.cover.value = result.cover || el.fields.cover.value;
   el.fields.description.value = result.description || el.fields.description.value;
   el.fields.igdbUrl.value = result.igdbUrl || el.fields.igdbUrl.value;
+  el.fields.trailerUrl.value = result.trailerUrl || el.fields.trailerUrl.value;
   const links = normalizeStoreLinks(result.storeLinks);
   el.fields.playstationUrl.value = links.playstation || el.fields.playstationUrl.value;
   el.fields.nintendoUrl.value = links.nintendo || el.fields.nintendoUrl.value;
@@ -2199,6 +2282,7 @@ async function normalizeGameBeforeSave(game) {
     game.cover = game.cover || result.cover || "";
     game.description = game.description || result.description || "";
     game.igdbUrl = game.igdbUrl || result.igdbUrl || "";
+    game.trailerUrl = game.trailerUrl || result.trailerUrl || "";
     mergeStoreLinks(game, result.storeLinks);
     game.lengthHours = game.lengthHours || result.lengthHours || null;
     if (!game.genres?.length || game.genres.some((genre) => genre.toLowerCase().includes("video game"))) {
@@ -2358,6 +2442,7 @@ function applyFetchedGameData(game, result, options = {}) {
   setIfEmpty("developer", result.developer);
   setIfEmpty("publisher", result.publisher);
   setIfEmpty("igdbUrl", result.igdbUrl);
+  setIfEmpty("trailerUrl", result.trailerUrl);
   changed = mergeStoreLinks(game, result.storeLinks) || changed;
   if (refreshTextAndTags && result.description) {
     const nextDescription = shortDescription(result.description);

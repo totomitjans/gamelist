@@ -22,6 +22,11 @@
   --switch: #ff0002;
   --playstation: #0043ff;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+  --grid-x: 0px;
+  --grid-y: 0px;
+  --grid-texture:
+    linear-gradient(rgba(255, 255, 255, 0.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
 }
 
 * {
@@ -112,7 +117,11 @@ button:disabled {
   align-items: center;
   gap: 18px;
   padding: 18px clamp(16px, 4vw, 46px);
-  background: rgba(9, 10, 13, 0.64);
+  background:
+    var(--grid-texture),
+    rgba(9, 10, 13, 0.64);
+  background-size: 22px 22px, 22px 22px, auto;
+  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(24px);
 }
@@ -1070,7 +1079,12 @@ h3 {
 }
 
 .glass {
-  background: var(--panel);
+  position: relative;
+  background:
+    var(--grid-texture),
+    var(--panel);
+  background-size: 22px 22px, 22px 22px, auto;
+  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px) saturate(1.15);
@@ -1175,7 +1189,11 @@ h3 {
   gap: 6px;
   margin: 14px 0 18px;
   padding: 6px;
-  background: rgba(9, 10, 13, 0.78);
+  background:
+    var(--grid-texture),
+    rgba(9, 10, 13, 0.78);
+  background-size: 22px 22px, 22px 22px, auto;
+  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border: 1px solid var(--line);
   border-radius: 999px;
   backdrop-filter: blur(5px);
@@ -1350,6 +1368,10 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   z-index: 1;
 }
 
+.card-trailer {
+  display: none;
+}
+
 .game-card.owner-card-judy {
   background:
     linear-gradient(135deg, rgba(255, 158, 210, 0.18), rgba(255, 158, 210, 0.04) 42%, rgba(20, 22, 28, 0.58)),
@@ -1427,11 +1449,37 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   opacity: 0.78;
 }
 
+@media (min-width: 900px) {
+  .game-card.playing-card.has-trailer .card-trailer {
+    position: absolute;
+    inset: -44px;
+    z-index: 0;
+    display: block;
+    overflow: hidden;
+    border-radius: inherit;
+    opacity: 0.24;
+    filter: blur(5px) saturate(1.18) contrast(1.08);
+    transform: scale(1.08);
+    pointer-events: none;
+  }
+
+  .game-card.playing-card.has-trailer .card-trailer iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    transform: scale(1.22);
+  }
+
+  .game-card.playing-card.has-trailer.has-art::before {
+    opacity: 0.16;
+  }
+}
+
 .playing-section .game-card {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: clamp(300px, 30vw, 372px) minmax(0, 1fr);
   flex: 0 0 min(1220px, calc(100vw - clamp(54px, 9vw, 112px)));
   min-height: 548px;
-  align-items: stretch;
+  align-items: center;
   padding: 18px;
   gap: 20px;
   scroll-snap-align: start;
@@ -1447,11 +1495,11 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .playing-section .cover-button {
-  align-self: stretch;
-  width: auto;
+  align-self: center;
+  width: 100%;
   height: auto;
   aspect-ratio: 104 / 142;
-  max-height: 478px;
+  max-height: 506px;
   min-height: 0;
   border-color: rgba(255, 255, 255, 0.24);
   box-shadow:
@@ -1767,6 +1815,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   color: #ffffff;
   border-color: rgba(255, 225, 101, 0.38);
   background: rgba(255, 225, 101, 0.1);
+  cursor: pointer;
 }
 
 .psn-progress-pill .trophy-icon {
@@ -2093,6 +2142,16 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   place-items: center;
 }
 
+body:not(.can-edit) #loginButton,
+#loginButton[title="Edit"] {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0;
+}
+
 .button-icon {
   display: inline-grid;
   width: 17px;
@@ -2359,7 +2418,11 @@ body.dialog-open .mobile-section-tabs {
   max-height: calc(100vh - 30px);
   overflow: auto;
   padding: 18px;
-  background: var(--panel-strong);
+  background:
+    var(--grid-texture),
+    var(--panel-strong);
+  background-size: 22px 22px, 22px 22px, auto;
+  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -2374,7 +2437,11 @@ body.dialog-open .mobile-section-tabs {
   max-height: calc(100vh - 30px);
   overflow: auto;
   padding: 18px;
-  background: var(--panel-strong);
+  background:
+    var(--grid-texture),
+    var(--panel-strong);
+  background-size: 22px 22px, 22px 22px, auto;
+  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
 }
 
@@ -2383,7 +2450,11 @@ body.dialog-open .mobile-section-tabs {
   max-height: calc(100vh - 30px);
   overflow: auto;
   padding: 18px;
-  background: var(--panel-strong);
+  background:
+    var(--grid-texture),
+    var(--panel-strong);
+  background-size: 22px 22px, 22px 22px, auto;
+  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
 }
 
@@ -3027,7 +3098,7 @@ body.dialog-open .mobile-section-tabs {
   .playing-section .game-card {
     grid-template-columns: 112px minmax(0, 1fr);
     flex-basis: calc(100vw - 54px);
-    min-height: 190px;
+    min-height: 360px;
     padding: 11px;
     gap: 11px;
   }

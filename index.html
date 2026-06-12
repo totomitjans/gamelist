@@ -308,6 +308,10 @@
               <span>IGDB Page</span>
               <input id="igdbUrlInput" placeholder="https://www.igdb.com/games/...">
             </label>
+            <label class="wide">
+              <span>Trailer URL</span>
+              <input id="trailerUrlInput" placeholder="https://www.youtube.com/watch?v=...">
+            </label>
             <label>
               <span>PlayStation Store URL</span>
               <input id="playstationUrlInput" placeholder="https://store.playstation.com/...">
@@ -433,6 +437,7 @@
 
     <template id="cardTemplate">
       <article class="game-card glass" draggable="false">
+        <div class="card-trailer" aria-hidden="true"></div>
         <button class="cover-button" type="button">
           <img alt="">
         </button>
