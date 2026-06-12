@@ -188,9 +188,11 @@ function parseAmazon(html, title, platform) {
 
 function parseSteam(html, title) {
   const normalizedTitle = normalize(retailTitle(title));
-  const rows = html.split('class="search_result_row').slice(1);
+  const rows = [...html.matchAll(/<a\s+href="([^"]+)"[^>]*class="search_result_row[\s\S]*?<\/a>/gi)]
+    .map((match) => ({ url: decodeHtml(match[1] || ""), html: match[0] }));
   const products = [];
-  for (const row of rows) {
+  for (const rowData of rows) {
+    const row = rowData.html;
     const titleMatch = row.match(/<span class="title">([^<]+)<\/span>/i);
     const matchedTitle = decodeHtml(titleMatch?.[1] || "");
     if (!matchedTitle || !tokenOverlap(normalizedTitle, normalize(matchedTitle))) continue;
@@ -198,7 +200,7 @@ function parseSteam(html, title) {
       || row.match(/<div class="col search_price[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
     const priceText = decodeHtml(String(priceMatch?.[1] || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
     const price = normalizedSteamPrice(priceText);
-    const url = decodeHtml(row.match(/href="([^"]+)"/i)?.[1] || "");
+    const url = rowData.url;
     const numericPrice = parsePrice(price);
     if (!price && !/free|gratis/i.test(priceText)) continue;
     products.push({ title: matchedTitle, platform: "PC Steam", price, numericPrice, matchedTitle, url });
