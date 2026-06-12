@@ -2522,7 +2522,7 @@ body.can-edit #loginButton .pause-icon {
 }
 
 .ghost-button {
-  border-color: var(--line);
+  /*border-color: var(--line);*/
 }
 
 .danger-button {
