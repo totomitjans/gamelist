@@ -1371,6 +1371,7 @@ function trailerEmbedUrl(value) {
     const params = new URLSearchParams({
       autoplay: "1",
       mute: "1",
+      cc_load_policy: "0",
       controls: "0",
       disablekb: "1",
       enablejsapi: "1",
