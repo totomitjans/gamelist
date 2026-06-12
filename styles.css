@@ -3189,7 +3189,6 @@ body.dialog-open .mobile-section-tabs {
     gap: 8px;
     padding: 18px 14px 12px;
     background: linear-gradient(179deg, #00000075, transparent);
-    border-bottom: 1px solid var(--line);
   }
 
   .brand {
