@@ -140,7 +140,6 @@ button:disabled {
   padding: 18px clamp(16px, 4vw, 46px);
   background: transparent;
   border-bottom: 0;
-  backdrop-filter: blur(24px);
 }
 
 .brand {
@@ -3189,7 +3188,7 @@ body.dialog-open .mobile-section-tabs {
     align-items: center;
     gap: 8px;
     padding: 18px 14px 12px;
-    background: rgba(9, 10, 13, 0.64);
+    background: linear-gradient(179deg, #00000075, transparent);
     border-bottom: 1px solid var(--line);
   }
 
