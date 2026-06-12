@@ -311,7 +311,7 @@ button:disabled {
   mask-size: 100% 100%;
 }
 
-.playing-section:not(.playing-at-start) .card-list {
+.playing-section.playing-at-end:not(.playing-at-start) .card-list {
   --playing-mask-left: min(92px, 10vw);
 }
 
@@ -383,7 +383,7 @@ button:disabled {
   mask-size: 100% 100%;
 }
 
-.playing-finished.finished-has-overflow:not(.finished-at-start) .playing-finished-list {
+.playing-finished.finished-has-overflow.finished-at-end:not(.finished-at-start) .playing-finished-list {
   --finished-mask-left: min(58px, 13vw);
 }
 
@@ -3377,7 +3377,7 @@ body.dialog-open .mobile-section-tabs {
     scroll-padding-left: 10px;
   }
 
-  .playing-section:not(.playing-at-start) .card-list {
+  .playing-section.playing-at-end:not(.playing-at-start) .card-list {
     --playing-mask-left: 34px;
   }
 
@@ -3385,7 +3385,7 @@ body.dialog-open .mobile-section-tabs {
     --playing-mask-right: 34px;
   }
 
-  .playing-finished.finished-has-overflow:not(.finished-at-start) .playing-finished-list {
+  .playing-finished.finished-has-overflow.finished-at-end:not(.finished-at-start) .playing-finished-list {
     --finished-mask-left: 28px;
   }
 
