@@ -538,6 +538,10 @@ h3 {
   text-align: center;
 }
 
+.stat[data-stat-detail] {
+  cursor: pointer;
+}
+
 .stat::before {
   content: "";
   position: absolute;
@@ -634,7 +638,8 @@ h3 {
 }
 
 .stat-action:hover,
-.stat-action:focus-visible {
+.stat-action:focus-visible,
+.stat[data-stat-detail]:focus-visible {
   border-color: rgba(255, 0, 81, 0.44);
   outline: none;
   box-shadow: 0 0 0 3px rgba(255, 0, 81, 0.12), 0 14px 34px rgba(255, 0, 81, 0.16);

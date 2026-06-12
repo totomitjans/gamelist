@@ -1,7 +1,8 @@
 const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
-const PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Playasia"];
+const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Playasia"];
+const DIGITAL_PROVIDERS = ["Instant Gaming", "Nintendo España", "PlayStation España", "Steam"];
 const PSN_PROFILE_USER = "ShabiiEXE";
 const STATUS_OPTIONS = [
   "To Collect",
@@ -1570,6 +1571,14 @@ function pricesFor(game) {
 
 function fallbackPriceLinks(game) {
   const q = retailQuery(game.title, game.platform);
+  if (game.digital) {
+    return [
+      { store: "Instant Gaming", url: `https://www.instant-gaming.com/es/busquedas/?q=${q}` },
+      { store: "Nintendo España", url: `https://www.nintendo.com/es-es/Buscar/Buscar-299117.html?q=${q}&f=147394-86` },
+      { store: "PlayStation España", url: `https://www.playstation.com/es-es/search/?q=${q}` },
+      { store: "Steam", url: `https://store.steampowered.com/search/?term=${q}` },
+    ];
+  }
   return [
     { store: "Amazon.es", url: `https://www.amazon.es/s?k=${q}` },
     { store: "Xtralife", url: `https://www.xtralife.com/buscar/${q}` },
@@ -1599,10 +1608,14 @@ function retailTitle(title) {
 
 function normalizedPrices(game) {
   const existing = new Map((game.prices || []).map((price) => [price.store, price]));
-  return PROVIDERS.map((store) => {
+  return priceProvidersForGame(game).map((store) => {
     const price = existing.get(store);
     return price || fallbackPriceLinks(game).find((item) => item.store === store);
   });
+}
+
+function priceProvidersForGame(game) {
+  return game.digital ? DIGITAL_PROVIDERS : PHYSICAL_PROVIDERS;
 }
 
 function storeIcon(store) {
@@ -1610,6 +1623,10 @@ function storeIcon(store) {
   if (store === "Xtralife") return "assets/stores/xtralife.ico";
   if (store === "GAME.es") return "assets/stores/game.ico";
   if (store === "Playasia") return "assets/stores/playasia.ico";
+  if (store === "Instant Gaming") return "https://www.google.com/s2/favicons?domain=instant-gaming.com&sz=64";
+  if (store === "Nintendo España") return platformLogo("Switch");
+  if (store === "PlayStation España") return platformLogo("PS5");
+  if (store === "Steam") return platformLogo("PC");
   return "";
 }
 
@@ -2336,13 +2353,13 @@ async function refreshPricesForGame(id) {
     upsertGame(game);
     return;
   }
-  game.prices = PROVIDERS.map((store) => ({
+  game.prices = priceProvidersForGame(game).map((store) => ({
     ...fallbackPriceLinks(game).find((item) => item.store === store),
     checkedAt: "",
   }));
   persistLocal();
   try {
-    const data = await fetchPrices(game.title, game.platform);
+    const data = await fetchPrices(game.title, game.platform, game.digital);
     game.prices = data.prices || game.prices;
     game.updatedAt = new Date().toISOString();
     upsertGame(game);
@@ -2366,12 +2383,12 @@ async function refreshAllPrices() {
 
   for (const [index, game] of games.entries()) {
     el.fetchPricesButton.innerHTML = `<span class="button-label">Prices ${index + 1}/${games.length}</span>`;
-    game.prices = PROVIDERS.map((store) => ({
+    game.prices = priceProvidersForGame(game).map((store) => ({
       ...fallbackPriceLinks(game).find((item) => item.store === store),
       checkedAt: "",
     }));
     try {
-      const data = await fetchPrices(game.title, game.platform);
+      const data = await fetchPrices(game.title, game.platform, game.digital);
       game.prices = data.prices || game.prices;
       game.updatedAt = new Date().toISOString();
       updated += 1;
@@ -2387,8 +2404,10 @@ async function refreshAllPrices() {
   alert(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`);
 }
 
-async function fetchPrices(title, platform) {
-  const response = await fetch(`/api/prices?title=${encodeURIComponent(title)}&platform=${encodeURIComponent(platform)}`);
+async function fetchPrices(title, platform, digital = false) {
+  const params = new URLSearchParams({ title, platform });
+  if (digital) params.set("digital", "1");
+  const response = await fetch(`/api/prices?${params}`);
   if (!response.ok) throw new Error("Price fetch failed");
   return response.json();
 }

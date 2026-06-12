@@ -1,4 +1,4 @@
-const PROVIDERS = [
+const PHYSICAL_PROVIDERS = [
   {
     store: "Amazon.es",
     search: (q) => `https://www.amazon.es/s?k=${encodeURIComponent(q)}`,
@@ -21,15 +21,40 @@ const PROVIDERS = [
   },
 ];
 
+const DIGITAL_PROVIDERS = [
+  {
+    store: "Instant Gaming",
+    search: (q) => `https://www.instant-gaming.com/es/busquedas/?q=${encodeURIComponent(q)}`,
+    parse: parseInstantGaming,
+  },
+  {
+    store: "Nintendo España",
+    search: (q) => `https://www.nintendo.com/es-es/Buscar/Buscar-299117.html?q=${encodeURIComponent(q)}&f=147394-86`,
+    parse: parseGeneric,
+  },
+  {
+    store: "PlayStation España",
+    search: (q) => `https://www.playstation.com/es-es/search/?q=${encodeURIComponent(q)}`,
+    parse: parseGeneric,
+  },
+  {
+    store: "Steam",
+    search: (q) => `https://store.steampowered.com/search/?term=${encodeURIComponent(q)}`,
+    parse: parseSteam,
+  },
+];
+
 export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
   const title = url.searchParams.get("title")?.trim();
   const platform = url.searchParams.get("platform")?.trim() || "";
+  const digital = url.searchParams.get("digital") === "1";
   const debug = url.searchParams.has("debug");
   if (!title) return json({ prices: [] });
 
-  const query = `${retailTitle(title)} ${platform}`.trim();
-  const prices = await Promise.all(PROVIDERS.map((provider) => findPrice(provider, title, platform, query, env, debug)));
+  const query = digital ? retailTitle(title) : `${retailTitle(title)} ${platform}`.trim();
+  const providers = digital ? DIGITAL_PROVIDERS : PHYSICAL_PROVIDERS;
+  const prices = await Promise.all(providers.map((provider) => findPrice(provider, title, platform, query, env, debug)));
   return json({ prices });
 }
 
@@ -155,6 +180,61 @@ function parseAmazon(html, title, platform) {
     }
   }
   return best || { price: "", matchedTitle: "" };
+}
+
+function parseSteam(html, title) {
+  const normalizedTitle = normalize(retailTitle(title));
+  const rows = html.split('class="search_result_row').slice(1);
+  let best = null;
+  for (const row of rows) {
+    const titleMatch = row.match(/<span class="title">([^<]+)<\/span>/i);
+    const matchedTitle = decodeHtml(titleMatch?.[1] || "");
+    if (!matchedTitle || !tokenOverlap(normalizedTitle, normalize(matchedTitle))) continue;
+    const priceMatch = row.match(/<div class="discount_final_price">([\s\S]*?)<\/div>/i)
+      || row.match(/<div class="col search_price[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+    const priceText = decodeHtml(String(priceMatch?.[1] || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    const price = normalizedSteamPrice(priceText);
+    const url = decodeHtml(row.match(/href="([^"]+)"/i)?.[1] || "");
+    const numericPrice = parsePrice(price);
+    if (!price && !/free|gratis/i.test(priceText)) continue;
+    const candidate = { price, numericPrice, matchedTitle, url };
+    if (!best || (candidate.numericPrice ?? 9999) < (best.numericPrice ?? 9999)) best = candidate;
+  }
+  return best || { price: "", matchedTitle: "" };
+}
+
+function normalizedSteamPrice(value) {
+  const text = String(value || "").trim();
+  if (/free|gratis/i.test(text)) return "0,00 €";
+  const match = text.match(/(\d{1,3}(?:[.,]\d{2}))\s*€/);
+  return match ? `${match[1].replace(".", ",")} €` : "";
+}
+
+function parseInstantGaming(html, title) {
+  const normalizedTitle = normalize(retailTitle(title));
+  const products = [];
+  const blocks = html.split(/class="[^"]*(?:item|product|cover)[^"]*"/i).slice(1);
+  for (const block of blocks) {
+    const text = decodeHtml(block.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    if (!tokenOverlap(normalizedTitle, normalize(text))) continue;
+    const price = text.match(/(\d{1,3}(?:[.,]\d{2}))\s*€/i);
+    if (!price) continue;
+    const url = decodeHtml(block.match(/href="([^"]+)"/i)?.[1] || "");
+    products.push({
+      title: text.slice(0, 140),
+      platform: text,
+      price: `${price[1].replace(".", ",")} €`,
+      matchedTitle: text.slice(0, 140),
+      url: absoluteInstantGamingUrl(url),
+    });
+  }
+  return bestProduct(products, title, "") || parseGeneric(html, title);
+}
+
+function absoluteInstantGamingUrl(value) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://www.instant-gaming.com${value.startsWith("/") ? "" : "/"}${value}`;
 }
 
 function parseGeneric(html, title) {
