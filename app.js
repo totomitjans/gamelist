@@ -1030,6 +1030,7 @@ function cardFor(game, options = {}) {
   } else {
     completeAction.remove();
     trophyAction.remove();
+    prices.style.setProperty("--price-columns", priceProvidersForGame(game).length);
     prices.innerHTML = pricesFor(game);
     priceRefreshAction.addEventListener("click", () => refreshPricesForGame(game.id));
     boughtAction.addEventListener("click", () => moveToBacklog(game.id));
@@ -1080,6 +1081,7 @@ function openDetail(id, options = {}) {
     el.detailPrices.innerHTML = "";
   } else {
     el.detailPrices.hidden = false;
+    el.detailPrices.style.setProperty("--price-columns", priceProvidersForGame(game).length);
     el.detailPrices.innerHTML = pricesFor(game);
   }
   el.detailCover.hidden = !game.cover;

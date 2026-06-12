@@ -1680,7 +1680,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .prices {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--price-columns, 4), minmax(0, 1fr));
   gap: 6px;
   width: 100%;
   margin-top: 0;
@@ -1704,12 +1704,13 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .price-link {
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
   min-width: 0;
   min-height: 32px;
   padding: 4px 6px;
   background: rgba(10, 12, 16, 0.3);
+  text-align: center;
 }
 
 .price-link span {

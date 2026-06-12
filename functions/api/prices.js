@@ -30,7 +30,7 @@ const DIGITAL_PROVIDERS = [
   {
     store: "PlayStation España",
     search: (q) => `https://www.playstation.com/es-es/search/?q=${encodeURIComponent(q)}`,
-    lookup: lookupLinkOnly,
+    lookup: lookupPlayStationEs,
   },
   {
     store: "Steam",
@@ -38,6 +38,10 @@ const DIGITAL_PROVIDERS = [
     parse: parseSteam,
   },
 ];
+
+const PLAYSTATION_CATALOG_ID = "28c9c2b2-cecc-415c-9a08-482a605cb104";
+const PLAYSTATION_CATALOG_HASH = "4ce7d410a4db2c8b635a48c1dcec375906ff63b19dadd87e073f8fd0c0481d35";
+const PLAYSTATION_PRICING_HASH = "abcb311ea830e679fe2b697a27f755764535d825b24510ab1239a4ca3092bd09";
 
 export async function onRequestGet({ request, env = {} }) {
   const url = new URL(request.url);
@@ -157,6 +161,118 @@ function nintendoProduct(product) {
     matchedTitle: product.title || product.title_master_s || product.sorting_title || "",
     url,
   };
+}
+
+async function lookupPlayStationEs(title, platform) {
+  const concept = await findPlayStationConcept(title, platform);
+  if (!concept) return { price: "", matchedTitle: "" };
+  const data = await playStationGraphql("metGetPricingDataByConceptId", { conceptId: concept.id }, PLAYSTATION_PRICING_HASH);
+  const price = bestPlayStationPrice(data.data?.conceptRetrieve);
+  return {
+    price: price?.label || "",
+    matchedTitle: concept.title || "",
+    url: `https://store.playstation.com/es-es/concept/${concept.id}`,
+  };
+}
+
+async function findPlayStationConcept(title, platform) {
+  const wanted = normalize(retailTitle(title));
+  if (!wanted) return null;
+  const firstPage = await playStationCatalogPage(0, 1);
+  const total = Math.min(Number(firstPage.pageInfo?.totalCount) || 0, 12000);
+  if (!total) return null;
+
+  let low = 0;
+  let high = total - 1;
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    const page = await playStationCatalogPage(middle, 1);
+    const name = normalize(page.concepts?.[0]?.name || "");
+    if (!name || name < wanted) low = middle + 1;
+    else high = middle - 1;
+  }
+
+  const start = Math.max(0, low - 40);
+  const window = await playStationCatalogPage(start, 100);
+  const products = (window.concepts || []).map((concept) => ({
+    title: concept.name || "",
+    platform: "PlayStation PS5 PS4",
+    price: "",
+    matchedTitle: concept.name || "",
+    url: `https://store.playstation.com/es-es/concept/${concept.id}`,
+    id: concept.id,
+  }));
+  return bestProduct(products, title, platform) || null;
+}
+
+async function playStationCatalogPage(offset, size) {
+  const variables = {
+    id: PLAYSTATION_CATALOG_ID,
+    pageArgs: { size, offset },
+    sortBy: { name: "conceptName", isAscending: true },
+    filterBy: [],
+    facetOptions: [],
+  };
+  const data = await playStationGraphql("categoryGridRetrieve", variables, PLAYSTATION_CATALOG_HASH);
+  return data.data?.categoryGridRetrieve || {};
+}
+
+async function playStationGraphql(operationName, variables, sha256Hash) {
+  const endpoint = new URL("https://web.np.playstation.com/api/graphql/v1/op");
+  endpoint.searchParams.set("operationName", operationName);
+  endpoint.searchParams.set("variables", JSON.stringify(variables));
+  endpoint.searchParams.set("extensions", JSON.stringify({
+    persistedQuery: { version: 1, sha256Hash },
+  }));
+  const response = await fetch(endpoint.toString(), {
+    headers: {
+      "Accept": "application/json",
+      "Accept-Language": "es-ES,es;q=0.9,en;q=0.6",
+      "Content-Type": "application/json",
+      "Origin": "https://store.playstation.com",
+      "Referer": "https://store.playstation.com/es-es/",
+      "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
+      "x-psn-store-locale-override": "es-es",
+    },
+    cf: { cacheTtl: 900, cacheEverything: true },
+  });
+  if (!response.ok) throw new Error("PlayStation request failed");
+  return response.json();
+}
+
+function bestPlayStationPrice(concept) {
+  const prices = [];
+  collectPlayStationPrices(concept, prices);
+  const publicPrices = prices.filter((price) => !price.subscription);
+  return (publicPrices.length ? publicPrices : prices)
+    .filter((price) => price.numericPrice !== null)
+    .sort((a, b) => a.numericPrice - b.numericPrice)[0] || null;
+}
+
+function collectPlayStationPrices(value, prices) {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectPlayStationPrices(entry, prices));
+    return;
+  }
+  const rawPrice = value.discountedPrice || value.basePrice;
+  const cents = Number(value.discountedValue ?? value.basePriceValue);
+  if (rawPrice && Number.isFinite(cents) && value.currencyCode === "EUR") {
+    prices.push({
+      label: normalizePlayStationPrice(rawPrice),
+      numericPrice: cents / 100,
+      subscription: Boolean(value.isTiedToSubscription)
+        || (Array.isArray(value.serviceBranding) && value.serviceBranding.some((entry) => entry && entry !== "NONE")),
+    });
+  }
+  Object.values(value).forEach((entry) => collectPlayStationPrices(entry, prices));
+}
+
+function normalizePlayStationPrice(value) {
+  return String(value || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function lookupPlayasiaReader(title, platform, query, debug = false) {
