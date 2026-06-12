@@ -1137,7 +1137,7 @@ function cardFor(game, options = {}) {
 }
 
 function trailerFrame(url) {
-  return `<iframe src="${escapeHtml(url)}" title="" tabindex="-1" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
+  return `<iframe src="${escapeHtml(url)}" title="" tabindex="-1" loading="lazy" aria-hidden="true" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
 }
 
 function toggleCardTrailer(card) {
@@ -1236,6 +1236,9 @@ function trailerEmbedUrl(value) {
       autoplay: "1",
       mute: "1",
       controls: "0",
+      disablekb: "1",
+      fs: "0",
+      iv_load_policy: "3",
       loop: "1",
       playlist: videoId,
       playsinline: "1",
