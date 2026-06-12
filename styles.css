@@ -334,15 +334,35 @@ button:disabled {
 }
 
 .playing-finished-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
   gap: 7px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 2px 4px 0;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.playing-finished-list::-webkit-scrollbar {
+  height: 6px;
+}
+
+.playing-finished-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.playing-finished-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .playing-finished-game {
+  flex: 0 0 min(290px, 72vw);
   min-height: 52px;
   padding: 7px;
   text-align: left;
+  scroll-snap-align: start;
 }
 
 .playing-finished-game img {
@@ -1508,23 +1528,34 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 @media (min-width: 900px) {
   .game-card.playing-card.has-trailer .card-trailer {
     position: absolute;
-    inset: -44px;
+    inset: -86px;
     z-index: 0;
     display: block;
     overflow: hidden;
     border-radius: inherit;
-    opacity: 0.58;
-    filter: blur(1.5px) saturate(1.14) contrast(1.08);
-    transform: scale(1.08);
+    opacity: 0.62;
+    filter: blur(1px) saturate(1.16) contrast(1.1);
+    transform: scale(1.1);
     pointer-events: none;
   }
 
+  .game-card.playing-card.has-trailer .card-trailer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(6, 7, 10, 0.36), transparent 24%, transparent 72%, rgba(6, 7, 10, 0.54)),
+      radial-gradient(circle at 50% 50%, transparent 0 30%, rgba(6, 7, 10, 0.14) 72%);
+  }
+
   .game-card.playing-card.has-trailer .card-trailer iframe {
-    width: 100%;
-    height: 100%;
+    width: 118%;
+    height: 118%;
     border: 0;
     pointer-events: none;
-    transform: scale(1.36);
+    transform: translate3d(-7.5%, -8.5%, 0) scale(1.62);
   }
 
   .game-card.playing-card.has-trailer.has-art::before {
@@ -1762,6 +1793,11 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   top: 10px;
   right: 54px;
   z-index: 3;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-2px);
@@ -3281,10 +3317,6 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .achievement-game-list {
-    grid-template-columns: 1fr;
-  }
-
-  .playing-finished-list {
     grid-template-columns: 1fr;
   }
 

@@ -363,8 +363,7 @@ function renderPlayingSection() {
 function renderPlayingFinished() {
   const games = filteredGames()
     .filter((game) => game.completedAt)
-    .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
-    .slice(0, 3);
+    .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title));
   el.playingFinished.hidden = !games.length;
   el.playingFinishedList.innerHTML = games.map((game) => {
     const psn = matchedPsnGame(game);
@@ -459,15 +458,7 @@ function renderAchievements(data = {}) {
     </a>
   `).join("");
   const dashboard = achievementDashboard(achievements, games, sourceUrl, data.summary);
-  const gameCards = games.length ? `
-    <div class="achievement-games">
-      <span class="achievement-subtitle">Lastest PlayStation games</span>
-      <div class="achievement-game-list">
-        ${games.map((game) => achievementGameCard(game, sourceUrl)).join("")}
-      </div>
-    </div>
-  ` : "";
-  el.achievementPanel.innerHTML = `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Trophies</span>${trophyCards}${gameCards}`;
+  el.achievementPanel.innerHTML = `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Trophies</span>${trophyCards}`;
 }
 
 function achievementDashboard(achievements, games, sourceUrl, summary = null) {
