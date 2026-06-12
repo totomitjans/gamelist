@@ -283,12 +283,12 @@ button:disabled {
 
 .playing-panel::before {
   left: 0;
-  background: linear-gradient(90deg, rgba(22, 22, 25, 0.92), rgba(22, 22, 25, 0));
+  background: linear-gradient(90deg, rgba(246, 247, 251, 0.06), rgba(246, 247, 251, 0.018) 42%, transparent);
 }
 
 .playing-panel::after {
   right: 0;
-  background: linear-gradient(270deg, rgba(22, 22, 25, 0.92), rgba(22, 22, 25, 0));
+  background: linear-gradient(270deg, rgba(246, 247, 251, 0.06), rgba(246, 247, 251, 0.018) 42%, transparent);
 }
 
 .playing-section.playing-at-start .playing-panel::before,
@@ -349,12 +349,12 @@ button:disabled {
 
 .playing-finished::before {
   left: 0;
-  background: linear-gradient(90deg, rgba(22, 22, 25, 0.9), rgba(22, 22, 25, 0));
+  background: linear-gradient(90deg, rgba(246, 247, 251, 0.055), rgba(246, 247, 251, 0.016) 42%, transparent);
 }
 
 .playing-finished::after {
   right: 0;
-  background: linear-gradient(270deg, rgba(22, 22, 25, 0.9), rgba(22, 22, 25, 0));
+  background: linear-gradient(270deg, rgba(246, 247, 251, 0.055), rgba(246, 247, 251, 0.016) 42%, transparent);
 }
 
 .playing-finished.finished-has-overflow:not(.finished-at-start)::before,
