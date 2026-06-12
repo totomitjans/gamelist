@@ -27,8 +27,9 @@
   --backdrop-x: 0px;
   --backdrop-y: 0px;
   --grid-texture:
-    linear-gradient(rgba(255, 255, 255, 0.038) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+  --grid-fade: linear-gradient(135deg, rgba(255, 255, 255, 0.055), transparent 34%, rgba(255, 0, 57, 0.026) 100%);
 }
 
 * {
@@ -1105,10 +1106,11 @@ h3 {
 .stats .glass,
 .achievement-panel.glass {
   background:
+    var(--grid-fade),
     var(--grid-texture),
     var(--panel);
-  background-size: 22px 22px, 22px 22px, auto;
-  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
 }
 
 .toolbar {
@@ -1210,11 +1212,7 @@ h3 {
   gap: 6px;
   margin: 14px 0 18px;
   padding: 6px;
-  background:
-    var(--grid-texture),
-    rgba(9, 10, 13, 0.78);
-  background-size: 22px 22px, 22px 22px, auto;
-  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+  background: rgba(9, 10, 13, 0.78);
   border: 1px solid var(--line);
   border-radius: 999px;
   backdrop-filter: blur(5px);
@@ -1478,8 +1476,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
     display: block;
     overflow: hidden;
     border-radius: inherit;
-    opacity: 0.24;
-    filter: blur(5px) saturate(1.18) contrast(1.08);
+    opacity: 0.48;
+    filter: blur(3px) saturate(1.12) contrast(1.06);
     transform: scale(1.08);
     pointer-events: none;
   }
@@ -1492,7 +1490,11 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   }
 
   .game-card.playing-card.has-trailer.has-art::before {
-    opacity: 0.16;
+    opacity: 0;
+  }
+
+  .game-card.playing-card.has-trailer.trailer-paused .card-trailer {
+    opacity: 0;
   }
 }
 
@@ -1714,6 +1716,24 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   top: 10px;
   right: 10px;
   z-index: 3;
+}
+
+.game-card .trailer-toggle {
+  position: absolute;
+  top: 10px;
+  right: 54px;
+  z-index: 3;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(8, 10, 14, 0.48);
+}
+
+.game-card .trailer-toggle[hidden] {
+  display: none;
+}
+
+.game-card.has-trailer .title-line {
+  padding-right: 86px;
 }
 
 .studio-line {
@@ -2173,6 +2193,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   place-items: center;
 }
 
+.top-actions #syncButton,
+.top-actions #fetchPricesButton,
 body:not(.can-edit) #loginButton,
 #loginButton[title="Edit"] {
   width: 42px;
@@ -2181,6 +2203,14 @@ body:not(.can-edit) #loginButton,
   min-width: 42px;
   min-height: 42px;
   padding: 0;
+}
+
+.top-actions #fetchPricesButton {
+  gap: 0;
+}
+
+.top-actions #fetchPricesButton .button-label {
+  display: none;
 }
 
 .button-icon {
@@ -2211,6 +2241,7 @@ body:not(.can-edit) #loginButton,
 .trash-icon,
 .search-icon,
 .pause-icon,
+.play-icon,
 .euro-icon,
 .reload-icon,
 .check-icon {
@@ -2224,7 +2255,8 @@ body:not(.can-edit) #loginButton,
 }
 
 .euro-icon,
-.pause-icon {
+.pause-icon,
+.play-icon {
   stroke-width: 3;
 }
 
@@ -2232,7 +2264,6 @@ body:not(.can-edit) #loginButton,
   display: none;
 }
 
-#fetchPricesButton .euro-icon,
 body.can-edit #loginButton .pause-icon {
   display: none;
 }
@@ -2450,10 +2481,11 @@ body.dialog-open .mobile-section-tabs {
   overflow: auto;
   padding: 18px;
   background:
+    var(--grid-fade),
     var(--grid-texture),
     var(--panel-strong);
-  background-size: 22px 22px, 22px 22px, auto;
-  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -2469,10 +2501,11 @@ body.dialog-open .mobile-section-tabs {
   overflow: auto;
   padding: 18px;
   background:
+    var(--grid-fade),
     var(--grid-texture),
     var(--panel-strong);
-  background-size: 22px 22px, 22px 22px, auto;
-  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
 }
 
@@ -2482,10 +2515,11 @@ body.dialog-open .mobile-section-tabs {
   overflow: auto;
   padding: 18px;
   background:
+    var(--grid-fade),
     var(--grid-texture),
     var(--panel-strong);
-  background-size: 22px 22px, 22px 22px, auto;
-  background-position: var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
 }
 

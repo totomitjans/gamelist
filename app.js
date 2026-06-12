@@ -1031,7 +1031,8 @@ function cardFor(game, options = {}) {
   const trailerUrl = shouldShowCardTrailer(game) ? trailerEmbedUrl(game.trailerUrl) : "";
   if (trailerUrl) {
     card.classList.add("has-trailer");
-    trailer.innerHTML = `<iframe src="${escapeHtml(trailerUrl)}" title="" tabindex="-1" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
+    trailer.dataset.src = trailerUrl;
+    trailer.innerHTML = trailerFrame(trailerUrl);
   } else {
     trailer.remove();
   }
@@ -1097,6 +1098,17 @@ function cardFor(game, options = {}) {
     boughtAction.addEventListener("click", () => moveToBacklog(game.id));
   }
   card.querySelector(".edit-action").addEventListener("click", () => openEditor(game.id));
+  const trailerToggle = card.querySelector(".trailer-toggle");
+  if (trailerUrl) {
+    trailerToggle.hidden = false;
+    trailerToggle.innerHTML = pauseIcon();
+    trailerToggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleCardTrailer(card);
+    });
+  } else {
+    trailerToggle.remove();
+  }
   card.querySelector(".cover-button").addEventListener("click", () => openDetail(game.id));
   card.querySelector(".delete-action").addEventListener("click", () => deleteGame(game.id));
   card.querySelectorAll(".psn-progress-pill").forEach((node) => {
@@ -1110,6 +1122,21 @@ function cardFor(game, options = {}) {
     openDetail(game.id);
   });
   return card;
+}
+
+function trailerFrame(url) {
+  return `<iframe src="${escapeHtml(url)}" title="" tabindex="-1" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
+}
+
+function toggleCardTrailer(card) {
+  const trailer = card.querySelector(".card-trailer");
+  const button = card.querySelector(".trailer-toggle");
+  if (!trailer || !button) return;
+  const isPaused = card.classList.toggle("trailer-paused");
+  button.innerHTML = isPaused ? playIcon() : pauseIcon();
+  button.title = isPaused ? "Play trailer" : "Pause trailer";
+  button.setAttribute("aria-label", button.title);
+  trailer.innerHTML = isPaused ? "" : trailerFrame(trailer.dataset.src || "");
 }
 
 function shouldShowCardTrailer(game) {
@@ -1505,6 +1532,14 @@ function pauseIcon() {
     <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M8 4.5v15"></path>
       <path d="M16 4.5v15"></path>
+    </svg>
+  `;
+}
+
+function playIcon() {
+  return `
+    <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 5.5v13l11-6.5-11-6.5Z"></path>
     </svg>
   `;
 }
@@ -2568,7 +2603,9 @@ async function refreshAllPrices() {
   let failed = 0;
 
   for (const [index, game] of games.entries()) {
-    el.fetchPricesButton.innerHTML = `<span class="button-label">Prices ${index + 1}/${games.length}</span>`;
+    el.fetchPricesButton.innerHTML = `${euroIcon()}<span class="button-label">Prices ${index + 1}/${games.length}</span>`;
+    el.fetchPricesButton.title = `Prices ${index + 1}/${games.length}`;
+    el.fetchPricesButton.setAttribute("aria-label", el.fetchPricesButton.title);
     game.prices = priceProvidersForGame(game).map((store) => ({
       ...fallbackPriceLinks(game).find((item) => item.store === store),
       checkedAt: "",
@@ -2587,6 +2624,8 @@ async function refreshAllPrices() {
   persistCloud();
   el.fetchPricesButton.disabled = false;
   el.fetchPricesButton.innerHTML = originalHtml;
+  el.fetchPricesButton.title = "Fetch New Prices";
+  el.fetchPricesButton.setAttribute("aria-label", "Fetch New Prices");
   alert(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`);
 }
 
