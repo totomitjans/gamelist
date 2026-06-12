@@ -1687,7 +1687,7 @@ content: "";
 .playing-section .game-main {
   align-self: stretch;
   justify-content: flex-end;
-  padding: 8px 0 4px;
+  padding: 8px 0 0;
 }
 
 .playing-section .studio-line {
@@ -3191,6 +3191,10 @@ body.dialog-open .mobile-section-tabs {
     gap: 8px;
     padding: 18px 14px 12px;
     background: linear-gradient(179deg, #00000075, transparent);
+  }
+
+  .playing-section .column-head span {
+    margin-bottom: 0px;
   }
 
   .brand {
