@@ -9,7 +9,7 @@
 :root {
   --bg: #161619;
   --panel: rgba(20, 22, 28, 0.58);
-  --panel-dark:rgb(16 17 20 / 99%);
+  --panel-dark:rgb(16 17 20 / 72%);
   --panel-strong: rgba(28, 31, 40, 0.82);
   --line: rgba(255, 255, 255, 0.13);
   --text: #f6f7fb;
@@ -2725,7 +2725,7 @@ body.dialog-open .mobile-section-tabs {
   background:
     var(--grid-fade),
     var(--grid-texture),
-    var(--panel-strong);
+    var(--panel-dark);
   background-size: auto, 22px 22px, 22px 22px, auto;
   background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
@@ -3029,7 +3029,7 @@ body.dialog-open .mobile-section-tabs {
 
 .modal-head {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 16px;
   margin-bottom: 14px;
 }
