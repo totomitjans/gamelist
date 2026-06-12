@@ -1519,7 +1519,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   --art-x: 0px;
   --art-y: 0px;
   --art-scale: 1.04;
-  contain: layout paint;
+  contain: layout;
 }
 
 .game-card.has-art::before {
@@ -1638,10 +1638,12 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
     display: block;
     border-radius: 8px;
     opacity: 1;
-    filter: blur(0.7px) saturate(1.18) contrast(1.1);
+    filter: saturate(1.08) contrast(1.04);
     transform: scale(1.02);
     transform-origin: center right;
     pointer-events: none;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
   }
 
   .game-card.playing-card.has-trailer .card-trailer::before {
@@ -1679,7 +1681,8 @@ content: "";
     pointer-events: none;
     object-fit: cover;
     transform: translate3d(-6%, -8%, 0) scale(1.08);
-    filter: blur(5px);
+    filter: none;
+    backface-visibility: hidden;
   }
 
   .game-card.playing-card.has-trailer.has-art::before {

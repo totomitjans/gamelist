@@ -9,7 +9,21 @@ const STATUS_OPTIONS = [
   "Scarce",
   "Waiting for Physical",
 ];
+const UI_ICON_URLS = [
+  "/assets/Icon.png",
+  "/assets/platforms/playstation.png",
+  "/assets/platforms/steam.png",
+  "/assets/platforms/switch.png",
+  "/assets/platforms/xbox.png",
+  "/assets/stores/amazon.ico",
+  "/assets/stores/game.ico",
+  "/assets/stores/playasia.ico",
+  "/assets/stores/xtralife.ico",
+];
+const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
+const searchCache = new Map();
+const searchInflight = new Map();
 
 const state = {
   games: [],
@@ -138,14 +152,14 @@ async function init() {
   syncDisplayMode();
   document.body.classList.toggle("can-edit", state.canEdit);
   bindEvents();
+  warmUiIcons();
   bindTextureParallax();
   await loadData();
   render();
   const cloudChanged = await pullCloudData();
   if (cloudChanged) render();
   refreshAchievements();
-  refreshUnreleasedGamesOnOpen();
-  refreshMissingDescriptionsOnOpen();
+  scheduleBackgroundRefreshes();
 }
 
 function bindTextureParallax() {
@@ -265,11 +279,32 @@ function bindEvents() {
   el.deleteButton.addEventListener("click", deleteCurrentGame);
   el.closeDialogButton.addEventListener("click", () => el.dialog.close());
   el.lookupButton.addEventListener("click", lookupGame);
-  el.fields.title.addEventListener("input", queueTitleLookup);
+  el.lookupInput.addEventListener("input", queueTitleLookup);
   el.pricesButton.addEventListener("click", refreshCurrentPrices);
   el.coverUpload.addEventListener("change", handleCoverUpload);
   window.addEventListener("resize", syncDisplayMode, { passive: true });
   window.matchMedia("(display-mode: standalone)").addEventListener?.("change", syncDisplayMode);
+}
+
+function warmUiIcons() {
+  UI_ICON_URLS.forEach((url) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.loading = "eager";
+    image.src = url;
+  });
+}
+
+function scheduleBackgroundRefreshes() {
+  const run = () => {
+    refreshUnreleasedGamesOnOpen();
+    refreshMissingDescriptionsOnOpen();
+  };
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(run, { timeout: 1200 });
+    return;
+  }
+  window.setTimeout(run, 240);
 }
 
 function syncDisplayMode() {
@@ -1747,7 +1782,7 @@ function platformBadge(platform, count = null) {
   return `
     <span class="platform-badge ${cls}" title="${escapeHtml(platform)}">
       <span class="platform-icon">
-        <img src="${escapeHtml(logo)}" alt="" loading="lazy">
+        <img src="${escapeHtml(logo)}" alt="" width="18" height="18" decoding="async">
       </span>
       <span class="platform-label">${escapeHtml(platform)}</span>
       ${count == null ? "" : `<span class="platform-count">${count}</span>`}
@@ -2004,7 +2039,7 @@ function storeLinksFor(game) {
 function storeButton(label, url, cls, icon) {
   return `
     <a class="store-button ${cls}" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
-      <img src="${escapeHtml(icon)}" alt="">
+      <img src="${escapeHtml(icon)}" alt="" width="18" height="18" decoding="async">
       ${escapeHtml(label)}
     </a>
   `;
@@ -2029,7 +2064,7 @@ function pricesFor(game) {
     const cls = ["price-link", best?.store === price.store && hasPrice ? "best" : "", hasPrice ? "has-price" : "missing-price"].filter(Boolean).join(" ");
     return `
       <a class="${cls}" href="${escapeHtml(price.url)}" target="_blank" rel="noreferrer" title="${escapeHtml(price.store)}" aria-label="${escapeHtml(`${price.store}: ${label}`)}">
-        <img class="store-icon" src="${escapeHtml(storeIcon(price.store))}" alt="">
+        <img class="store-icon" src="${escapeHtml(storeIcon(price.store))}" alt="" width="16" height="16" decoding="async">
         <strong>${escapeHtml(label)}</strong>
       </a>
     `;
@@ -2489,9 +2524,8 @@ async function lookupGame() {
   el.lookupResults.innerHTML = `<div class="empty">Searching...</div>`;
   el.lookupResults.classList.add("loaded");
   try {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    renderLookupResults(data.results || []);
+    const results = await fetchSearchResults(query);
+    renderLookupResults(results);
   } catch {
     renderLookupResults([]);
   }
@@ -2555,10 +2589,9 @@ function applyLookup(result) {
 
 function queueTitleLookup() {
   clearTimeout(titleLookupTimer);
-  const query = el.fields.title.value.trim();
+  const query = el.lookupInput.value.trim();
   if (query.length < 3) return;
   titleLookupTimer = setTimeout(async () => {
-    el.lookupInput.value = query;
     await lookupGame();
   }, 450);
 }
@@ -2790,10 +2823,31 @@ function shouldRefreshRelease(game) {
 }
 
 async function lookupFirstResult(title) {
-  const response = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
-  if (!response.ok) return null;
-  const data = await response.json();
-  return data.results?.[0] || null;
+  const results = await fetchSearchResults(title);
+  return results[0] || null;
+}
+
+async function fetchSearchResults(query) {
+  const normalized = String(query || "").trim();
+  if (!normalized) return [];
+  const cacheKey = normalized.toLocaleLowerCase();
+  const now = Date.now();
+  const cached = searchCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < SEARCH_CACHE_TTL) return cached.results;
+  if (searchInflight.has(cacheKey)) return searchInflight.get(cacheKey);
+  const request = fetch(`/api/search?q=${encodeURIComponent(normalized)}`)
+    .then(async (response) => {
+      if (!response.ok) return [];
+      const data = await response.json();
+      const results = Array.isArray(data.results) ? data.results : [];
+      searchCache.set(cacheKey, { results, timestamp: Date.now() });
+      return results;
+    })
+    .finally(() => {
+      searchInflight.delete(cacheKey);
+    });
+  searchInflight.set(cacheKey, request);
+  return request;
 }
 
 async function refreshCurrentPrices() {
