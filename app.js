@@ -34,6 +34,7 @@ const state = {
 };
 
 const el = {
+  brandLink: document.querySelector(".brand"),
   playingSection: document.querySelector("#playingSection"),
   playingCount: document.querySelector("#playingCount"),
   playingList: document.querySelector(".playing-list"),
@@ -171,8 +172,15 @@ function registerServiceWorker() {
 }
 
 function bindEvents() {
+  el.brandLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    scrollToSearchArea();
+  });
   el.loginButton.addEventListener("click", toggleEditMode);
-  el.addButton.addEventListener("click", () => openEditor());
+  el.addButton.addEventListener("click", () => {
+    scrollToSearchArea();
+    window.setTimeout(() => openEditor(), 180);
+  });
   el.syncButton.addEventListener("click", syncNow);
   el.fetchDataButton?.addEventListener("click", refreshAllGameData);
   el.fetchPricesButton.addEventListener("click", refreshAllPrices);
@@ -182,6 +190,7 @@ function bindEvents() {
     updatePlayingSliderControls();
     requestAnimationFrame(updateFocusedPlayingTrailer);
   }, { passive: true });
+  el.playingFinishedList.addEventListener("scroll", updatePlayingFinishedEdges, { passive: true });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) pauseAllPlayingTrailers();
     else requestAnimationFrame(updateFocusedPlayingTrailer);
@@ -382,6 +391,20 @@ function renderPlayingFinished() {
   el.playingFinishedList.querySelectorAll(".playing-finished-game").forEach((button) => {
     button.addEventListener("click", () => openDetail(button.dataset.id));
   });
+  requestAnimationFrame(updatePlayingFinishedEdges);
+}
+
+function scrollToSearchArea() {
+  document.querySelector(".toolbar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function updatePlayingFinishedEdges() {
+  const list = el.playingFinishedList;
+  const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth - 1);
+  const hasOverflow = maxScroll > 2;
+  el.playingFinished.classList.toggle("finished-at-start", !hasOverflow || list.scrollLeft <= 2);
+  el.playingFinished.classList.toggle("finished-at-end", !hasOverflow || list.scrollLeft >= maxScroll);
+  el.playingFinished.classList.toggle("finished-has-overflow", hasOverflow);
 }
 
 function slidePlaying(direction) {

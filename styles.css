@@ -326,6 +326,7 @@ button:disabled {
 }
 
 .playing-finished {
+  position: relative;
   display: grid;
   gap: 7px;
   margin-top: 2px;
@@ -333,32 +334,52 @@ button:disabled {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.playing-finished::before,
+.playing-finished::after {
+  content: "";
+  position: absolute;
+  top: 31px;
+  bottom: 0;
+  z-index: 2;
+  width: min(58px, 13vw);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.playing-finished::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(22, 22, 25, 0.9), rgba(22, 22, 25, 0));
+}
+
+.playing-finished::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(22, 22, 25, 0.9), rgba(22, 22, 25, 0));
+}
+
+.playing-finished.finished-has-overflow:not(.finished-at-start)::before,
+.playing-finished.finished-has-overflow:not(.finished-at-end)::after {
+  opacity: 1;
+}
+
 .playing-finished[hidden] {
   display: none;
 }
 
 .playing-finished-list {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 7px;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0 2px 4px 0;
   scroll-snap-type: x proximity;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  scrollbar-width: none;
 }
 
 .playing-finished-list::-webkit-scrollbar {
-  height: 6px;
-}
-
-.playing-finished-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.playing-finished-list::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  display: none;
 }
 
 .playing-finished-game {
@@ -388,6 +409,8 @@ button:disabled {
 
 .achievement-section {
   margin: 0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .achievement-section .column-head {
@@ -1163,7 +1186,6 @@ h3 {
   backdrop-filter: blur(20px) saturate(1.15);
 }
 
-.toolbar.glass,
 .stats .glass,
 .achievement-panel.glass {
   background:
@@ -3273,14 +3295,14 @@ body.dialog-open .mobile-section-tabs {
   .playing-section .game-card {
     grid-template-columns: 112px minmax(0, 1fr);
     flex-basis: calc(100vw - 54px);
-    min-height: 292px;
+    min-height: 252px;
     align-items: start;
     padding: 11px;
     gap: 11px;
   }
 
   .playing-section .game-main {
-    min-height: 270px;
+    min-height: 230px;
   }
 
   .playing-section .game-card h3 {
@@ -3298,7 +3320,7 @@ body.dialog-open .mobile-section-tabs {
   .playing-section .card-trophies[hidden] {
     display: block;
     visibility: hidden;
-    min-height: 92px;
+    min-height: 54px;
   }
 
   .card-trophy {
