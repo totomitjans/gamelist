@@ -1574,7 +1574,6 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
     height: auto;
     z-index: 0;
     display: block;
-    overflow: hidden;
     border-radius: 8px;
     opacity: 0.68;
     filter: blur(0.7px) saturate(1.18) contrast(1.1);
