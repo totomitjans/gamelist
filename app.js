@@ -681,14 +681,14 @@ function renderReleaseCalendar() {
   const months = releaseCalendarMonths(4);
   const today = localDateKey(new Date());
   el.releaseCalendar.innerHTML = `
+  <div class="release-months">
+      ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
+    </div>
     <div class="release-calendar-head">
       <div class="release-calendar-actions">
         <button class="icon-button" type="button" data-calendar-shift="-1" title="Previous month" aria-label="Previous month">←</button>
         <button class="icon-button" type="button" data-calendar-shift="1" title="Next month" aria-label="Next month">→</button>
       </div>
-    </div>
-    <div class="release-months">
-      ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
     </div>
   `;
   el.releaseCalendar.querySelectorAll("[data-calendar-shift]").forEach((button) => {
