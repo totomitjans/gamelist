@@ -22,6 +22,7 @@ const state = {
   historyYear: String(new Date().getFullYear()),
   releaseCalendarOffset: 0,
   detailTrophyRequest: "",
+  detailReturnToHistory: false,
 };
 
 const el = {
@@ -168,7 +169,7 @@ function bindEvents() {
   el.detailDialog.addEventListener("click", (event) => {
     if (event.target === el.detailDialog) el.detailDialog.close();
   });
-  el.detailDialog.addEventListener("close", syncScrollLock);
+  el.detailDialog.addEventListener("close", handleDetailClose);
   el.historyCloseButton.addEventListener("click", () => el.historyDialog.close());
   el.historyDialog.addEventListener("click", (event) => {
     if (event.target === el.historyDialog) el.historyDialog.close();
@@ -280,6 +281,17 @@ function render() {
 
 function syncScrollLock() {
   document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open || el.releaseDialog.open);
+}
+
+function handleDetailClose() {
+  if (state.detailReturnToHistory) {
+    state.detailReturnToHistory = false;
+    renderHistoryDialog();
+    el.historyDialog.showModal();
+    syncScrollLock();
+    return;
+  }
+  syncScrollLock();
 }
 
 function renderPlayingSection() {
@@ -792,14 +804,14 @@ function renderHistoryDialog() {
     row.addEventListener("click", (event) => {
       if (event.target.closest("button, input, a")) return;
       el.historyDialog.close();
-      openDetail(row.dataset.id);
+      openDetail(row.dataset.id, { returnToHistory: true });
     });
     row.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       if (event.target.closest("button, input, a")) return;
       event.preventDefault();
       el.historyDialog.close();
-      openDetail(row.dataset.id);
+      openDetail(row.dataset.id, { returnToHistory: true });
     });
   });
 }
@@ -1033,9 +1045,10 @@ function setupCardParallax(card) {
   });
 }
 
-function openDetail(id) {
+function openDetail(id, options = {}) {
   const game = getGame(id);
   if (!game) return;
+  state.detailReturnToHistory = Boolean(options.returnToHistory);
   const owners = ownerTags(game);
   el.detailTitle.textContent = game.title;
   el.detailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
@@ -1084,15 +1097,17 @@ async function renderDetailTrophies(game) {
     const params = new URLSearchParams({
       id: trophyId,
       service: psn.npServiceName || "trophy",
+      schema: "2",
     });
     const response = await fetch(`/api/trophies?${params}`);
     const data = await response.json();
     if (state.detailTrophyRequest !== requestKey) return;
     const trophies = Array.isArray(data.trophies) ? data.trophies : [];
-    el.detailTrophyCount.textContent = trophies.length ? `${trophies.length} earned` : "";
+    const earnedCount = trophies.filter((trophy) => trophy.earned).length;
+    el.detailTrophyCount.textContent = trophies.length ? `${earnedCount}/${trophies.length} earned` : "";
     el.detailTrophyList.innerHTML = trophies.length
       ? trophies.map(detailTrophyCard).join("")
-      : `<div class="detail-trophy-empty">No earned trophies found for this game yet.</div>`;
+      : `<div class="detail-trophy-empty">No trophies found for this game yet.</div>`;
   } catch {
     if (state.detailTrophyRequest !== requestKey) return;
     el.detailTrophyCount.textContent = "";
@@ -1102,11 +1117,11 @@ async function renderDetailTrophies(game) {
 
 function detailTrophyCard(trophy) {
   return `
-    <article class="detail-trophy-card trophy-${escapeHtml(trophyTone(trophy.type))}">
+    <article class="detail-trophy-card trophy-${escapeHtml(trophyTone(trophy.type))} ${trophy.earned ? "earned" : "missing"}">
       <img src="${escapeHtml(trophy.icon || platformLogo("PS5"))}" alt="">
       <div>
         <strong>${escapeHtml(trophy.title || "Trophy")}</strong>
-        <span>${escapeHtml([trophy.type, trophy.earnedAt, trophy.rarity].filter(Boolean).join(" · "))}</span>
+        <span>${escapeHtml([trophy.earned ? trophy.earnedAt : "Missing", trophy.rarity].filter(Boolean).join(" · "))}</span>
         ${trophy.description ? `<p>${escapeHtml(trophy.description)}</p>` : ""}
       </div>
     </article>

@@ -75,22 +75,40 @@ async function getEarnedTrophiesForTitle(accessToken, npCommunicationId, npServi
     getPagedTrophies(accessToken, `${PSN_TROPHY_BASE}/v1/npCommunicationIds/${encodeURIComponent(npCommunicationId)}/trophyGroups/all/trophies`, npServiceName),
   ]);
   const metaById = new Map(metaData.map((trophy) => [String(trophy.trophyId), trophy]));
-  return earnedData
-    .filter((trophy) => trophy.earned && trophy.earnedDateTime)
-    .map((earned) => {
-      const meta = metaById.get(String(earned.trophyId)) || {};
-      const type = trophyTypeLabel(earned.trophyType);
+  const earnedById = new Map(earnedData.map((trophy) => [String(trophy.trophyId), trophy]));
+  const trophyIds = new Set([
+    ...metaData.map((trophy) => String(trophy.trophyId)),
+    ...earnedData.map((trophy) => String(trophy.trophyId)),
+  ]);
+  return Array.from(trophyIds)
+    .map((id) => {
+      const meta = metaById.get(id) || {};
+      const earned = earnedById.get(id) || {};
+      const type = trophyTypeLabel(meta.trophyType || earned.trophyType);
       return {
         title: meta.trophyName || type,
         description: meta.trophyDetail || "",
-        earnedAt: formatPsnDate(earned.earnedDateTime),
-        rawEarnedAt: earned.earnedDateTime,
-        rarity: earned.trophyEarnedRate ? `${earned.trophyEarnedRate}%` : "",
+        earned: Boolean(earned.earned),
+        earnedAt: earned.earnedDateTime ? formatPsnDate(earned.earnedDateTime) : "",
+        rawEarnedAt: earned.earnedDateTime || "",
+        rarity: earned.trophyEarnedRate ? `${earned.trophyEarnedRate}%` : (meta.trophyRare ? `${meta.trophyRare}%` : ""),
         type,
         icon: meta.trophyIconUrl || earned.trophyRewardImageUrl || "",
       };
     })
-    .sort((a, b) => String(b.rawEarnedAt || "").localeCompare(String(a.rawEarnedAt || "")));
+    .sort((a, b) => Number(b.earned) - Number(a.earned)
+      || String(b.rawEarnedAt || "").localeCompare(String(a.rawEarnedAt || ""))
+      || trophyRank(a.type) - trophyRank(b.type)
+      || String(a.title || "").localeCompare(String(b.title || "")));
+}
+
+function trophyRank(value) {
+  const text = String(value || "").toLowerCase();
+  if (text.includes("platinum")) return 0;
+  if (text.includes("gold")) return 1;
+  if (text.includes("silver")) return 2;
+  if (text.includes("bronze")) return 3;
+  return 4;
 }
 
 async function getPagedTrophies(accessToken, baseUrl, npServiceName) {

@@ -2194,8 +2194,32 @@ body.dialog-open .mobile-section-tabs {
   min-width: 0;
   padding: 8px;
   background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--trophy-border, rgba(255, 255, 255, 0.12));
   border-radius: 7px;
+}
+
+.detail-trophy-card.trophy-platinum {
+  --trophy-border: rgba(229, 232, 255, 0.46);
+}
+
+.detail-trophy-card.trophy-gold {
+  --trophy-border: rgba(255, 225, 101, 0.46);
+}
+
+.detail-trophy-card.trophy-silver {
+  --trophy-border: rgba(190, 202, 220, 0.42);
+}
+
+.detail-trophy-card.trophy-bronze {
+  --trophy-border: rgba(210, 125, 70, 0.42);
+}
+
+.detail-trophy-card.missing {
+  opacity: 0.58;
+}
+
+.detail-trophy-card.missing img {
+  filter: grayscale(1);
 }
 
 .detail-trophy-card img {
