@@ -2,7 +2,7 @@ const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
 const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Playasia"];
-const DIGITAL_PROVIDERS = ["Instant Gaming", "Nintendo España", "PlayStation España", "Steam"];
+const DIGITAL_PROVIDERS = ["Nintendo España", "PlayStation España", "Steam"];
 const PSN_PROFILE_USER = "ShabiiEXE";
 const STATUS_OPTIONS = [
   "To Collect",
@@ -1573,7 +1573,6 @@ function fallbackPriceLinks(game) {
   const q = retailQuery(game.title, game.platform);
   if (game.digital) {
     return [
-      { store: "Instant Gaming", url: `https://www.instant-gaming.com/es/busquedas/?q=${q}` },
       { store: "Nintendo España", url: `https://www.nintendo.com/es-es/Buscar/Buscar-299117.html?q=${q}&f=147394-86` },
       { store: "PlayStation España", url: `https://www.playstation.com/es-es/search/?q=${q}` },
       { store: "Steam", url: `https://store.steampowered.com/search/?term=${q}` },
@@ -1623,7 +1622,6 @@ function storeIcon(store) {
   if (store === "Xtralife") return "assets/stores/xtralife.ico";
   if (store === "GAME.es") return "assets/stores/game.ico";
   if (store === "Playasia") return "assets/stores/playasia.ico";
-  if (store === "Instant Gaming") return "https://www.google.com/s2/favicons?domain=instant-gaming.com&sz=64";
   if (store === "Nintendo España") return platformLogo("Switch");
   if (store === "PlayStation España") return platformLogo("PS5");
   if (store === "Steam") return platformLogo("PC");
@@ -2329,7 +2327,7 @@ async function refreshCurrentPrices() {
   if (savedGame.section === "backlog") return;
   el.pricesButton.textContent = "Refreshing...";
   try {
-    const data = await fetchPrices(savedGame.title, savedGame.platform);
+    const data = await fetchPrices(savedGame.title, savedGame.platform, savedGame.digital);
     const game = getGame(savedGame.id);
     if (game) {
       game.prices = data.prices || [];

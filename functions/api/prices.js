@@ -23,14 +23,9 @@ const PHYSICAL_PROVIDERS = [
 
 const DIGITAL_PROVIDERS = [
   {
-    store: "Instant Gaming",
-    search: (q) => `https://www.instant-gaming.com/es/busquedas/?q=${encodeURIComponent(q)}`,
-    parse: parseInstantGaming,
-  },
-  {
     store: "Nintendo España",
     search: (q) => `https://www.nintendo.com/es-es/Buscar/Buscar-299117.html?q=${encodeURIComponent(q)}&f=147394-86`,
-    lookup: lookupLinkOnly,
+    lookup: lookupNintendoEs,
   },
   {
     store: "PlayStation España",
@@ -123,6 +118,47 @@ async function lookupLinkOnly() {
   return { price: "", matchedTitle: "" };
 }
 
+async function lookupNintendoEs(title, platform, query) {
+  const endpoint = new URL("https://searching.nintendo-europe.com/es/select");
+  endpoint.searchParams.set("fq", "type:GAME");
+  endpoint.searchParams.set("rows", "10");
+  endpoint.searchParams.set("q", retailTitle(title || query));
+  endpoint.searchParams.set("wt", "json");
+  const response = await fetch(endpoint.toString(), {
+    headers: {
+      "Accept": "application/json",
+      "Accept-Language": "es-ES,es;q=0.9,en;q=0.6",
+      "Origin": "https://www.nintendo.com",
+      "Referer": `https://www.nintendo.com/es-es/Buscar/Buscar-299117.html?q=${encodeURIComponent(query)}&f=147394-86`,
+      "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
+    },
+    cf: { cacheTtl: 900, cacheEverything: true },
+  });
+  if (!response.ok) throw new Error("Nintendo search failed");
+  const data = await response.json();
+  const docs = Array.isArray(data.response?.docs) ? data.response.docs : [];
+  const products = docs.map(nintendoProduct);
+  const match = bestProduct(products, title, "");
+  return match || { price: "", matchedTitle: "" };
+}
+
+function nintendoProduct(product) {
+  const priceValue = Number(product.price_lowest_f ?? product.price_regular_f ?? product.price_sorting_f);
+  const url = product.url
+    ? `https://www.nintendo.com${String(product.url).startsWith("/") ? "" : "/"}${product.url}`
+    : "";
+  return {
+    title: product.title || product.title_master_s || product.sorting_title || "",
+    platform: [
+      ...(Array.isArray(product.system_names_txt) ? product.system_names_txt : []),
+      ...(Array.isArray(product.playable_on_txt) ? product.playable_on_txt : []),
+    ].join(" "),
+    price: Number.isFinite(priceValue) ? euro(priceValue) : "",
+    matchedTitle: product.title || product.title_master_s || product.sorting_title || "",
+    url,
+  };
+}
+
 async function lookupPlayasiaReader(title, platform, query, debug = false) {
   const url = playasiaSearchUrl(query);
   const diagnostics = [];
@@ -213,33 +249,6 @@ function normalizedSteamPrice(value) {
   if (/free|gratis/i.test(text)) return "0,00 €";
   const match = text.match(/(\d{1,3}(?:[.,]\d{2}))\s*€/);
   return match ? `${match[1].replace(".", ",")} €` : "";
-}
-
-function parseInstantGaming(html, title) {
-  const normalizedTitle = normalize(retailTitle(title));
-  const products = [];
-  const blocks = html.split(/class="[^"]*(?:item|product|cover)[^"]*"/i).slice(1);
-  for (const block of blocks) {
-    const text = decodeHtml(block.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
-    if (!tokenOverlap(normalizedTitle, normalize(text))) continue;
-    const price = text.match(/(\d{1,3}(?:[.,]\d{2}))\s*€/i);
-    if (!price) continue;
-    const url = decodeHtml(block.match(/href="([^"]+)"/i)?.[1] || "");
-    products.push({
-      title: text.slice(0, 140),
-      platform: text,
-      price: `${price[1].replace(".", ",")} €`,
-      matchedTitle: text.slice(0, 140),
-      url: absoluteInstantGamingUrl(url),
-    });
-  }
-  return bestProduct(products, title, "") || parseGeneric(html, title);
-}
-
-function absoluteInstantGamingUrl(value) {
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
-  return `https://www.instant-gaming.com${value.startsWith("/") ? "" : "/"}${value}`;
 }
 
 function parseGeneric(html, title) {
