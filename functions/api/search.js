@@ -90,8 +90,9 @@ async function igdbSearch(query, credentials, lookup = {}) {
   const games = await response.json();
   if (slugBody && !games.length) return igdbSearch(query, credentials, { ...lookup, igdbSlug: "" });
   const hltbResults = await safeHltbResults(query);
-  return games
-    .map((game) => igdbResult(game, query, hltbResults, lookup))
+  const results = await Promise.all(games
+    .map((game) => igdbResult(game, query, hltbResults, lookup)));
+  return results
     .filter(Boolean)
     .sort((a, b) => b.score - a.score)
     .map(({ score, ...game }) => game);
@@ -113,7 +114,7 @@ async function getIgdbToken({ clientId, clientSecret }) {
   return igdbTokenCache.token;
 }
 
-function igdbResult(game, query, hltbResults, lookup = {}) {
+async function igdbResult(game, query, hltbResults, lookup = {}) {
   const title = game.name || "";
   const textScore = lookup.igdbSlug && game.slug === lookup.igdbSlug ? 1 : matchScore(query, title);
   if (!title || textScore < 0.28) return null;
@@ -121,6 +122,8 @@ function igdbResult(game, query, hltbResults, lookup = {}) {
   const companies = game.involved_companies || [];
   const release = bestIgdbRelease(game.release_dates) || unixDate(game.first_release_date);
   const score = textScore + igdbQualityScore(game, hltbMatch);
+  const storeLinks = storeLinksFromWebsites(game.websites);
+  const steamTrailerUrl = await steamTrailer(storeLinks.steam);
   return {
     id: game.id ? `igdb:${game.id}` : title,
     igdbId: game.id || null,
@@ -136,8 +139,8 @@ function igdbResult(game, query, hltbResults, lookup = {}) {
     developer: companyName(companies, "developer"),
     publisher: companyName(companies, "publisher"),
     description: fullDescription(game.summary || game.storyline || ""),
-    trailerUrl: igdbTrailer(game.videos),
-    storeLinks: storeLinksFromWebsites(game.websites),
+    trailerUrl: steamTrailerUrl || igdbTrailer(game.videos),
+    storeLinks,
     lengthHours: hltbMatch?.lengthHours || null,
     source: "IGDB",
     score,
@@ -191,6 +194,44 @@ function igdbTrailer(videos = []) {
   const list = Array.isArray(videos) ? videos : [];
   const trailer = list.find((video) => /trailer|launch|announcement|reveal/i.test(video.name || "")) || list[0];
   return trailer?.video_id ? `https://www.youtube.com/watch?v=${trailer.video_id}` : "";
+}
+
+async function steamTrailer(storeUrl) {
+  const appId = steamAppId(storeUrl);
+  if (!appId) return "";
+  try {
+    const api = new URL("https://store.steampowered.com/api/appdetails");
+    api.searchParams.set("appids", appId);
+    api.searchParams.set("l", "english");
+    const data = await getJson(api.toString());
+    const app = data?.[appId];
+    if (!app?.success || !app?.data) return "";
+    return bestSteamMovieUrl(app.data.movies || []);
+  } catch {
+    return "";
+  }
+}
+
+function steamAppId(storeUrl) {
+  const raw = String(storeUrl || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    if (!/store\.steampowered\.com$/i.test(url.hostname)) return "";
+    const parts = url.pathname.split("/").filter(Boolean);
+    const appIndex = parts.indexOf("app");
+    return appIndex >= 0 ? String(parts[appIndex + 1] || "") : "";
+  } catch {
+    return "";
+  }
+}
+
+function bestSteamMovieUrl(movies = []) {
+  const preferred = (Array.isArray(movies) ? movies : [])
+    .find((movie) => /trailer|launch|announce|gameplay/i.test(movie?.name || ""));
+  const movie = preferred || (Array.isArray(movies) ? movies[0] : null);
+  if (!movie) return "";
+  return movie?.mp4?.max || movie?.mp4?.["480"] || movie?.webm?.max || movie?.webm?.["480"] || "";
 }
 
 function storeLinksFromWebsites(websites = []) {
