@@ -366,15 +366,20 @@ function renderPlayingFinished() {
     .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
     .slice(0, 3);
   el.playingFinished.hidden = !games.length;
-  el.playingFinishedList.innerHTML = games.map((game) => `
-    <button class="achievement-game playing-finished-game" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`Open ${game.title}`)}">
-      <img src="${escapeHtml(game.cover || platformLogo(game.platform || "PS5"))}" alt="" loading="lazy" decoding="async">
-      <div>
-        <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
-        <span>${escapeHtml([formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "))}</span>
-      </div>
-    </button>
-  `).join("");
+  el.playingFinishedList.innerHTML = games.map((game) => {
+    const psn = matchedPsnGame(game);
+    const progress = psn ? progressValue(psn.game) : 0;
+    return `
+      <button class="achievement-game playing-finished-game" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`Open ${game.title}`)}">
+        <img src="${escapeHtml(game.cover || platformLogo(game.platform || "PS5"))}" alt="" loading="lazy" decoding="async">
+        <div>
+          <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
+          <span>${escapeHtml([formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "))}</span>
+          ${psn ? `<em style="--progress:${progress}%"></em>` : ""}
+        </div>
+      </button>
+    `;
+  }).join("");
   el.playingFinishedList.querySelectorAll(".playing-finished-game").forEach((button) => {
     button.addEventListener("click", () => openDetail(button.dataset.id));
   });
@@ -1720,7 +1725,7 @@ function chipsFor(game) {
   const chips = [];
   if (game.preorderStore) chips.push(chip(`Preordered: ${game.preorderStore}`, "accent"));
   if (game.preferredStore) chips.push(chip(`Buy: ${game.preferredStore}`));
-  (game.genres || []).forEach((genre) => chips.push(chip(genre, "genre")));
+  (game.genres || []).slice(0, 4).forEach((genre) => chips.push(chip(genre, "genre")));
   return chips;
 }
 

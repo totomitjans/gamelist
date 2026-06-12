@@ -3201,6 +3201,7 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .playing-section .cover-button {
+    align-self: start;
     width: 112px;
     height: 154px;
     max-height: none;
@@ -3210,8 +3211,13 @@ body.dialog-open .mobile-section-tabs {
     grid-template-columns: 112px minmax(0, 1fr);
     flex-basis: calc(100vw - 54px);
     min-height: 360px;
+    align-items: start;
     padding: 11px;
     gap: 11px;
+  }
+
+  .playing-section .game-main {
+    min-height: 338px;
   }
 
   .playing-section .game-card h3 {
@@ -3222,6 +3228,12 @@ body.dialog-open .mobile-section-tabs {
 
   .card-trophy-list {
     grid-template-columns: 1fr;
+  }
+
+  .playing-section .card-trophies[hidden] {
+    display: block;
+    visibility: hidden;
+    min-height: 150px;
   }
 
   .card-trophy {
