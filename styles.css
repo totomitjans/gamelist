@@ -1599,7 +1599,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 content: "";
         position: absolute;
         top: 0;
-        left: -250px;
+        left: -300px;
         bottom: 0;
         z-index: 1;
         width: min(820px, 80%);
