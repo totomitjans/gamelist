@@ -1229,6 +1229,9 @@ function cardFor(game, options = {}) {
 }
 
 function trailerFrame(url) {
+  if (directTrailerUrl(url)) {
+    return `<video src="${escapeHtml(url)}" muted loop playsinline preload="none" aria-hidden="true"></video>`;
+  }
   return `<iframe src="${escapeHtml(url)}" title="" tabindex="-1" loading="lazy" aria-hidden="true" allow="autoplay; encrypted-media; picture-in-picture"></iframe>`;
 }
 
@@ -1306,7 +1309,13 @@ function playCardTrailer(card) {
     commandTrailer(iframe, "playVideo");
     return;
   }
+  const video = trailer.querySelector("video");
+  if (video) {
+    video.play().catch(() => {});
+    return;
+  }
   trailer.innerHTML = trailerFrame(trailer.dataset.src);
+  trailer.querySelector("video")?.play().catch(() => {});
   trailer.querySelector("iframe")?.addEventListener("load", (event) => {
     if (!card.classList.contains("trailer-paused") && !card.classList.contains("trailer-user-paused")) {
       commandTrailer(event.currentTarget, "playVideo");
@@ -1320,6 +1329,8 @@ function pauseCardTrailer(card) {
   card.classList.add("trailer-paused");
   const iframe = trailer.querySelector("iframe");
   if (iframe) commandTrailer(iframe, "pauseVideo");
+  const video = trailer.querySelector("video");
+  if (video) video.pause();
 }
 
 function pauseAllPlayingTrailers() {
@@ -1341,6 +1352,7 @@ function shouldShowCardTrailer(game) {
 function trailerEmbedUrl(value) {
   const url = String(value || "").trim();
   if (!url) return "";
+  if (directTrailerUrl(url)) return url;
   const videoId = youtubeVideoId(url);
   if (videoId) {
     const params = new URLSearchParams({
@@ -1361,6 +1373,10 @@ function trailerEmbedUrl(value) {
     return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
   }
   return url;
+}
+
+function directTrailerUrl(value) {
+  return /^https?:\/\/.+\.(?:mp4|webm|ogg)(?:[?#].*)?$/i.test(String(value || "").trim());
 }
 
 function youtubeVideoId(value) {
