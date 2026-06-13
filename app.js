@@ -733,8 +733,8 @@ function renderReleaseCalendar() {
     </div>
     <div class="release-calendar-head">
       <div class="release-calendar-actions">
-        <button class="icon-button" type="button" data-calendar-shift="-1" title="Previous month" aria-label="Previous month">←</button>
         <button class="ghost-button calendar-today-action" type="button" data-calendar-today>Today</button>
+        <button class="icon-button" type="button" data-calendar-shift="-1" title="Previous month" aria-label="Previous month">←</button>
         <button class="icon-button" type="button" data-calendar-shift="1" title="Next month" aria-label="Next month">→</button>
       </div>
     </div>

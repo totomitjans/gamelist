@@ -422,6 +422,7 @@ button:disabled {
   flex-wrap: wrap;
   gap: 3px;
   margin-top: 3px;
+  line-height: 1;
 }
 
 .playing-finished-tags .platform-badge,
@@ -429,11 +430,18 @@ button:disabled {
 .playing-finished-tags .coop-pill,
 .playing-finished-tags .replay-pill,
 .playing-finished-tags .platinum-pill {
-  min-height: 19px;
-  padding: 3px 5px;
+  min-height: 0;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 5px;
   font-size: 9px;
   line-height: 1;
+}
+
+.playing-finished-tags .platform-icon {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
 }
 
 .playing-section[hidden] {
@@ -2750,11 +2758,18 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .completed-platform .coop-pill,
+.completed-platform .digital-pill,
 .completed-platform .replay-pill,
 .completed-platform .platinum-pill {
   min-height: 25px;
   padding: 3px 7px;
   font-size: 11px;
+}
+
+.completed-platform .digital-pill {
+  min-height: 21px;
+  padding: 2px 6px;
+  font-size: 10px;
 }
 
 .completed-row .restore-action {
