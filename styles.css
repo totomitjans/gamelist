@@ -1005,12 +1005,6 @@ h3 {
   padding: 12px;
   border-radius: 8px;
   margin-top: -2px;
-  background:
-    var(--grid-fade),
-    var(--grid-texture),
-    var(--panel) !important;
-  background-size: auto, 22px 22px, auto;
-  background-position: center, var(--grid-x) var(--grid-y), center;
 }
 
 .release-calendar-head {
@@ -1150,11 +1144,13 @@ body.dialog-open .scroll-top-button {
   min-height: 48px;
   color: #ffffff;
   background: var(--accent);
-  border-color: rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
+  border-color: transparent;
+  border-radius: 16px;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
   font-size: 24px;
   font-weight: 900;
+  line-height: 1;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
 .floating-action-button:hover {
@@ -1394,6 +1390,15 @@ body.dialog-open .floating-edit-actions {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px) saturate(1.15);
+}
+
+.release-calendar.glass {
+  background:
+    var(--grid-fade),
+    var(--grid-texture),
+    var(--panel);
+  background-size: auto, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), center;
 }
 
 .stats .glass,
