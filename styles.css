@@ -1036,8 +1036,7 @@ h3 {
   min-width: 56px;
   min-height: 56px;
   color: #ffffff;
-  background: #ff0039;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--accent);
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
   opacity: 0;
   pointer-events: none;
@@ -1045,11 +1044,14 @@ h3 {
   transition: opacity 160ms ease, transform 160ms ease, background 140ms ease, border-color 140ms ease;
 }
 
-.scroll-top-button.visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
+scroll-top-button.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    background: var(--accent);
 }
+
+
 
 .scroll-top-icon {
   width: 25px;
