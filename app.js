@@ -37,6 +37,7 @@ const state = {
   games: [],
   psnActivity: { achievements: [], games: [], platinums: [], sourceUrl: "" },
   cardTrophies: {},
+  platinumCoverCache: {},
   filters: { query: "", platform: "all", tag: "all", sort: "time", direction: "asc", preordered: false },
   viewMode: localStorage.getItem(VIEW_MODE_KEY) === "list" ? "list" : "grid",
   editingId: "",
@@ -231,6 +232,10 @@ function bindEvents() {
   el.playingFinishedList.addEventListener("scroll", updatePlayingFinishedEdges, { passive: true });
   el.detailTrophyList.addEventListener("scroll", updateDetailTrophyEdges, { passive: true });
   el.platinumCloseButton.addEventListener("click", () => el.platinumDialog.close());
+  el.platinumDialog.addEventListener("click", (event) => {
+    if (event.target === el.platinumDialog) el.platinumDialog.close();
+  });
+  el.platinumDialog.addEventListener("close", syncScrollLock);
   window.addEventListener("scroll", updateScrollTopButton, { passive: true });
   window.addEventListener("resize", () => {
     schedulePlayingCardHeightSync();
@@ -451,7 +456,7 @@ function renderViewToggle() {
 }
 
 function syncScrollLock() {
-  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open || el.releaseDialog.open);
+  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open || el.releaseDialog.open || el.platinumDialog.open);
   updateScrollTopButton();
 }
 
@@ -665,6 +670,8 @@ function openPlatinumDialog() {
   if (state.platinumYear !== "all" && !years.includes(state.platinumYear)) state.platinumYear = "all";
   renderPlatinumDialog(platinums, years);
   el.platinumDialog.showModal();
+  syncScrollLock();
+  hydratePlatinumCovers(platinums);
 }
 
 function renderPlatinumDialog(platinums = platinumItems(), years = platinumYears(platinums)) {
@@ -692,7 +699,7 @@ function renderPlatinumDialog(platinums = platinumItems(), years = platinumYears
 function platinumItems() {
   const psnPlatinums = (state.psnActivity.platinums || []).map((item) => ({
     title: item.title || "Platinum game",
-    cover: localCoverForTitle(item.title) || item.cover || platformLogo("PS5"),
+    cover: platinumCoverFor(item.title) || item.cover || platformLogo("PS5"),
     trophyName: item.trophyName || "Platinum",
     trophyIcon: item.icon || platformLogo("PS5"),
     earnedAt: item.earnedAt || "",
@@ -726,6 +733,31 @@ function localCoverForTitle(title) {
   return match?.cover ? coverDisplayUrl(match.cover, "tiny") : "";
 }
 
+function platinumCoverFor(title) {
+  const normalized = normalizeTitleForMatch(title);
+  if (!normalized) return "";
+  const cached = state.platinumCoverCache[normalized];
+  return localCoverForTitle(title) || (cached === "__missing" ? "" : cached || "");
+}
+
+async function hydratePlatinumCovers(platinums) {
+  const missing = platinums
+    .filter((item) => !localCoverForTitle(item.title) && !state.platinumCoverCache[normalizeTitleForMatch(item.title)])
+    .slice(0, 12);
+  if (!missing.length) return;
+  await Promise.all(missing.map(async (item) => {
+    const key = normalizeTitleForMatch(item.title);
+    if (!key) return;
+    try {
+      const result = await lookupFirstResult(item.title);
+      state.platinumCoverCache[key] = result?.cover ? coverDisplayUrl(result.cover, "tiny") : "__missing";
+    } catch {
+      state.platinumCoverCache[key] = "__missing";
+    }
+  }));
+  if (el.platinumDialog.open) renderPlatinumDialog(platinumItems(), platinumYears(platinumItems()));
+}
+
 function platinumYears(platinums) {
   return [...new Set(platinums.map(platinumYearFor).filter(Boolean))].sort((a, b) => b.localeCompare(a));
 }
@@ -740,12 +772,13 @@ function platinumYearFor(item) {
 
 function platinumCard(item) {
   const content = `
-    <img src="${escapeHtml(item.cover)}" alt="">
-    <div>
-      <strong>${escapeHtml(item.title)}</strong>
+    <img class="platinum-cover" src="${escapeHtml(item.cover)}" alt="">
+    <div class="platinum-main">
+      <strong>${escapeHtml(item.trophyName || "Platinum")}</strong>
+      <span class="platinum-game">${escapeHtml(item.title)}</span>
       <span class="platinum-earned">${escapeHtml([item.platform, item.earnedAt].filter(Boolean).join(" · "))}</span>
-      <span class="platinum-trophy"><img src="${escapeHtml(item.trophyIcon)}" alt="">${escapeHtml(item.trophyName || "Platinum")}</span>
     </div>
+    <img class="platinum-icon" src="${escapeHtml(item.trophyIcon)}" alt="${escapeHtml(item.trophyName || "Platinum")}">
   `;
   if (item.url) {
     return `<a class="platinum-card" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${content}</a>`;
