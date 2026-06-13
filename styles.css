@@ -1412,11 +1412,12 @@ body.dialog-open .floating-edit-actions {
 }
 
 .toolbar {
+  --toolbar-control-height: 42px;
   position: sticky;
   top: 10px;
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 136px 150px 150px 190px 38px;
+  grid-template-columns: minmax(220px, 1fr) 136px 150px 150px 190px var(--toolbar-control-height);
   gap: 10px;
   padding: 12px;
   border-radius: 8px;
@@ -1425,7 +1426,9 @@ body.dialog-open .floating-edit-actions {
 
 .toolbar input,
 .toolbar select {
-  padding: 10px 11px;
+  height: var(--toolbar-control-height);
+  min-height: var(--toolbar-control-height);
+  padding: 0 11px;
   font-size: 13px;
   line-height: 1.2;
 }
@@ -1434,7 +1437,7 @@ body.dialog-open .floating-edit-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: var(--toolbar-control-height);
   padding: 0 12px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.07);
@@ -1458,12 +1461,12 @@ body.dialog-open .floating-edit-actions {
 
 .toolbar-check {
   align-self: end;
-  min-height: 44px;
+  min-height: var(--toolbar-control-height);
 }
 
 .order-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
+  grid-template-columns: minmax(0, 1fr) var(--toolbar-control-height);
   gap: 6px;
   margin-bottom: 0;
 }
@@ -1477,9 +1480,9 @@ body.dialog-open .floating-edit-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  min-width: 38px;
-  min-height: 42px;
+  width: var(--toolbar-control-height);
+  min-width: var(--toolbar-control-height);
+  min-height: var(--toolbar-control-height);
   padding: 0;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.07);
@@ -1510,8 +1513,9 @@ body.dialog-open .floating-edit-actions {
 }
 
 .direction-toggle {
-  width: 38px;
-  min-height: 42px;
+  width: var(--toolbar-control-height);
+  min-height: var(--toolbar-control-height);
+  height: var(--toolbar-control-height);
   padding: 0;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.07);
@@ -3014,11 +3018,11 @@ a.time-pill {
 
 .icon-button.view-toggle {
   align-self: end;
-  width: 38px;
+  width: var(--toolbar-control-height);
   height: auto;
-  min-width: 38px;
-  min-height: 42px;
-  flex: 0 0 38px;
+  min-width: var(--toolbar-control-height);
+  min-height: var(--toolbar-control-height);
+  flex: 0 0 var(--toolbar-control-height);
   padding: 0;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.07);
@@ -4356,13 +4360,29 @@ body.dialog-open .mobile-section-tabs {
     width: 100%;
   }
 
-  .order-control {
-    grid-template-columns: minmax(0, 1fr) 42px;
-  }
-
   .toolbar {
     position: static;
+    grid-template-columns: minmax(0, 1fr) var(--toolbar-control-height);
     gap: 8px;
+  }
+
+  .toolbar > label,
+  .toolbar .toolbar-check {
+    grid-column: 1 / -1;
+  }
+
+  .toolbar .order-label {
+    grid-column: 1;
+  }
+
+  .toolbar .view-toggle {
+    grid-column: 2;
+    align-self: end;
+    justify-self: stretch;
+  }
+
+  .order-control {
+    grid-template-columns: minmax(0, 1fr) var(--toolbar-control-height);
   }
 
   .mobile-section-tabs {
