@@ -1029,10 +1029,14 @@ h3 {
   right: clamp(14px, 2.4vw, 26px);
   bottom: clamp(16px, 3vw, 28px);
   z-index: 16;
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  min-height: 42px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  color: #ffffff;
+  background: #ff0039;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
@@ -1046,17 +1050,16 @@ h3 {
 }
 
 .scroll-top-icon {
-  width: 18px;
-  height: 18px;
+  width: 25px;
+  height: 25px;
 }
 
-.scroll-top-icon polyline,
-.scroll-top-icon line {
+.scroll-top-icon polyline {
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.1;
+  stroke-width: 2.6;
 }
 
 body.dialog-open .scroll-top-button {
@@ -1066,7 +1069,6 @@ body.dialog-open .scroll-top-button {
 }
 
 .release-calendar-actions .icon-button:hover,
-.scroll-top-button:hover,
 #closeDialogButton:hover,
 #detailCloseButton:hover,
 #historyCloseButton:hover,
@@ -1092,6 +1094,12 @@ body.dialog-open .scroll-top-button {
   color: #ffffff;
   border-color: rgba(255, 0, 57, 0.58);
   background: rgba(255, 0, 57, 0.28);
+}
+
+.scroll-top-button:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #ff0039;
 }
 
 .release-months {
@@ -1389,8 +1397,10 @@ body.dialog-open .scroll-top-button {
 
 .view-toggle {
   align-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 38px;
-  height: 42px;
   min-width: 38px;
   min-height: 42px;
   padding: 0;
@@ -1600,7 +1610,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 
 .game-row {
   display: grid;
-  grid-template-columns: 42px minmax(145px, 1.4fr) minmax(210px, 1.8fr) minmax(150px, 1.2fr) minmax(140px, auto) auto;
+  grid-template-columns: 42px minmax(145px, 1.2fr) minmax(260px, 2.2fr) minmax(120px, 0.8fr) minmax(140px, auto) auto;
+  grid-template-rows: auto auto;
   gap: 9px;
   align-items: center;
   min-height: 58px;
@@ -1617,6 +1628,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .game-row-cover {
+  grid-column: 1 / 2;
+  grid-row: 1 / -1;
   width: 42px;
   height: 56px;
   object-fit: cover;
@@ -1626,6 +1639,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .game-row-identity {
+  grid-column: 2 / 3;
+  grid-row: 1 / -1;
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -1660,8 +1675,69 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   min-width: 0;
 }
 
+.game-row-core {
+  grid-column: 3 / 5;
+  grid-row: 1;
+}
+
+.game-row-tags {
+  grid-column: 3 / 5;
+  grid-row: 2;
+}
+
 .game-row-prices {
+  grid-column: 5 / 6;
+  grid-row: 1 / -1;
   justify-content: flex-end;
+}
+
+.game-row-actions {
+  grid-column: 6 / 7;
+  grid-row: 1 / -1;
+}
+
+.game-row .platform-badge,
+.game-row .release-pill,
+.game-row .owner-pill,
+.game-row .status-pill,
+.game-row .time-pill,
+.game-row .digital-pill,
+.game-row .coop-pill,
+.game-row .replay-pill,
+.game-row .platinum-pill,
+.game-row .psn-progress-pill,
+.game-row .playing-pill,
+.game-row .history-pill,
+.game-row .chip {
+  min-height: 22px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+
+.game-row .platform-badge {
+  gap: 4px;
+  padding-left: 3px;
+}
+
+.game-row .platform-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.game-row .time-pill strong,
+.game-row .psn-progress-pill strong {
+  font-size: 10px;
+}
+
+.game-row .time-pill span {
+  font-size: 8px;
+}
+
+.game-row .psn-progress-pill em {
+  width: 26px;
+  height: 4px;
 }
 
 .row-price-link {
@@ -3870,12 +3946,16 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .game-row-cover {
+    grid-column: 1 / 2;
+    grid-row: 1 / -1;
     width: 42px;
     height: 56px;
     border-radius: 5px;
   }
 
   .game-row-identity {
+    grid-column: 2 / 3;
+    grid-row: 1;
     gap: 4px;
   }
 
@@ -3887,6 +3967,7 @@ body.dialog-open .mobile-section-tabs {
   .game-row-core,
   .game-row-tags {
     grid-column: 2 / 3;
+    grid-row: 2;
     gap: 3px;
   }
 
@@ -3929,6 +4010,8 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .game-row-actions {
+    grid-column: 3 / 4;
+    grid-row: 1 / -1;
     gap: 4px;
   }
 

@@ -425,8 +425,8 @@ function render() {
 
 function renderViewToggle() {
   const showingGrid = state.viewMode === "grid";
-  el.viewToggleButton.innerHTML = showingGrid ? linesIcon() : gridIcon();
-  el.viewToggleButton.title = showingGrid ? "Show as list" : "Show as grid";
+  el.viewToggleButton.innerHTML = showingGrid ? gridIcon() : linesIcon();
+  el.viewToggleButton.title = showingGrid ? "Grid view" : "List view";
   el.viewToggleButton.setAttribute("aria-label", el.viewToggleButton.title);
   el.viewToggleButton.classList.toggle("active", state.viewMode === "list");
 }
@@ -1018,19 +1018,17 @@ function rowCoreStats(game) {
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
     game.lengthHours ? timeBadge(game.lengthHours) : "",
     releaseStatus(game) ? `<span class="release-pill">${escapeHtml(releaseStatus(game))}</span>` : "",
-    psn ? psnProgressBadge(psn) : "",
-  ].filter(Boolean).join("");
-}
-
-function rowTags(game) {
-  return [
     ...ownerTags(game).filter((owner) => owner !== "Xavi").map(ownerBadge),
     ...gameStatuses(game).map(statusBadge),
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
     game.platinum ? `<span class="platinum-pill">${trophyIcon()} Completed</span>` : "",
-    ...chipsFor(game),
-  ].filter(Boolean);
+    psn ? psnProgressBadge(psn) : "",
+  ].filter(Boolean).join("");
+}
+
+function rowTags(game) {
+  return chipsFor(game);
 }
 
 function rowPrices(game) {
@@ -1944,10 +1942,10 @@ function linesIcon() {
 function gridIcon() {
   return `
     <svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4" y="5" width="6" height="6"></rect>
-      <rect x="14" y="5" width="6" height="6"></rect>
-      <rect x="4" y="13" width="6" height="6"></rect>
-      <rect x="14" y="13" width="6" height="6"></rect>
+      <rect x="4.5" y="4.5" width="5.5" height="5.5"></rect>
+      <rect x="14" y="4.5" width="5.5" height="5.5"></rect>
+      <rect x="4.5" y="14" width="5.5" height="5.5"></rect>
+      <rect x="14" y="14" width="5.5" height="5.5"></rect>
     </svg>
   `;
 }
