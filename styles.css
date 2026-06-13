@@ -1615,7 +1615,8 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   display: grid;
   grid-template-columns: 42px minmax(145px, 1.2fr) minmax(260px, 2.2fr) minmax(120px, 0.8fr) minmax(140px, auto) auto;
   grid-template-rows: auto auto;
-  gap: 9px;
+  column-gap: 9px;
+  row-gap: 0px;
   align-items: center;
   min-height: 58px;
   padding: 7px 9px;
