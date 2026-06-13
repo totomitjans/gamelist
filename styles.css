@@ -430,18 +430,38 @@ button:disabled {
 .playing-finished-tags .coop-pill,
 .playing-finished-tags .replay-pill,
 .playing-finished-tags .platinum-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   min-height: 0;
   height: 18px;
+  margin-top: 0;
   padding: 0 5px;
   border-radius: 5px;
   font-size: 9px;
   line-height: 1;
 }
 
+.playing-finished-tags .platform-badge {
+  gap: 3px;
+  padding: 0 5px 0 3px;
+}
+
 .playing-finished-tags .platform-icon {
+  display: inline-grid;
+  flex: 0 0 13px;
   width: 13px;
   height: 13px;
+  margin-top: 0;
+  place-items: center;
   border-radius: 4px;
+}
+
+.playing-finished-tags .platform-label {
+  display: inline;
+  margin-top: 0;
+  line-height: 1;
 }
 
 .playing-section[hidden] {
