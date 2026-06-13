@@ -1123,6 +1123,44 @@ body.dialog-open .scroll-top-button {
   background: #ff0039;
 }
 
+.floating-edit-actions {
+  position: fixed;
+  left: clamp(14px, 2.4vw, 26px);
+  bottom: clamp(16px, 3vw, 28px);
+  z-index: 16;
+  display: flex;
+  gap: 10px;
+}
+
+.floating-action-button {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  color: #ffffff;
+  background: var(--accent);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.floating-action-button:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #ff0039;
+}
+
+.floating-action-button .pencil-icon {
+  width: 20px;
+  height: 20px;
+}
+
+body.dialog-open .floating-edit-actions {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .release-months {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1427,7 +1465,7 @@ body.dialog-open .scroll-top-button {
   padding: 0;
   color: #ffffff;
   background: var(--accent);
-  border-color: transparent;
+  border-color: rgba(255, 255, 255, 0.18);
   border-radius: 7px;
   font-weight: 900;
 }
@@ -3067,6 +3105,7 @@ body:not(.can-edit) .restore-action,
 body:not(.can-edit) .completed-edit-action,
 body:not(.can-edit) .completed-date-edit,
 body:not(.can-edit) .history-edit-action,
+body:not(.can-edit) #syncButton,
 body:not(.can-edit) #fetchPricesButton {
   display: none;
 }
@@ -3434,7 +3473,15 @@ body.dialog-open .mobile-section-tabs {
 }
 
 .detail-trophies h3 {
-  color: var(--accent-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffe985;
+}
+
+.detail-trophies h3 .trophy-icon {
+  width: 17px;
+  height: 17px;
 }
 
 .detail-trophy-tools span {
@@ -3469,6 +3516,12 @@ body.dialog-open .mobile-section-tabs {
 
 .detail-trophy-percent .psn-progress-pill strong {
   font-size: 10px;
+}
+
+.detail-trophy-percent .psn-progress-pill span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 820;
 }
 
 .detail-trophy-percent:empty {
@@ -3831,7 +3884,7 @@ body.dialog-open .mobile-section-tabs {
 }
 
 .store-hltb {
-  background: rgba(255, 225, 101, 0.12);
+  background: rgba(78, 82, 92, 0.32);
 }
 
 .detail-guides {
@@ -3889,11 +3942,11 @@ body.dialog-open .mobile-section-tabs {
 }
 
 .guide-neoseeker {
-  background: rgba(255, 225, 101, 0.12);
+  background: rgba(112, 194, 255, 0.18);
 }
 
 .guide-rpgsite {
-  background: rgba(255, 0, 81, 0.14);
+  background: rgba(225, 230, 240, 0.14);
 }
 
 .modal-head {
@@ -3960,6 +4013,7 @@ body.dialog-open .mobile-section-tabs {
   width: 44px;
   height: 44px;
   flex: 0 0 44px;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .lookup-results {
@@ -4594,6 +4648,21 @@ body.dialog-open .mobile-section-tabs {
   .detail-trophy-tools {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .detail-guides .guide-links {
+    flex-wrap: nowrap;
+  }
+
+  .detail-guides .guide-button {
+    width: 38px;
+    min-width: 38px;
+    min-height: 34px;
+    padding: 6px;
+  }
+
+  .detail-guides .guide-button span {
+    display: none;
   }
 
   .stats {

@@ -45,6 +45,7 @@ const state = {
   canEdit: sessionStorage.getItem(SESSION_KEY) === "true",
   draggingId: "",
   mobileSection: "backlog",
+  mobileSwipeStart: null,
   historyYear: String(new Date().getFullYear()),
   platinumYear: "all",
   platinumSort: "time",
@@ -52,6 +53,7 @@ const state = {
   releaseCalendarOffset: 0,
   detailTrophyRequest: "",
   detailReturnToHistory: false,
+  detailGameId: "",
   detailTrophiesData: [],
   detailTrophySort: "order",
   detailTrophyDirection: "asc",
@@ -88,7 +90,11 @@ const el = {
   viewToggleButton: document.querySelector("#viewToggleButton"),
   preorderedFilter: document.querySelector("#preorderedFilter"),
   scrollTopButton: document.querySelector("#scrollTopButton"),
+  floatingEditActions: document.querySelector("#floatingEditActions"),
+  floatingEditButton: document.querySelector("#floatingEditButton"),
+  floatingAddButton: document.querySelector("#floatingAddButton"),
   mobileTabs: document.querySelectorAll("[data-mobile-section]"),
+  board: document.querySelector(".board"),
   detailDialog: document.querySelector("#detailDialog"),
   detailCloseButton: document.querySelector("#detailCloseButton"),
   historyDialog: document.querySelector("#historyDialog"),
@@ -207,6 +213,11 @@ function bindTextureParallax() {
   }, { passive: true });
 }
 
+function quickAddGame() {
+  scrollToSearchArea();
+  window.setTimeout(() => openEditor(), 180);
+}
+
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   window.addEventListener("load", () => {
@@ -222,10 +233,9 @@ function bindEvents() {
     scrollToSearchArea();
   });
   el.loginButton.addEventListener("click", toggleEditMode);
-  el.addButton.addEventListener("click", () => {
-    scrollToSearchArea();
-    window.setTimeout(() => openEditor(), 180);
-  });
+  el.addButton.addEventListener("click", quickAddGame);
+  el.floatingEditButton.addEventListener("click", toggleEditMode);
+  el.floatingAddButton.addEventListener("click", quickAddGame);
   el.syncButton.addEventListener("click", syncNow);
   el.fetchDataButton?.addEventListener("click", refreshAllGameData);
   el.fetchPricesButton.addEventListener("click", refreshAllPrices);
@@ -312,6 +322,8 @@ function bindEvents() {
     state.mobileSection = button.dataset.mobileSection;
     render();
   }));
+  el.board.addEventListener("touchstart", handleBoardSwipeStart, { passive: true });
+  el.board.addEventListener("touchend", handleBoardSwipeEnd, { passive: true });
   el.fields.section.addEventListener("change", syncDialogPriceVisibility);
   el.fields.replayCount.addEventListener("input", syncReplaySection);
   el.form.addEventListener("submit", saveFromForm);
@@ -429,6 +441,7 @@ function render() {
   el.syncButton.hidden = !state.canEdit;
   if (el.fetchDataButton) el.fetchDataButton.hidden = true;
   el.fetchPricesButton.hidden = !state.canEdit;
+  el.floatingEditButton.hidden = state.canEdit;
   if (state.canEdit && !el.fetchPricesButton.disabled) el.fetchPricesButton.innerHTML = `${euroIcon()}<span class="button-label">Fetch New Prices</span>`;
   renderFilters();
   renderPlayingSection();
@@ -1118,6 +1131,30 @@ function renderMobileTabs() {
     button.classList.toggle("active", active);
   });
   document.body.dataset.mobileSection = state.mobileSection;
+}
+
+function handleBoardSwipeStart(event) {
+  if (!window.matchMedia("(max-width: 760px)").matches) return;
+  const touch = event.changedTouches?.[0];
+  if (!touch) return;
+  state.mobileSwipeStart = { x: touch.clientX, y: touch.clientY };
+}
+
+function handleBoardSwipeEnd(event) {
+  const start = state.mobileSwipeStart;
+  state.mobileSwipeStart = null;
+  if (!start || !window.matchMedia("(max-width: 760px)").matches) return;
+  const touch = event.changedTouches?.[0];
+  if (!touch) return;
+  const dx = touch.clientX - start.x;
+  const dy = touch.clientY - start.y;
+  if (Math.abs(dx) < 52 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+  const sections = ["backlog", "upcoming", "wanted"];
+  const index = sections.indexOf(state.mobileSection);
+  const next = dx < 0 ? sections[index + 1] : sections[index - 1];
+  if (!next) return;
+  state.mobileSection = next;
+  render();
 }
 
 function syncMobileSectionToResults() {
@@ -1852,10 +1889,11 @@ async function renderDetailTrophies(game) {
   }
 
   const requestKey = `${game.id}:${trophyId}:${Date.now()}`;
+  state.detailGameId = game.id;
   state.detailTrophyRequest = requestKey;
   el.detailTrophies.hidden = false;
   el.detailTrophyCount.textContent = "Loading...";
-  el.detailTrophyPercent.innerHTML = psnProgressBadge(psn);
+  el.detailTrophyPercent.innerHTML = psnProgressBadge(psn, { includeIcon: false });
   el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned trophies...</div>`;
 
   try {
@@ -1887,8 +1925,12 @@ function renderDetailTrophyList() {
   el.detailTrophyDirection.classList.toggle("desc", state.detailTrophyDirection === "desc");
   const trophies = sortedDetailTrophies();
   const earnedCount = trophies.filter((trophy) => trophy.earned).length;
+  const game = getGame(state.detailGameId);
+  const psn = game ? matchedPsnGame(game) : null;
   el.detailTrophyCount.textContent = trophies.length ? `${earnedCount}/${trophies.length} earned` : "";
-  if (!trophies.length) el.detailTrophyPercent.innerHTML = "";
+  el.detailTrophyPercent.innerHTML = trophies.length && psn
+    ? psnProgressBadge(psn, { includeIcon: false, label: `${earnedCount}/${trophies.length} earned` })
+    : "";
   el.detailTrophyList.innerHTML = trophies.length
     ? trophies.map(detailTrophyCard).join("")
     : `<div class="detail-trophy-empty">No trophies found for this game yet.</div>`;
@@ -2066,6 +2108,7 @@ function psnProgressBadge(game, options = {}) {
       ${options.includeIcon === false ? "" : trophyIcon()}
       <em style="--progress:${progress}%"></em>
       <strong>${progress}%</strong>
+      ${options.label ? `<span>${escapeHtml(options.label)}</span>` : ""}
     </span>
   `;
 }

@@ -189,6 +189,15 @@
         <polyline points="6 14 12 8 18 14"></polyline>
       </svg>
     </button>
+    <div class="floating-edit-actions" id="floatingEditActions" aria-label="Quick actions">
+      <button class="icon-button floating-action-button" id="floatingEditButton" type="button" title="Edit" aria-label="Edit">
+        <svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
+          <path d="M13.5 6.5l4 4"></path>
+        </svg>
+      </button>
+      <button class="icon-button floating-action-button" id="floatingAddButton" type="button" title="Add Game" aria-label="Add Game">+</button>
+    </div>
 
     <dialog id="gameDialog">
       <form method="dialog" class="modal" id="gameForm">
@@ -413,7 +422,17 @@
           </section>
           <section class="detail-trophies" id="detailTrophies" hidden>
             <div class="detail-trophies-head">
-              <h3>TROPHIES</h3>
+              <h3>
+                <svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path>
+                  <path d="M8 6H5a3 3 0 0 0 3 3"></path>
+                  <path d="M16 6h3a3 3 0 0 1-3 3"></path>
+                  <path d="M12 12v4"></path>
+                  <path d="M9 20h6"></path>
+                  <path d="M10 16h4v4h-4z"></path>
+                </svg>
+                <span>TROPHIES</span>
+              </h3>
               <div class="detail-trophy-tools">
                 <span id="detailTrophyCount"></span>
                 <span class="detail-trophy-percent" id="detailTrophyPercent"></span>
