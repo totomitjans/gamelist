@@ -697,9 +697,9 @@ button:disabled {
   width: 42px;
   height: 42px;
   object-fit: contain;
-  border-radius: 8px;
+  /*border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);*/
 }
 
 .achievement-fallback {
