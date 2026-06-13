@@ -3994,7 +3994,8 @@ body.dialog-open .mobile-section-tabs {
 
   .game-row {
     grid-template-columns: 42px minmax(0, 1fr) auto;
-    gap: 8px;
+    column-gap: 8px;
+    row-gap:0px;
     min-height: 64px;
     padding: 8px;
   }
