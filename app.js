@@ -976,17 +976,13 @@ function rowFor(game, section, options = {}) {
   row.classList.toggle("digital-card", Boolean(game.digital));
   row.innerHTML = `
     <img class="game-row-cover" src="${escapeHtml(game.cover ? coverDisplayUrl(game.cover, "tiny") : "")}" alt="" loading="${escapeHtml(options.imagePriority || "lazy")}" decoding="async" ${game.cover ? "" : "hidden"}>
-    <div class="game-row-main">
-      <div class="game-row-title">
-        <strong class="${game.platinum ? "completed-achievements-title" : ""} ${owners.includes("Judy") ? "owner-judy" : ""} ${owners.includes("Jordi") ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong>
-        <span class="title-owners">${owners.filter((owner) => owner !== "Xavi").map(ownerBadge).join("")}</span>
-      </div>
-      ${studioText(game) ? `<span class="studio-line">${escapeHtml(studioText(game))}</span>` : ""}
-      <span class="meta">${metaFor(game).join("")}</span>
-      <span class="play-dates">${playDatesFor(game).join("")}</span>
-      <span class="chips">${chipsFor(game).join("")}</span>
-      ${section === "backlog" ? "" : `<span class="prices game-row-prices" style="--price-columns:${priceProvidersForGame(game).length}">${pricesFor(game)}</span>`}
+    <div class="game-row-identity">
+      <strong class="${game.platinum ? "completed-achievements-title" : ""} ${owners.includes("Judy") ? "owner-judy" : ""} ${owners.includes("Jordi") ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong>
+      ${studioText(game) ? `<span>${escapeHtml(studioText(game))}</span>` : ""}
     </div>
+    <div class="game-row-core">${rowCoreStats(game)}</div>
+    <div class="game-row-tags">${rowTags(game).join("")}</div>
+    ${section === "backlog" ? `<div class="game-row-prices"></div>` : `<div class="game-row-prices">${rowPrices(game)}</div>`}
     <div class="game-row-actions">
       <button class="icon-button row-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
       ${rowPrimaryAction(game, section)}
@@ -1013,6 +1009,40 @@ function rowFor(game, section, options = {}) {
 function rowPrimaryAction(game, section) {
   if (section === "backlog") return `<button class="primary-button row-primary-action" type="button">Play</button>`;
   return `<button class="ghost-button row-primary-action" type="button">Got it</button>`;
+}
+
+function rowCoreStats(game) {
+  const psn = matchedPsnGame(game);
+  return [
+    game.platform ? platformBadge(game.platform) : "",
+    game.digital ? `<span class="digital-pill">Digital</span>` : "",
+    game.lengthHours ? timeBadge(game.lengthHours) : "",
+    releaseStatus(game) ? `<span class="release-pill">${escapeHtml(releaseStatus(game))}</span>` : "",
+    psn ? psnProgressBadge(psn) : "",
+  ].filter(Boolean).join("");
+}
+
+function rowTags(game) {
+  return [
+    ...ownerTags(game).filter((owner) => owner !== "Xavi").map(ownerBadge),
+    ...gameStatuses(game).map(statusBadge),
+    game.coop ? `<span class="coop-pill">Coop</span>` : "",
+    game.replayCount ? replayBadge(game.replayCount) : "",
+    game.platinum ? `<span class="platinum-pill">${trophyIcon()} Completed</span>` : "",
+    ...chipsFor(game),
+  ].filter(Boolean);
+}
+
+function rowPrices(game) {
+  return normalizedPrices(game).map((price) => {
+    const hasPrice = Boolean(price.price);
+    return `
+      <a class="row-price-link ${hasPrice ? "has-price" : "missing-price"}" href="${escapeHtml(price.url)}" target="_blank" rel="noreferrer" title="${escapeHtml(price.store)}">
+        <img class="store-icon" src="${escapeHtml(storeIcon(price.store))}" alt="" width="14" height="14" decoding="async">
+        <strong>${escapeHtml(hasPrice ? price.price : price.store.replace(/ España|\.es/g, ""))}</strong>
+      </a>
+    `;
+  }).join("");
 }
 
 function renderCompleted() {

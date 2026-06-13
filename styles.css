@@ -1331,7 +1331,7 @@ body.dialog-open .scroll-top-button {
   top: 10px;
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 136px 150px 150px 190px 42px;
+  grid-template-columns: minmax(220px, 1fr) 136px 150px 150px 190px 38px;
   gap: 10px;
   padding: 12px;
   border-radius: 8px;
@@ -1389,10 +1389,15 @@ body.dialog-open .scroll-top-button {
 
 .view-toggle {
   align-self: end;
-  width: 42px;
+  width: 38px;
   height: 42px;
-  min-width: 42px;
+  min-width: 38px;
   min-height: 42px;
+  padding: 0;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(247, 223, 105, 0.34);
+  border-radius: 7px;
 }
 
 .view-toggle.active {
@@ -1595,11 +1600,11 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 
 .game-row {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
-  gap: 11px;
+  grid-template-columns: 42px minmax(145px, 1.4fr) minmax(210px, 1.8fr) minmax(150px, 1.2fr) minmax(140px, auto) auto;
+  gap: 9px;
   align-items: center;
-  min-height: 104px;
-  padding: 10px;
+  min-height: 58px;
+  padding: 7px 9px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
@@ -1612,28 +1617,21 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .game-row-cover {
-  width: 58px;
-  height: 78px;
+  width: 42px;
+  height: 56px;
   object-fit: cover;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.06);
 }
 
-.game-row-main {
+.game-row-identity {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
 }
 
-.game-row-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.game-row-title strong {
+.game-row-identity strong {
   min-width: 0;
   overflow: hidden;
   color: var(--text);
@@ -1643,23 +1641,56 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   white-space: nowrap;
 }
 
-.game-row-title .title-owners:empty {
-  display: none;
+.game-row-identity span {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.game-row .studio-line {
-  margin-top: 0;
-}
-
-.game-row .meta,
-.game-row .play-dates,
-.game-row .chips,
-.game-row .prices {
-  margin-top: 0;
+.game-row-core,
+.game-row-tags,
+.game-row-prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
 }
 
 .game-row-prices {
-  max-width: 620px;
+  justify-content: flex-end;
+}
+
+.row-price-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 25px;
+  padding: 4px 6px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.row-price-link .store-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.row-price-link.missing-price {
+  color: var(--dim);
+  border-style: dashed;
+}
+
+.row-price-link strong {
+  font-size: 11px;
 }
 
 .game-row-actions {
@@ -3832,41 +3863,36 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .game-row {
-    grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
     gap: 8px;
-    min-height: 78px;
+    min-height: 64px;
     padding: 8px;
   }
 
   .game-row-cover {
-    width: 46px;
-    height: 62px;
+    width: 42px;
+    height: 56px;
     border-radius: 5px;
   }
 
-  .game-row-main {
+  .game-row-identity {
     gap: 4px;
   }
 
-  .game-row-title {
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .game-row-title strong {
+  .game-row-identity strong {
     font-size: 13px;
     white-space: normal;
   }
 
-  .game-row .studio-line,
-  .game-row .chips,
-  .game-row-prices {
-    display: none;
+  .game-row-core,
+  .game-row-tags {
+    grid-column: 2 / 3;
+    gap: 3px;
   }
 
-  .game-row .meta,
-  .game-row .play-dates {
-    gap: 3px;
+  .game-row-tags,
+  .game-row-prices {
+    display: none;
   }
 
   .game-row .platform-badge,
