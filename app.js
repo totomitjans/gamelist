@@ -2138,6 +2138,11 @@ async function renderDetailTrophies(game) {
   const psn = matchedPsnGame(game);
   const trophyId = psn?.npCommunicationId;
   if (!trophyId) {
+    console.warn("[trophies] no PSN trophy id for game overlay", {
+      game: game?.title || "",
+      platform: game?.platform || "",
+      matchedPsnGame: psn || null,
+    });
     state.detailTrophyRequest = "";
     state.detailTrophiesData = [];
     el.detailTrophies.hidden = true;
@@ -2160,15 +2165,18 @@ async function renderDetailTrophies(game) {
     const params = new URLSearchParams({
       id: trophyId,
       service: psn.npServiceName || "trophy",
+      debug: "1",
       schema: "3",
     });
     const response = await fetch(`/api/trophies?${params}`);
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Invalid trophy API JSON response" }));
     if (state.detailTrophyRequest !== requestKey) return;
+    logTrophyLoadIssue("detail", game, psn, response, data);
     state.detailTrophiesData = Array.isArray(data.trophies) ? data.trophies : [];
     renderDetailTrophyList();
-  } catch {
+  } catch (error) {
     if (state.detailTrophyRequest !== requestKey) return;
+    logTrophyLoadIssue("detail", game, psn, null, null, error);
     state.detailTrophiesData = [];
     el.detailTrophyCount.textContent = "";
     el.detailTrophyPercent.innerHTML = "";
@@ -2325,19 +2333,47 @@ async function loadCardTrophies(game, psn) {
     const params = new URLSearchParams({
       id: cacheKey,
       service: psn.npServiceName || "trophy",
+      debug: "1",
     });
     const response = await fetch(`/api/trophies?${params}`);
-    if (!response.ok) throw new Error("Card trophies failed");
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Invalid trophy API JSON response" }));
+    logTrophyLoadIssue("card", game, psn, response, data);
+    if (!response.ok) throw new Error(`Card trophies failed (${response.status})`);
     const trophies = (Array.isArray(data.trophies) ? data.trophies : [])
       .filter((trophy) => trophy.earned && trophy.earnedAt)
       .sort((a, b) => String(b.earnedAt || "").localeCompare(String(a.earnedAt || "")))
       .slice(0, 3);
     state.cardTrophies[cacheKey] = { loading: false, trophies };
-  } catch {
+  } catch (error) {
+    logTrophyLoadIssue("card", game, psn, null, null, error);
     state.cardTrophies[cacheKey] = { loading: false, trophies: [] };
   }
   updateCardTrophyStrips(game.id);
+}
+
+function logTrophyLoadIssue(scope, game, psn, response, data, error = null) {
+  const trophyCount = Array.isArray(data?.trophies) ? data.trophies.length : 0;
+  const hasIssue = error
+    || !response?.ok
+    || data?.needsSetup
+    || data?.authError
+    || data?.error
+    || !Array.isArray(data?.trophies);
+  if (!hasIssue) return;
+  console.warn("[trophies] load issue", {
+    scope,
+    game: game?.title || "",
+    trophyId: psn?.npCommunicationId || "",
+    service: psn?.npServiceName || "trophy",
+    status: response?.status || 0,
+    ok: Boolean(response?.ok),
+    trophyCount,
+    needsSetup: Boolean(data?.needsSetup),
+    authError: Boolean(data?.authError),
+    error: error?.message || data?.error || "",
+    debug: data?.debug || "",
+    data,
+  });
 }
 
 function updateCardTrophyStrips(gameId) {

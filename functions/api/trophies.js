@@ -25,6 +25,11 @@ export async function onRequestGet({ request, env = {} }) {
     const trophies = await getEarnedTrophiesForTitle(accessToken, npCommunicationId, npServiceName);
     return json({ trophies, count: trophies.length, source: "psn" });
   } catch (error) {
+    console.error("[trophies] PSN trophies request failed", {
+      npCommunicationId,
+      npServiceName,
+      message: error?.message || "Unknown trophy API error",
+    });
     return json({
       trophies: [],
       authError: true,
