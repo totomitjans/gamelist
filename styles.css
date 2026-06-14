@@ -1804,6 +1804,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 }
 
 .game-row {
+  position: relative;
   display: grid;
   grid-template-columns: 42px minmax(145px, 1.2fr) minmax(260px, 2.2fr) minmax(120px, 0.8fr) minmax(140px, auto) auto;
   grid-template-rows: auto auto;
@@ -1816,11 +1817,17 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
   border-radius: 7px;
+  z-index: 0;
 }
 
 .game-row:hover {
   border-color: rgba(255, 0, 57, 0.32);
   background: rgba(255, 255, 255, 0.07);
+}
+
+.game-row:has(.game-row-cover-wrap:hover),
+.game-row:has(.game-row-cover-wrap:focus-within) {
+  z-index: 30;
 }
 
 .game-row-cover-wrap {
