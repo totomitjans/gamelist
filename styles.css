@@ -3473,7 +3473,7 @@ dialog {
 
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(4px);
 }
 
 body.dialog-open .topbar,
@@ -3495,7 +3495,7 @@ body.dialog-open .mobile-section-tabs {
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(8px) saturate(1.08);
 }
 
 .detail-modal {
@@ -3513,6 +3513,7 @@ body.dialog-open .mobile-section-tabs {
   background-size: auto, 22px 22px, 22px 22px, auto;
   background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
+  backdrop-filter: blur(8px) saturate(1.08);
 }
 
 .history-modal,
@@ -3528,6 +3529,7 @@ body.dialog-open .mobile-section-tabs {
   background-size: auto, 22px 22px, 22px 22px, auto;
   background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
   border-radius: 8px;
+  backdrop-filter: blur(8px) saturate(1.08);
 }
 
 .release-dialog-list {
@@ -4014,6 +4016,7 @@ body.dialog-open .mobile-section-tabs {
 }
 
 .platinum-card {
+  position: relative;
   display: grid;
   grid-template-columns: 66px minmax(0, 1fr);
   gap: 12px;
@@ -4026,7 +4029,41 @@ body.dialog-open .mobile-section-tabs {
   background: rgba(229, 232, 255, 0.08);
   border: 1px solid rgba(229, 232, 255, 0.24);
   border-radius: 7px;
+  overflow: hidden;
+  --platinum-art-x: 0px;
+  --platinum-art-y: 0px;
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.platinum-card.has-platinum-art::before {
+  content: "";
+  position: absolute;
+  top: -18px;
+  right: -26px;
+  bottom: -18px;
+  width: 58%;
+  background: var(--platinum-art) right center / cover no-repeat;
+  filter: blur(5px) saturate(1.12);
+  opacity: 0.38;
+  pointer-events: none;
+  transform: translate3d(var(--platinum-art-x), var(--platinum-art-y), 0) scale(1.08);
+  transition: opacity 160ms ease, transform 160ms ease;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.18) 22%, #000 58%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.18) 22%, #000 58%);
+  z-index: 0;
+}
+
+.platinum-card.has-platinum-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(18, 19, 24, 0.72) 0%, rgba(18, 19, 24, 0.48) 48%, rgba(18, 19, 24, 0.08) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.platinum-card.has-platinum-art:hover::before {
+  opacity: 0.5;
 }
 
 .platinum-card-button {
@@ -4049,10 +4086,13 @@ body.dialog-open .mobile-section-tabs {
   place-items: center;
   width: 66px;
   height: 66px;
+  z-index: 1;
 }
 
 .platinum-main {
+  position: relative;
   min-width: 0;
+  z-index: 1;
 }
 
 .platinum-card strong {

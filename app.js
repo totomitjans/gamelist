@@ -744,6 +744,7 @@ function renderPlatinumDialog(platinums = platinumItems(), years = platinumYears
     renderPlatinumDialog(platinums, years);
   };
   el.platinumList.innerHTML = visible.length ? visible.map(platinumCard).join("") : `<div class="empty">No platinums tracked yet.</div>`;
+  setupPlatinumCardParallax();
   el.platinumList.querySelectorAll("[data-game-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const gameId = button.dataset.gameId;
@@ -900,6 +901,8 @@ function platinumYearFor(item) {
 }
 
 function platinumCard(item) {
+  const artStyle = item.cover ? ` style="--platinum-art: url(&quot;${escapeHtml(cssUrl(item.cover))}&quot;)"` : "";
+  const artClass = item.cover ? " has-platinum-art" : "";
   const coverPreview = item.cover
     ? `<img class="platinum-cover-preview" src="${escapeHtml(item.cover)}" alt="">`
     : "";
@@ -915,12 +918,29 @@ function platinumCard(item) {
     </div>
   `;
   if (item.gameId) {
-    return `<button class="platinum-card platinum-card-button" type="button" data-game-id="${escapeHtml(item.gameId)}">${content}</button>`;
+    return `<button class="platinum-card platinum-card-button${artClass}" type="button" data-game-id="${escapeHtml(item.gameId)}"${artStyle}>${content}</button>`;
   }
   if (item.url) {
-    return `<a class="platinum-card" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${content}</a>`;
+    return `<a class="platinum-card${artClass}" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"${artStyle}>${content}</a>`;
   }
-  return `<article class="platinum-card">${content}</article>`;
+  return `<article class="platinum-card${artClass}"${artStyle}>${content}</article>`;
+}
+
+function setupPlatinumCardParallax() {
+  el.platinumList.querySelectorAll(".platinum-card.has-platinum-art").forEach((card) => {
+    card.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "touch") return;
+      const rect = card.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width - 0.5) * -12;
+      const y = ((event.clientY - rect.top) / rect.height - 0.5) * -8;
+      card.style.setProperty("--platinum-art-x", `${x.toFixed(2)}px`);
+      card.style.setProperty("--platinum-art-y", `${y.toFixed(2)}px`);
+    });
+    card.addEventListener("pointerleave", () => {
+      card.style.setProperty("--platinum-art-x", "0px");
+      card.style.setProperty("--platinum-art-y", "0px");
+    });
+  });
 }
 
 function trophyBarHeight(count, counts) {
