@@ -1552,6 +1552,13 @@ body.dialog-open .floating-edit-actions {
   border-color: rgba(255, 255, 255, 0.18);
 }
 
+#sortDirectionButton,
+#sortDirectionButton.desc,
+#detailTrophyDirection,
+#detailTrophyDirection.desc {
+  color: #ffffff;
+}
+
 .ghost-button:not(.trophy-action):hover,
 .primary-button:hover,
 .icon-button:hover,
@@ -3840,6 +3847,10 @@ body.dialog-open .mobile-section-tabs {
   align-items: flex-start;
 }
 
+.platinum-modal .modal-head > div {
+  margin-top: 15px;
+}
+
 .platinum-head-actions {
   display: grid;
   justify-items: end;
@@ -4153,7 +4164,15 @@ body.dialog-open .mobile-section-tabs {
 }
 
 .playing-form-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.playing-form-grid > label:nth-child(-n + 3) {
+  grid-column: span 2;
+}
+
+.playing-form-grid > label:nth-child(n + 4) {
+  grid-column: span 3;
 }
 
 .form-check {
@@ -4419,6 +4438,10 @@ body.dialog-open .mobile-section-tabs {
     width: 100%;
   }
 
+  .playing-form-grid > label {
+    grid-column: 1 / -1;
+  }
+
   .toolbar {
     position: static;
     grid-template-columns: minmax(0, 1fr) var(--toolbar-control-height);
@@ -4531,7 +4554,7 @@ body.dialog-open .mobile-section-tabs {
   .playing-section .card-trophy-progress {
     flex: 0 0 auto;
     min-height: 18px !important;
-    margin-left: auto;
+    margin-left: 5px;
     padding: 1px 6px;
     gap: 3px;
     font-size: 9px;
@@ -4851,6 +4874,10 @@ body.dialog-open .mobile-section-tabs {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: end;
+  }
+
+  .platinum-modal .modal-head > div {
+    margin-top: 0;
   }
 
   .platinum-count-pill {
