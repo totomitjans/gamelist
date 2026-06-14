@@ -1064,8 +1064,6 @@ h3 {
 .release-calendar {
   display: grid;
   gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
   margin-top: -2px;
 }
 
@@ -1083,7 +1081,6 @@ h3 {
 .release-calendar-actions {
   display: flex;
   gap: 7px;
-  margin-bottom: -2px;
 }
 
 .release-calendar-actions .icon-button {
@@ -1456,7 +1453,9 @@ body.dialog-open .floating-edit-actions {
   backdrop-filter: blur(20px) saturate(1.15);
 }
 
-.release-calendar.glass {
+.release-months-frame.glass {
+  padding: 12px;
+  border-radius: 8px;
   background:
     var(--grid-fade),
     var(--grid-texture),

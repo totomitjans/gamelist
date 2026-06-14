@@ -1136,8 +1136,10 @@ function renderReleaseCalendar() {
         <button class="icon-button" type="button" data-calendar-shift="1" title="Next month" aria-label="Next month">→</button>
       </div>
     </div>
-    <div class="release-months">
-      ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
+    <div class="release-months-frame glass">
+      <div class="release-months">
+        ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
+      </div>
     </div>
   `;
   el.releaseCalendar.querySelectorAll("[data-calendar-shift]").forEach((button) => {
