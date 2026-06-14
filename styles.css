@@ -1503,6 +1503,7 @@ body.dialog-open .floating-edit-actions {
   color: var(--text);
   font-size: 12px;
   font-weight: 780;
+  text-transform: unset;
 }
 
 .toolbar-check {
