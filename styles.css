@@ -769,7 +769,7 @@ button.achievement-kpi {
   grid-template-columns: 54px minmax(0, 1fr);
 }
 
-.playing-finished-game.achievement-game img {
+.playing-finished-game.achievement-game > img {
   width: 54px;
   height: 74px;
   aspect-ratio: 54 / 74;
@@ -3840,6 +3840,13 @@ body.dialog-open .mobile-section-tabs {
   align-items: flex-start;
 }
 
+.platinum-head-actions {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  margin-left: auto;
+}
+
 #platinumTitle {
   display: inline-flex;
   align-items: center;
@@ -3883,8 +3890,7 @@ body.dialog-open .mobile-section-tabs {
 .platinum-count-pill {
   display: block;
   width: max-content;
-  margin-left: auto;
-  align-self: end;
+  margin-left: 0;
   color: var(--muted);
   font-size: 13px;
   font-weight: 760;
@@ -4502,8 +4508,41 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .playing-section .card-trophy-head {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
     margin-bottom: 5px;
     font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .playing-section .card-trophy-head > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .playing-section .card-trophy-head .trophy-icon {
+    flex: 0 0 13px;
+    width: 13px;
+    height: 13px;
+  }
+
+  .playing-section .card-trophy-progress {
+    flex: 0 0 auto;
+    min-height: 18px !important;
+    margin-left: auto;
+    padding: 1px 5px;
+    gap: 3px;
+    font-size: 9px;
+  }
+
+  .playing-section .card-trophy-progress em {
+    width: 18px;
+  }
+
+  .playing-section .card-trophy-progress strong {
+    font-size: 8px;
   }
 
   .playing-section .card-trophies {
@@ -4687,8 +4726,8 @@ body.dialog-open .mobile-section-tabs {
     grid-template-columns: 58px minmax(0, 1fr);
   }
 
-  .playing-finished-game img,
-  .playing-finished-game.achievement-game img {
+  .playing-finished-game > img,
+  .playing-finished-game.achievement-game > img {
     width: 58px;
     height: 80px;
     aspect-ratio: 58 / 80;
@@ -4700,6 +4739,24 @@ body.dialog-open .mobile-section-tabs {
 
   .achievement-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .achievement-kpi {
+    justify-items: center;
+    text-align: center;
+  }
+
+  button.achievement-kpi {
+    text-align: center;
+  }
+
+  .achievement-kpi .kpi-with-icon {
+    justify-content: center;
+  }
+
+  .achievement-kpi span small {
+    display: block;
+    margin: 2px 0 0;
   }
 
   .rarity-graph {
