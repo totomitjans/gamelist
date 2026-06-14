@@ -2,7 +2,6 @@ const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
 const VIEW_MODE_KEY = "gamelist:view-mode";
-const COMPLETED_VIEW_MODE_KEY = "gamelist:completed-view-mode";
 const PLATINUM_VIEW_MODE_KEY = "gamelist:platinum-view-mode";
 const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
 const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Retro Island NY"];
@@ -64,10 +63,6 @@ const state = {
   mobileSection: "backlog",
   mobileSwipeStart: null,
   historyYear: String(new Date().getFullYear()),
-  completedYear: "all",
-  completedSort: "time",
-  completedDirection: "desc",
-  completedViewMode: localStorage.getItem(COMPLETED_VIEW_MODE_KEY) === "list" ? "list" : "grid",
   platinumYear: "all",
   platinumSort: "time",
   platinumDirection: "desc",
@@ -122,10 +117,6 @@ const el = {
   historyCloseButton: document.querySelector("#historyCloseButton"),
   historyYearTabs: document.querySelector("#historyYearTabs"),
   historyList: document.querySelector("#historyList"),
-  completedYearSelect: document.querySelector("#completedYearSelect"),
-  completedSortSelect: document.querySelector("#completedSortSelect"),
-  completedSortDirection: document.querySelector("#completedSortDirection"),
-  completedViewToggleButton: document.querySelector("#completedViewToggleButton"),
   platinumDialog: document.querySelector("#platinumDialog"),
   platinumCloseButton: document.querySelector("#platinumCloseButton"),
   platinumTitle: document.querySelector("#platinumTitle"),
@@ -325,11 +316,6 @@ function bindEvents() {
     localStorage.setItem(VIEW_MODE_KEY, state.viewMode);
     render();
   });
-  el.completedViewToggleButton?.addEventListener("click", () => {
-    state.completedViewMode = state.completedViewMode === "grid" ? "list" : "grid";
-    localStorage.setItem(COMPLETED_VIEW_MODE_KEY, state.completedViewMode);
-    renderCompleted();
-  });
   el.platinumViewToggleButton?.addEventListener("click", () => {
     state.platinumViewMode = state.platinumViewMode === "grid" ? "list" : "grid";
     localStorage.setItem(PLATINUM_VIEW_MODE_KEY, state.platinumViewMode);
@@ -367,10 +353,6 @@ function bindEvents() {
   });
   el.releaseDialog.addEventListener("close", syncScrollLock);
   el.dialog.addEventListener("close", syncScrollLock);
-  el.completedSortDirection?.addEventListener("click", () => {
-    state.completedDirection = state.completedDirection === "asc" ? "desc" : "asc";
-    renderCompleted();
-  });
   el.mobileTabs.forEach((button) => button.addEventListener("click", () => {
     state.mobileSection = button.dataset.mobileSection;
     render();
@@ -565,8 +547,8 @@ function renderPlayingSection() {
 }
 
 function renderPlayingFinished() {
-  const games = filteredGames()
-    .filter((game) => game.completedAt)
+  const games = state.games
+    .filter((game) => !game.deletedAt && game.completedAt)
     .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
     .slice(0, 10);
   el.playingFinished.hidden = !games.length;
@@ -1060,7 +1042,7 @@ function trophyTone(value) {
 }
 
 function renderStats() {
-  const active = filteredGames().filter((game) => !game.completedAt);
+  const active = filteredGames({ applyPreorder: false }).filter((game) => !game.completedAt);
   const total = active.length;
   const currentYear = String(new Date().getFullYear());
   const completedThisYear = completedGamesForYear(currentYear).length;
@@ -1147,15 +1129,15 @@ function renderReleaseCalendar() {
   const months = releaseCalendarMonths(4);
   const today = localDateKey(new Date());
   el.releaseCalendar.innerHTML = `
-    <div class="release-months">
-      ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
-    </div>
     <div class="release-calendar-head">
       <div class="release-calendar-actions">
         <button class="ghost-button calendar-today-action" type="button" data-calendar-today>Today</button>
         <button class="icon-button" type="button" data-calendar-shift="-1" title="Previous month" aria-label="Previous month">←</button>
         <button class="icon-button" type="button" data-calendar-shift="1" title="Next month" aria-label="Next month">→</button>
       </div>
+    </div>
+    <div class="release-months">
+      ${months.map((month) => releaseMonthMarkup(month, releases, today)).join("")}
     </div>
   `;
   el.releaseCalendar.querySelectorAll("[data-calendar-shift]").forEach((button) => {
@@ -1558,36 +1540,8 @@ function rowPrices(game) {
 function renderCompleted() {
   const list = document.querySelector(".completed-list");
   if (!list) return;
-  list.classList.toggle("list-view", state.completedViewMode === "list");
-  renderModeToggle(el.completedViewToggleButton, state.completedViewMode);
-  const baseGames = filteredGames().filter((game) => game.completedAt);
-  const years = completedYears(baseGames);
-  if (state.completedYear !== "all" && !years.includes(state.completedYear)) state.completedYear = "all";
-  if (el.completedYearSelect) {
-    el.completedYearSelect.innerHTML = baseGames.length ? [
-      `<option value="all">All</option>`,
-      ...years.map((year) => `<option value="${escapeHtml(year)}">${escapeHtml(year)}</option>`),
-    ].join("") : `<option value="all">No finished games</option>`;
-    el.completedYearSelect.value = state.completedYear;
-    el.completedYearSelect.onchange = () => {
-      state.completedYear = el.completedYearSelect.value || "all";
-      renderCompleted();
-    };
-  }
-  if (el.completedSortSelect) {
-    el.completedSortSelect.value = state.completedSort;
-    el.completedSortSelect.onchange = () => {
-      state.completedSort = el.completedSortSelect.value || "time";
-      renderCompleted();
-    };
-  }
-  if (el.completedSortDirection) {
-    el.completedSortDirection.innerHTML = sortArrowIcon(state.completedDirection === "desc");
-    el.completedSortDirection.title = state.completedDirection === "asc" ? "Sort ascending" : "Sort descending";
-    el.completedSortDirection.setAttribute("aria-label", el.completedSortDirection.title);
-    el.completedSortDirection.classList.toggle("desc", state.completedDirection === "desc");
-  }
-  const selectedGames = selectedCompletedGames(baseGames);
+  list.classList.toggle("list-view", state.viewMode === "list");
+  const selectedGames = filteredGames({ applyPreorder: false }).filter((game) => game.completedAt);
   const games = sortedCompletedGames(selectedGames);
   updateCompletedCount(selectedGames.length);
   list.innerHTML = games.length ? games.map((game) => `
@@ -1625,24 +1579,21 @@ function renderCompleted() {
   });
 }
 
-function selectedCompletedGames(games) {
-  return state.completedYear === "all"
-    ? games
-    : games.filter((game) => completionYear(game) === String(state.completedYear));
-}
-
 function updateCompletedCount(count) {
   if (!el.completedCount) return;
   el.completedCount.innerHTML = `${count} ${count === 1 ? "game" : "games"}`;
 }
 
 function sortedCompletedGames(games) {
-  const direction = state.completedDirection === "asc" ? 1 : -1;
+  const direction = state.filters.direction === "asc" ? 1 : -1;
   return [...games].sort((a, b) => {
-    if (state.completedSort === "name") {
+    if (state.filters.sort === "title") {
       return direction * (stringCompare(a.title, b.title) || String(b.completedAt).localeCompare(String(a.completedAt)));
     }
-    if (state.completedSort === "playtime") {
+    if (state.filters.sort === "platform") {
+      return direction * (stringCompare(canonicalPlatform(a.platform), canonicalPlatform(b.platform)) || stringCompare(a.title, b.title));
+    }
+    if (state.filters.sort === "playtime") {
       return direction * (completedPlaytimeValue(a) - completedPlaytimeValue(b) || String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title));
     }
     return direction * (completionTimeValue(a) - completionTimeValue(b) || stringCompare(a.title, b.title));
@@ -1827,7 +1778,8 @@ function activeGames() {
   return state.games.filter((game) => !game.completedAt && !game.deletedAt);
 }
 
-function filteredGames() {
+function filteredGames(options = {}) {
+  const { applyPreorder = true } = options;
   return state.games.filter((game) => {
     if (game.deletedAt) return false;
     const haystack = [
@@ -1855,7 +1807,7 @@ function filteredGames() {
     return (!state.filters.query || haystack.includes(state.filters.query))
       && (state.filters.platform === "all" || canonicalPlatform(game.platform) === state.filters.platform)
       && (state.filters.tag === "all" || tagText.includes(state.filters.tag))
-      && (!state.filters.preordered || Boolean(game.preorderStore));
+      && (!applyPreorder || !state.filters.preordered || Boolean(game.preorderStore));
   });
 }
 
@@ -2532,7 +2484,7 @@ function compareGames(a, b, section) {
   if (state.filters.sort === "platform") {
     return direction * (stringCompare(canonicalPlatform(a.platform), canonicalPlatform(b.platform)) || stringCompare(a.title, b.title));
   }
-  if (state.filters.sort === "time") {
+  if (state.filters.sort === "time" || state.filters.sort === "playtime") {
     return direction * (((a.lengthHours ?? Number.POSITIVE_INFINITY) - (b.lengthHours ?? Number.POSITIVE_INFINITY))
       || stringCompare(a.title, b.title));
   }

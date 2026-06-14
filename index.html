@@ -105,8 +105,8 @@
       </section>
 
       <section class="hero">
-        <div class="stats" id="stats" aria-live="polite"></div>
         <div class="release-calendar glass" id="releaseCalendar" aria-label="Upcoming release calendar"></div>
+        <div class="stats" id="stats" aria-live="polite"></div>
       </section>
 
       <section class="toolbar glass">
@@ -133,7 +133,7 @@
               <option value="time" selected>Time</option>
               <option value="title">Name</option>
               <option value="platform">Platform</option>
-              <option value="custom">Custom backlog</option>
+              <option value="playtime">Playtime</option>
             </select>
             <button class="direction-toggle" id="sortDirectionButton" type="button" title="Sort ascending" aria-label="Sort ascending">↑</button>
           </div>
@@ -185,20 +185,6 @@
             <h2>Finished games</h2>
           </div>
           <span id="completedCount"></span>
-        </div>
-        <div class="completed-filter-bar">
-          <label class="completed-year-select">
-            <select id="completedYearSelect" aria-label="Filter finished games by year"></select>
-          </label>
-          <div class="completed-order-control">
-            <select id="completedSortSelect" aria-label="Sort finished games">
-              <option value="time">Time</option>
-              <option value="name">Name</option>
-              <option value="playtime">Playtime</option>
-            </select>
-            <button class="direction-toggle" id="completedSortDirection" type="button" title="Sort descending" aria-label="Sort descending"></button>
-            <button class="icon-button view-toggle section-view-toggle" id="completedViewToggleButton" type="button" title="Grid view" aria-label="Grid view"></button>
-          </div>
         </div>
         <div class="completed-list" data-section="completed"></div>
       </section>
