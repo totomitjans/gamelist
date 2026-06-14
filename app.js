@@ -1464,12 +1464,13 @@ function rowPrimaryAction(game, section) {
 
 function rowCoreStats(game) {
   const psn = matchedPsnGame(game);
+  const release = releaseStatus(game);
   return [
     game.platform ? platformBadge(game.platform) : "",
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
     game.emulator ? `<span class="emulator-pill">Emulator</span>` : "",
     game.lengthHours ? timeBadge(game.lengthHours, hltbUrlFor(game)) : "",
-    releaseStatus(game) ? `<span class="release-pill">${escapeHtml(releaseStatus(game))}</span>` : "",
+    release ? `<span class="release-pill">${escapeHtml(release)}</span>` : "",
     ...ownerTags(game).filter((owner) => owner !== "Xavi").map(ownerBadge),
     ...gameStatuses(game).map(statusBadge),
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
@@ -2118,7 +2119,7 @@ function openDetail(id, options = {}) {
   el.detailTitle.classList.toggle("owner-jordi", owners.includes("Jordi"));
   el.detailStudio.textContent = studioText(game);
   el.detailStudio.hidden = !el.detailStudio.textContent;
-  el.detailMeta.innerHTML = metaFor(game, { includePsn: false }).join("");
+  el.detailMeta.innerHTML = metaFor(game, { includePsn: false, includePastRelease: true }).join("");
   el.detailDates.innerHTML = playDatesFor(game).join("");
   el.detailDates.hidden = !el.detailDates.innerHTML;
   el.detailChips.innerHTML = chipsFor(game).join("");
@@ -2272,7 +2273,7 @@ function metaFor(game, options = {}) {
   if (game.digital) values.push(`<span class="digital-pill">Digital</span>`);
   if (game.emulator) values.push(`<span class="emulator-pill">Emulator</span>`);
   if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
-  const release = releaseStatus(game);
+  const release = releaseStatus(game, { includePast: options.includePastRelease });
   if (release) values.push(`<span class="release-pill">${escapeHtml(release)}</span>`);
   gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
   const psn = matchedPsnGame(game);
@@ -3014,15 +3015,20 @@ function storeIcon(store) {
   return "";
 }
 
-function releaseStatus(game) {
+function releaseStatus(game, options = {}) {
+  const includePast = Boolean(options.includePast);
   if (game.releaseDate) {
     const release = new Date(`${game.releaseDate}T00:00:00`);
-    if (Number.isNaN(release.getTime()) || release.getFullYear() < 1990) return game.releaseText || "???";
+    if (Number.isNaN(release.getTime()) || release.getFullYear() < 1990) {
+      if (game.releaseText && (includePast || game.section === "upcoming")) return game.releaseText;
+      return game.section === "upcoming" ? "???" : "";
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    if (release <= today && !includePast) return "";
     return `${release <= today ? "Released" : "Releases"} ${game.releaseDate}`;
   }
-  if (game.releaseText) return game.releaseText;
+  if (game.releaseText && (includePast || game.section === "upcoming")) return game.releaseText;
   return game.section === "upcoming" ? "???" : "";
 }
 

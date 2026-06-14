@@ -3376,11 +3376,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .completed {
   margin-top: 22px;
-}
-
-.completed-panel {
-  padding: 14px;
-  border-radius: 8px;
+  padding: 0 2px 4px;
 }
 
 .completed-filter-bar {
@@ -3436,6 +3432,12 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: stretch;
+}
+
+#completedCount {
+  display: block;
+  width: max-content;
+  white-space: nowrap;
 }
 
 .completed-row {
@@ -4505,9 +4507,10 @@ body.dialog-open .mobile-section-tabs {
   }
 
   .completed-actions {
-    grid-column: 2;
+    grid-column: 1 / -1;
     justify-self: end;
     align-self: end;
+    flex-wrap: nowrap;
   }
 
   .completed-row .restore-action {
