@@ -4456,6 +4456,12 @@ body.dialog-open .mobile-section-tabs {
   min-height: 44px;
 }
 
+.form-grid-spacer {
+  min-height: 44px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .form-check {
   align-self: end;
   min-height: 44px;
