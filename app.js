@@ -5,7 +5,7 @@ const VIEW_MODE_KEY = "gamelist:view-mode";
 const COMPLETED_VIEW_MODE_KEY = "gamelist:completed-view-mode";
 const PLATINUM_VIEW_MODE_KEY = "gamelist:platinum-view-mode";
 const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
-const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es"];
+const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Retro Island NY"];
 const DIGITAL_PROVIDERS = ["Nintendo España", "PlayStation España", "Steam"];
 const PSN_PROFILE_USER = "ShabiiEXE";
 const STATUS_OPTIONS = [
@@ -28,17 +28,18 @@ const UI_ICON_URLS = [
   "/assets/sites/steam.png",
   "/assets/stores/amazon.ico",
   "/assets/stores/game.ico",
+  "/assets/stores/retroisland.png",
   "/assets/stores/xtralife.ico",
 ];
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
   { match: ["nier", "automata"], cover: "https://howlongtobeat.com/games/38029_Nier_Automata.jpg?width=250" },
   { match: ["persona", "3", "reload"], cover: "https://howlongtobeat.com/games/129805_Persona_3_Reload.jpg?width=250" },
-  { match: ["spider", "man", "2"], exclude: ["miles"], cover: "https://howlongtobeat.com/games/79769_Marvels_Spider-Man_2.jpg?width=250" },
+  { match: ["spider", "man", "2"], ids: ["23918"], exclude: ["miles"], cover: "https://howlongtobeat.com/games/79769_Marvels_Spider-Man_2.jpg?width=250" },
   { match: ["spider", "man"], exclude: ["2", "miles"], cover: "https://howlongtobeat.com/games/44852_Spider-Man_(2017).jpg?width=250" },
 ];
 const MANUAL_PLATINUM_META_OVERRIDES = [
-  { match: ["spider", "man", "2"], exclude: ["miles"], trophyName: "Dedicated", icon: "https://img.psnprofiles.com/trophy/m/23918/c6620db1-4320-4a50-99af-fce3f5be2b41.png" },
-  { match: ["spider", "man"], exclude: ["2", "miles"], trophyName: "Be Greater", icon: "https://img.psnprofiles.com/trophy/m/8143/ccb3b536-eaae-4c03-beb5-4d9b3f8cb72c.png" },
+  { match: ["spider", "man", "2"], ids: ["23918"], exclude: ["miles"], trophyName: "Dedicated", icon: "https://img.psnprofiles.com/trophy/m/23918/c6620db1-4320-4a50-99af-fce3f5be2b41.png" },
+  { match: ["spider", "man"], ids: ["8143"], exclude: ["2", "23918", "miles"], trophyName: "Be Greater", icon: "https://img.psnprofiles.com/trophy/m/8143/ccb3b536-eaae-4c03-beb5-4d9b3f8cb72c.png" },
 ];
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
@@ -188,6 +189,7 @@ const el = {
     digital: document.querySelector("#digitalInput"),
     emulator: document.querySelector("#emulatorInput"),
     coop: document.querySelector("#coopInput"),
+    stream: document.querySelector("#streamInput"),
     playing: document.querySelector("#playingInput"),
     genres: document.querySelector("#genresInput"),
     developer: document.querySelector("#developerInput"),
@@ -812,10 +814,10 @@ function platinumItems() {
   const psnPlatinums = (state.psnActivity.platinums || []).map((item) => {
     const localGame = localGameForTitle(item.title);
     const cachedMeta = cachedPlatinumMetadata(item.title);
-    const manualMeta = manualPlatinumMetaForTitle(item.title);
+    const manualMeta = manualPlatinumMetaForItem(item);
     return {
       title: item.title || "Platinum game",
-      cover: platinumCoverFor(item.title),
+      cover: platinumCoverFor(item),
       trophyName: manualMeta?.trophyName || (item.trophyName && item.trophyName !== "Platinum" ? item.trophyName : (cachedMeta?.trophyName || item.trophyName || "Platinum")),
       trophyIcon: manualMeta?.icon || item.icon || cachedMeta?.icon || platformLogo("PS5"),
       earnedAt: item.earnedAt || "",
@@ -847,7 +849,7 @@ function localGameForTitle(title) {
   if (!normalized) return null;
   const candidates = state.games
     .map((game) => ({ game, gameTitle: normalizeTitleForMatch(game.title) }))
-    .filter((entry) => entry.gameTitle && (
+    .filter((entry) => entry.gameTitle && compatibleTitleNumbers(normalized, entry.gameTitle) && (
       entry.gameTitle === normalized
       || entry.gameTitle.includes(normalized)
       || normalized.includes(entry.gameTitle)
@@ -860,31 +862,61 @@ function localGameForTitle(title) {
     })[0]?.game || null;
 }
 
+function compatibleTitleNumbers(a, b) {
+  const numbersA = titleNumberTokens(a);
+  const numbersB = titleNumberTokens(b);
+  if (!numbersA.size && !numbersB.size) return true;
+  if (numbersA.size !== numbersB.size) return false;
+  return [...numbersA].every((number) => numbersB.has(number));
+}
+
+function titleNumberTokens(value) {
+  return new Set(String(value || "").match(/\d+/g) || []);
+}
+
 function localCoverForTitle(title, size = "card") {
   const match = localGameForTitle(title);
   return match?.cover ? coverDisplayUrl(match.cover, size) : "";
 }
 
-function platinumCoverFor(title) {
+function platinumCoverFor(input) {
+  const title = platinumInputTitle(input);
   const normalized = normalizeTitleForMatch(title);
   if (!normalized) return "";
   const cached = state.platinumCoverCache[normalized];
-  return manualPlatinumCoverForTitle(title) || localCoverForTitle(title, "card") || (cached === "__missing" ? "" : cached || "");
+  return manualPlatinumCoverForItem(input) || localCoverForTitle(title, "card") || (cached === "__missing" ? "" : cached || "");
 }
 
-function manualPlatinumCoverForTitle(title) {
+function manualPlatinumCoverForItem(input) {
+  const title = platinumInputTitle(input);
   const normalized = normalizeTitleForMatch(title);
   if (!normalized) return "";
-  return MANUAL_PLATINUM_COVER_OVERRIDES.find((entry) => manualPlatinumEntryMatches(entry, normalized))?.cover || "";
+  return MANUAL_PLATINUM_COVER_OVERRIDES.find((entry) => manualPlatinumEntryMatches(entry, normalized, input))?.cover || "";
 }
 
-function manualPlatinumMetaForTitle(title) {
+function manualPlatinumMetaForItem(input) {
+  const title = platinumInputTitle(input);
   const normalized = normalizeTitleForMatch(title);
   if (!normalized) return null;
-  return MANUAL_PLATINUM_META_OVERRIDES.find((entry) => manualPlatinumEntryMatches(entry, normalized)) || null;
+  return MANUAL_PLATINUM_META_OVERRIDES.find((entry) => manualPlatinumEntryMatches(entry, normalized, input)) || null;
 }
 
-function manualPlatinumEntryMatches(entry, normalized) {
+function platinumInputTitle(input) {
+  return typeof input === "string" ? input : input?.title || "";
+}
+
+function manualPlatinumEntryMatches(entry, normalized, input = {}) {
+  const haystack = normalizeTitleForMatch([
+    typeof input === "string" ? input : "",
+    input?.title,
+    input?.icon,
+    input?.trophyIcon,
+    input?.npCommunicationId,
+    input?.npServiceName,
+    input?.url,
+  ].filter(Boolean).join(" "));
+  const idMatch = (entry.ids || []).some((id) => haystack.includes(normalizeTitleForMatch(id)));
+  if (idMatch) return true;
   const includesTerm = (term) => {
     const normalizedTerm = normalizeTitleForMatch(term);
     return Boolean(normalizedTerm && normalized.includes(normalizedTerm));
@@ -1496,6 +1528,7 @@ function rowCoreStats(game) {
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
     game.emulator ? `<span class="emulator-pill">Emulator</span>` : "",
     game.lengthHours ? timeBadge(game.lengthHours, hltbUrlFor(game)) : "",
+    game.stream ? `<span class="stream-pill">Stream</span>` : "",
     release ? `<span class="release-pill">${escapeHtml(release)}</span>` : "",
     ...ownerTags(game).filter((owner) => owner !== "Xavi").map(ownerBadge),
     ...gameStatuses(game).map(statusBadge),
@@ -2311,6 +2344,7 @@ function metaFor(game, options = {}) {
   if (game.digital) values.push(`<span class="digital-pill">Digital</span>`);
   if (game.emulator) values.push(`<span class="emulator-pill">Emulator</span>`);
   if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
+  if (game.stream) values.push(`<span class="stream-pill">Stream</span>`);
   const release = releaseStatus(game, { includePast: options.includePastRelease });
   if (release) values.push(`<span class="release-pill">${escapeHtml(release)}</span>`);
   gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
@@ -2465,6 +2499,7 @@ function completedBadges(game, options = {}) {
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
     game.emulator ? `<span class="emulator-pill">Emulator</span>` : "",
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
+    game.stream ? `<span class="stream-pill">Stream</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
     game.platinum ? `<span class="platinum-pill">${trophyIcon()} Completed</span>` : "",
     options.includePsn === false ? "" : (psn ? psnProgressBadge(psn) : ""),
@@ -2753,6 +2788,7 @@ function normalizeGameRecord(game) {
   normalized.digital = Boolean(normalized.digital);
   normalized.emulator = Boolean(normalized.emulator);
   normalized.coop = Boolean(normalized.coop);
+  normalized.stream = Boolean(normalized.stream);
   normalized.platinum = Boolean(normalized.platinum);
   normalized.playing = Boolean(normalized.playing);
   normalized.replayCount = replayCountValue(normalized.replayCount);
@@ -3005,6 +3041,7 @@ function fallbackPriceLinks(game) {
     { store: "Amazon.es", url: `https://www.amazon.es/s?k=${q}` },
     { store: "Xtralife", url: `https://www.xtralife.com/buscar/${q}` },
     { store: "GAME.es", url: `https://www.game.es/buscar/${q}` },
+    { store: "Retro Island NY", url: `https://retroislandny.com/search?q=${q}` },
   ];
 }
 
@@ -3047,6 +3084,7 @@ function storeIcon(store) {
   if (store === "Amazon.es") return "assets/stores/amazon.ico";
   if (store === "Xtralife") return "assets/stores/xtralife.ico";
   if (store === "GAME.es") return "assets/stores/game.ico";
+  if (store === "Retro Island NY") return "assets/stores/retroisland.png";
   if (store === "Nintendo España") return "assets/sites/nintendo.png";
   if (store === "PlayStation España") return "assets/sites/playstation.png";
   if (store === "Steam") return "assets/sites/steam.png";
@@ -3149,6 +3187,7 @@ async function openEditor(id = "") {
   el.fields.digital.checked = Boolean(game.digital);
   if (el.fields.emulator) el.fields.emulator.checked = Boolean(game.emulator);
   el.fields.coop.checked = Boolean(game.coop);
+  if (el.fields.stream) el.fields.stream.checked = Boolean(game.stream);
   el.fields.playing.checked = Boolean(game.playing);
   el.fields.genres.value = (game.genres || []).join(", ");
   el.fields.developer.value = game.developer || "";
@@ -3182,6 +3221,7 @@ function blankGame() {
     digital: false,
     emulator: false,
     coop: false,
+    stream: false,
     platinum: false,
     playing: false,
     replayCount: 0,
@@ -3245,6 +3285,7 @@ async function saveCurrentFormGame() {
     digital: el.fields.digital.checked,
     emulator: Boolean(el.fields.emulator?.checked),
     coop: el.fields.coop.checked,
+    stream: Boolean(el.fields.stream?.checked),
     platinum,
     playing,
     replayCount,

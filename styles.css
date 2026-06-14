@@ -444,6 +444,7 @@ button:disabled {
 .playing-finished-tags .digital-pill,
 .playing-finished-tags .emulator-pill,
 .playing-finished-tags .coop-pill,
+.playing-finished-tags .stream-pill,
 .playing-finished-tags .replay-pill,
 .playing-finished-tags .platinum-pill {
   display: inline-flex;
@@ -1970,6 +1971,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .game-row .digital-pill,
 .game-row .emulator-pill,
 .game-row .coop-pill,
+.game-row .stream-pill,
 .game-row .replay-pill,
 .game-row .platinum-pill,
 .game-row .psn-progress-pill,
@@ -2650,6 +2652,7 @@ content: "";
 .digital-pill,
 .emulator-pill,
 .coop-pill,
+.stream-pill,
 .replay-pill,
 .platinum-pill,
 .psn-progress-pill,
@@ -2725,6 +2728,7 @@ content: "";
 .digital-pill,
 .emulator-pill,
 .coop-pill,
+.stream-pill,
 .replay-pill,
 .platinum-pill,
 .psn-progress-pill,
@@ -2826,6 +2830,13 @@ content: "";
   border-color: rgba(121, 242, 206, 0.32);
   background: rgba(121, 242, 206, 0.1);
   font-weight: 820;
+}
+
+.stream-pill {
+  color: #d7b8ff !important;
+  border-color: rgba(183, 116, 255, 0.36);
+  background: rgba(132, 64, 255, 0.16);
+  font-weight: 840;
 }
 
 .replay-pill {
@@ -3529,6 +3540,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .completed-platform .coop-pill,
 .completed-platform .digital-pill,
 .completed-platform .emulator-pill,
+.completed-platform .stream-pill,
 .completed-platform .replay-pill,
 .completed-platform .platinum-pill,
 .completed-platform .psn-progress-pill {
@@ -3556,7 +3568,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .completed-platform .digital-pill,
-.completed-platform .emulator-pill {
+.completed-platform .emulator-pill,
+.completed-platform .stream-pill {
   min-height: 21px;
   padding: 2px 6px;
   font-size: 10px;
@@ -4936,6 +4949,7 @@ body.dialog-open .mobile-section-tabs {
   .game-row .digital-pill,
   .game-row .emulator-pill,
   .game-row .coop-pill,
+  .game-row .stream-pill,
   .game-row .replay-pill,
   .game-row .platinum-pill,
   .game-row .psn-progress-pill,

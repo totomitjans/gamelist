@@ -15,9 +15,9 @@ const PHYSICAL_PROVIDERS = [
     lookup: lookupGameEs,
   },
   {
-    store: "Playasia",
-    search: (q) => playasiaSearchUrl(q),
-    parse: parseGeneric,
+    store: "Retro Island NY",
+    search: (q) => retroIslandSearchUrl(q),
+    lookup: lookupRetroIslandNy,
   },
 ];
 
@@ -73,21 +73,6 @@ function normalizePlatform(platform) {
 
 async function findPrice(provider, title, platform, query, env = {}, debug = false) {
   const url = provider.search(query);
-  if (provider.store === "Playasia" && env.PLAYASIA_API_KEY && env.PLAYASIA_USER_ID) {
-    try {
-      const result = await lookupPlayasia(title, platform, query, env);
-      return {
-        store: provider.store,
-        price: result.price || "",
-        numericPrice: parsePrice(result.price || ""),
-        matchedTitle: result.matchedTitle || "",
-        url: result.url || url,
-        checkedAt: new Date().toISOString(),
-      };
-    } catch {
-      // Fall through to the public page parser below.
-    }
-  }
   if (provider.lookup) {
     try {
       const result = await provider.lookup(title, platform, query);
@@ -113,10 +98,7 @@ async function findPrice(provider, title, platform, query, env = {}, debug = fal
       },
     });
     const html = await response.text();
-    let result = provider.parse(html, title, platform);
-    if (provider.store === "Playasia" && !result.price) {
-      result = await lookupPlayasiaReader(title, platform, query, debug);
-    }
+    const result = provider.parse(html, title, platform);
     const price = result.price || "";
     return {
       store: provider.store,
@@ -124,7 +106,6 @@ async function findPrice(provider, title, platform, query, env = {}, debug = fal
       numericPrice: parsePrice(price),
       matchedTitle: result.matchedTitle || "",
       url: result.url || url,
-      ...(debug && provider.store === "Playasia" ? { debug: result.debug || null } : {}),
       checkedAt: new Date().toISOString(),
     };
   } catch {
@@ -289,42 +270,6 @@ function normalizePlayStationPrice(value) {
     .trim();
 }
 
-async function lookupPlayasiaReader(title, platform, query, debug = false) {
-  const url = playasiaSearchUrl(query);
-  const diagnostics = [];
-  const readerUrls = [
-    `https://r.jina.ai/http://${url}`,
-    `https://r.jina.ai/${encodeURIComponent(`http://${url}`)}`,
-    `https://r.jina.ai/http://r.jina.ai/http://${url}`,
-  ];
-  for (const readerUrl of readerUrls) {
-    try {
-      const response = await fetch(readerUrl, {
-        headers: {
-          "Accept": "text/plain,text/markdown",
-          "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
-          "X-Return-Format": "markdown",
-        },
-        cf: { cacheTtl: 60, cacheEverything: true },
-      });
-      if (!response.ok) {
-        diagnostics.push({ url: readerUrl, status: response.status });
-        continue;
-      }
-      const markdown = await response.text();
-      diagnostics.push({ url: readerUrl, status: response.status, length: markdown.length, sample: markdown.slice(0, 120) });
-      const product = bestProduct(playasiaMarkdownProducts(markdown), title, platform);
-      if (product?.price) return { ...product, ...(debug ? { debug: diagnostics } : {}) };
-      const generic = parseGeneric(markdown, title, platform);
-      if (generic.price) return { ...generic, ...(debug ? { debug: diagnostics } : {}) };
-    } catch (error) {
-      diagnostics.push({ url: readerUrl, error: error?.message || "reader failed" });
-      // Try the next reader URL shape.
-    }
-  }
-  return { price: "", matchedTitle: "", ...(debug ? { debug: diagnostics } : {}) };
-}
-
 function parseAmazon(html, title, platform) {
   const cards = html.split('data-component-type="s-search-result"').slice(1);
   const normalizedTitle = normalize(title);
@@ -470,98 +415,6 @@ async function lookupXtralife(title, platform, query) {
   return match || { price: "", matchedTitle: "" };
 }
 
-async function lookupPlayasia(title, platform, query, env) {
-  const endpoint = new URL("https://www.play-asia.com/__api__.php");
-  const params = {
-    query: "listing",
-    quick: "0",
-    mask: "pnl",
-    results: "12",
-    start: "0",
-    onsale: "0",
-    instock: "0",
-    type: "1",
-    compatible: "0",
-    genre: "0",
-    encoding: "0",
-    version: "0",
-    skip_preowned: "1",
-    keyword: retailTitle(query),
-    key: env.PLAYASIA_API_KEY,
-    user: env.PLAYASIA_USER_ID,
-  };
-  Object.entries(params).forEach(([key, value]) => endpoint.searchParams.set(key, value));
-  const response = await fetch(endpoint.toString(), {
-    headers: {
-      "Accept": "application/xml,text/xml",
-      "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
-    },
-  });
-  if (!response.ok) throw new Error("Playasia API failed");
-  const xml = await response.text();
-  const products = playasiaProducts(xml);
-  const match = bestProduct(products, title, platform);
-  return match || { price: "", matchedTitle: "" };
-}
-
-function playasiaProducts(xml) {
-  const items = xml.match(/<item\b[\s\S]*?<\/item>/gi) || [];
-  return items.map((item) => {
-    const price = xmlTag(item, "fxprice") || xmlTag(item, "price");
-    return {
-      title: xmlTag(item, "name"),
-      platform: xmlTag(item, "platform") || xmlTag(item, "compatible") || xmlTag(item, "version"),
-      price: price ? `$${String(price).replace(/[^\d.,]/g, "").replace(",", ".")}` : "",
-      matchedTitle: xmlTag(item, "name"),
-      url: xmlTag(item, "url"),
-    };
-  }).filter((item) => item.title);
-}
-
-function playasiaMarkdownProducts(markdown) {
-  const products = [];
-  const lines = String(markdown || "").split(/\r?\n/);
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    if (!/^###\s+\[/.test(line) || !line.includes("play-asia.com/en/")) continue;
-    const urls = [...line.matchAll(/\((https:\/\/www\.play-asia\.com\/en\/[^)\s]+)\)/g)].map((match) => match[1]);
-    const url = urls[urls.length - 1] || "";
-    if (!/\/13\//.test(url)) continue;
-    const title = cleanMarkdownTitle(line);
-    const block = [];
-    for (let lookahead = index + 1; lookahead < Math.min(lines.length, index + 14); lookahead += 1) {
-      if (/^#{2,3}\s+/.test(lines[lookahead])) break;
-      block.push(lines[lookahead]);
-    }
-    const price = block.join("\n").match(/(?:US\s*)?\$\s*(\d{1,4}(?:[.,]\d{2}))/i);
-    if (!title || !price) continue;
-    products.push({
-      title,
-      platform: title,
-      price: `$${price[1].replace(",", ".")}`,
-      matchedTitle: title,
-      url,
-    });
-  }
-  return products;
-}
-
-function cleanMarkdownTitle(value) {
-  return decodeHtml(String(value || "")
-    .replace(/^#+\s*/, "")
-    .replace(/!\[Image \d+:\s*([^\]]*)\]\([^)]+\)/g, "$1 ")
-    .replace(/\]\(https:\/\/www\.play-asia\.com\/en\/[^)]+\)/g, "")
-    .replace(/[\[\]]/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim());
-}
-
-function xmlTag(xml, tag) {
-  const match = String(xml || "").match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"));
-  return match ? decodeHtml(match[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, "").trim()) : "";
-}
-
 function xtralifeProduct(product) {
   const priceValue = Number(product.currentPrice?.price ?? product.currentPrice?.normal_price ?? product.currentPrice?.pvp);
   const url = product.url?.uri || product.url || product.details_uri || "";
@@ -571,6 +424,36 @@ function xtralifeProduct(product) {
     price: Number.isFinite(priceValue) ? euro(priceValue) : "",
     matchedTitle: product.name || "",
     url: url ? `https://www.xtralife.com/${String(url).replace(/^\/+/, "")}` : "",
+  };
+}
+
+async function lookupRetroIslandNy(title, platform, query) {
+  const endpoint = new URL("https://retroislandny.com/search/suggest.json");
+  endpoint.searchParams.set("q", query);
+  endpoint.searchParams.set("resources[type]", "product");
+  endpoint.searchParams.set("resources[limit]", "12");
+  const response = await fetch(endpoint.toString(), {
+    headers: {
+      "Accept": "application/json",
+      "Accept-Language": "en-US,en;q=0.9",
+      "User-Agent": "Mozilla/5.0 (compatible; GameList/1.0)",
+    },
+  });
+  if (!response.ok) throw new Error("Retro Island search failed");
+  const data = await response.json();
+  const products = Array.isArray(data.resources?.results?.products) ? data.resources.results.products : [];
+  return bestProduct(products.map(retroIslandProduct), title, platform) || { price: "", matchedTitle: "" };
+}
+
+function retroIslandProduct(product) {
+  const price = product.price_min || product.price || product.price_max || "";
+  const url = product.url ? `https://retroislandny.com/${String(product.url).replace(/^\/+/, "")}` : "";
+  return {
+    title: product.title || "",
+    platform: [product.type, ...(Array.isArray(product.tags) ? product.tags : [])].filter(Boolean).join(" "),
+    price: price ? `$${String(price).replace(/[^\d.,]/g, "").replace(",", ".")}` : "",
+    matchedTitle: product.title || "",
+    url,
   };
 }
 
@@ -647,8 +530,8 @@ function missingPrice(store, url) {
   };
 }
 
-function playasiaSearchUrl(query) {
-  return `https://www.play-asia.com/en/search/${retailTitle(query).split(/\s+/).map(encodeURIComponent).join("+")}`;
+function retroIslandSearchUrl(query) {
+  return `https://retroislandny.com/search?q=${encodeURIComponent(retailTitle(query))}`;
 }
 
 function normalize(value) {
