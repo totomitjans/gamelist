@@ -2327,6 +2327,7 @@ function latestTrophiesForGame(game, limit = 3) {
       const gameTitle = normalizeTitleForMatch(achievement.game || achievement.title || "");
       return gameTitle && (gameTitle === title || gameTitle.includes(title) || title.includes(gameTitle));
     })
+    .sort((a, b) => String(b.earnedAt || "").localeCompare(String(a.earnedAt || "")))
     .slice(0, limit);
 }
 
