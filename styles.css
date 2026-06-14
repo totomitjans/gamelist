@@ -872,8 +872,7 @@ h2 {
 #backlog > .column-head h2,
 #upcoming > .column-head h2,
 #wanted > .column-head h2,
-.completed > .column-head h2,
-.detail-trophies h3 {
+.completed > .column-head h2 {
   font-family: var(--display-title-font);
   font-weight: 900;
 }
@@ -3940,6 +3939,8 @@ body.dialog-open .mobile-section-tabs {
   align-items: center;
   gap: 8px;
   color: #ffe985;
+  font-family: var(--display-title-font);
+  font-weight: 900;
 }
 
 #platinumTitle .trophy-icon {
