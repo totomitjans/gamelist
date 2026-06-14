@@ -1013,7 +1013,7 @@ function renderStats() {
     completed: state.games.filter((game) => game.completedAt && !game.deletedAt).length,
   };
   el.stats.innerHTML = [
-    stat("Finished", completedThisYear, "done", { action: "completed", detail: completedStatDetail(currentYear, completedThisYear, counts.completed) }),
+    stat(`Finished ${currentYear}`, completedThisYear, "done", { action: "completed", detail: completedStatDetail(currentYear, completedThisYear, counts.completed) }),
     stat("Backlog", counts.backlog, "backlog", { detail: sectionStatDetail("backlog", active, total) }),
     stat("To Release", counts.upcoming, "release", { detail: sectionStatDetail("upcoming", active, total) }),
     stat("Available", counts.wanted, "available", { detail: sectionStatDetail("wanted", active, total) }),
@@ -1067,7 +1067,7 @@ function completedStatDetail(year, yearCount, total) {
   return `
     <div class="stat-detail">
       <span>${yearCount} ${yearCount === 1 ? "game" : "games"} in ${escapeHtml(year)}</span>
-      <b>Total ${total}</b>
+      <b>Total ${total} finished ${total === 1 ? "game" : "games"}</b>
     </div>
   `;
 }

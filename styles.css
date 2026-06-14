@@ -1011,6 +1011,12 @@ h3 {
   box-shadow: 0 0 0 3px rgba(255, 0, 81, 0.12), 0 14px 34px rgba(255, 0, 81, 0.16);
 }
 
+.stat-done.stat-action:hover,
+.stat-done.stat-action:focus-visible {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+}
+
 .stat-available {
   --stat-color: #79f2ce;
   --stat-glow: rgba(121, 242, 206, 0.28);
@@ -1763,6 +1769,10 @@ select.is-active {
 .board {
   display: block;
   margin-top: 18px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 body[data-mobile-section="backlog"] .column:not(#backlog) {
@@ -1776,6 +1786,9 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 
 .column {
   min-width: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .column-head {
