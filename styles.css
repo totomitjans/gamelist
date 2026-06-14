@@ -442,6 +442,7 @@ button:disabled {
 
 .playing-finished-tags .platform-badge,
 .playing-finished-tags .digital-pill,
+.playing-finished-tags .emulator-pill,
 .playing-finished-tags .coop-pill,
 .playing-finished-tags .replay-pill,
 .playing-finished-tags .platinum-pill {
@@ -1967,6 +1968,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .game-row .status-pill,
 .game-row .time-pill,
 .game-row .digital-pill,
+.game-row .emulator-pill,
 .game-row .coop-pill,
 .game-row .replay-pill,
 .game-row .platinum-pill,
@@ -2646,6 +2648,7 @@ content: "";
 .status-pill,
 .time-pill,
 .digital-pill,
+.emulator-pill,
 .coop-pill,
 .replay-pill,
 .platinum-pill,
@@ -2720,6 +2723,7 @@ content: "";
 .owner-pill,
 .status-pill,
 .digital-pill,
+.emulator-pill,
 .coop-pill,
 .replay-pill,
 .platinum-pill,
@@ -2808,6 +2812,13 @@ content: "";
   color: #eef0f5 !important;
   border-color: rgba(225, 230, 240, 0.28);
   background: rgba(225, 230, 240, 0.1);
+}
+
+.emulator-pill {
+  color: #d7c7ff !important;
+  border-color: rgba(170, 139, 255, 0.34);
+  background: rgba(170, 139, 255, 0.12);
+  font-weight: 820;
 }
 
 .coop-pill {
@@ -3499,6 +3510,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .completed-platform .coop-pill,
 .completed-platform .digital-pill,
+.completed-platform .emulator-pill,
 .completed-platform .replay-pill,
 .completed-platform .platinum-pill,
 .completed-platform .psn-progress-pill {
@@ -3525,7 +3537,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   font-size: 10px;
 }
 
-.completed-platform .digital-pill {
+.completed-platform .digital-pill,
+.completed-platform .emulator-pill {
   min-height: 21px;
   padding: 2px 6px;
   font-size: 10px;
@@ -4894,6 +4907,7 @@ body.dialog-open .mobile-section-tabs {
   .game-row .status-pill,
   .game-row .time-pill,
   .game-row .digital-pill,
+  .game-row .emulator-pill,
   .game-row .coop-pill,
   .game-row .replay-pill,
   .game-row .platinum-pill,
@@ -5101,6 +5115,12 @@ body.dialog-open .mobile-section-tabs {
     align-items: end;
   }
 
+  .completed-filter-bar {
+    grid-template-columns: minmax(86px, 0.92fr) minmax(138px, 1.08fr);
+    gap: 6px;
+    padding: 7px;
+  }
+
   .platinum-modal .modal-head > div {
     margin-top: 0;
   }
@@ -5122,9 +5142,40 @@ body.dialog-open .mobile-section-tabs {
     grid-column: 1 / -1;
   }
 
+  .completed-order-control {
+    grid-column: auto;
+    gap: 5px;
+  }
+
   .platinum-order-control select,
   .completed-order-control select {
     flex: 1;
+  }
+
+  .completed-year-select select,
+  .completed-order-control select {
+    width: 100%;
+    min-width: 0;
+    padding-right: 28px;
+  }
+
+  .completed-order-control .direction-toggle {
+    flex: 0 0 34px;
+    width: 34px;
+    min-width: 34px;
+  }
+
+  .completed-actions {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .completed-row .completed-edit-action,
+  .completed-row .restore-action {
+    flex: 0 0 auto;
   }
 
   .platinum-card {

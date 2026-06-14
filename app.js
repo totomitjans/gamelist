@@ -3,7 +3,7 @@ const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
 const VIEW_MODE_KEY = "gamelist:view-mode";
 const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
-const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es", "Playasia"];
+const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es"];
 const DIGITAL_PROVIDERS = ["Nintendo España", "PlayStation España", "Steam"];
 const PSN_PROFILE_USER = "ShabiiEXE";
 const STATUS_OPTIONS = [
@@ -26,7 +26,6 @@ const UI_ICON_URLS = [
   "/assets/sites/steam.png",
   "/assets/stores/amazon.ico",
   "/assets/stores/game.ico",
-  "/assets/stores/playasia.ico",
   "/assets/stores/xtralife.ico",
 ];
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
@@ -180,6 +179,7 @@ const el = {
     owners: document.querySelector("#ownersInput"),
     statuses: document.querySelector("#statusesInput"),
     digital: document.querySelector("#digitalInput"),
+    emulator: document.querySelector("#emulatorInput"),
     coop: document.querySelector("#coopInput"),
     playing: document.querySelector("#playingInput"),
     genres: document.querySelector("#genresInput"),
@@ -1467,6 +1467,7 @@ function rowCoreStats(game) {
   return [
     game.platform ? platformBadge(game.platform) : "",
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
+    game.emulator ? `<span class="emulator-pill">Emulator</span>` : "",
     game.lengthHours ? timeBadge(game.lengthHours, hltbUrlFor(game)) : "",
     releaseStatus(game) ? `<span class="release-pill">${escapeHtml(releaseStatus(game))}</span>` : "",
     ...ownerTags(game).filter((owner) => owner !== "Xavi").map(ownerBadge),
@@ -2269,10 +2270,11 @@ function metaFor(game, options = {}) {
   const values = [];
   if (game.platform) values.push(platformBadge(game.platform));
   if (game.digital) values.push(`<span class="digital-pill">Digital</span>`);
-  gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
+  if (game.emulator) values.push(`<span class="emulator-pill">Emulator</span>`);
+  if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
   const release = releaseStatus(game);
   if (release) values.push(`<span class="release-pill">${escapeHtml(release)}</span>`);
-  if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
+  gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
   const psn = matchedPsnGame(game);
   if (options.includePsn !== false && psn) values.push(psnProgressBadge(psn));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
@@ -2422,6 +2424,7 @@ function completedBadges(game, options = {}) {
   return [
     game.platform ? platformBadge(game.platform) : "",
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
+    game.emulator ? `<span class="emulator-pill">Emulator</span>` : "",
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
     game.platinum ? `<span class="platinum-pill">${trophyIcon()} Completed</span>` : "",
@@ -2709,6 +2712,7 @@ function normalizeGameRecords(games) {
 function normalizeGameRecord(game) {
   const normalized = { ...game };
   normalized.digital = Boolean(normalized.digital);
+  normalized.emulator = Boolean(normalized.emulator);
   normalized.coop = Boolean(normalized.coop);
   normalized.platinum = Boolean(normalized.platinum);
   normalized.playing = Boolean(normalized.playing);
@@ -2962,16 +2966,11 @@ function fallbackPriceLinks(game) {
     { store: "Amazon.es", url: `https://www.amazon.es/s?k=${q}` },
     { store: "Xtralife", url: `https://www.xtralife.com/buscar/${q}` },
     { store: "GAME.es", url: `https://www.game.es/buscar/${q}` },
-    { store: "Playasia", url: playasiaSearchUrl(game.title, game.platform) },
   ];
 }
 
 function retailQuery(title, platform) {
   return encodeURIComponent(`${retailTitle(title)} ${platform}`.trim());
-}
-
-function playasiaSearchUrl(title, platform) {
-  return `https://www.play-asia.com/en/search/${retailTitle(`${title} ${platform}`.trim()).split(/\s+/).map(encodeURIComponent).join("+")}`;
 }
 
 function retailTitle(title) {
@@ -3009,7 +3008,6 @@ function storeIcon(store) {
   if (store === "Amazon.es") return "assets/stores/amazon.ico";
   if (store === "Xtralife") return "assets/stores/xtralife.ico";
   if (store === "GAME.es") return "assets/stores/game.ico";
-  if (store === "Playasia") return "assets/stores/playasia.ico";
   if (store === "Nintendo España") return "assets/sites/nintendo.png";
   if (store === "PlayStation España") return "assets/sites/playstation.png";
   if (store === "Steam") return "assets/sites/steam.png";
@@ -3020,12 +3018,11 @@ function releaseStatus(game) {
   if (game.releaseDate) {
     const release = new Date(`${game.releaseDate}T00:00:00`);
     if (Number.isNaN(release.getTime()) || release.getFullYear() < 1990) return game.releaseText || "???";
-    if (game.section === "upcoming") return `Releases ${game.releaseDate}`;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return release <= today ? "" : `Releases ${game.releaseDate}`;
+    return `${release <= today ? "Released" : "Releases"} ${game.releaseDate}`;
   }
-  if (game.releaseText && game.section === "upcoming") return game.releaseText;
+  if (game.releaseText) return game.releaseText;
   return game.section === "upcoming" ? "???" : "";
 }
 
@@ -3106,6 +3103,7 @@ async function openEditor(id = "") {
   el.fields.owners.value = ownerTags(game).join(", ");
   el.fields.statuses.value = gameStatuses(game).join(", ");
   el.fields.digital.checked = Boolean(game.digital);
+  if (el.fields.emulator) el.fields.emulator.checked = Boolean(game.emulator);
   el.fields.coop.checked = Boolean(game.coop);
   el.fields.playing.checked = Boolean(game.playing);
   el.fields.genres.value = (game.genres || []).join(", ");
@@ -3138,6 +3136,7 @@ function blankGame() {
     description: "",
     statuses: [],
     digital: false,
+    emulator: false,
     coop: false,
     platinum: false,
     playing: false,
@@ -3200,6 +3199,7 @@ async function saveCurrentFormGame() {
     owners: ownerInputValues(el.fields.owners.value),
     statuses: listFrom(el.fields.statuses.value).map(canonicalStatus).filter(Boolean),
     digital: el.fields.digital.checked,
+    emulator: Boolean(el.fields.emulator?.checked),
     coop: el.fields.coop.checked,
     platinum,
     playing,
