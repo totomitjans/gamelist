@@ -36,6 +36,7 @@ const MANUAL_PLATINUM_COVER_OVERRIDES = [
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
 let selectMeasureContext = null;
+let selectOverflowPopover = null;
 const searchCache = new Map();
 const searchInflight = new Map();
 const platinumMetaCache = loadPlatinumMetaCache();
@@ -268,6 +269,12 @@ function bindEvents() {
   });
   document.addEventListener("pointerover", handleSelectOverflowTitle);
   document.addEventListener("focusin", handleSelectOverflowTitle);
+  document.addEventListener("pointerout", handleSelectOverflowLeave);
+  document.addEventListener("focusout", handleSelectOverflowLeave);
+  document.addEventListener("change", (event) => {
+    if (event.target.matches?.("select")) updateSelectOverflowTitle(event.target);
+  });
+  window.addEventListener("scroll", hideSelectOverflowPopover, { passive: true });
   el.searchInput.addEventListener("input", (event) => {
     state.filters.query = event.target.value.trim().toLowerCase();
     render();
@@ -1245,14 +1252,22 @@ function fillSelect(select, values, selected, allLabel) {
 function handleSelectOverflowTitle(event) {
   const select = event.target.closest?.("select");
   if (!select) return;
-  updateSelectOverflowTitle(select);
+  const isClipped = updateSelectOverflowTitle(select);
+  if (isClipped) showSelectOverflowPopover(select);
+}
+
+function handleSelectOverflowLeave(event) {
+  const select = event.target.closest?.("select");
+  if (!select) return;
+  hideSelectOverflowPopover();
 }
 
 function updateSelectOverflowTitle(select) {
   const text = select.selectedOptions?.[0]?.textContent?.trim() || "";
   if (!text) {
-    select.removeAttribute("title");
-    return;
+    select.classList.remove("is-clipped");
+    if (selectOverflowPopover?.dataset.owner === select.id) hideSelectOverflowPopover();
+    return false;
   }
   if (!selectMeasureContext) {
     selectMeasureContext = document.createElement("canvas").getContext("2d");
@@ -1269,8 +1284,36 @@ function updateSelectOverflowTitle(select) {
   const paddingRight = parseFloat(style.paddingRight) || 0;
   const availableWidth = select.clientWidth - paddingLeft - paddingRight - 4;
   const isClipped = selectMeasureContext.measureText(text).width > availableWidth;
-  if (isClipped) select.title = text;
-  else select.removeAttribute("title");
+  select.classList.toggle("is-clipped", isClipped);
+  if (!isClipped && selectOverflowPopover?.dataset.owner === select.id) hideSelectOverflowPopover();
+  return isClipped;
+}
+
+function showSelectOverflowPopover(select) {
+  if (!selectOverflowPopover) {
+    selectOverflowPopover = document.createElement("div");
+    selectOverflowPopover.className = "select-overflow-popover";
+    document.body.appendChild(selectOverflowPopover);
+  }
+  const text = select.selectedOptions?.[0]?.textContent?.trim() || "";
+  if (!text) return;
+  selectOverflowPopover.textContent = text;
+  selectOverflowPopover.dataset.owner = select.id || "";
+  const rect = select.getBoundingClientRect();
+  const popoverRect = selectOverflowPopover.getBoundingClientRect();
+  const left = Math.min(Math.max(rect.left, 12), window.innerWidth - popoverRect.width - 12);
+  const top = rect.bottom + 6 > window.innerHeight - popoverRect.height - 12
+    ? rect.top - popoverRect.height - 6
+    : rect.bottom + 6;
+  selectOverflowPopover.style.left = `${left}px`;
+  selectOverflowPopover.style.top = `${Math.max(12, top)}px`;
+  selectOverflowPopover.classList.add("visible");
+}
+
+function hideSelectOverflowPopover() {
+  if (!selectOverflowPopover) return;
+  selectOverflowPopover.classList.remove("visible");
+  selectOverflowPopover.dataset.owner = "";
 }
 
 function renderSection(section) {
