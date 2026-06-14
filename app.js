@@ -2,6 +2,8 @@ const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
 const VIEW_MODE_KEY = "gamelist:view-mode";
+const COMPLETED_VIEW_MODE_KEY = "gamelist:completed-view-mode";
+const PLATINUM_VIEW_MODE_KEY = "gamelist:platinum-view-mode";
 const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
 const PHYSICAL_PROVIDERS = ["Amazon.es", "Xtralife", "GAME.es"];
 const DIGITAL_PROVIDERS = ["Nintendo España", "PlayStation España", "Steam"];
@@ -31,6 +33,7 @@ const UI_ICON_URLS = [
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
   { match: ["nier", "automata"], cover: "https://howlongtobeat.com/games/38029_Nier_Automata.jpg?width=250" },
   { match: ["persona", "3", "reload"], cover: "https://howlongtobeat.com/games/129805_Persona_3_Reload.jpg?width=250" },
+  { match: ["spider", "man", "2"], exclude: ["miles"], cover: "https://howlongtobeat.com/games/79769_Marvels_Spider-Man_2.jpg?width=250" },
   { match: ["spider", "man"], exclude: ["2", "miles"], cover: "https://howlongtobeat.com/games/44852_Spider-Man_(2017).jpg?width=250" },
 ];
 const MANUAL_PLATINUM_META_OVERRIDES = [
@@ -63,9 +66,11 @@ const state = {
   completedYear: "all",
   completedSort: "time",
   completedDirection: "desc",
+  completedViewMode: localStorage.getItem(COMPLETED_VIEW_MODE_KEY) === "list" ? "list" : "grid",
   platinumYear: "all",
   platinumSort: "time",
   platinumDirection: "desc",
+  platinumViewMode: localStorage.getItem(PLATINUM_VIEW_MODE_KEY) === "list" ? "list" : "grid",
   releaseCalendarOffset: 0,
   detailTrophyRequest: "",
   detailReturnToHistory: false,
@@ -119,12 +124,14 @@ const el = {
   completedYearSelect: document.querySelector("#completedYearSelect"),
   completedSortSelect: document.querySelector("#completedSortSelect"),
   completedSortDirection: document.querySelector("#completedSortDirection"),
+  completedViewToggleButton: document.querySelector("#completedViewToggleButton"),
   platinumDialog: document.querySelector("#platinumDialog"),
   platinumCloseButton: document.querySelector("#platinumCloseButton"),
   platinumTitle: document.querySelector("#platinumTitle"),
   platinumCount: document.querySelector("#platinumCount"),
   platinumSortSelect: document.querySelector("#platinumSortSelect"),
   platinumSortDirection: document.querySelector("#platinumSortDirection"),
+  platinumViewToggleButton: document.querySelector("#platinumViewToggleButton"),
   platinumYearTabs: document.querySelector("#platinumYearTabs"),
   platinumYearSelect: document.querySelector("#platinumYearSelect"),
   platinumList: document.querySelector("#platinumList"),
@@ -316,6 +323,16 @@ function bindEvents() {
     localStorage.setItem(VIEW_MODE_KEY, state.viewMode);
     render();
   });
+  el.completedViewToggleButton?.addEventListener("click", () => {
+    state.completedViewMode = state.completedViewMode === "grid" ? "list" : "grid";
+    localStorage.setItem(COMPLETED_VIEW_MODE_KEY, state.completedViewMode);
+    renderCompleted();
+  });
+  el.platinumViewToggleButton?.addEventListener("click", () => {
+    state.platinumViewMode = state.platinumViewMode === "grid" ? "list" : "grid";
+    localStorage.setItem(PLATINUM_VIEW_MODE_KEY, state.platinumViewMode);
+    renderPlatinumDialog();
+  });
   el.preorderedFilter.addEventListener("change", (event) => {
     state.filters.preordered = event.target.checked;
     render();
@@ -501,11 +518,16 @@ function render() {
 }
 
 function renderViewToggle() {
-  const showingGrid = state.viewMode === "grid";
-  el.viewToggleButton.innerHTML = showingGrid ? gridIcon() : linesIcon();
-  el.viewToggleButton.title = showingGrid ? "Grid view" : "List view";
-  el.viewToggleButton.setAttribute("aria-label", el.viewToggleButton.title);
-  el.viewToggleButton.classList.toggle("active", state.viewMode === "list");
+  renderModeToggle(el.viewToggleButton, state.viewMode);
+}
+
+function renderModeToggle(button, mode) {
+  if (!button) return;
+  const showingGrid = mode === "grid";
+  button.innerHTML = showingGrid ? gridIcon() : linesIcon();
+  button.title = showingGrid ? "Grid view" : "List view";
+  button.setAttribute("aria-label", button.title);
+  button.classList.toggle("active", mode === "list");
 }
 
 function syncScrollLock() {
@@ -736,6 +758,8 @@ function renderPlatinumDialog(platinums = platinumItems(), years = platinumYears
   const visible = sortedPlatinums(selected === "all" ? platinums : platinums.filter((item) => platinumYearFor(item) === selected));
   el.platinumTitle.innerHTML = `${trophyIcon()} <span>Platinums</span>`;
   el.platinumCount.textContent = `${visible.length} ${visible.length === 1 ? "platinum" : "platinums"}`;
+  el.platinumList.classList.toggle("list-view", state.platinumViewMode === "list");
+  renderModeToggle(el.platinumViewToggleButton, state.platinumViewMode);
   el.platinumSortSelect.value = state.platinumSort;
   el.platinumSortDirection.innerHTML = sortArrowIcon(state.platinumDirection === "desc");
   el.platinumSortDirection.title = state.platinumDirection === "asc" ? "Sort ascending" : "Sort descending";
@@ -861,8 +885,10 @@ function manualPlatinumMetaForTitle(title) {
 }
 
 function manualPlatinumEntryMatches(entry, normalized) {
-  const terms = normalized.split(" ").filter(Boolean);
-  const includesTerm = (term) => terms.includes(term) || (term.length > 2 && normalized.includes(term));
+  const includesTerm = (term) => {
+    const normalizedTerm = normalizeTitleForMatch(term);
+    return Boolean(normalizedTerm && normalized.includes(normalizedTerm));
+  };
   const hasMatches = entry.match.every(includesTerm);
   const hasExcluded = (entry.exclude || []).some(includesTerm);
   return hasMatches && !hasExcluded;
@@ -1499,6 +1525,8 @@ function rowPrices(game) {
 function renderCompleted() {
   const list = document.querySelector(".completed-list");
   if (!list) return;
+  list.classList.toggle("list-view", state.completedViewMode === "list");
+  renderModeToggle(el.completedViewToggleButton, state.completedViewMode);
   const baseGames = filteredGames().filter((game) => game.completedAt);
   const years = completedYears(baseGames);
   if (state.completedYear !== "all" && !years.includes(state.completedYear)) state.completedYear = "all";
@@ -1526,14 +1554,13 @@ function renderCompleted() {
     el.completedSortDirection.setAttribute("aria-label", el.completedSortDirection.title);
     el.completedSortDirection.classList.toggle("desc", state.completedDirection === "desc");
   }
-  const games = sortedCompletedGames(state.completedYear === "all"
-    ? baseGames
-    : baseGames.filter((game) => completionYear(game) === state.completedYear));
-  if (el.completedCount) el.completedCount.innerHTML = `${games.length} ${games.length === 1 ? "game" : "games"}`;
+  const selectedGames = selectedCompletedGames(baseGames);
+  const games = sortedCompletedGames(selectedGames);
+  updateCompletedCount(selectedGames.length);
   list.innerHTML = games.length ? games.map((game) => `
     <div class="completed-row" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
       <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
-      <div>
+      <div class="completed-main">
         <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
         <span class="completed-platform">${completedBadges(game)}</span>
         <span class="completed-dates">${escapeHtml(historyRangeText(game))}</span>
@@ -1563,6 +1590,17 @@ function renderCompleted() {
       openDetail(row.dataset.id);
     });
   });
+}
+
+function selectedCompletedGames(games) {
+  return state.completedYear === "all"
+    ? games
+    : games.filter((game) => completionYear(game) === String(state.completedYear));
+}
+
+function updateCompletedCount(count) {
+  if (!el.completedCount) return;
+  el.completedCount.innerHTML = `${count} ${count === 1 ? "game" : "games"}`;
 }
 
 function sortedCompletedGames(games) {
