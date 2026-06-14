@@ -674,7 +674,7 @@ function achievementDashboard(achievements, games, sourceUrl, summary = null) {
       </a>
       <a class="achievement-kpi" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">
         <strong>${escapeHtml(String(summary?.level || average || 0))}</strong>
-        <span>${summary?.level ? `Level <small>${escapeHtml(String(summary.progress || 0))}% Next</small>` : "Latest Game Avg"}</span>
+        <span>${summary?.level ? `Level <small>${escapeHtml(String(summary.progress || 0))}% next</small>` : "Latest Game Avg"}</span>
       </a>
       <div class="rarity-graph" aria-label="Trophy rarity graph">
         ${counts.map(([type, count]) => `
