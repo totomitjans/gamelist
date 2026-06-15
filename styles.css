@@ -4631,6 +4631,7 @@ body.dialog-open .mobile-section-tabs {
     flex-wrap: wrap;
     justify-content: flex-end;
     justify-self: end;
+    row-gap: 4px;
     max-width: 58%;
     margin-left: auto;
     text-align: right;
@@ -4638,6 +4639,7 @@ body.dialog-open .mobile-section-tabs {
 
   .column-head .preorder-count-pill {
     margin-left: 4px;
+    margin-bottom: 0;
   }
 
   .brand {
