@@ -3005,7 +3005,7 @@ content: "";
 }
 
 .coop-pill {
-  color: var(--accent-2) !important;
+  color: #79f2ce !important;
   border-color: rgba(121, 242, 206, 0.32);
   background: rgba(121, 242, 206, 0.1);
   font-weight: 820;
