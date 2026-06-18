@@ -199,10 +199,7 @@ body.theme-kash .backdrop {
 }
 
 body.theme-kash .brand-mark {
-  filter:
-    drop-shadow(0 0 10px rgba(0, 92, 255, 0.5))
-    drop-shadow(0 0 16px rgba(255, 184, 220, 0.22))
-    drop-shadow(0 7px 18px rgba(0, 0, 0, 0.32));
+  filter: unset !important;
   width: 70px !important;
   height: 70px !important;
 }
@@ -937,7 +934,7 @@ h2 {
 }
 
 body.theme-kash .column-head h2 {
-  background: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 100%);
+  background: var(--accent);
   -webkit-background-clip: text;
   background-clip: text;
 }
