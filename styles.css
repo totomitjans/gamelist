@@ -3720,52 +3720,191 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
 }
 
 .settings-layout-card {
   display: grid;
-  gap: 8px;
+  gap: 9px;
   min-width: 0;
-  padding: 9px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
 }
 
+.settings-layout-card.is-hidden-section {
+  opacity: 0.55;
+}
+
 .settings-layout-card strong {
-  min-height: 30px;
-  font-size: 12px;
+  min-height: 16px;
+  font-size: 13px;
   line-height: 1.2;
+  text-align: center;
 }
 
 .settings-wire {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  height: 54px;
-  padding: 5px;
+  position: relative;
+  height: 70px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .settings-wire span {
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.18);
+  display: none;
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.045);
 }
 
-.settings-wire.wire-trophies span:first-child,
-.settings-wire.wire-dashboard span,
-.settings-wire.wire-search span:nth-child(2),
-.settings-wire.wire-list span,
-.settings-wire.wire-finished span:last-child {
-  background: rgba(255, 0, 81, 0.62);
+.settings-wire.wire-playing span:nth-child(-n + 4),
+.settings-wire.wire-trophies span:nth-child(-n + 4),
+.settings-wire.wire-dashboard span:nth-child(-n + 5),
+.settings-wire.wire-search span:nth-child(-n + 2),
+.settings-wire.wire-list span:nth-child(-n + 3),
+.settings-wire.wire-finished span,
+.settings-wire.wire-latest-finished span {
+  display: block;
+}
+
+.settings-wire.wire-playing span:nth-child(-n + 3),
+.settings-wire.wire-trophies span:nth-child(-n + 3) {
+  top: 8px;
+  width: 29%;
+  height: 22px;
+}
+
+.settings-wire.wire-playing span:nth-child(1),
+.settings-wire.wire-trophies span:nth-child(1) {
+  left: 0;
+}
+
+.settings-wire.wire-playing span:nth-child(2),
+.settings-wire.wire-trophies span:nth-child(2) {
+  left: 35.5%;
+}
+
+.settings-wire.wire-playing span:nth-child(3),
+.settings-wire.wire-trophies span:nth-child(3) {
+  right: 0;
+}
+
+.settings-wire.wire-playing span:nth-child(4),
+.settings-wire.wire-trophies span:nth-child(4) {
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  height: 22px;
+}
+
+.settings-wire.wire-dashboard span:nth-child(-n + 4) {
+  top: 6px;
+  width: 22.5%;
+  height: 20px;
+}
+
+.settings-wire.wire-dashboard span:nth-child(1) {
+  left: 0;
+}
+
+.settings-wire.wire-dashboard span:nth-child(2) {
+  left: 25.8%;
+}
+
+.settings-wire.wire-dashboard span:nth-child(3) {
+  left: 51.6%;
+}
+
+.settings-wire.wire-dashboard span:nth-child(4) {
+  right: 0;
+}
+
+.settings-wire.wire-dashboard span:nth-child(5) {
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 36px;
+}
+
+.settings-wire.wire-search span:nth-child(1) {
+  left: 0;
+  right: 0;
+  top: 22px;
+  height: 20px;
+}
+
+.settings-wire.wire-search span:nth-child(2) {
+  left: 10px;
+  top: 29px;
+  width: 43%;
+  height: 7px;
+}
+
+.settings-wire.wire-list span:nth-child(-n + 3) {
+  top: 8px;
+  width: 29%;
+  height: 50px;
+}
+
+.settings-wire.wire-list span:nth-child(1) {
+  left: 0;
+}
+
+.settings-wire.wire-list span:nth-child(2) {
+  left: 35.5%;
+}
+
+.settings-wire.wire-list span:nth-child(3) {
+  right: 0;
+}
+
+.settings-wire.wire-finished span,
+.settings-wire.wire-latest-finished span {
+  width: 29%;
+  height: 20px;
+}
+
+.settings-wire.wire-finished span:nth-child(1),
+.settings-wire.wire-latest-finished span:nth-child(1) {
+  left: 0;
+  top: 9px;
+}
+
+.settings-wire.wire-finished span:nth-child(2),
+.settings-wire.wire-latest-finished span:nth-child(2) {
+  left: 35.5%;
+  top: 9px;
+}
+
+.settings-wire.wire-finished span:nth-child(3),
+.settings-wire.wire-latest-finished span:nth-child(3) {
+  right: 0;
+  top: 9px;
+}
+
+.settings-wire.wire-finished span:nth-child(4),
+.settings-wire.wire-latest-finished span:nth-child(4) {
+  left: 0;
+  bottom: 9px;
+}
+
+.settings-wire.wire-finished span:nth-child(5),
+.settings-wire.wire-latest-finished span:nth-child(5) {
+  left: 35.5%;
+  bottom: 9px;
+}
+
+.settings-wire.wire-finished span:nth-child(6),
+.settings-wire.wire-latest-finished span:nth-child(6) {
+  right: 0;
+  bottom: 9px;
 }
 
 .settings-layout-actions {
   display: flex;
+  align-items: center;
   gap: 5px;
 }
 
@@ -3774,6 +3913,36 @@ body.dialog-open .mobile-section-tabs {
   height: 30px;
   min-width: 30px;
   min-height: 30px;
+}
+
+.settings-fixed-label {
+  display: inline-grid;
+  place-items: center;
+  min-height: 30px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.settings-visible-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.settings-visible-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
 }
 
 .settings-grid {
@@ -4708,7 +4877,7 @@ body.dialog-open .mobile-section-tabs {
   gap: 12px;
 }
 
-.empty-with-action .ghost-button {
+.empty-with-action .primary-button {
   flex: 0 0 auto;
 }
 

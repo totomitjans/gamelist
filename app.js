@@ -6,9 +6,11 @@ const PLATINUM_VIEW_MODE_KEY = "gamelist:platinum-view-mode";
 const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
 const SETTINGS_KEY = "gamelist:settings:v1";
 const DEFAULT_PAGE_ORDER = ["trophies", "dashboard", "search", "gamelist", "finished"];
+const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const DEFAULT_SETTINGS = {
   pageOrder: DEFAULT_PAGE_ORDER,
+  hiddenSections: [],
   psnUser: "ShabiiEXE",
   currency: "EUR",
   region: "ES",
@@ -39,8 +41,9 @@ const UI_ICON_URLS = [
   "/assets/stores/xtralife.ico",
 ];
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
+  { match: ["we", "were", "here", "together"], cover: "https://cdn.cloudflare.steamstatic.com/steam/apps/865360/library_600x900_2x.jpg" },
   { match: ["we", "were", "here", "too"], cover: "https://m.media-amazon.com/images/M/MV5BODY0YzhlZTgtMTE1OS00NzI4LTk4YjktYjliNGYyMDU0NmUzXkEyXkFqcGc@._V1_.jpg" },
-  { match: ["we", "were", "here"], exclude: ["too"], cover: "https://store-images.s-microsoft.com/image/apps.35419.14623959840279805.b70e315b-f457-43e0-ae70-9c5caadb7e59.6f028cbc-8306-4423-b49b-43e1f6e75ee8" },
+  { match: ["we", "were", "here"], exclude: ["too", "together"], cover: "https://store-images.s-microsoft.com/image/apps.35419.14623959840279805.b70e315b-f457-43e0-ae70-9c5caadb7e59.6f028cbc-8306-4423-b49b-43e1f6e75ee8" },
   { match: ["nier", "automata"], cover: "https://howlongtobeat.com/games/38029_Nier_Automata.jpg?width=250" },
   { match: ["persona", "3", "reload"], cover: "https://howlongtobeat.com/games/129805_Persona_3_Reload.jpg?width=250" },
   { match: ["spider", "man", "2"], ids: ["23918"], exclude: ["miles"], cover: "https://howlongtobeat.com/games/79769_Marvels_Spider-Man_2.jpg?width=250" },
@@ -512,10 +515,14 @@ function normalizeSettings(settings = {}) {
   const stores = Array.isArray(settings.stores)
     ? settings.stores.filter((store) => STORE_OPTIONS.includes(store))
     : DEFAULT_SETTINGS.stores;
+  const hiddenSections = Array.isArray(settings.hiddenSections)
+    ? settings.hiddenSections.filter((item) => LAYOUT_SECTION_KEYS.includes(item))
+    : [];
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
     pageOrder: [...pageOrder, ...DEFAULT_PAGE_ORDER.filter((item) => !pageOrder.includes(item))],
+    hiddenSections,
     psnUser: cleanPsnUser(settings.psnUser) || DEFAULT_SETTINGS.psnUser,
     currency: settings.currency === "USD" ? "USD" : "EUR",
     region: ["ES", "US", "UK"].includes(settings.region) ? settings.region : DEFAULT_SETTINGS.region,
@@ -581,7 +588,9 @@ function renderViewToggle() {
 }
 
 function applyPageOrder() {
-  const order = normalizeSettings(state.settings).pageOrder;
+  const settings = normalizeSettings(state.settings);
+  const order = settings.pageOrder;
+  const hidden = new Set(settings.hiddenSections);
   const orderMap = new Map(order.map((key, index) => [key, index + 1]));
   el.playingSection.style.order = "0";
   el.achievementSection.style.order = String(orderMap.get("trophies") || 1);
@@ -590,6 +599,14 @@ function applyPageOrder() {
   document.querySelector(".mobile-section-tabs").style.order = String(orderMap.get("gamelist") || 4);
   el.board.style.order = String(orderMap.get("gamelist") || 4);
   document.querySelector("#completed").style.order = String(orderMap.get("finished") || 5);
+  el.playingSection.hidden = el.playingSection.hidden || hidden.has("playing");
+  el.achievementSection.hidden = hidden.has("trophies");
+  document.querySelector(".hero").hidden = hidden.has("dashboard");
+  document.querySelector(".toolbar").hidden = hidden.has("search");
+  document.querySelector(".mobile-section-tabs").hidden = hidden.has("gamelist");
+  el.board.hidden = hidden.has("gamelist");
+  document.querySelector("#completed").hidden = hidden.has("finished");
+  if (hidden.has("latestFinished")) el.playingFinished.hidden = true;
 }
 
 function openSettingsDialog() {
@@ -605,7 +622,12 @@ function renderSettingsDialog() {
   el.settingsCurrency.value = state.settings.currency;
   el.settingsRegion.value = state.settings.region;
   el.settingsDefaultOwner.value = state.settings.defaultOwner;
-  el.settingsLayoutList.innerHTML = state.settings.pageOrder.map((key, index) => settingsLayoutItem(key, index)).join("");
+  const pageIndex = new Map(state.settings.pageOrder.map((key, index) => [key, index]));
+  el.settingsLayoutList.innerHTML = [
+    settingsLayoutItem("playing", -1, { fixed: true }),
+    ...state.settings.pageOrder.map((key) => settingsLayoutItem(key, pageIndex.get(key) ?? 0)),
+    settingsLayoutItem("latestFinished", -1, { fixed: true }),
+  ].join("");
   el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `
     <label class="check-filter toggle-check settings-store-check">
       <input type="checkbox" value="${escapeHtml(store)}" ${state.settings.stores.includes(store) ? "checked" : ""}>
@@ -622,30 +644,51 @@ function renderSettingsDialog() {
   el.settingsLayoutList.querySelectorAll("[data-layout-move]").forEach((button) => {
     button.addEventListener("click", () => moveSettingsLayoutItem(button.dataset.layoutKey, Number(button.dataset.layoutMove)));
   });
+  el.settingsLayoutList.querySelectorAll("[data-layout-hidden]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const hidden = new Set(state.settings.hiddenSections || []);
+      if (input.checked) hidden.delete(input.value);
+      else hidden.add(input.value);
+      state.settings.hiddenSections = [...hidden].filter((key) => LAYOUT_SECTION_KEYS.includes(key));
+      renderSettingsDialog();
+    });
+  });
 }
 
-function settingsLayoutItem(key, index) {
+function settingsLayoutItem(key, index, options = {}) {
   const title = {
+    playing: "Currently Playing",
     trophies: "Trophies",
-    dashboard: "Highlights + Calendar",
+    dashboard: "Calendar",
     search: "Search",
-    gamelist: "Game List",
+    gamelist: "Gamelist",
     finished: "Finished Games",
+    latestFinished: "Last Finished",
   }[key] || key;
   const wireClass = {
+    playing: "wire-playing",
     trophies: "wire-trophies",
     dashboard: "wire-dashboard",
     search: "wire-search",
     gamelist: "wire-list",
     finished: "wire-finished",
+    latestFinished: "wire-latest-finished",
   }[key] || "";
+  const fixed = Boolean(options.fixed);
+  const visible = !(state.settings.hiddenSections || []).includes(key);
   return `
-    <article class="settings-layout-card" data-layout-key="${escapeHtml(key)}">
-      <div class="settings-wire ${wireClass}" aria-hidden="true"><span></span><span></span><span></span></div>
+    <article class="settings-layout-card ${fixed ? "is-fixed" : ""} ${visible ? "" : "is-hidden-section"}" data-layout-key="${escapeHtml(key)}">
+      <div class="settings-wire ${wireClass}" aria-hidden="true">${Array.from({ length: 6 }, () => "<span></span>").join("")}</div>
       <strong>${escapeHtml(title)}</strong>
       <div class="settings-layout-actions">
-        <button class="icon-button" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(title)} up">↑</button>
-        <button class="icon-button" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="1" ${index === state.settings.pageOrder.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(title)} down">↓</button>
+        ${fixed ? `<span class="settings-fixed-label">Fixed</span>` : `
+          <button class="icon-button" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(title)} up">↑</button>
+          <button class="icon-button" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="1" ${index === state.settings.pageOrder.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(title)} down">↓</button>
+        `}
+        <label class="settings-visible-check" title="${visible ? "Visible" : "Hidden"}">
+          <input type="checkbox" value="${escapeHtml(key)}" data-layout-hidden ${visible ? "checked" : ""}>
+          <span>${visible ? "Show" : "Hide"}</span>
+        </label>
       </div>
     </article>
   `;
@@ -669,8 +712,10 @@ async function saveSettingsFromForm(event) {
     .map((input) => input.value)
     .filter((store) => STORE_OPTIONS.includes(store))
     .slice(0, 4);
+  const visibleSections = new Set([...el.settingsLayoutList.querySelectorAll("[data-layout-hidden]:checked")].map((input) => input.value));
   state.settings = normalizeSettings({
     ...state.settings,
+    hiddenSections: LAYOUT_SECTION_KEYS.filter((key) => !visibleSections.has(key)),
     psnUser: el.settingsPsnUser.value,
     currency: el.settingsCurrency.value,
     region: el.settingsRegion.value,
@@ -1630,7 +1675,10 @@ function emptyGamesMarkup(query) {
   return `
     <div class="empty empty-with-action">
       <span>No games found for "${escapeHtml(query)}".</span>
-      <button class="ghost-button" type="button" data-add-search>Add Game</button>
+      <button class="primary-button" type="button" data-add-search>
+        <span class="button-label">Add Game</span>
+        <span class="button-icon" aria-hidden="true">${plusIcon()}</span>
+      </button>
     </div>
   `;
 }
@@ -2761,6 +2809,15 @@ function pencilIcon() {
     <svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
       <path d="M13.5 6.5l4 4"></path>
+    </svg>
+  `;
+}
+
+function plusIcon() {
+  return `
+    <svg class="plus-icon" viewBox="0 0 24 24">
+      <path d="M12 5v14"></path>
+      <path d="M5 12h14"></path>
     </svg>
   `;
 }
