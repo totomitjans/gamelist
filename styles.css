@@ -3876,6 +3876,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .completed-head-actions #completedCount {
   align-self: center;
   line-height: 34px;
+  margin-bottom: 3px;
 }
 
 .completed-row {
