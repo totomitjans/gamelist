@@ -5,7 +5,7 @@ const VIEW_MODE_KEY = "gamelist:view-mode";
 const PLATINUM_VIEW_MODE_KEY = "gamelist:platinum-view-mode";
 const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
 const SETTINGS_KEY = "gamelist:settings:v1";
-const DEFAULT_PAGE_ORDER = ["trophies", "dashboard", "search", "gamelist", "finished"];
+const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -136,6 +136,8 @@ const el = {
   playingPrevButton: document.querySelector("#playingPrevButton"),
   playingNextButton: document.querySelector("#playingNextButton"),
   achievementSection: document.querySelector("#achievementSection"),
+  calendarSection: document.querySelector(".calendar-section"),
+  highlightsSection: document.querySelector(".highlights-section"),
   achievementPanel: document.querySelector("#achievementPanel"),
   achievementProfileLink: document.querySelector("#achievementProfileLink"),
   stats: document.querySelector("#stats"),
@@ -539,15 +541,19 @@ function persistLocalSettings() {
 }
 
 function normalizeSettings(settings = {}) {
-  const pageOrder = Array.isArray(settings.pageOrder)
-    ? settings.pageOrder.filter((item) => DEFAULT_PAGE_ORDER.includes(item))
+  const migratedOrder = Array.isArray(settings.pageOrder)
+    ? settings.pageOrder.flatMap((item) => item === "dashboard" ? ["calendar", "highlights"] : [item])
+    : [];
+  const pageOrder = migratedOrder.length
+    ? migratedOrder.filter((item) => DEFAULT_PAGE_ORDER.includes(item))
+    : [];
+  const migratedHidden = Array.isArray(settings.hiddenSections)
+    ? settings.hiddenSections.flatMap((item) => item === "dashboard" ? ["calendar", "highlights"] : [item])
     : [];
   const stores = Array.isArray(settings.stores)
     ? settings.stores.filter((store) => STORE_OPTIONS.includes(store))
     : DEFAULT_SETTINGS.stores;
-  const hiddenSections = Array.isArray(settings.hiddenSections)
-    ? settings.hiddenSections.filter((item) => LAYOUT_SECTION_KEYS.includes(item))
-    : [];
+  const hiddenSections = migratedHidden.filter((item) => LAYOUT_SECTION_KEYS.includes(item));
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
@@ -662,21 +668,25 @@ function applyPageOrder() {
   const order = settings.pageOrder;
   const hidden = new Set(settings.hiddenSections);
   const orderMap = new Map(order.map((key, index) => [key, index + 1]));
+  const hasPlayingGames = activeGames().some((game) => game.playing);
+  const hasFinishedGames = state.games.some((game) => !game.deletedAt && game.completedAt);
   el.playingSection.style.order = "0";
   el.achievementSection.style.order = String(orderMap.get("trophies") || 1);
-  document.querySelector(".hero").style.order = String(orderMap.get("dashboard") || 2);
-  document.querySelector(".toolbar").style.order = String(orderMap.get("search") || 3);
-  document.querySelector(".mobile-section-tabs").style.order = String(orderMap.get("gamelist") || 4);
-  el.board.style.order = String(orderMap.get("gamelist") || 4);
-  document.querySelector("#completed").style.order = String(orderMap.get("finished") || 5);
-  el.playingSection.hidden = el.playingSection.hidden || hidden.has("playing");
+  el.calendarSection.style.order = String(orderMap.get("calendar") || 2);
+  el.highlightsSection.style.order = String(orderMap.get("highlights") || 3);
+  document.querySelector(".toolbar").style.order = String(orderMap.get("search") || 4);
+  document.querySelector(".mobile-section-tabs").style.order = String(orderMap.get("gamelist") || 5);
+  el.board.style.order = String(orderMap.get("gamelist") || 5);
+  document.querySelector("#completed").style.order = String(orderMap.get("finished") || 6);
+  el.playingSection.hidden = hidden.has("playing") || !hasPlayingGames;
   el.achievementSection.hidden = hidden.has("trophies");
-  document.querySelector(".hero").hidden = hidden.has("dashboard");
+  el.calendarSection.hidden = hidden.has("calendar");
+  el.highlightsSection.hidden = hidden.has("highlights");
   document.querySelector(".toolbar").hidden = hidden.has("search");
   document.querySelector(".mobile-section-tabs").hidden = hidden.has("gamelist");
   el.board.hidden = hidden.has("gamelist");
   document.querySelector("#completed").hidden = hidden.has("finished");
-  if (hidden.has("latestFinished")) el.playingFinished.hidden = true;
+  el.playingFinished.hidden = hidden.has("latestFinished") || !hasFinishedGames;
 }
 
 function openSettingsDialog() {
@@ -734,7 +744,8 @@ function settingsLayoutItem(key, index, options = {}) {
   const title = {
     playing: "Currently Playing",
     trophies: "Trophies",
-    dashboard: "Calendar",
+    calendar: "Calendar",
+    highlights: "Highlights",
     search: "Search",
     gamelist: "Gamelist",
     finished: "Finished Games",
@@ -743,7 +754,8 @@ function settingsLayoutItem(key, index, options = {}) {
   const wireClass = {
     playing: "wire-playing",
     trophies: "wire-trophies",
-    dashboard: "wire-dashboard",
+    calendar: "wire-calendar",
+    highlights: "wire-highlights",
     search: "wire-search",
     gamelist: "wire-list",
     finished: "wire-finished",
