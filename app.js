@@ -1843,7 +1843,7 @@ function rowCoreStats(game) {
     ...gameStatuses(game).map(statusBadge),
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
-    game.platinum ? `<span class="platinum-pill">${trophyIcon()} Completed</span>` : "",
+    game.platinum ? completionPill(game) : "",
     psn ? psnProgressBadge(psn) : "",
   ].filter(Boolean).join("");
 }
@@ -2638,7 +2638,7 @@ function metaFor(game, options = {}) {
   if (options.includePsn !== false && psn) values.push(psnProgressBadge(psn));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.replayCount) values.push(replayBadge(game.replayCount));
-  if (game.platinum) values.push(`<span class="platinum-pill">${trophyIcon()} Completed</span>`);
+  if (game.platinum) values.push(completionPill(game));
   return values;
 }
 
@@ -2800,7 +2800,7 @@ function completedBadges(game, options = {}) {
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.stream ? `<span class="stream-pill">Stream</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
-    game.platinum ? `<span class="platinum-pill">${trophyIcon()} Completed</span>` : "",
+    game.platinum ? completionPill(game) : "",
     options.includePsn === false ? "" : (psn ? psnProgressBadge(psn) : ""),
   ].filter(Boolean).join("");
 }
@@ -2884,6 +2884,25 @@ function statusBadge(status) {
 
 function replayBadge(count) {
   return `<span class="replay-pill">Replay ${escapeHtml(count)}</span>`;
+}
+
+function achievementProviderForGame(game) {
+  const platform = String(game?.platform || "").toLowerCase();
+  if (platform.includes("pc") || platform.includes("steam")) {
+    return { key: "steam", label: "Steam Achievements", icon: platformLogo("PC") };
+  }
+  if (platform.includes("xbox")) {
+    return { key: "xbox", label: "Xbox Achievements", icon: platformLogo("Xbox") };
+  }
+  return { key: "playstation", label: "Completed", icon: "" };
+}
+
+function completionPill(game) {
+  const provider = achievementProviderForGame(game);
+  const icon = provider.icon
+    ? `<img class="achievement-platform-icon" src="${escapeHtml(provider.icon)}" alt="" width="16" height="16" decoding="async">`
+    : trophyIcon();
+  return `<span class="platinum-pill achievement-${escapeHtml(provider.key)}">${icon}${escapeHtml(provider.label)}</span>`;
 }
 
 function pencilIcon() {
