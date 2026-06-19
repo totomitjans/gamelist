@@ -107,6 +107,7 @@ const state = {
   draggingId: "",
   mobileSection: "backlog",
   mobileSwipeStart: null,
+  completedYear: "all",
   historyYear: String(new Date().getFullYear()),
   platinumYear: "all",
   platinumSort: "time",
@@ -154,6 +155,8 @@ const el = {
   sortDirectionButton: document.querySelector("#sortDirectionButton"),
   viewToggleButton: document.querySelector("#viewToggleButton"),
   preorderedFilter: document.querySelector("#preorderedFilter"),
+  completedYearControl: document.querySelector("#completedYearControl"),
+  completedYearFilter: document.querySelector("#completedYearFilter"),
   scrollTopButton: document.querySelector("#scrollTopButton"),
   floatingEditActions: document.querySelector("#floatingEditActions"),
   floatingAddButton: document.querySelector("#floatingAddButton"),
@@ -383,6 +386,10 @@ function bindEvents() {
   el.preorderedFilter.addEventListener("change", (event) => {
     state.filters.preordered = event.target.checked;
     render();
+  });
+  el.completedYearFilter?.addEventListener("change", (event) => {
+    state.completedYear = event.target.value || "all";
+    renderCompleted();
   });
   el.scrollTopButton.addEventListener("click", () => {
     if (document.body.classList.contains("dialog-open")) return;
@@ -1891,7 +1898,12 @@ function renderCompleted() {
   const list = document.querySelector(".completed-list");
   if (!list) return;
   list.classList.toggle("list-view", state.viewMode === "list");
-  const selectedGames = filteredGames({ applyPreorder: false }).filter((game) => game.completedAt);
+  const years = completedYears();
+  if (state.completedYear !== "all" && !years.includes(state.completedYear)) state.completedYear = "all";
+  renderCompletedYearFilter(years);
+  const selectedGames = filteredGames({ applyPreorder: false })
+    .filter((game) => game.completedAt)
+    .filter((game) => state.completedYear === "all" || completionYear(game) === state.completedYear);
   const games = sortedCompletedGames(selectedGames);
   updateCompletedCount(selectedGames.length);
   list.innerHTML = games.length ? games.map((game) => `
@@ -1927,6 +1939,18 @@ function renderCompleted() {
       openDetail(row.dataset.id);
     });
   });
+}
+
+function renderCompletedYearFilter(years) {
+  if (!el.completedYearControl || !el.completedYearFilter) return;
+  const showFilter = years.length > 1;
+  el.completedYearControl.hidden = !showFilter;
+  if (!showFilter) return;
+  el.completedYearFilter.innerHTML = [
+    `<option value="all">All</option>`,
+    ...years.map((year) => `<option value="${escapeHtml(year)}">${escapeHtml(year)}</option>`),
+  ].join("");
+  el.completedYearFilter.value = state.completedYear;
 }
 
 function updateCompletedCount(count) {

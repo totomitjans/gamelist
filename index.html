@@ -196,7 +196,15 @@
           <div>
             <h2>Finished games</h2>
           </div>
-          <span id="completedCount"></span>
+          <div class="completed-head-actions">
+            <label class="completed-year-control" id="completedYearControl" hidden>
+              <span>Year</span>
+              <select id="completedYearFilter" aria-label="Finished games year">
+                <option value="all">All</option>
+              </select>
+            </label>
+            <span id="completedCount"></span>
+          </div>
         </div>
         <div class="completed-list" data-section="completed"></div>
       </section>
