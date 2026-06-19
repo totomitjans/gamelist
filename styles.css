@@ -2523,9 +2523,21 @@ content: "";
       linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, transparent 74%, rgba(6, 7, 10, 0.18));
   }
 
+  .game-card.stream-card.playing-card.has-trailer .card-trailer::after {
+    background:
+      linear-gradient(180deg, transparent 62%, rgba(183, 116, 255, 0.4) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, transparent 74%, rgba(6, 7, 10, 0.18));
+  }
+
   body.theme-kash .game-card.playing-card.has-trailer .card-trailer::after {
     background:
       linear-gradient(180deg, transparent 62%, rgba(0, 92, 255, 0.38) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, transparent 74%, rgba(6, 7, 10, 0.18));
+  }
+
+  body.theme-kash .game-card.stream-card.playing-card.has-trailer .card-trailer::after {
+    background:
+      linear-gradient(180deg, transparent 62%, rgba(183, 116, 255, 0.4) 100%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, transparent 74%, rgba(6, 7, 10, 0.18));
   }
 
