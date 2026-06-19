@@ -1885,6 +1885,18 @@ textarea {
   padding: 11px 12px;
 }
 
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(255, 0, 81, 0.34);
+}
+
+body.theme-kash input:hover,
+body.theme-kash select:hover,
+body.theme-kash textarea:hover {
+  border-color: rgba(0, 92, 255, 0.38);
+}
+
 select {
   appearance: none;
   padding-right: 34px;
@@ -1906,8 +1918,15 @@ select option {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: rgba(105, 117, 247, 0.72);
-  box-shadow: 0 0 0 3px rgba(247, 223, 105, 0.13);
+  border-color: rgba(255, 0, 81, 0.62);
+  box-shadow: 0 0 0 3px rgba(255, 0, 81, 0.12);
+}
+
+body.theme-kash input:focus,
+body.theme-kash select:focus,
+body.theme-kash textarea:focus {
+  border-color: rgba(0, 92, 255, 0.62);
+  box-shadow: 0 0 0 3px rgba(0, 92, 255, 0.12);
 }
 
 select.is-active {
