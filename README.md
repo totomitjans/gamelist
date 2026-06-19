@@ -12,7 +12,7 @@ Pretty easy. The app is a static frontend plus Cloudflare Worker API routes. A f
 - their own edit password
 - optional PSN/IGDB/Google Calendar secrets
 
-The game data is saved in Cloudflare KV through `/api/sync`, not in `data/seed-games.json` after the site is running. `data/seed-games.json` is only starter/sample data.
+The game data is saved in Cloudflare KV through `/api/sync`. A fresh copy starts with an empty list.
 
 ## Local Development
 
@@ -168,7 +168,6 @@ Those settings are stored in that copy's KV namespace, so each friend can have t
 
 - Live saved data: Cloudflare KV key `gamelist-data`
 - Local browser backup: `localStorage`
-- Starter data: `data/seed-games.json`
 - Cloud sync endpoint: `/api/sync`
 
 To make a totally clean copy, use a brand-new KV namespace. To clone your current data for someone, export/copy the KV value for `gamelist-data` into their namespace.

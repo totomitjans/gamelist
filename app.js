@@ -486,9 +486,7 @@ async function loadData() {
     persistLocal(false);
     return;
   }
-  const response = await fetch("data/seed-games.json");
-  const seed = await response.json();
-  state.games = normalizeGameRecords(seed.games);
+  state.games = [];
   persistLocal(false);
 }
 
