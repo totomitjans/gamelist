@@ -392,10 +392,7 @@ function bindEvents() {
     state.filters.preordered = event.target.checked;
     render();
   });
-  el.completedYearFilter?.addEventListener("change", (event) => {
-    state.completedYear = event.target.value || "all";
-    renderCompleted();
-  });
+  el.completedYearFilter?.addEventListener("change", handleCompletedYearChange);
   el.scrollTopButton.addEventListener("click", () => {
     if (document.body.classList.contains("dialog-open")) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1911,6 +1908,8 @@ function renderCompleted() {
   if (!list) return;
   list.classList.toggle("list-view", state.viewMode === "list");
   const years = completedYears();
+  const selectedYear = el.completedYearFilter?.value || state.completedYear || "all";
+  state.completedYear = selectedYear;
   if (state.completedYear !== "all" && !years.includes(state.completedYear)) state.completedYear = "all";
   renderCompletedYearFilter(years);
   const filteredFinishedGames = filteredGames({ applyPreorder: false }).filter((game) => game.completedAt);
@@ -1962,10 +1961,11 @@ function renderCompletedYearFilter(years) {
     ...years.map((year) => `<option value="${escapeHtml(year)}">${escapeHtml(year)}</option>`),
   ].join("");
   el.completedYearFilter.value = state.completedYear;
-  el.completedYearFilter.onchange = () => {
-    state.completedYear = el.completedYearFilter.value || "all";
-    renderCompleted();
-  };
+}
+
+function handleCompletedYearChange(event) {
+  state.completedYear = event.target.value || "all";
+  renderCompleted();
 }
 
 function updateCompletedCount(count) {
