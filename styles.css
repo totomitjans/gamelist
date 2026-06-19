@@ -1427,7 +1427,7 @@ body.dialog-open .floating-edit-actions {
   box-shadow: 0 8px 20px rgba(255, 0, 57, 0.1);
 }
 
-body.theme-kash .release-day.has-release {
+body.theme-kash .release-day.has-release:not(.has-preorder):not(.release-platform-nintendo):not(.release-platform-playstation):not(.release-platform-pc):not(.release-platform-xbox):not(.release-platform-mixed):not(.release-platform-generic) {
   background: rgba(0, 92, 255, 0.18);
   border-color: rgba(0, 92, 255, 0.4);
   box-shadow: 0 8px 20px rgba(0, 92, 255, 0.12);
@@ -1437,12 +1437,6 @@ body.theme-kash .release-day.has-release {
   background: rgba(255, 0, 57, 0.2);
   border-color: rgba(255, 0, 57, 0.48);
   box-shadow: 0 8px 20px rgba(255, 0, 57, 0.18), 0 0 18px rgba(255, 0, 57, 0.1);
-}
-
-body.theme-kash .release-day.release-platform-nintendo {
-  background: rgba(0, 92, 255, 0.2);
-  border-color: rgba(0, 92, 255, 0.48);
-  box-shadow: 0 8px 20px rgba(0, 92, 255, 0.18), 0 0 18px rgba(0, 92, 255, 0.1);
 }
 
 .release-day.release-platform-playstation {
