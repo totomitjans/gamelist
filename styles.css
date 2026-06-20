@@ -915,22 +915,13 @@ body.theme-kash .achievement-card.latest {
   margin-top: 3px;
 }
 
-.achievement-card .achievement-platform-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 17px;
-  padding: 2px 5px;
-  color: #f4f5f7;
-  font-size: 9px;
+.achievement-card .achievement-card-meta.playing-finished-tags {
+  flex-wrap: nowrap;
   line-height: 1;
-  font-weight: 820;
-  background: rgba(104, 108, 118, 0.88);
-  border-radius: 4px;
 }
 
-.achievement-card .achievement-platform-playstation {
-  color: #ffffff;
-  background: rgba(38, 91, 198, 0.9);
+.achievement-card .playing-finished-tags .platform-label {
+  font-size: 9px;
 }
 
 .achievement-icon,

@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v120";
-const SITE_UPDATED_AT = "2026-06-20T19:48:09Z";
+const SITE_VERSION = "v121";
+const SITE_UPDATED_AT = "2026-06-20T19:52:06Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -1269,15 +1269,14 @@ function renderAchievements(data = {}, steamData = state.steamActivity || emptyS
 
   const trophyCards = achievements.map((item, index) => {
     const platform = achievementPlatformLabel(item);
-    const platformTone = item.source === "steam" ? "pc" : "playstation";
     return `
       <a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escapeHtml(trophyTone(item.rarity))}" href="${escapeHtml(item.url || sourceUrl)}" target="_blank" rel="noreferrer">
         <img class="achievement-icon" src="${escapeHtml(item.icon || platformLogo(item.source === "steam" ? "PC" : "PS5"))}" alt="">
         <div>
           <strong>${escapeHtml(item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"))}</strong>
           ${item.game ? `<span class="achievement-game-name">${escapeHtml(item.game)}</span>` : ""}
-          <span class="achievement-card-meta">
-            <small class="achievement-platform-pill achievement-platform-${platformTone}">${escapeHtml(platform)}</small>
+          <span class="achievement-card-meta playing-finished-tags">
+            ${platformBadge(platform)}
             ${item.earnedAt ? `<span class="achievement-earned-date">${escapeHtml(item.earnedAt)}</span>` : ""}
           </span>
         </div>
