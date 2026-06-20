@@ -703,22 +703,21 @@ button.achievement-kpi {
   display: block;
   margin: 0;
   padding: 5px 8px;
-  color: #dbeaff;
+  color: #f4f5f7;
   font-size: 10px;
   line-height: 1.15;
   font-weight: 760;
   white-space: nowrap;
   text-align: center;
-  background: rgba(30, 78, 124, 0.86);
-  border: 1px solid rgba(112, 180, 255, 0.34);
+  background: rgba(104, 108, 118, 0.88);
+  border: 0;
   border-radius: 5px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .achievement-kpi .kpi-breakdown-playstation {
   color: #ffffff;
   background: rgba(38, 91, 198, 0.9);
-  border-color: rgba(127, 170, 255, 0.44);
 }
 
 .achievement-kpi .kpi-breakdown-pill strong {
