@@ -175,11 +175,12 @@ PC game overlays can show Steam achievements when these are configured:
 
 ```bash
 npx wrangler secret put STEAM_API_KEY
+npx wrangler secret put STEAM_PROFILE_USER
 ```
 
 Get a Steam Web API key from `https://steamcommunity.com/dev/apikey`.
 
-In the site's Settings overlay, set **Steam profile** to a SteamID64, Steam profile URL, or vanity name. For each PC game, add a Steam store URL or Steam App ID in the game editor.
+Set `STEAM_PROFILE_USER` to a SteamID64, Steam profile URL, or vanity name, for example `shabii_`. The site's Settings overlay also has a **Steam profile** field; if filled, it overrides the Cloudflare value for that browser/account. For each PC game, add a Steam store URL or Steam App ID in the game editor.
 
 ### Google Calendar Preorder Events
 

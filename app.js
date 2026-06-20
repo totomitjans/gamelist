@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v112";
-const SITE_UPDATED_AT = "2026-06-20T13:25:39Z";
+const SITE_VERSION = "v113";
+const SITE_UPDATED_AT = "2026-06-20T13:36:12Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -1095,12 +1095,13 @@ async function refreshAchievements() {
 async function fetchSteamActivity() {
   const steamUser = state.settings.steamUser || "";
   const games = steamAchievementGames();
-  if (!steamUser || !games.length) return emptySteamActivity();
+  if (!games.length) return emptySteamActivity();
   const results = await Promise.all(games.map(async (game) => {
     const appId = steamAppIdFor(game);
     try {
-      const response = await fetch(`/api/steam-achievements?${new URLSearchParams({ appId, user: steamUser, debug: "1" })}`);
+      const response = await fetch(`/api/steam-achievements?${steamAchievementParams(appId, steamUser)}`);
       const data = await response.json().catch(() => ({ achievements: [] }));
+      logTrophyLoadIssue("steam-dashboard", game, { npCommunicationId: appId, npServiceName: "steam" }, response, { trophies: data.achievements, ...data });
       const achievements = Array.isArray(data.achievements) ? data.achievements : [];
       const earned = Number.isFinite(Number(data.earnedCount))
         ? Number(data.earnedCount)
@@ -1170,6 +1171,12 @@ function steamProfileUrl(user) {
 
 function emptySteamActivity() {
   return { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
+}
+
+function steamAchievementParams(appId, steamUser = state.settings.steamUser || "") {
+  const params = new URLSearchParams({ appId, debug: "1" });
+  if (steamUser) params.set("user", steamUser);
+  return params;
 }
 
 function renderAchievements(data = {}, steamData = state.steamActivity || emptySteamActivity()) {
@@ -2902,7 +2909,7 @@ async function renderDetailTrophies(game) {
 async function renderDetailSteamAchievements(game) {
   const appId = steamAppIdFor(game);
   const steamUser = state.settings.steamUser || "";
-  if (!appId || !steamUser) {
+  if (!appId) {
     state.detailTrophyRequest = "";
     state.detailTrophiesData = [];
     state.detailTrophyProvider = "steam";
@@ -2926,11 +2933,7 @@ async function renderDetailSteamAchievements(game) {
   el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned achievements...</div>`;
 
   try {
-    const params = new URLSearchParams({
-      appId,
-      user: steamUser,
-      debug: "1",
-    });
+    const params = steamAchievementParams(appId, steamUser);
     const response = await fetch(`/api/steam-achievements?${params}`);
     const data = await response.json().catch(() => ({ error: "Invalid Steam achievements API JSON response" }));
     if (state.detailTrophyRequest !== requestKey) return;
@@ -3100,7 +3103,7 @@ function steamAchievementsForGame(game) {
 }
 
 function steamProgressForGame(game) {
-  if (!isPcGame(game) || !state.settings.steamUser) return null;
+  if (!isPcGame(game)) return null;
   const appId = steamAppIdFor(game);
   if (!appId) return null;
   const cached = steamAchievementsForGame(game);
@@ -3290,7 +3293,7 @@ function cardTrophiesFor(game) {
 function cardSteamAchievementsFor(game) {
   const cacheKey = steamAchievementCacheKey(game);
   const cached = cacheKey ? state.cardTrophies[cacheKey] : null;
-  if (cacheKey && state.settings.steamUser && !cached) loadCardSteamAchievements(game);
+  if (cacheKey && !cached) loadCardSteamAchievements(game);
   const guideLinks = guideLinksFor(game);
   if (cached?.loading) {
     return `<div class="card-trophy-head">${trophyIcon()}<span>Loading achievements...</span></div>${guideLinks.length ? `<div class="guide-links card-guide-row">${guideLinks.join("")}</div>` : ""}`;
@@ -3355,14 +3358,10 @@ async function loadCardSteamAchievements(game) {
   const cacheKey = steamAchievementCacheKey(game);
   const appId = steamAppIdFor(game);
   const steamUser = state.settings.steamUser || "";
-  if (!cacheKey || !appId || !steamUser || state.cardTrophies[cacheKey]) return;
+  if (!cacheKey || !appId || state.cardTrophies[cacheKey]) return;
   state.cardTrophies[cacheKey] = { loading: true, achievements: [], trophies: [] };
   try {
-    const params = new URLSearchParams({
-      appId,
-      user: steamUser,
-      debug: "1",
-    });
+    const params = steamAchievementParams(appId, steamUser);
     const response = await fetch(`/api/steam-achievements?${params}`);
     const data = await response.json().catch(() => ({ error: "Invalid Steam achievements API JSON response" }));
     logTrophyLoadIssue("steam-card", game, { npCommunicationId: appId, npServiceName: "steam" }, response, { trophies: data.achievements, ...data });
