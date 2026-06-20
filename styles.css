@@ -5037,8 +5037,9 @@ body.theme-kash .store-button:hover {
 
 .platinum-filter-bar {
   display: grid;
-  grid-template-columns: minmax(112px, 0.75fr) minmax(132px, 0.9fr) minmax(190px, 1.35fr);
+  grid-template-columns: 110px 132px auto;
   align-items: end;
+  justify-content: start;
   gap: 8px;
   width: 100%;
   margin: 6px 0 14px;
@@ -6212,8 +6213,9 @@ body.theme-kash .guide-button:hover {
 
   .platinum-filter-bar {
     display: grid;
-    grid-template-columns: minmax(64px, 0.7fr) minmax(82px, 0.9fr) minmax(130px, 1.3fr);
+    grid-template-columns: minmax(62px, 0.68fr) minmax(78px, 0.82fr) minmax(126px, 1.25fr);
     align-items: end;
+    justify-content: stretch;
     gap: 6px;
     padding: 7px;
   }

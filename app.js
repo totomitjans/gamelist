@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v115";
-const SITE_UPDATED_AT = "2026-06-20T19:27:47Z";
+const SITE_VERSION = "v116";
+const SITE_UPDATED_AT = "2026-06-20T19:34:15Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -1371,7 +1371,7 @@ function renderPlatinumDialog(platinums = platinumItems(), years = platinumYears
   };
   el.platinumPlatformSelect.innerHTML = [
     `<option value="all">All</option>`,
-    ...platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platformDisplayName(platform))}</option>`),
+    ...platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platinumPlatformLabel(platform))}</option>`),
   ].join("");
   el.platinumPlatformSelect.value = state.platinumPlatform;
   el.platinumPlatformSelect.onchange = () => {
@@ -1590,11 +1590,18 @@ function platinumYears(platinums) {
 }
 
 function platinumPlatforms(platinums) {
-  return [...new Set(platinums.map(platinumPlatformFor).filter(Boolean))].sort((a, b) => stringCompare(platformDisplayName(a), platformDisplayName(b)));
+  return [...new Set(platinums.map(platinumPlatformFor).filter(Boolean))].sort((a, b) => stringCompare(platinumPlatformLabel(a), platinumPlatformLabel(b)));
 }
 
 function platinumPlatformFor(item) {
-  return canonicalPlatform(item.platform) || String(item.platform || "").trim();
+  const raw = String(item.platform || "").trim();
+  const platform = canonicalPlatform(raw);
+  if (isPlayStationPlatform(platform) || /(playstation|ps[1-5]|psp|psvita|pspc)/.test(normalizeTag(raw))) return "PlayStation";
+  return platform || raw;
+}
+
+function platinumPlatformLabel(platform) {
+  return platform === "PlayStation" ? "PlayStation" : platformDisplayName(platform);
 }
 
 function platinumYearFor(item) {
