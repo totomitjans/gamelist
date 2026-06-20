@@ -2798,8 +2798,8 @@ function metaFor(game, options = {}) {
   const release = releaseStatus(game, { includePast: options.includePastRelease });
   if (release) values.push(`<span class="release-pill">${escapeHtml(release)}</span>`);
   gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
-  const psn = matchedPsnGame(game);
-  if (options.includePsn !== false && psn) values.push(psnProgressBadge(psn));
+  const progress = achievementProgressForGame(game);
+  if (options.includePsn !== false && progress) values.push(psnProgressBadge(progress));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.replayCount) values.push(replayBadge(game.replayCount));
   if (game.platinum) values.push(completionPill(game));
@@ -2822,6 +2822,40 @@ function matchedPsnGame(game) {
     }
   });
   return bestScore >= 75 ? bestMatch : null;
+}
+
+function achievementProgressForGame(game) {
+  if (game?.emulator) return null;
+  if (isPcGame(game)) return steamProgressForGame(game);
+  return matchedPsnGame(game);
+}
+
+function steamAchievementCacheKey(game) {
+  const appId = steamAppIdFor(game);
+  return appId ? `steam:${appId}` : "";
+}
+
+function steamAchievementsForGame(game) {
+  const cacheKey = steamAchievementCacheKey(game);
+  return cacheKey ? state.cardTrophies[cacheKey] : null;
+}
+
+function steamProgressForGame(game) {
+  if (!isPcGame(game) || !state.settings.steamUser) return null;
+  const appId = steamAppIdFor(game);
+  if (!appId) return null;
+  const cached = steamAchievementsForGame(game);
+  if (!cached) loadCardSteamAchievements(game);
+  if (!cached?.achievements?.length) return null;
+  const total = cached.total ?? cached.achievements.length;
+  const earned = cached.earned ?? cached.achievements.filter((achievement) => achievement.earned).length;
+  return {
+    title: game.title,
+    game: `${Math.round((earned / Math.max(total, 1)) * 100)}%`,
+    progress: Math.round((earned / Math.max(total, 1)) * 100),
+    label: `${earned}/${total} earned`,
+    provider: "steam",
+  };
 }
 
 function latestTrophiesForGame(game, limit = 3) {
@@ -2962,6 +2996,7 @@ function earnedTrophyTime(trophy) {
 }
 
 function cardTrophiesFor(game) {
+  if (isPcGame(game)) return cardSteamAchievementsFor(game);
   const psn = matchedPsnGame(game);
   const cacheKey = psn?.npCommunicationId || "";
   const cached = cacheKey ? state.cardTrophies[cacheKey] : null;
@@ -2981,6 +3016,38 @@ function cardTrophiesFor(game) {
           <img src="${escapeHtml(trophy.icon || platformLogo("PS5"))}" alt="">
           <span>${escapeHtml(trophy.title || "Trophy")}</span>
           ${cardTrophyMeta(trophy)}
+        </a>
+      `).join("")}
+    </div>
+  `;
+}
+
+function cardSteamAchievementsFor(game) {
+  const cacheKey = steamAchievementCacheKey(game);
+  const cached = cacheKey ? state.cardTrophies[cacheKey] : null;
+  if (cacheKey && state.settings.steamUser && !cached) loadCardSteamAchievements(game);
+  const guideLinks = guideLinksFor(game);
+  if (cached?.loading) {
+    return `<div class="card-trophy-head">${trophyIcon()}<span>Loading achievements...</span></div>${guideLinks.length ? `<div class="guide-links card-guide-row">${guideLinks.join("")}</div>` : ""}`;
+  }
+  const achievements = (cached?.achievements || [])
+    .filter((achievement) => achievement.earned && achievement.earnedAt)
+    .sort(compareEarnedTrophies)
+    .slice(0, 3);
+  const progress = steamProgressForGame(game);
+  if (!achievements.length) {
+    const heading = progress ? `<div class="card-trophy-head">${trophyIcon()}<span>Latest achievements</span>${psnProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress" })}</div>` : "";
+    return `${heading}${guideLinks.length ? `<div class="guide-links card-guide-row">${guideLinks.join("")}</div>` : ""}`;
+  }
+  return `
+    <div class="card-trophy-head">${trophyIcon()}<span>Latest achievements</span>${progress ? psnProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress" }) : ""}</div>
+    ${guideLinks.length ? `<div class="guide-links card-guide-row">${guideLinks.join("")}</div>` : ""}
+    <div class="card-trophy-list">
+      ${achievements.map((achievement) => `
+        <a class="card-trophy trophy-${escapeHtml(trophyTone(achievement.type || achievement.rarity))}" href="${escapeHtml(game.storeLinks?.steam || hltbUrlFor(game) || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml([achievement.title, achievement.earnedAt].filter(Boolean).join(" · "))}">
+          <img src="${escapeHtml(achievement.icon || platformLogo("PC"))}" alt="">
+          <span>${escapeHtml(achievement.title || "Achievement")}</span>
+          ${cardTrophyMeta(achievement)}
         </a>
       `).join("")}
     </div>
@@ -3018,6 +3085,35 @@ async function loadCardTrophies(game, psn) {
   updateCardTrophyStrips(game.id);
 }
 
+async function loadCardSteamAchievements(game) {
+  const cacheKey = steamAchievementCacheKey(game);
+  const appId = steamAppIdFor(game);
+  const steamUser = state.settings.steamUser || "";
+  if (!cacheKey || !appId || !steamUser || state.cardTrophies[cacheKey]) return;
+  state.cardTrophies[cacheKey] = { loading: true, achievements: [], trophies: [] };
+  try {
+    const params = new URLSearchParams({
+      appId,
+      user: steamUser,
+      debug: "1",
+    });
+    const response = await fetch(`/api/steam-achievements?${params}`);
+    const data = await response.json().catch(() => ({ error: "Invalid Steam achievements API JSON response" }));
+    logTrophyLoadIssue("steam-card", game, { npCommunicationId: appId, npServiceName: "steam" }, response, { trophies: data.achievements, ...data });
+    if (!response.ok) throw new Error(`Steam card achievements failed (${response.status})`);
+    const achievements = Array.isArray(data.achievements) ? data.achievements : [];
+    const earned = Number.isFinite(Number(data.earnedCount))
+      ? Number(data.earnedCount)
+      : achievements.filter((achievement) => achievement.earned).length;
+    const total = Number.isFinite(Number(data.count)) ? Number(data.count) : achievements.length;
+    state.cardTrophies[cacheKey] = { loading: false, achievements, trophies: achievements, earned, total };
+  } catch (error) {
+    logTrophyLoadIssue("steam-card", game, { npCommunicationId: appId, npServiceName: "steam" }, null, null, error);
+    state.cardTrophies[cacheKey] = { loading: false, achievements: [], trophies: [], earned: 0, total: 0 };
+  }
+  updateCardAchievementUi(game.id);
+}
+
 function logTrophyLoadIssue(scope, game, psn, response, data, error = null) {
   const trophyCount = Array.isArray(data?.trophies) ? data.trophies.length : 0;
   const hasIssue = error
@@ -3053,6 +3149,24 @@ function updateCardTrophyStrips(gameId) {
   if (game.playing) schedulePlayingCardHeightSync();
 }
 
+function updateCardAchievementUi(gameId) {
+  const game = getGame(gameId);
+  if (!game) return;
+  document.querySelectorAll(`.game-card[data-id="${CSS.escape(gameId)}"]`).forEach((card) => {
+    const meta = card.querySelector(".meta");
+    if (meta) meta.innerHTML = metaFor(game, { includePsn: !game.playing }).join("");
+    const trophyStrip = card.querySelector(".card-trophies");
+    if (trophyStrip) {
+      trophyStrip.innerHTML = game.playing ? cardTrophiesFor(game) : "";
+      trophyStrip.hidden = !trophyStrip.innerHTML;
+    }
+  });
+  document.querySelectorAll(`.completed-row[data-id="${CSS.escape(gameId)}"] .completed-platform, .history-row[data-id="${CSS.escape(gameId)}"] .completed-platform`).forEach((node) => {
+    node.innerHTML = completedBadges(game);
+  });
+  if (game.playing) schedulePlayingCardHeightSync();
+}
+
 function normalizeTitleForMatch(value) {
   return normalizeTag(String(value || "")
     .replace(/\bVIII\b/gi, "8")
@@ -3065,20 +3179,22 @@ function normalizeTitleForMatch(value) {
 }
 
 function psnProgressBadge(game, options = {}) {
-  const progress = progressValue(game.game);
+  const explicitProgress = Number(game?.progress ?? options.progress);
+  const progress = Number.isFinite(explicitProgress) ? Math.max(0, Math.min(100, Math.round(explicitProgress))) : progressValue(game.game);
+  const label = options.label ?? game?.label ?? "";
   const className = ["psn-progress-pill", options.className || ""].filter(Boolean).join(" ");
   return `
     <span class="${escapeHtml(className)}" title="${escapeHtml([game.title, game.game].filter(Boolean).join(" · "))}">
       ${options.includeIcon === false ? "" : trophyIcon()}
       <em style="--progress:${progress}%"></em>
       <strong>${progress}%</strong>
-      ${options.label ? `<span>${options.separator ? "<b>·</b>" : ""}${escapeHtml(options.label)}</span>` : ""}
+      ${label ? `<span>${options.separator ? "<b>·</b>" : ""}${escapeHtml(label)}</span>` : ""}
     </span>
   `;
 }
 
 function completedBadges(game, options = {}) {
-  const psn = matchedPsnGame(game);
+  const progress = achievementProgressForGame(game);
   return [
     game.platform ? platformBadge(game.platform) : "",
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
@@ -3087,7 +3203,7 @@ function completedBadges(game, options = {}) {
     game.stream ? `<span class="stream-pill">Stream</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
     game.platinum ? completionPill(game) : "",
-    options.includePsn === false ? "" : (psn ? psnProgressBadge(psn) : ""),
+    options.includePsn === false ? "" : (progress ? psnProgressBadge(progress) : ""),
   ].filter(Boolean).join("");
 }
 

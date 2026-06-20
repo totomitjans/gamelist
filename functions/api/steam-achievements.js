@@ -16,7 +16,16 @@ export async function onRequestGet({ request, env = {} }) {
     const steamId = await resolveSteamId(user, apiKey);
     if (!steamId) return json({ achievements: [], error: "Could not resolve Steam profile" }, 200, { cache: false });
     const achievements = await getSteamAchievements(appId, steamId, apiKey);
-    return json({ achievements, count: achievements.length, source: "steam", steamId, appId });
+    const earnedCount = achievements.filter((achievement) => achievement.earned).length;
+    return json({
+      achievements,
+      count: achievements.length,
+      earnedCount,
+      progress: achievements.length ? Math.round((earnedCount / achievements.length) * 100) : 0,
+      source: "steam",
+      steamId,
+      appId,
+    });
   } catch (error) {
     return json({
       achievements: [],
@@ -61,12 +70,15 @@ async function getSteamAchievements(appId, steamId, apiKey) {
   ]);
   const schemaAchievements = schema?.game?.availableGameStats?.achievements || [];
   const playerAchievements = player?.playerstats?.achievements || [];
-  const playerByName = new Map(playerAchievements.map((item) => [String(item.apiname || item.name || ""), item]));
+  const playerByName = new Map(playerAchievements.flatMap((item) => {
+    const values = [item.apiname, item.name].map((value) => String(value || "")).filter(Boolean);
+    return values.map((value) => [value, item]);
+  }));
   const rarityByName = new Map((globalStats?.achievementpercentages?.achievements || []).map((item) => [String(item.name || ""), Number(item.percent)]));
   const source = schemaAchievements.length ? schemaAchievements : playerAchievements;
   return source.map((meta, index) => {
     const name = String(meta.name || meta.apiname || "");
-    const earned = playerByName.get(name) || meta;
+    const earned = playerByName.get(name) || playerByName.get(String(meta.apiname || "")) || meta;
     const achieved = Number(earned.achieved || 0) === 1;
     const unlockTime = Number(earned.unlocktime || 0);
     const rarity = rarityByName.has(name) ? `${roundPercent(rarityByName.get(name))}%` : "";
