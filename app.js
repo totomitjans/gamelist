@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v106";
-const SITE_UPDATED_AT = "2026-06-20T13:05:43Z";
+const SITE_VERSION = "v108";
+const SITE_UPDATED_AT = "2026-06-20T13:17:01Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -101,6 +101,17 @@ const MANUAL_PSN_TITLE_OVERRIDES = [
   { match: ["mortal", "kombat"], platforms: ["PS3"], ids: ["NPWR01747_00"] },
   { match: ["ai", "somnium", "files", "nirvana", "initiative"], platforms: ["PS4", "PS5"], ids: ["NPWR27307_00"] },
   { match: ["nirvana", "initiative"], platforms: ["PS4", "PS5"], ids: ["NPWR27307_00"] },
+  { match: ["ace", "attorney", "investigations"], platforms: ["PS4", "PS5"], ids: ["NPWR40588_00"] },
+  { match: ["miles", "edgeworth"], platforms: ["PS4", "PS5"], ids: ["NPWR40588_00"] },
+  { match: ["zero", "escape", "nine", "hours", "nine", "persons", "nine", "doors"], platforms: ["PS4", "PSVita"], ids: ["NPWR12149_00"] },
+  { match: ["nine", "hours", "nine", "persons", "nine", "doors"], platforms: ["PS4", "PSVita"], ids: ["NPWR12149_00"] },
+  { match: ["999"], platforms: ["PS4", "PSVita"], ids: ["NPWR12149_00"] },
+  { match: ["j", "stars", "victory"], platforms: ["PS3", "PS4", "PSVita"], ids: ["NPWR08138_00"] },
+  { match: ["jstars", "victory"], platforms: ["PS3", "PS4", "PSVita"], ids: ["NPWR08138_00"] },
+  { match: ["final", "fantasy", "7", "remake", "episode", "intermission"], platforms: ["PS5"], ids: ["NPWR22029_00"] },
+  { match: ["final", "fantasy", "vii", "remake", "episode", "intermission"], platforms: ["PS5"], ids: ["NPWR22029_00"] },
+  { match: ["klonoa", "2", "lunatea", "veil"], platforms: ["PS4", "PS5"], ids: ["NPWR25832_00"] },
+  { match: ["klonoa", "door", "phantomile"], platforms: ["PS4", "PS5"], ids: ["NPWR25832_00"] },
 ];
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
@@ -126,7 +137,7 @@ const state = {
   mobileSection: "backlog",
   mobileSwipeStart: null,
   completedYear: "all",
-  completedVisibleLimit: 10,
+  completedVisiblePages: 1,
   historyYear: String(new Date().getFullYear()),
   platinumYear: "all",
   platinumSort: "time",
@@ -432,28 +443,28 @@ function bindEvents() {
   window.addEventListener("scroll", hideSelectOverflowPopover, { passive: true });
   el.searchInput.addEventListener("input", (event) => {
     state.filters.query = event.target.value.trim().toLowerCase();
-    state.completedVisibleLimit = 10;
+    state.completedVisiblePages = 1;
     render();
   });
   el.platformFilter.addEventListener("change", (event) => {
     state.filters.platform = event.target.value;
-    state.completedVisibleLimit = 10;
+    state.completedVisiblePages = 1;
     render();
   });
   el.tagFilter.addEventListener("change", (event) => {
     state.filters.tag = event.target.value;
-    state.completedVisibleLimit = 10;
+    state.completedVisiblePages = 1;
     render();
   });
   el.sortFilter.addEventListener("change", (event) => {
     state.filters.sort = event.target.value;
     if (state.filters.sort === "added") state.filters.direction = "desc";
-    state.completedVisibleLimit = 10;
+    state.completedVisiblePages = 1;
     render();
   });
   el.sortDirectionButton.addEventListener("click", () => {
     state.filters.direction = state.filters.direction === "asc" ? "desc" : "asc";
-    state.completedVisibleLimit = 10;
+    state.completedVisiblePages = 1;
     render();
   });
   el.viewToggleButton.addEventListener("click", () => {
@@ -468,12 +479,12 @@ function bindEvents() {
   });
   el.preorderedFilter.addEventListener("change", (event) => {
     state.filters.preordered = event.target.checked;
-    state.completedVisibleLimit = 10;
+    state.completedVisiblePages = 1;
     render();
   });
   el.completedYearFilter?.addEventListener("change", handleCompletedYearChange);
   el.completedMoreButton?.addEventListener("click", () => {
-    state.completedVisibleLimit += 100;
+    state.completedVisiblePages += 1;
     renderCompleted();
   });
   el.scrollTopButton.addEventListener("click", () => {
@@ -2005,7 +2016,8 @@ function renderCompleted() {
   const filteredFinishedGames = filteredGames({ applyPreorder: false }).filter((game) => game.completedAt);
   const visibleFinishedGames = filteredFinishedGames.filter((game) => state.completedYear === "all" || completionYear(game) === state.completedYear);
   const games = sortedCompletedGames(visibleFinishedGames);
-  const shownGames = games.slice(0, state.completedVisibleLimit);
+  const pageSize = completedPageSize();
+  const shownGames = games.slice(0, pageSize * state.completedVisiblePages);
   const hasMore = games.length > shownGames.length;
   list.classList.toggle("is-collapsed", hasMore);
   updateCompletedCount(completedCountForSelectedYear());
@@ -2026,7 +2038,7 @@ function renderCompleted() {
   `).join("") : `<div class="empty">Finished games will stay saved here.</div>`;
   if (el.completedMoreButton) {
     el.completedMoreButton.hidden = !hasMore;
-    el.completedMoreButton.textContent = `See more (${Math.min(100, games.length - shownGames.length)} more)`;
+    el.completedMoreButton.innerHTML = `See more <small>(${Math.min(pageSize * 10, games.length - shownGames.length)} more)</small>`;
   }
   list.querySelectorAll(".completed-edit-action").forEach((button) => {
     button.addEventListener("click", () => openEditor(button.closest(".completed-row").dataset.id));
@@ -2058,6 +2070,11 @@ function renderCompletedYearFilter(years) {
     ...years.map((year) => `<option value="${escapeHtml(year)}">${escapeHtml(year)}</option>`),
   ].join("");
   el.completedYearFilter.value = state.completedYear;
+}
+
+function completedPageSize() {
+  if (state.viewMode === "list" || window.matchMedia("(max-width: 1120px)").matches) return 10;
+  return 30;
 }
 
 function renderFooter() {
@@ -2098,7 +2115,7 @@ function formatFooterDateTime(value) {
 
 function handleCompletedYearChange(event) {
   state.completedYear = event.target.value || "all";
-  state.completedVisibleLimit = 10;
+  state.completedVisiblePages = 1;
   renderCompleted();
 }
 
