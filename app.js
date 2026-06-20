@@ -2225,7 +2225,7 @@ function completedPageSize() {
 function renderFooter() {
   if (el.footerDataUpdate) {
     const latest = latestGameUpdateDate();
-    el.footerDataUpdate.textContent = latest ? `Last update ${formatFooterDate(latest)}` : "Last update -";
+    el.footerDataUpdate.textContent = latest ? `Last edit ${formatFooterDate(latest)}` : "Last edit -";
   }
   if (el.footerVersion) {
     el.footerVersion.textContent = `${SITE_VERSION} · Updated ${formatFooterDateTime(SITE_UPDATED_AT)}`;
