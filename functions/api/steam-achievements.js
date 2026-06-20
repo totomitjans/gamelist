@@ -6,6 +6,7 @@ export async function onRequestGet({ request, env = {} }) {
   const appId = cleanSteamAppId(url.searchParams.get("appId"));
   const user = cleanSteamUser(url.searchParams.get("user") || env.STEAM_PROFILE_USER || "");
   const ownedOnly = url.searchParams.get("owned") === "1";
+  const activityOnly = url.searchParams.get("activity") === "1";
   const debug = url.searchParams.has("debug");
   const apiKey = String(env.STEAM_API_KEY || globalThis.process?.env?.STEAM_API_KEY || "").trim();
 
@@ -23,6 +24,29 @@ export async function onRequestGet({ request, env = {} }) {
         ownedGames,
         ownedAppIds: ownedGames.map((game) => game.appId),
       });
+    }
+    if (activityOnly) {
+      const cursor = Math.max(0, Number.parseInt(url.searchParams.get("cursor") || "0", 10) || 0);
+      const limit = Math.max(1, Math.min(20, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+      const ownedGames = (await getOwnedGames(steamId, apiKey))
+        .filter((game) => game.playtimeForever > 0)
+        .sort((a, b) => b.lastPlayedAt - a.lastPlayedAt || b.playtimeForever - a.playtimeForever);
+      const batch = ownedGames.slice(cursor, cursor + limit);
+      const games = await Promise.all(batch.map(async (game) => {
+        try {
+          const achievements = await getSteamAchievements(game.appId, steamId, apiKey, false);
+          return { ...game, achievements };
+        } catch (error) {
+          return {
+            ...game,
+            achievements: [],
+            unavailable: true,
+            ...(debug ? { debug: error?.message || "Steam achievements unavailable" } : {}),
+          };
+        }
+      }));
+      const nextCursor = cursor + batch.length < ownedGames.length ? cursor + batch.length : null;
+      return json({ source: "steam", steamId, games, cursor, nextCursor, totalGames: ownedGames.length });
     }
     if (!appId) return json({ achievements: [], error: "Missing Steam app id" }, 400, { cache: false });
     const achievements = await getSteamAchievements(appId, steamId, apiKey);
@@ -57,6 +81,7 @@ async function getOwnedGames(steamId, apiKey) {
     appId: String(game.appid || ""),
     name: String(game.name || ""),
     playtimeForever: Number(game.playtime_forever || 0),
+    lastPlayedAt: Number(game.rtime_last_played || 0),
     imgIconUrl: String(game.img_icon_url || ""),
   })).filter((game) => game.appId);
 }
@@ -87,12 +112,15 @@ function steamVanityName(value) {
   return text.replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64);
 }
 
-async function getSteamAchievements(appId, steamId, apiKey) {
-  const [schema, player, globalStats] = await Promise.all([
+async function getSteamAchievements(appId, steamId, apiKey, includeRarity = true) {
+  const requests = [
     steamGet(`${STEAM_API_BASE}/ISteamUserStats/GetSchemaForGame/v2/?${new URLSearchParams({ key: apiKey, appid: appId, l: "en" })}`),
     steamGet(`${STEAM_API_BASE}/ISteamUserStats/GetPlayerAchievements/v0001/?${new URLSearchParams({ key: apiKey, steamid: steamId, appid: appId, l: "en" })}`),
-    steamGet(`${STEAM_API_BASE}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?${new URLSearchParams({ gameid: appId })}`).catch(() => ({})),
-  ]);
+  ];
+  if (includeRarity) {
+    requests.push(steamGet(`${STEAM_API_BASE}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?${new URLSearchParams({ gameid: appId })}`).catch(() => ({})));
+  }
+  const [schema, player, globalStats = {}] = await Promise.all(requests);
   const schemaAchievements = schema?.game?.availableGameStats?.achievements || [];
   const playerAchievements = player?.playerstats?.achievements || [];
   const playerByName = new Map(playerAchievements.flatMap((item) => {

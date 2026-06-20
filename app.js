@@ -1095,28 +1095,16 @@ async function refreshAchievements() {
 
 async function fetchSteamActivity() {
   const steamUser = state.settings.steamUser || "";
-  const ownedGames = await fetchSteamOwnedGames(steamUser);
-  const ownedAppIds = new Set(ownedGames.map((game) => game.appId));
-  state.steamOwnedAppIds = ownedAppIds;
-  const games = steamAchievementGames().filter((game) => ownedAppIds.has(steamAppIdFor(game)));
-  if (!games.length) return emptySteamActivity();
-  const results = await Promise.all(games.map(async (game) => {
-    const appId = steamAppIdFor(game);
-    try {
-      const response = await fetch(`/api/steam-achievements?${steamAchievementParams(appId, steamUser)}`);
-      const data = await response.json().catch(() => ({ achievements: [] }));
-      logTrophyLoadIssue("steam-dashboard", game, { npCommunicationId: appId, npServiceName: "steam" }, response, { trophies: data.achievements, ...data });
-      const achievements = Array.isArray(data.achievements) ? data.achievements : [];
-      const earned = Number.isFinite(Number(data.earnedCount))
-        ? Number(data.earnedCount)
-        : achievements.filter((achievement) => achievement.earned).length;
-      const total = Number.isFinite(Number(data.count)) ? Number(data.count) : achievements.length;
-      state.cardTrophies[steamAchievementCacheKey(game)] = { loading: false, achievements, trophies: achievements, earned, total };
-      return { game, achievements, earned, total };
-    } catch {
-      return { game, achievements: [], earned: 0, total: 0 };
-    }
-  }));
+  const steamGames = await fetchSteamAccountActivity(steamUser);
+  state.steamOwnedAppIds = new Set(steamGames.map((game) => game.appId));
+  const results = steamGames.map((steamGame) => {
+    const game = steamActivityGame(steamGame);
+    const achievements = Array.isArray(steamGame.achievements) ? steamGame.achievements : [];
+    const earned = achievements.filter((achievement) => achievement.earned).length;
+    const total = achievements.length;
+    state.cardTrophies[`steam:${steamGame.appId}`] = { loading: false, achievements, trophies: achievements, earned, total };
+    return { game, achievements, earned, total };
+  }).filter((result) => result.total > 0);
   const achievements = results.flatMap(({ game, achievements }) => achievements
     .filter((achievement) => achievement.earned && achievement.earnedAt)
     .map((achievement) => ({
@@ -1138,14 +1126,14 @@ async function fetchSteamActivity() {
       const latest = achievements.filter((achievement) => achievement.earned).sort(compareEarnedTrophies)[0];
       return {
         title: game.title,
-        cover: game.cover ? coverDisplayUrl(game.cover, "card") : "",
+        cover: game.cover ? coverDisplayUrl(game.cover, "card") : steamLibraryCoverUrl(game.steamAppId),
         trophyName: "100% Achievements",
-        trophyIcon: game.cover ? coverDisplayUrl(game.cover, "tiny") : platformLogo("PC"),
+        trophyIcon: game.steamIcon || platformLogo("PC"),
         earnedAt: latest?.earnedAt || formatLongDate(game.completedAt),
         rawEarnedAt: latest?.rawEarnedAt || game.completedAt || "",
         platform: "PC",
         url: game.storeLinks?.steam || hltbUrlFor(game) || "",
-        gameId: game.id,
+        gameId: game.localGameId || "",
         source: "steam",
         earned,
         total,
@@ -1161,34 +1149,56 @@ async function fetchSteamActivity() {
   };
 }
 
-function steamAchievementGames() {
-  return state.games.filter((game) => !game.deletedAt && isPcGame(game) && steamAppIdFor(game));
-}
-
-async function fetchSteamOwnedGames(steamUser = state.settings.steamUser || "") {
-  try {
-    const params = new URLSearchParams({ owned: "1", debug: "1" });
+async function fetchSteamAccountActivity(steamUser = state.settings.steamUser || "") {
+  const games = [];
+  let cursor = 0;
+  for (let page = 0; page < 20 && cursor !== null; page += 1) {
+    const params = new URLSearchParams({ activity: "1", cursor: String(cursor), limit: "20", debug: "1" });
     if (steamUser) params.set("user", steamUser);
     const response = await fetch(`/api/steam-achievements?${params}`);
-    const data = await response.json().catch(() => ({ ownedGames: [] }));
+    const data = await response.json().catch(() => ({ games: [], error: "Invalid Steam activity response" }));
     if (!response.ok || data.needsSetup || data.authError || data.error) {
-      console.warn("[trophies] Steam owned games unavailable", {
+      console.warn("[trophies] Steam account activity unavailable", {
         status: response.status,
-        ok: response.ok,
         error: data.error || "",
         debug: data.debug || "",
         needsSetup: Boolean(data.needsSetup),
         authError: Boolean(data.authError),
       });
-      return [];
+      break;
     }
-    return Array.isArray(data.ownedGames)
-      ? data.ownedGames.map((game) => ({ ...game, appId: cleanSteamAppId(game.appId) })).filter((game) => game.appId)
-      : [];
-  } catch (error) {
-    console.warn("[trophies] Steam owned games unavailable", error);
-    return [];
+    games.push(...(Array.isArray(data.games) ? data.games : []));
+    cursor = data.nextCursor !== null && Number.isFinite(Number(data.nextCursor)) ? Number(data.nextCursor) : null;
   }
+  return games;
+}
+
+function steamActivityGame(steamGame) {
+  const appId = cleanSteamAppId(steamGame.appId);
+  const localGame = state.games.find((game) => !game.deletedAt && steamAppIdFor(game) === appId);
+  const storeUrl = `https://store.steampowered.com/app/${encodeURIComponent(appId)}`;
+  return {
+    ...(localGame || {}),
+    id: localGame?.id || `steam-${appId}`,
+    localGameId: localGame?.completedAt ? localGame.id : "",
+    title: localGame?.title || steamGame.name || `Steam game ${appId}`,
+    platform: "PC",
+    steamAppId: appId,
+    steamIcon: steamGameIconUrl(steamGame),
+    cover: localGame?.cover || steamLibraryCoverUrl(appId),
+    storeLinks: { ...(localGame?.storeLinks || {}), steam: localGame?.storeLinks?.steam || storeUrl },
+  };
+}
+
+function steamGameIconUrl(game) {
+  const appId = cleanSteamAppId(game?.appId);
+  const hash = String(game?.imgIconUrl || "").trim();
+  return appId && hash ? `https://media.steampowered.com/steamcommunity/public/images/apps/${appId}/${hash}.jpg` : platformLogo("PC");
+}
+
+function steamLibraryCoverUrl(appId) {
+  const id = cleanSteamAppId(appId);
+  return id ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${id}/library_600x900.jpg` : "";
 }
 
 function steamProfileUrl(user) {
