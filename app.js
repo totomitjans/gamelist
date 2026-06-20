@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v119";
-const SITE_UPDATED_AT = "2026-06-20T19:46:12Z";
+const SITE_VERSION = "v120";
+const SITE_UPDATED_AT = "2026-06-20T19:48:09Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -1243,8 +1243,9 @@ function renderAchievements(data = {}, steamData = state.steamActivity || emptyS
   renderPlayingSection();
   el.achievementProfileLink.href = sourceUrl;
   el.achievementProfileLink.textContent = state.steamActivity.achievements.length ? "PSN + Steam activity" : (data.source === "psn" ? "PSN activity" : user);
-  const combinedAchievements = [...state.psnActivity.achievements, ...state.steamActivity.achievements].sort(compareEarnedTrophies);
-  const achievements = combinedAchievements.slice(0, 6);
+  const achievements = [...state.psnActivity.achievements, ...state.steamActivity.achievements]
+    .sort(compareEarnedTrophies)
+    .slice(0, 6);
   const games = Array.isArray(data.games) ? data.games.slice(0, 3) : [];
   if (!achievements.length) {
     const fallbackText = data.needsSetup
@@ -1266,16 +1267,23 @@ function renderAchievements(data = {}, steamData = state.steamActivity || emptyS
     return;
   }
 
-  const trophyCards = achievements.map((item, index) => `
-    <a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escapeHtml(trophyTone(item.rarity))}" href="${escapeHtml(item.url || sourceUrl)}" target="_blank" rel="noreferrer">
-      <img class="achievement-icon" src="${escapeHtml(item.icon || platformLogo(item.source === "steam" ? "PC" : "PS5"))}" alt="">
-      <div>
-        <strong>${escapeHtml(item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"))}</strong>
-        ${item.game ? `<span class="achievement-game-name">${escapeHtml(item.game)}</span>` : ""}
-        ${item.earnedAt ? `<span class="achievement-earned-date">${escapeHtml(item.earnedAt)}</span>` : ""}
-      </div>
-    </a>
-  `).join("");
+  const trophyCards = achievements.map((item, index) => {
+    const platform = achievementPlatformLabel(item);
+    const platformTone = item.source === "steam" ? "pc" : "playstation";
+    return `
+      <a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escapeHtml(trophyTone(item.rarity))}" href="${escapeHtml(item.url || sourceUrl)}" target="_blank" rel="noreferrer">
+        <img class="achievement-icon" src="${escapeHtml(item.icon || platformLogo(item.source === "steam" ? "PC" : "PS5"))}" alt="">
+        <div>
+          <strong>${escapeHtml(item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"))}</strong>
+          ${item.game ? `<span class="achievement-game-name">${escapeHtml(item.game)}</span>` : ""}
+          <span class="achievement-card-meta">
+            <small class="achievement-platform-pill achievement-platform-${platformTone}">${escapeHtml(platform)}</small>
+            ${item.earnedAt ? `<span class="achievement-earned-date">${escapeHtml(item.earnedAt)}</span>` : ""}
+          </span>
+        </div>
+      </a>
+    `;
+  }).join("");
   const dashboard = achievementDashboard(achievements, games, sourceUrl, data.summary, state.steamActivity);
   el.achievementPanel.innerHTML = `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Achievements</span>${trophyCards}`;
   el.achievementPanel.querySelector("[data-action='platinums']")?.addEventListener("click", openPlatinumDialog);
@@ -1333,6 +1341,11 @@ function achievementDashboard(achievements, games, sourceUrl, summary = null, st
       </div>
     </div>
   `;
+}
+
+function achievementPlatformLabel(item) {
+  if (item?.source === "steam") return "PC";
+  return String(item?.platform || "PlayStation").trim() || "PlayStation";
 }
 
 function achievementKpiBreakdown(rows) {
