@@ -2730,7 +2730,11 @@ function matchedPsnGame(game) {
   let bestMatch = null;
   let bestScore = 0;
   (state.psnActivity.games || []).forEach((psnGame) => {
-    const score = psnTitleMatchScore(game.title, psnGame.title);
+    const titleScore = psnTitleMatchScore(game.title, psnGame.title);
+    if (!titleScore) return;
+    const platformScore = psnPlatformMatchScore(game.platform, psnGame.rarity || psnGame.platform || "");
+    if (platformScore === null) return;
+    const score = titleScore + platformScore;
     if (score > bestScore) {
       bestMatch = psnGame;
       bestScore = score;
@@ -2761,31 +2765,60 @@ function psnTitleMatchScore(localTitle, psnTitle) {
   if (!local.compact || !psn.compact) return 0;
   if (local.compact === psn.compact) return 100;
   if (local.phrase === psn.phrase) return 100;
-  if (local.compact === psn.acronym || local.acronym === psn.compact) return 96;
+  if (local.compacts.some((compact) => psn.acronyms.includes(compact))
+    || psn.compacts.some((compact) => local.acronyms.includes(compact))) return 96;
   if (sameTitleTokens(local.tokens, psn.tokens)) return 92;
   if (local.tokens.length >= 2 && containsAllTitleTokens(psn.tokens, local.tokens) && psnExtraTitleTokens(local.tokens, psn.tokens).length === 0) return 82;
   if (psn.tokens.length >= 2 && containsAllTitleTokens(local.tokens, psn.tokens) && psnExtraTitleTokens(psn.tokens, local.tokens).length === 0) return 80;
   return 0;
 }
 
+function psnPlatformMatchScore(localPlatform, psnPlatform) {
+  const local = canonicalPlatform(localPlatform);
+  const psn = String(psnPlatform || "").toUpperCase();
+  if (!["PS3", "PS4", "PS5"].includes(local)) return 0;
+  if (!/\bPS[345]\b/.test(psn)) return 0;
+  if (psn.includes(local)) return 18;
+  return null;
+}
+
 function titleMatchParts(value) {
-  const phrase = normalizeTitlePhrase(value);
+  const rawPhrase = normalizeTitleRawPhrase(value);
+  const phrase = normalizeTitlePhrase(rawPhrase);
+  const rawTokens = rawPhrase ? rawPhrase.split(" ").filter(Boolean) : [];
   const tokens = phrase ? phrase.split(" ").filter(Boolean) : [];
+  const compact = tokens.join("");
+  const rawCompact = rawTokens.join("");
+  const acronym = tokens.map((token) => token[0]).join("");
+  const rawAcronym = rawTokens.map((token) => token[0]).join("");
   return {
     phrase,
     tokens,
-    compact: tokens.join(""),
-    acronym: tokens.map((token) => token[0]).join(""),
+    compact,
+    compacts: uniqueTitleValues([compact, rawCompact, mortalKombatCompactAlias(rawCompact)]),
+    acronym,
+    acronyms: uniqueTitleValues([acronym, rawAcronym]),
   };
+}
+
+function normalizeTitleRawPhrase(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 function normalizeTitlePhrase(value) {
   return String(value || "")
     .toLowerCase()
-    .replace(/&/g, " and ")
     .replace(/\bVIII\b/gi, "8")
     .replace(/\bVII\b/gi, "7")
     .replace(/\bVI\b/gi, "6")
+    .replace(/\bXII\b/gi, "12")
+    .replace(/\bXI\b/gi, "11")
+    .replace(/\bX\b/gi, "10")
     .replace(/\bIV\b/gi, "4")
     .replace(/\bIX\b/gi, "9")
     .replace(/\bIII\b/gi, "3")
@@ -2793,6 +2826,15 @@ function normalizeTitlePhrase(value) {
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+function mortalKombatCompactAlias(value) {
+  if (value === "mkx") return "mk10";
+  return "";
+}
+
+function uniqueTitleValues(values) {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function sameTitleTokens(a, b) {
@@ -3053,6 +3095,7 @@ function achievementProviderForGame(game) {
 }
 
 function completionPill(game) {
+  if (game?.emulator) return "";
   const provider = achievementProviderForGame(game);
   if (!provider) return "";
   const icon = provider.icon
