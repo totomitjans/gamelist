@@ -6,6 +6,8 @@ const PSN_CLIENT_ID = "09515159-7237-4370-9b40-3806e67c0891";
 const PSN_REDIRECT_URI = "com.scee.psxandroid.scecompcall://redirect";
 const PSN_BASIC_AUTH = "Basic MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=";
 const PSN_CACHE_SECONDS = 60 * 60;
+const PSN_SEARCH_BASE = "https://m.np.playstation.com/api/search";
+const PSN_LEGACY_USER_BASE = "https://us-prof.np.community.playstation.net/userProfile/v1/users";
 const MANUAL_PLATINUM_OVERRIDES = [
   { match: ["miles", "morales"], trophyName: "Be Yourself", icon: "https://img.psnprofiles.com/trophy/m/11805/8739f0e6-486a-458b-97a2-f3c9d7914492.png" },
   { match: ["persona", "4", "dancing"], trophyName: "Dancing All Night", icon: "https://img.psnprofiles.com/trophy/m/8508/d370e2bc-56f7-4b36-884c-de3565686c1b.png" },
@@ -30,8 +32,9 @@ export async function onRequestGet({ request, env = {} }) {
 
   try {
     const accessToken = await getPsnAccessToken(npsso);
-    const activity = await getRecentPsnActivity(accessToken, sourceUrl);
-    return json({ user, sourceUrl, ...activity, source: "psn", blocked: false });
+    const accountId = await resolvePsnAccountId(accessToken, user);
+    const activity = await getRecentPsnActivity(accessToken, sourceUrl, accountId);
+    return json({ user, accountId, sourceUrl, ...activity, source: "psn", blocked: false });
   } catch (error) {
     return json({
       user,
@@ -80,12 +83,40 @@ async function getPsnAccessToken(npsso) {
   return token.access_token;
 }
 
-async function getRecentPsnActivity(accessToken, sourceUrl) {
+async function resolvePsnAccountId(accessToken, user) {
+  const cleaned = cleanUser(user);
+  if (!cleaned) return "me";
+  if (/^\d{6,}$/.test(cleaned)) return cleaned;
+  try {
+    const data = await psnPost(`${PSN_SEARCH_BASE}/v1/universalSearch`, accessToken, {
+      searchTerm: cleaned,
+      domainRequests: [{ domain: "SocialAllAccounts" }],
+    });
+    const results = (data?.domainResponses || []).flatMap((domain) => domain?.results || []);
+    const exact = results.find((result) => String(result?.socialMetadata?.onlineId || "").toLowerCase() === cleaned.toLowerCase());
+    if (exact) return String(exact?.socialMetadata?.accountId || exact?.accountId || "").trim() || "me";
+  } catch {
+    // Legacy lookup below is a useful fallback for public profiles.
+  }
+  return await resolvePsnAccountIdFromLegacy(accessToken, cleaned) || "me";
+}
+
+async function resolvePsnAccountIdFromLegacy(accessToken, user) {
+  try {
+    const fields = "npId,onlineId,accountId";
+    const data = await psnGet(`${PSN_LEGACY_USER_BASE}/${encodeURIComponent(user)}/profile2?${new URLSearchParams({ fields })}`, accessToken);
+    return String(data?.profile?.accountId || data?.accountId || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+async function getRecentPsnActivity(accessToken, sourceUrl, accountId = "me") {
   const [data, summary] = await Promise.all([
-    getPsnTrophyTitles(accessToken),
-    getPsnTrophySummary(accessToken),
+    getPsnTrophyTitles(accessToken, accountId),
+    getPsnTrophySummary(accessToken, accountId),
   ]);
-  const titles = data.trophyTitles || [];
+  const titles = (data.trophyTitles || []).map((title) => ({ ...title, accountId }));
   const recentTitles = titles.slice(0, 6);
   const [trophies, platinums] = await Promise.all([
     Promise.all(recentTitles.slice(0, 4).map((title) => getRecentTrophiesForTitle(accessToken, title, sourceUrl))),
@@ -107,11 +138,11 @@ async function getRecentPsnActivity(accessToken, sourceUrl) {
   };
 }
 
-async function getPsnTrophyTitles(accessToken) {
+async function getPsnTrophyTitles(accessToken, accountId = "me") {
   let lastError = null;
   for (const limit of [999, 200, 100, 50]) {
     try {
-      const titles = await getPagedTrophyTitles(accessToken, limit);
+      const titles = await getPagedTrophyTitles(accessToken, accountId, limit);
       return { trophyTitles: titles };
     } catch (error) {
       lastError = error;
@@ -120,10 +151,10 @@ async function getPsnTrophyTitles(accessToken) {
   throw lastError || new Error("PSN trophy titles request failed");
 }
 
-async function getPagedTrophyTitles(accessToken, limit) {
+async function getPagedTrophyTitles(accessToken, accountId, limit) {
   const titles = [];
   for (let offset = 0; offset < 5000; offset += limit) {
-    const data = await psnGet(`${PSN_TROPHY_BASE}/v1/users/me/trophyTitles?${new URLSearchParams({ limit: String(limit), offset: String(offset) })}`, accessToken);
+    const data = await psnGet(`${PSN_TROPHY_BASE}/v1/users/${encodeURIComponent(accountId)}/trophyTitles?${new URLSearchParams({ limit: String(limit), offset: String(offset) })}`, accessToken);
     const page = data.trophyTitles || [];
     titles.push(...page);
     if (page.length < limit || titles.length >= Number(data.totalItemCount || 0)) break;
@@ -131,8 +162,8 @@ async function getPagedTrophyTitles(accessToken, limit) {
   return titles;
 }
 
-async function getPsnTrophySummary(accessToken) {
-  const data = await psnGet(`${PSN_TROPHY_BASE}/v1/users/me/trophySummary`, accessToken);
+async function getPsnTrophySummary(accessToken, accountId = "me") {
+  const data = await psnGet(`${PSN_TROPHY_BASE}/v1/users/${encodeURIComponent(accountId)}/trophySummary`, accessToken);
   const earned = data.earnedTrophies || {};
   return {
     level: data.trophyLevel || "",
@@ -150,7 +181,8 @@ async function getPsnTrophySummary(accessToken) {
 async function getRecentTrophiesForTitle(accessToken, title, sourceUrl) {
   try {
     const npServiceName = title.npServiceName || serviceNameFor(title);
-    const earnedUrl = `${PSN_TROPHY_BASE}/v1/users/me/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies`;
+    const accountId = title.accountId || "me";
+    const earnedUrl = `${PSN_TROPHY_BASE}/v1/users/${encodeURIComponent(accountId)}/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies`;
     const metaUrl = `${PSN_TROPHY_BASE}/v1/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies`;
     const [earnedData, metaData] = await Promise.all([
       getPagedTrophies(accessToken, earnedUrl, npServiceName),
@@ -231,7 +263,8 @@ async function getPlatinumsForTitle(accessToken, title, sourceUrl) {
 }
 
 async function getPlatinumsForTitleService(accessToken, title, sourceUrl, npServiceName) {
-  const earnedUrl = `${PSN_TROPHY_BASE}/v1/users/me/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies`;
+  const accountId = title.accountId || "me";
+  const earnedUrl = `${PSN_TROPHY_BASE}/v1/users/${encodeURIComponent(accountId)}/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies`;
   const metaUrl = `${PSN_TROPHY_BASE}/v1/npCommunicationIds/${encodeURIComponent(title.npCommunicationId)}/trophyGroups/all/trophies`;
   const [earnedData, metaData] = await Promise.all([
     getPagedTrophies(accessToken, earnedUrl, npServiceName),
@@ -288,6 +321,21 @@ async function psnGet(url, accessToken) {
       "Content-Type": "application/json",
       "Accept-Language": "en-US",
     },
+    cf: { cacheTtl: PSN_CACHE_SECONDS, cacheEverything: true },
+  });
+  if (!response.ok) throw new Error(`PSN request failed (${response.status})`);
+  return response.json();
+}
+
+async function psnPost(url, accessToken, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "Accept-Language": "en-US",
+    },
+    body: JSON.stringify(body),
     cf: { cacheTtl: PSN_CACHE_SECONDS, cacheEverything: true },
   });
   if (!response.ok) throw new Error(`PSN request failed (${response.status})`);

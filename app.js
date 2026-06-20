@@ -995,7 +995,7 @@ async function refreshAchievements() {
   const psnUser = state.settings.psnUser || DEFAULT_SETTINGS.psnUser;
   el.achievementProfileLink.href = `https://psnprofiles.com/${encodeURIComponent(psnUser)}`;
   try {
-    const response = await fetch(`/api/achievements?user=${encodeURIComponent(psnUser)}&schema=2`);
+    const response = await fetch(`/api/achievements?user=${encodeURIComponent(psnUser)}&schema=3`);
     const data = await response.json();
     renderAchievements(data);
     render();
@@ -2642,6 +2642,7 @@ async function renderDetailTrophies(game) {
     const params = new URLSearchParams({
       id: trophyId,
       service: psn.npServiceName || "trophy",
+      user: state.settings.psnUser || "",
       debug: "1",
       schema: "3",
     });
@@ -3067,6 +3068,7 @@ async function loadCardTrophies(game, psn) {
     const params = new URLSearchParams({
       id: cacheKey,
       service: psn.npServiceName || "trophy",
+      user: state.settings.psnUser || "",
       debug: "1",
     });
     const response = await fetch(`/api/trophies?${params}`);
