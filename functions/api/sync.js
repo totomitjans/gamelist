@@ -1,8 +1,11 @@
 const KV_KEY = "gamelist-data";
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   if (!env.GAMELIST) return json({ games: [] });
   const data = await env.GAMELIST.get(KV_KEY, "json");
+  if (new URL(request.url).searchParams.get("settings") === "1") {
+    return json({ settings: data?.settings || {} });
+  }
   return json(data || { games: [] });
 }
 

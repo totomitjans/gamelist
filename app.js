@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v121";
-const SITE_UPDATED_AT = "2026-06-20T19:52:06Z";
+const SITE_VERSION = "v122";
+const SITE_UPDATED_AT = "2026-06-20T23:50:01Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -308,6 +308,7 @@ init();
 
 async function init() {
   if (await checkSiteVersion()) return;
+  await window.__initialThemeReady?.catch(() => "shabii");
   registerServiceWorker();
   syncDisplayMode();
   document.body.classList.toggle("can-edit", state.canEdit);
@@ -705,6 +706,7 @@ async function persistCloud() {
 
 function render() {
   applyTheme();
+  document.documentElement.classList.remove("theme-booting");
   document.body.classList.toggle("can-edit", state.canEdit);
   document.body.classList.toggle("list-view-mode", state.viewMode === "list");
   el.loginButton.innerHTML = state.canEdit ? `${pauseIcon()}<span class="button-label">Stop Editing</span>` : pencilIcon();
@@ -744,6 +746,8 @@ function render() {
 function applyTheme() {
   const themeKey = normalizeSettings(state.settings).theme;
   const theme = THEMES[themeKey] || THEMES.shabii;
+  document.documentElement.dataset.initialTheme = themeKey;
+  document.documentElement.classList.toggle("theme-kash", themeKey === "kash");
   document.body.classList.toggle("theme-kash", themeKey === "kash");
   document.title = theme.title;
   document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme.themeColor);

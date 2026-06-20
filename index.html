@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="theme-booting">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +12,52 @@
     <link rel="icon" type="image/png" href="assets/Icon.png">
     <link rel="apple-touch-icon" href="assets/app-Icon.png">
     <link rel="manifest" href="manifest.webmanifest">
+    <style>html.theme-booting body{visibility:hidden}</style>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const settingsKey = "gamelist:settings:v1";
+        const themes = {
+          shabii: { title: "Shabii's Gamelist", shortName: "Gamelist", icon: "assets/Icon.png", appIcon: "assets/app-Icon.png", color: "#ff0039" },
+          kash: { title: "Kash's Gamelist", shortName: "Kash", icon: "assets/kh_icon.png", appIcon: "assets/kh_app-icon.png", color: "#005cff" },
+        };
+        const apply = (key) => {
+          const themeKey = themes[key] ? key : "shabii";
+          const theme = themes[themeKey];
+          root.dataset.initialTheme = themeKey;
+          root.classList.toggle("theme-kash", themeKey === "kash");
+          document.body?.classList.toggle("theme-kash", themeKey === "kash");
+          document.title = theme.title;
+          document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme.color);
+          document.querySelector("meta[name='apple-mobile-web-app-title']")?.setAttribute("content", theme.shortName);
+          document.querySelector("link[rel='icon']")?.setAttribute("href", theme.icon);
+          document.querySelector("link[rel='apple-touch-icon']")?.setAttribute("href", theme.appIcon);
+          return themeKey;
+        };
+        const saveTheme = (key) => {
+          try {
+            const settings = JSON.parse(localStorage.getItem(settingsKey) || "{}");
+            localStorage.setItem(settingsKey, JSON.stringify({ ...settings, theme: key }));
+          } catch {}
+        };
+        let savedTheme = "";
+        try {
+          savedTheme = JSON.parse(localStorage.getItem(settingsKey) || "{}").theme || "";
+        } catch {}
+        window.__applyInitialTheme = apply;
+        window.__initialThemeReady = themes[savedTheme]
+          ? Promise.resolve(apply(savedTheme))
+          : fetch("/api/sync?settings=1", { cache: "no-store" })
+            .then((response) => response.ok ? response.json() : {})
+            .then((data) => {
+              const key = themes[data?.settings?.theme] ? data.settings.theme : "shabii";
+              saveTheme(key);
+              return apply(key);
+            })
+            .catch(() => apply("shabii"));
+        window.setTimeout(() => root.classList.remove("theme-booting"), 3500);
+      })();
+    </script>
     <link rel="preload" as="image" href="assets/kh_icon.png">
     <link rel="preload" as="image" href="assets/kh_app-icon.png">
     <link rel="preload" as="image" href="assets/platforms/playstation.png">
@@ -31,6 +77,9 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
+    <script>
+      document.body.classList.toggle("theme-kash", document.documentElement.dataset.initialTheme === "kash");
+    </script>
     <div class="backdrop"></div>
     <header class="topbar">
       <a class="brand" href="#backlog" aria-label="Shabii's Gamelist">
