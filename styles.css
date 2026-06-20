@@ -544,13 +544,13 @@ body.theme-kash .playing-slider-button:hover {
 }
 
 .achievement-section {
-  margin: 0 0 20px;
+  margin: 12px 0 20px;
   padding-bottom: 30px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .shell > :not(.playing-section) + .achievement-section {
-  margin-top: 18px;
+  margin-top: 26px;
 }
 
 .achievement-section .column-head {
@@ -2822,6 +2822,14 @@ body.theme-kash .playing-section .cover-button {
   text-shadow: 0 0 14px rgba(247, 223, 105, 0.26);
 }
 
+.game-card.completed-trophy-card,
+.game-card.stream-card.completed-trophy-card,
+body.theme-kash .game-card.completed-trophy-card,
+body.theme-kash .game-card.stream-card.completed-trophy-card {
+  border-color: rgba(247, 223, 105, 0.72) !important;
+  box-shadow: 0 0 0 1px rgba(247, 223, 105, 0.18), 0 14px 34px rgba(247, 223, 105, 0.1) !important;
+}
+
 .cover-button {
   position: relative;
   width: 104px;
@@ -3935,6 +3943,26 @@ body.theme-kash .completed-row.stream-card:hover {
   box-shadow: none !important;
 }
 
+.completed-row.completed-trophy-card,
+.completed-row.completed-trophy-card:hover,
+.completed-row.stream-card.completed-trophy-card,
+.completed-row.stream-card.completed-trophy-card:hover,
+.history-row.completed-trophy-card,
+.history-row.completed-trophy-card:hover,
+.playing-finished-game.completed-trophy-card,
+.playing-finished-game.completed-trophy-card:hover,
+body.theme-kash .completed-row.completed-trophy-card,
+body.theme-kash .completed-row.completed-trophy-card:hover,
+body.theme-kash .completed-row.stream-card.completed-trophy-card,
+body.theme-kash .completed-row.stream-card.completed-trophy-card:hover,
+body.theme-kash .history-row.completed-trophy-card,
+body.theme-kash .history-row.completed-trophy-card:hover,
+body.theme-kash .playing-finished-game.completed-trophy-card,
+body.theme-kash .playing-finished-game.completed-trophy-card:hover {
+  border-color: rgba(247, 223, 105, 0.72) !important;
+  box-shadow: 0 0 0 1px rgba(247, 223, 105, 0.16), 0 12px 28px rgba(247, 223, 105, 0.1) !important;
+}
+
 .completed-cover {
   width: 56px;
   height: 76px;
@@ -4575,6 +4603,14 @@ body.theme-kash .year-tab.active {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
   border-radius: 7px;
+}
+
+.history-row.completed-trophy-card,
+.history-row.completed-trophy-card:hover,
+body.theme-kash .history-row.completed-trophy-card,
+body.theme-kash .history-row.completed-trophy-card:hover {
+  border-color: rgba(247, 223, 105, 0.72) !important;
+  box-shadow: 0 0 0 1px rgba(247, 223, 105, 0.16), 0 12px 28px rgba(247, 223, 105, 0.1) !important;
 }
 
 .history-row > div {

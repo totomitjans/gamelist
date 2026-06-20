@@ -89,6 +89,14 @@ const MANUAL_PLATINUM_META_OVERRIDES = [
   { match: ["spider", "man", "2"], ids: ["23918"], exclude: ["miles"], trophyName: "Dedicated", icon: "https://img.psnprofiles.com/trophy/m/23918/c6620db1-4320-4a50-99af-fce3f5be2b41.png" },
   { match: ["spider", "man"], ids: ["8143"], exclude: ["2", "23918", "miles"], trophyName: "Be Greater", icon: "https://img.psnprofiles.com/trophy/m/8143/ccb3b536-eaae-4c03-beb5-4d9b3f8cb72c.png" },
 ];
+const MANUAL_PSN_TITLE_OVERRIDES = [
+  { match: ["mortal", "kombat", "1"], exclude: ["11"], platforms: ["PS5"], ids: ["NPWR29323_00"] },
+  { match: ["mortal", "kombat", "11"], platforms: ["PS5"], ids: ["NPWR21249_00"] },
+  { match: ["mortal", "kombat", "11"], platforms: ["PS4"], ids: ["NPWR15142_00"] },
+  { match: ["mortal", "kombat", "x"], platforms: ["PS4"], ids: ["NPWR07810_00"] },
+  { match: ["mkx"], platforms: ["PS4"], ids: ["NPWR07810_00"] },
+  { match: ["mortal", "kombat"], platforms: ["PS3"], ids: ["NPWR01747_00"] },
+];
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
 let selectMeasureContext = null;
@@ -922,17 +930,17 @@ function renderPlayingFinished() {
     .slice(0, 10);
   el.playingFinished.hidden = !games.length;
   el.playingFinishedList.innerHTML = games.map((game) => {
-    const psn = matchedPsnGame(game);
-    const progress = psn ? progressValue(psn.game) : 0;
+    const achievementProgress = achievementProgressForGame(game);
+    const progress = achievementProgress ? progressValue(achievementProgress.game) : 0;
     const badges = completedBadges(game, { includePsn: false });
     return `
-      <button class="achievement-game playing-finished-game" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`Open ${game.title}`)}">
+      <button class="achievement-game playing-finished-game ${game.platinum ? "completed-trophy-card" : ""}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`Open ${game.title}`)}">
         <img src="${escapeHtml(game.cover || platformLogo(game.platform || "PS5"))}" alt="" loading="lazy" decoding="async">
         <div>
           <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
           ${badges ? `<span class="playing-finished-tags">${badges}</span>` : ""}
           <span>${escapeHtml([formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "))}</span>
-          ${psn ? `<em style="--progress:${progress}%"></em>` : ""}
+          ${achievementProgress ? `<em style="--progress:${progress}%"></em>` : ""}
         </div>
       </button>
     `;
@@ -1893,7 +1901,7 @@ function rowPrimaryAction(game, section) {
 }
 
 function rowCoreStats(game) {
-  const psn = matchedPsnGame(game);
+  const progress = achievementProgressForGame(game);
   const release = releaseStatus(game);
   return [
     game.platform ? platformBadge(game.platform) : "",
@@ -1906,8 +1914,7 @@ function rowCoreStats(game) {
     ...gameStatuses(game).map(statusBadge),
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
-    game.platinum ? completionPill(game) : "",
-    psn ? psnProgressBadge(psn) : "",
+    progress ? psnProgressBadge(progress) : "",
   ].filter(Boolean).join("");
 }
 
@@ -1941,7 +1948,7 @@ function renderCompleted() {
   const games = sortedCompletedGames(visibleFinishedGames);
   updateCompletedCount(completedCountForSelectedYear());
   list.innerHTML = games.length ? games.map((game) => `
-    <div class="completed-row ${game.stream ? "stream-card" : ""}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
+    <div class="completed-row ${game.stream ? "stream-card" : ""} ${game.platinum ? "completed-trophy-card" : ""}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
       <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
       <div class="completed-main">
         <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
@@ -2049,7 +2056,7 @@ function renderHistoryDialog() {
 
   const games = completedGamesForYear(state.historyYear);
   el.historyList.innerHTML = games.length ? games.map((game) => `
-    <div class="history-row" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
+    <div class="history-row ${game.platinum ? "completed-trophy-card" : ""}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
       <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
       <div>
         <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
@@ -2252,6 +2259,7 @@ function cardFor(game, options = {}) {
   card.classList.toggle("digital-card", Boolean(game.digital));
   card.classList.toggle("playing-card", Boolean(game.playing));
   card.classList.toggle("stream-card", Boolean(game.stream));
+  card.classList.toggle("completed-trophy-card", Boolean(game.platinum));
   const trailer = card.querySelector(".card-trailer");
   const trailerUrl = shouldShowCardTrailer(game) ? trailerEmbedUrl(game.trailerUrl) : "";
   if (trailerUrl) {
@@ -2803,12 +2811,13 @@ function metaFor(game, options = {}) {
   if (options.includePsn !== false && progress) values.push(psnProgressBadge(progress));
   if (game.coop) values.push(`<span class="coop-pill">Coop</span>`);
   if (game.replayCount) values.push(replayBadge(game.replayCount));
-  if (game.platinum) values.push(completionPill(game));
   return values;
 }
 
 function matchedPsnGame(game) {
   if (!isPlayStationGame(game)) return null;
+  const manual = manualPsnTitleForGame(game);
+  if (manual) return manual;
   let bestMatch = null;
   let bestScore = 0;
   (state.psnActivity.games || []).forEach((psnGame) => {
@@ -2823,6 +2832,27 @@ function matchedPsnGame(game) {
     }
   });
   return bestScore >= 75 ? bestMatch : null;
+}
+
+function manualPsnTitleForGame(game) {
+  const local = titleMatchParts(game?.title || "");
+  const platform = canonicalPlatform(game?.platform);
+  const override = MANUAL_PSN_TITLE_OVERRIDES.find((entry) => {
+    if (entry.platforms?.length && !entry.platforms.includes(platform)) return false;
+    const values = uniqueTitleValues([...local.tokens, ...local.compacts]);
+    const haystack = values.join(" ");
+    const hasMatch = entry.match.every((term) => manualTitleTermMatches(values, haystack, term));
+    const hasExcluded = (entry.exclude || []).some((term) => manualTitleTermMatches(values, haystack, term));
+    return hasMatch && !hasExcluded;
+  });
+  if (!override) return null;
+  return (state.psnActivity.games || []).find((psnGame) => (override.ids || []).includes(psnGame.npCommunicationId)) || null;
+}
+
+function manualTitleTermMatches(values, haystack, term) {
+  const compact = normalizeTitleCompact(term);
+  if (values.includes(compact)) return true;
+  return compact.length >= 3 && haystack.includes(compact);
 }
 
 function achievementProgressForGame(game) {
@@ -2947,6 +2977,7 @@ function normalizeTitleRawPhrase(value) {
 function normalizeTitlePhrase(value) {
   return String(value || "")
     .toLowerCase()
+    .replace(/\btrophies\b/g, " ")
     .replace(/\bVIII\b/gi, "8")
     .replace(/\bVII\b/gi, "7")
     .replace(/\bVI\b/gi, "6")
@@ -2964,7 +2995,12 @@ function normalizeTitlePhrase(value) {
 
 function mortalKombatCompactAlias(value) {
   if (value === "mkx") return "mk10";
+  if (value === "mortalkombatx") return "mortalkombat10";
   return "";
+}
+
+function normalizeTitleCompact(value) {
+  return normalizeTitlePhrase(normalizeTitleRawPhrase(value)).replace(/\s+/g, "");
 }
 
 function uniqueTitleValues(values) {
@@ -2980,7 +3016,7 @@ function containsAllTitleTokens(haystack, needles) {
 }
 
 function psnExtraTitleTokens(localTokens, psnTokens) {
-  const allowedExtras = new Set(["ps4", "ps5", "version", "edition", "remastered", "remaster", "complete", "ultimate"]);
+  const allowedExtras = new Set(["ps3", "ps4", "ps5", "version", "edition", "trophies", "remastered", "remaster", "complete", "ultimate", "definitive", "premium", "xl"]);
   return psnTokens.filter((token) => !localTokens.includes(token) && !allowedExtras.has(token));
 }
 
@@ -3166,6 +3202,7 @@ function updateCardAchievementUi(gameId) {
   document.querySelectorAll(`.completed-row[data-id="${CSS.escape(gameId)}"] .completed-platform, .history-row[data-id="${CSS.escape(gameId)}"] .completed-platform`).forEach((node) => {
     node.innerHTML = completedBadges(game);
   });
+  renderPlayingFinished();
   if (game.playing) schedulePlayingCardHeightSync();
 }
 
@@ -3204,7 +3241,6 @@ function completedBadges(game, options = {}) {
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.stream ? `<span class="stream-pill">Stream</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
-    game.platinum ? completionPill(game) : "",
     options.includePsn === false ? "" : (progress ? psnProgressBadge(progress) : ""),
   ].filter(Boolean).join("");
 }
