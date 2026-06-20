@@ -8,6 +8,9 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
+const SITE_VERSION = "v106";
+const SITE_UPDATED_AT = "2026-06-20T13:05:43Z";
+const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
   shabii: {
@@ -96,6 +99,8 @@ const MANUAL_PSN_TITLE_OVERRIDES = [
   { match: ["mortal", "kombat", "x"], platforms: ["PS4"], ids: ["NPWR07810_00"] },
   { match: ["mkx"], platforms: ["PS4"], ids: ["NPWR07810_00"] },
   { match: ["mortal", "kombat"], platforms: ["PS3"], ids: ["NPWR01747_00"] },
+  { match: ["ai", "somnium", "files", "nirvana", "initiative"], platforms: ["PS4", "PS5"], ids: ["NPWR27307_00"] },
+  { match: ["nirvana", "initiative"], platforms: ["PS4", "PS5"], ids: ["NPWR27307_00"] },
 ];
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
@@ -121,6 +126,7 @@ const state = {
   mobileSection: "backlog",
   mobileSwipeStart: null,
   completedYear: "all",
+  completedVisibleLimit: 10,
   historyYear: String(new Date().getFullYear()),
   platinumYear: "all",
   platinumSort: "time",
@@ -172,6 +178,9 @@ const el = {
   completedCount: document.querySelector("#completedCount"),
   completedYearControl: document.querySelector("#completedYearControl"),
   completedYearFilter: document.querySelector("#completedYearFilter"),
+  completedMoreButton: document.querySelector("#completedMoreButton"),
+  footerDataUpdate: document.querySelector("#footerDataUpdate"),
+  footerVersion: document.querySelector("#footerVersion"),
   scrollTopButton: document.querySelector("#scrollTopButton"),
   floatingEditActions: document.querySelector("#floatingEditActions"),
   floatingAddButton: document.querySelector("#floatingAddButton"),
@@ -283,6 +292,7 @@ const el = {
 init();
 
 async function init() {
+  if (await checkSiteVersion()) return;
   registerServiceWorker();
   syncDisplayMode();
   document.body.classList.toggle("can-edit", state.canEdit);
@@ -328,6 +338,44 @@ function registerServiceWorker() {
       // Asset caching is optional; the app still works without it.
     });
   });
+}
+
+async function checkSiteVersion() {
+  try {
+    const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) return false;
+    const remote = await response.json();
+    const remoteVersion = String(remote.version || "").trim();
+    if (!remoteVersion) return false;
+    const current = localStorage.getItem(VERSION_STORAGE_KEY);
+    if (!current) {
+      localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
+      return false;
+    }
+    if (current === remoteVersion || remoteVersion === SITE_VERSION) {
+      localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
+      return false;
+    }
+    await clearSiteCaches();
+    localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
+    window.location.reload();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function clearSiteCaches() {
+  if ("caches" in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys
+      .filter((key) => key.startsWith("gamelist-cache-"))
+      .map((key) => caches.delete(key)));
+  }
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.update().catch(() => {})));
+  }
 }
 
 function bindEvents() {
@@ -384,23 +432,28 @@ function bindEvents() {
   window.addEventListener("scroll", hideSelectOverflowPopover, { passive: true });
   el.searchInput.addEventListener("input", (event) => {
     state.filters.query = event.target.value.trim().toLowerCase();
+    state.completedVisibleLimit = 10;
     render();
   });
   el.platformFilter.addEventListener("change", (event) => {
     state.filters.platform = event.target.value;
+    state.completedVisibleLimit = 10;
     render();
   });
   el.tagFilter.addEventListener("change", (event) => {
     state.filters.tag = event.target.value;
+    state.completedVisibleLimit = 10;
     render();
   });
   el.sortFilter.addEventListener("change", (event) => {
     state.filters.sort = event.target.value;
     if (state.filters.sort === "added") state.filters.direction = "desc";
+    state.completedVisibleLimit = 10;
     render();
   });
   el.sortDirectionButton.addEventListener("click", () => {
     state.filters.direction = state.filters.direction === "asc" ? "desc" : "asc";
+    state.completedVisibleLimit = 10;
     render();
   });
   el.viewToggleButton.addEventListener("click", () => {
@@ -415,9 +468,14 @@ function bindEvents() {
   });
   el.preorderedFilter.addEventListener("change", (event) => {
     state.filters.preordered = event.target.checked;
+    state.completedVisibleLimit = 10;
     render();
   });
   el.completedYearFilter?.addEventListener("change", handleCompletedYearChange);
+  el.completedMoreButton?.addEventListener("click", () => {
+    state.completedVisibleLimit += 100;
+    renderCompleted();
+  });
   el.scrollTopButton.addEventListener("click", () => {
     if (document.body.classList.contains("dialog-open")) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -646,6 +704,7 @@ function render() {
   renderSection("upcoming");
   renderSection("wanted");
   renderCompleted();
+  renderFooter();
   scheduleMobilePaintRefresh();
   el.sortFilter.value = state.filters.sort;
   el.sortDirectionButton.innerHTML = sortArrowIcon(state.filters.direction === "desc");
@@ -1946,8 +2005,11 @@ function renderCompleted() {
   const filteredFinishedGames = filteredGames({ applyPreorder: false }).filter((game) => game.completedAt);
   const visibleFinishedGames = filteredFinishedGames.filter((game) => state.completedYear === "all" || completionYear(game) === state.completedYear);
   const games = sortedCompletedGames(visibleFinishedGames);
+  const shownGames = games.slice(0, state.completedVisibleLimit);
+  const hasMore = games.length > shownGames.length;
+  list.classList.toggle("is-collapsed", hasMore);
   updateCompletedCount(completedCountForSelectedYear());
-  list.innerHTML = games.length ? games.map((game) => `
+  list.innerHTML = shownGames.length ? shownGames.map((game) => `
     <div class="completed-row ${game.stream ? "stream-card" : ""} ${game.platinum ? "completed-trophy-card" : ""}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
       <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
       <div class="completed-main">
@@ -1962,6 +2024,10 @@ function renderCompleted() {
       </div>
     </div>
   `).join("") : `<div class="empty">Finished games will stay saved here.</div>`;
+  if (el.completedMoreButton) {
+    el.completedMoreButton.hidden = !hasMore;
+    el.completedMoreButton.textContent = `See more (${Math.min(100, games.length - shownGames.length)} more)`;
+  }
   list.querySelectorAll(".completed-edit-action").forEach((button) => {
     button.addEventListener("click", () => openEditor(button.closest(".completed-row").dataset.id));
   });
@@ -1994,8 +2060,45 @@ function renderCompletedYearFilter(years) {
   el.completedYearFilter.value = state.completedYear;
 }
 
+function renderFooter() {
+  if (el.footerDataUpdate) {
+    const latest = latestGameUpdateDate();
+    el.footerDataUpdate.textContent = latest ? `Last update ${formatFooterDate(latest)}` : "Last update -";
+  }
+  if (el.footerVersion) {
+    el.footerVersion.textContent = `${SITE_VERSION} · Updated ${formatFooterDateTime(SITE_UPDATED_AT)}`;
+  }
+}
+
+function latestGameUpdateDate() {
+  const times = state.games
+    .flatMap((game) => [game.updatedAt, game.createdAt, game.deletedAt].filter(Boolean))
+    .map((value) => Date.parse(value))
+    .filter((time) => Number.isFinite(time));
+  if (!times.length) return "";
+  return new Date(Math.max(...times)).toISOString();
+}
+
+function formatFooterDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long" }).format(date);
+}
+
+function formatFooterDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function handleCompletedYearChange(event) {
   state.completedYear = event.target.value || "all";
+  state.completedVisibleLimit = 10;
   renderCompleted();
 }
 

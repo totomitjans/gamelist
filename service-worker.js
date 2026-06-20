@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gamelist-cache-v105";
+const CACHE_VERSION = "gamelist-cache-v106";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const MEDIA_CACHE = `${CACHE_VERSION}:media`;
 const STATIC_ASSETS = [
@@ -71,6 +71,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin === location.origin && url.pathname.startsWith("/api/")) return;
+  if (url.origin === location.origin && url.pathname === "/version.json") return;
 
   if (shouldCacheMedia(request, url)) {
     event.respondWith(cacheFirst(request, MEDIA_CACHE));

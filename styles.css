@@ -266,6 +266,23 @@ body.theme-kash .nav-tabs a:hover {
   max-width: 100%;
 }
 
+.site-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(1620px, 100%);
+  margin: 0 auto;
+  padding: 0 clamp(18px, 4vw, 48px) 26px;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.site-footer span:last-child {
+  text-align: right;
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1fr;
@@ -1458,9 +1475,9 @@ body.theme-kash .release-day.has-release:not(.has-preorder):not(.release-platfor
 }
 
 .release-day.release-platform-pc {
-  background: rgba(121, 242, 206, 0.16);
-  border-color: rgba(121, 242, 206, 0.38);
-  box-shadow: 0 8px 20px rgba(121, 242, 206, 0.15), 0 0 18px rgba(121, 242, 206, 0.09);
+  background: rgba(54, 70, 104, 0.26);
+  border-color: rgba(110, 132, 174, 0.38);
+  box-shadow: 0 8px 20px rgba(42, 57, 91, 0.18), 0 0 18px rgba(85, 107, 148, 0.1);
 }
 
 .release-day.release-platform-xbox {
@@ -3854,10 +3871,32 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .completed-list {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: stretch;
+}
+
+.completed-list.is-collapsed::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 96px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(7, 8, 12, 0), rgba(7, 8, 12, 0.82));
+  border-radius: 0 0 8px 8px;
+}
+
+.completed-more-button {
+  justify-self: center;
+  min-height: 36px;
+  margin: 12px auto 0;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .completed-list.list-view {
@@ -5487,6 +5526,17 @@ body.theme-kash .guide-button:hover {
 }
 
 @media (max-width: 1120px) {
+  .site-footer {
+    flex-direction: column;
+    gap: 5px;
+    padding-bottom: 22px;
+    text-align: center;
+  }
+
+  .site-footer span:last-child {
+    text-align: center;
+  }
+
   .completed-list {
     grid-template-columns: 1fr;
   }
