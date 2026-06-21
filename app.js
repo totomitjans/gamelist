@@ -9,8 +9,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v149";
-const SITE_UPDATED_AT = "2026-06-21T21:17:00Z";
+const SITE_VERSION = "v150";
+const SITE_UPDATED_AT = "2026-06-21T21:20:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -87,6 +87,7 @@ const MANUAL_GAME_COVER_OVERRIDES = {
   mandagon: "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg",
 };
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
+  { exact: ["tmnt"], match: [], cover: "https://static.fnac-static.com/multimedia/ES/images_produits/ES/Grandes150/8/2/8/3307210253828/tsp20090724110531/Teenage-Mutant-Ninja-Turtles-Xbox-360.gif" },
   { match: ["we", "were", "here", "together"], cover: "https://cdn.cloudflare.steamstatic.com/steam/apps/865360/library_600x900_2x.jpg" },
   { match: ["we", "were", "here", "too"], cover: "https://m.media-amazon.com/images/M/MV5BODY0YzhlZTgtMTE1OS00NzI4LTk4YjktYjliNGYyMDU0NmUzXkEyXkFqcGc@._V1_.jpg" },
   { match: ["we", "were", "here"], exclude: ["too", "together"], cover: "https://store-images.s-microsoft.com/image/apps.35419.14623959840279805.b70e315b-f457-43e0-ae70-9c5caadb7e59.6f028cbc-8306-4423-b49b-43e1f6e75ee8" },
@@ -1660,6 +1661,8 @@ function manualPlatinumEntryMatches(entry, normalized, input = {}) {
   ].filter(Boolean).join(" "));
   const idMatch = (entry.ids || []).some((id) => haystack.includes(normalizeTitleForMatch(id)));
   if (idMatch) return true;
+  const exactMatch = (entry.exact || []).some((title) => normalized === normalizeTitleForMatch(title));
+  if ((entry.exact || []).length) return exactMatch;
   const includesTerm = (term) => {
     const normalizedTerm = normalizeTitleForMatch(term);
     return Boolean(normalizedTerm && normalized.includes(normalizedTerm));
