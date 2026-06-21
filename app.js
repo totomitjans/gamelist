@@ -9,8 +9,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v150";
-const SITE_UPDATED_AT = "2026-06-21T21:20:00Z";
+const SITE_VERSION = "v151";
+const SITE_UPDATED_AT = "2026-06-21T21:26:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -87,6 +87,12 @@ const MANUAL_GAME_COVER_OVERRIDES = {
   mandagon: "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg",
 };
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
+  { exact: ["Cartoon Network PTE: XL"], match: [], cover: "https://m.media-amazon.com/images/I/81gYqhi47AL.jpg" },
+  { exact: ["DBZ Budokai HD Collection"], match: [], cover: "https://m.media-amazon.com/images/I/81fZrgq67NL._AC_UF1000,1000_QL80_.jpg" },
+  { exact: ["Ultimate MK3"], match: [], cover: "https://upload.wikimedia.org/wikipedia/en/f/f9/Ultimate_MK3.png" },
+  { exact: ["Turtles in Time RS"], match: [], cover: "https://upload.wikimedia.org/wikipedia/en/c/c7/TMNTreshelled_cover.png" },
+  { exact: ["TMNT 1989 Arcade"], match: [], cover: "https://media.vandal.net/m/6852/teenage-mutant-ninja-turtles-1989-arcade-xbla-2016109124838_1.jpg" },
+  { exact: ["Sonic's UGC"], match: [], cover: "https://upload.wikimedia.org/wikipedia/en/0/02/Sonic_Ultimate_Genesis_Collection.jpg" },
   { exact: ["tmnt"], match: [], cover: "https://static.fnac-static.com/multimedia/ES/images_produits/ES/Grandes150/8/2/8/3307210253828/tsp20090724110531/Teenage-Mutant-Ninja-Turtles-Xbox-360.gif" },
   { match: ["we", "were", "here", "together"], cover: "https://cdn.cloudflare.steamstatic.com/steam/apps/865360/library_600x900_2x.jpg" },
   { match: ["we", "were", "here", "too"], cover: "https://m.media-amazon.com/images/M/MV5BODY0YzhlZTgtMTE1OS00NzI4LTk4YjktYjliNGYyMDU0NmUzXkEyXkFqcGc@._V1_.jpg" },
