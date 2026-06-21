@@ -720,6 +720,11 @@ button.achievement-kpi {
   background: rgba(38, 91, 198, 0.9);
 }
 
+.achievement-kpi .kpi-breakdown-xbox {
+  color: #ffffff;
+  background: rgba(34, 145, 64, 0.92);
+}
+
 .achievement-kpi .kpi-breakdown-pill strong {
   display: inline;
   color: var(--text);

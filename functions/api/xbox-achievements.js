@@ -8,7 +8,6 @@ export async function onRequestGet({ request, env = {} }) {
   const fallbackUser = cleanXboxUser(env.XBOX_GAMERTAG || globalThis.process?.env?.XBOX_GAMERTAG);
   const targetUser = requestedUser || fallbackUser;
   const titleId = String(requestUrl.searchParams.get("titleId") || "").replace(/\D/g, "").slice(0, 20);
-  const debug = requestUrl.searchParams.has("debug");
   if (!apiKey) {
     return json({ achievements: [], games: [], completed: [], needsSetup: true, error: "Missing OPENXBL_API_KEY" }, 200, false);
   }
@@ -16,20 +15,30 @@ export async function onRequestGet({ request, env = {} }) {
   try {
     const identity = await resolveXboxIdentity(targetUser, apiKey);
     if (titleId) return await xboxTitleAchievements(identity, titleId, apiKey);
-    const achievementPath = identity.xuid ? `/v3/achievements/player/${encodeURIComponent(identity.xuid)}` : "/v2/achievements";
     const titlePath = identity.xuid ? `/v2/titles/${encodeURIComponent(identity.xuid)}` : "/v2/titles";
-    const [achievementData, titleData] = await Promise.all([
-      openXblGet(achievementPath, apiKey),
-      openXblGet(titlePath, apiKey),
-    ]);
+    const titleData = await openXblGet(titlePath, apiKey);
     const titleHistory = contentOf(titleData)?.titles || [];
-    const historyById = new Map(titleHistory.map((title) => [String(title.titleId || ""), title]));
-    const titles = (contentOf(achievementData)?.titles || []).map((title) => normalizeXboxTitle(title, historyById.get(String(title.titleId || ""))));
+    const titles = titleHistory.map((title) => normalizeXboxTitle(title, title));
+    const recentTitles = titles
+      .filter((title) => title.titleId && title.earned > 0)
+      .sort((a, b) => Date.parse(b.lastPlayedAt || "") - Date.parse(a.lastPlayedAt || ""))
+      .slice(0, 8);
+    const recentDetails = await Promise.allSettled(recentTitles.map((title) => fetchXboxTitleAchievementData(identity, title.titleId, apiKey)));
+    recentDetails.forEach((result, index) => {
+      if (result.status !== "fulfilled") return;
+      const title = recentTitles[index];
+      const achievements = result.value;
+      title.achievements = achievements;
+      title.earned = achievements.filter((achievement) => achievement.earned).length;
+      title.total = achievements.length;
+      title.latestEarnedAt = achievements.filter((achievement) => achievement.earned).sort(compareEarned)[0]?.earnedAt || "";
+      title.latestRawEarnedAt = achievements.filter((achievement) => achievement.earned).sort(compareEarned)[0]?.rawEarnedAt || "";
+    });
     const achievements = titles.flatMap((title) => title.achievements
       .filter((achievement) => achievement.earned)
       .map((achievement) => ({ ...achievement, game: title.title, titleId: title.titleId, platform: title.platform, url: xboxProfileUrl(identity.gamertag) })))
       .sort(compareEarned);
-    const completed = titles.filter((title) => title.total > 0 && title.earned >= title.total).map((title) => ({
+    const completed = titles.filter((title) => title.progress >= 100 || (title.total > 0 && title.earned >= title.total)).map((title) => ({
       title: title.title,
       cover: title.cover,
       trophyName: "100% Achievements",
@@ -53,7 +62,7 @@ export async function onRequestGet({ request, env = {} }) {
         cover: title.cover,
         earned: title.earned,
         total: title.total,
-        progress: title.total ? Math.round((title.earned / title.total) * 100) : 0,
+        progress: title.progress,
         achievements: title.achievements,
       })),
       completed,
@@ -61,10 +70,6 @@ export async function onRequestGet({ request, env = {} }) {
       sourceUrl: xboxProfileUrl(identity.gamertag),
       user: identity.gamertag || targetUser,
       xuid: identity.xuid,
-      ...(debug ? {
-        debugAchievementTitle: (contentOf(achievementData)?.titles || []).find((title) => /minecraft dungeons/i.test(title.name || "")) || (contentOf(achievementData)?.titles || [])[0] || null,
-        debugHistoryTitle: titleHistory.find((title) => /minecraft dungeons/i.test(title.name || "")) || titleHistory[0] || null,
-      } : {}),
     });
   } catch (error) {
     return json({
@@ -79,15 +84,7 @@ export async function onRequestGet({ request, env = {} }) {
 
 async function xboxTitleAchievements(identity, titleId, apiKey) {
   if (!identity.xuid) throw new Error("A Microsoft account is required for Xbox achievement details");
-  let data;
-  try {
-    data = await openXblGet(`/v2/achievements/player/${encodeURIComponent(identity.xuid)}/${encodeURIComponent(titleId)}`, apiKey);
-  } catch {
-    data = await openXblGet(`/v2/achievements/player/${encodeURIComponent(identity.xuid)}/title/${encodeURIComponent(titleId)}`, apiKey);
-  }
-  const content = contentOf(data);
-  const rawAchievements = firstAchievementArray(content);
-  const achievements = rawAchievements.map(normalizeXboxAchievement);
+  const achievements = await fetchXboxTitleAchievementData(identity, titleId, apiKey);
   return json({
     source: "xbox",
     titleId,
@@ -98,6 +95,18 @@ async function xboxTitleAchievements(identity, titleId, apiKey) {
     count: achievements.length,
     sourceUrl: xboxProfileUrl(identity.gamertag),
   });
+}
+
+async function fetchXboxTitleAchievementData(identity, titleId, apiKey) {
+  let data;
+  try {
+    data = await openXblGet(`/v2/achievements/player/${encodeURIComponent(identity.xuid)}/${encodeURIComponent(titleId)}`, apiKey);
+  } catch {
+    data = await openXblGet(`/v2/achievements/player/${encodeURIComponent(identity.xuid)}/title/${encodeURIComponent(titleId)}`, apiKey);
+  }
+  const content = contentOf(data);
+  const rawAchievements = firstAchievementArray(content);
+  return rawAchievements.map(normalizeXboxAchievement);
 }
 
 function firstAchievementArray(content) {
@@ -151,6 +160,7 @@ function normalizeXboxTitle(title = {}, history = {}) {
     ? Number(title.currentAchievements ?? summary.currentAchievements)
     : earnedAchievements.length;
   const total = achievements.length || Number(title.totalAchievements || summary.totalAchievements || 0);
+  const progress = Number(summary.progressPercentage || (total ? (earned / total) * 100 : 0));
   return {
     titleId: String(title.titleId || history?.titleId || ""),
     title: String(title.name || history?.name || "Xbox game"),
@@ -159,8 +169,10 @@ function normalizeXboxTitle(title = {}, history = {}) {
     achievements,
     earned,
     total,
-    latestEarnedAt: earnedAchievements[0]?.earnedAt || "",
-    latestRawEarnedAt: earnedAchievements[0]?.rawEarnedAt || "",
+    progress: Number.isFinite(progress) ? Math.max(0, Math.min(100, Math.round(progress))) : 0,
+    lastPlayedAt: String(title.titleHistory?.lastTimePlayed || history?.titleHistory?.lastTimePlayed || ""),
+    latestEarnedAt: earnedAchievements[0]?.earnedAt || formatXboxDate(title.titleHistory?.lastTimePlayed || history?.titleHistory?.lastTimePlayed || ""),
+    latestRawEarnedAt: earnedAchievements[0]?.rawEarnedAt || String(title.titleHistory?.lastTimePlayed || history?.titleHistory?.lastTimePlayed || ""),
   };
 }
 
