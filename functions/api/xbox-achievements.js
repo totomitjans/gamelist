@@ -8,6 +8,7 @@ export async function onRequestGet({ request, env = {} }) {
   const fallbackUser = cleanXboxUser(env.XBOX_GAMERTAG || globalThis.process?.env?.XBOX_GAMERTAG);
   const targetUser = requestedUser || fallbackUser;
   const titleId = String(requestUrl.searchParams.get("titleId") || "").replace(/\D/g, "").slice(0, 20);
+  const debug = requestUrl.searchParams.has("debug");
   if (!apiKey) {
     return json({ achievements: [], games: [], completed: [], needsSetup: true, error: "Missing OPENXBL_API_KEY" }, 200, false);
   }
@@ -60,6 +61,10 @@ export async function onRequestGet({ request, env = {} }) {
       sourceUrl: xboxProfileUrl(identity.gamertag),
       user: identity.gamertag || targetUser,
       xuid: identity.xuid,
+      ...(debug ? {
+        debugAchievementTitle: (contentOf(achievementData)?.titles || []).find((title) => /minecraft dungeons/i.test(title.name || "")) || (contentOf(achievementData)?.titles || [])[0] || null,
+        debugHistoryTitle: titleHistory.find((title) => /minecraft dungeons/i.test(title.name || "")) || titleHistory[0] || null,
+      } : {}),
     });
   } catch (error) {
     return json({
