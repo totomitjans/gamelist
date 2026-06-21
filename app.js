@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v123";
-const SITE_UPDATED_AT = "2026-06-21T08:28:10Z";
+const SITE_VERSION = "v124";
+const SITE_UPDATED_AT = "2026-06-21T08:32:16Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -74,6 +74,7 @@ const UI_ICON_URLS = [
   "/assets/sites/psnprofiles.png",
   "/assets/sites/rpgsite.png",
   "/assets/sites/steam.png",
+  "/assets/sites/wikipedia.ico",
   "/assets/stores/amazon.ico",
   "/assets/stores/game.ico",
   "/assets/stores/retroisland.png",
@@ -4178,7 +4179,7 @@ function storeLinksFor(game) {
     ...stores
     .filter((store) => providers.includes(store.provider))
     .map((store) => storeButton(store.label, links[store.key], store.cls, store.icon)),
-    providers.length ? "" : storeButton("Wikipedia", wikipediaUrlFor(game), "store-wikipedia", ""),
+    providers.length ? "" : storeButton("Wikipedia", wikipediaUrlFor(game), "store-wikipedia", "assets/sites/wikipedia.ico"),
     hltbUrl ? storeButton("HowLongToBeat", hltbUrl, "store-hltb", "assets/sites/howlongtobeat.png") : "",
   ].filter(Boolean).join("");
 }

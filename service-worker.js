@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gamelist-cache-v123";
+const CACHE_VERSION = "gamelist-cache-v124";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const MEDIA_CACHE = `${CACHE_VERSION}:media`;
 const STATIC_ASSETS = [
@@ -37,6 +37,7 @@ const STATIC_ASSETS = [
   "/assets/sites/psnprofiles.png",
   "/assets/sites/rpgsite.png",
   "/assets/sites/steam.png",
+  "/assets/sites/wikipedia.ico",
   "/assets/stores/amazon.ico",
   "/assets/stores/game.ico",
   "/assets/stores/retroisland.png",
