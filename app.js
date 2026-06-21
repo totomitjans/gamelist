@@ -1709,7 +1709,7 @@ function cachedPlatinumMetadata(title) {
 async function hydratePlatinumCovers(platinums) {
   const missing = platinums
     .filter((item) => !localCoverForTitle(item.title) && !state.platinumCoverCache[normalizeTitleForMatch(item.title)])
-    .slice(0, 32);
+    .slice(0, 64);
   if (!missing.length) return;
   await Promise.all(missing.map(async (item) => {
     const key = normalizeTitleForMatch(item.title);
