@@ -8,8 +8,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v137";
-const SITE_UPDATED_AT = "2026-06-21T14:47:01Z";
+const SITE_VERSION = "v138";
+const SITE_UPDATED_AT = "2026-06-21T14:55:31Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const THEMES = {
@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS = {
   pageOrder: DEFAULT_PAGE_ORDER,
   hiddenSections: [],
   theme: "shabii",
+  defaultOrder: "custom",
   psnUser: "ShabiiEXE",
   microsoftUser: "",
   steamUser: "",
@@ -126,6 +127,7 @@ let playingTrailerFrame = 0;
 const searchCache = new Map();
 const searchInflight = new Map();
 const platinumMetaCache = loadPlatinumMetaCache();
+const initialSettings = loadLocalSettings();
 
 const state = {
   games: [],
@@ -135,8 +137,9 @@ const state = {
   steamOwnedAppIds: null,
   cardTrophies: {},
   platinumCoverCache: {},
-  settings: loadLocalSettings(),
-  filters: { query: "", platform: "all", tag: "all", sort: "time", direction: "asc", preordered: false },
+  settings: initialSettings,
+  filters: { query: "", platform: "all", tag: "all", sort: mainSortForDefault(initialSettings.defaultOrder), direction: "asc", preordered: false },
+  sortTouched: false,
   viewMode: localStorage.getItem(VIEW_MODE_KEY) === "list" ? "list" : "grid",
   editingId: "",
   pendingDescription: "",
@@ -149,7 +152,7 @@ const state = {
   historyYear: String(new Date().getFullYear()),
   platinumYear: "all",
   platinumPlatform: "all",
-  platinumSort: "time",
+  platinumSort: listSortForDefault(initialSettings.defaultOrder),
   platinumDirection: "desc",
   platinumViewMode: localStorage.getItem(PLATINUM_VIEW_MODE_KEY) === "list" ? "list" : "grid",
   releaseCalendarOffset: 0,
@@ -475,12 +478,14 @@ function bindEvents() {
     render();
   });
   el.sortFilter.addEventListener("change", (event) => {
+    state.sortTouched = true;
     state.filters.sort = event.target.value;
     if (state.filters.sort === "added") state.filters.direction = "desc";
     state.completedVisiblePages = 1;
     render();
   });
   el.sortDirectionButton.addEventListener("click", () => {
+    state.sortTouched = true;
     state.filters.direction = state.filters.direction === "asc" ? "desc" : "asc";
     state.completedVisiblePages = 1;
     render();
@@ -628,6 +633,7 @@ async function pullCloudData() {
       const nextSettings = normalizeSettings(data.settings);
       if (JSON.stringify(nextSettings) !== JSON.stringify(state.settings)) {
         state.settings = nextSettings;
+        if (!state.sortTouched) applyDefaultOrder(nextSettings.defaultOrder);
         persistLocalSettings();
         changed = true;
       }
@@ -666,6 +672,20 @@ function persistLocalSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
 }
 
+function mainSortForDefault(value) {
+  if (value === "name") return "title";
+  return value === "time" ? "time" : "custom";
+}
+
+function listSortForDefault(value) {
+  return value === "name" ? "name" : "time";
+}
+
+function applyDefaultOrder(value) {
+  state.filters.sort = mainSortForDefault(value);
+  state.platinumSort = listSortForDefault(value);
+}
+
 function normalizeSettings(settings = {}) {
   const migratedOrder = Array.isArray(settings.pageOrder)
     ? settings.pageOrder.flatMap((item) => item === "dashboard" ? ["calendar", "highlights"] : [item])
@@ -686,6 +706,7 @@ function normalizeSettings(settings = {}) {
     pageOrder: [...pageOrder, ...DEFAULT_PAGE_ORDER.filter((item) => !pageOrder.includes(item))],
     hiddenSections,
     theme: THEMES[settings.theme] ? settings.theme : DEFAULT_SETTINGS.theme,
+    defaultOrder: ["custom", "time", "name"].includes(settings.defaultOrder) ? settings.defaultOrder : DEFAULT_SETTINGS.defaultOrder,
     psnUser: cleanPsnUser(settings.psnUser) || DEFAULT_SETTINGS.psnUser,
     microsoftUser: cleanMicrosoftUser(settings.microsoftUser),
     steamUser: cleanSteamUser(settings.steamUser),
@@ -743,6 +764,7 @@ function render() {
   el.sortDirectionButton.title = state.filters.direction === "asc" ? "Sort ascending" : "Sort descending";
   el.sortDirectionButton.setAttribute("aria-label", el.sortDirectionButton.title);
   el.sortDirectionButton.classList.toggle("desc", state.filters.direction === "desc");
+  el.sortDirectionButton.disabled = state.filters.sort === "custom";
   renderViewToggle();
   applyPageOrder();
   el.preorderedFilter.checked = state.filters.preordered;
@@ -849,6 +871,7 @@ function renderSettingsDialog() {
     settingsLayoutItem("latestFinished", -1, { fixed: true }),
     ...state.settings.pageOrder.map((key) => settingsLayoutItem(key, pageIndex.get(key) ?? 0)),
     settingsThemeItem(),
+    settingsDefaultOrderItem(),
   ].join("");
   el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `
     <label class="check-filter toggle-check settings-store-check">
@@ -878,6 +901,9 @@ function renderSettingsDialog() {
   el.settingsLayoutList.querySelector("[data-theme-select]")?.addEventListener("change", (event) => {
     state.settings.theme = event.target.value;
     applyTheme();
+  });
+  el.settingsLayoutList.querySelector("[data-default-order]")?.addEventListener("change", (event) => {
+    state.settings.defaultOrder = event.target.value;
   });
 }
 
@@ -948,9 +974,27 @@ function settingsThemeItem() {
   `;
 }
 
+function settingsDefaultOrderItem() {
+  return `
+    <article class="settings-layout-card settings-order-card" data-layout-key="default-order">
+      <div class="settings-wire wire-order" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <strong>Default order</strong>
+      <label class="settings-theme-select">
+        <span>Order</span>
+        <select data-default-order aria-label="Default list order">
+          <option value="custom" ${state.settings.defaultOrder === "custom" ? "selected" : ""}>Custom</option>
+          <option value="time" ${state.settings.defaultOrder === "time" ? "selected" : ""}>Time</option>
+          <option value="name" ${state.settings.defaultOrder === "name" ? "selected" : ""}>Name</option>
+        </select>
+      </label>
+    </article>
+  `;
+}
+
 async function saveSettingsFromForm(event) {
   event.preventDefault();
   const previousCurrency = state.settings.currency;
+  const previousDefaultOrder = state.settings.defaultOrder;
   const stores = [...el.settingsStores.querySelectorAll("input[type='checkbox']:checked")]
     .map((input) => input.value)
     .filter((store) => STORE_OPTIONS.includes(store))
@@ -960,6 +1004,7 @@ async function saveSettingsFromForm(event) {
     ...state.settings,
     hiddenSections: LAYOUT_SECTION_KEYS.filter((key) => !visibleSections.has(key)),
     theme: el.settingsLayoutList.querySelector("[data-theme-select]")?.value || state.settings.theme,
+    defaultOrder: el.settingsLayoutList.querySelector("[data-default-order]")?.value || state.settings.defaultOrder,
     psnUser: el.settingsPsnUser.value,
     microsoftUser: el.settingsMicrosoftUser.value,
     steamUser: el.settingsSteamUser.value,
@@ -972,6 +1017,10 @@ async function saveSettingsFromForm(event) {
   await persistCloud();
   el.settingsDialog.close();
   state.cardTrophies = {};
+  if (previousDefaultOrder !== state.settings.defaultOrder) {
+    applyDefaultOrder(state.settings.defaultOrder);
+    state.sortTouched = false;
+  }
   refreshAchievements();
   render();
   if (previousCurrency !== state.settings.currency) await refreshAllPrices();
@@ -2170,7 +2219,16 @@ function renderSection(section) {
   });
   list.appendChild(fragment);
   if (state.viewMode === "list") requestAnimationFrame(() => updateRowTitleOverflow(list));
-  if (state.viewMode === "grid" && section === "backlog" && state.filters.sort === "custom") setupDrag(list);
+  if (manualDragEnabled()) setupDrag(list);
+}
+
+function manualDragEnabled() {
+  return state.canEdit
+    && state.filters.sort === "custom"
+    && !state.filters.query
+    && state.filters.platform === "all"
+    && state.filters.tag === "all"
+    && !state.filters.preordered;
 }
 
 function emptyGamesMarkup(query) {
@@ -2204,6 +2262,7 @@ function rowFor(game, section, options = {}) {
   row.className = "game-row";
   row.dataset.id = game.id;
   row.dataset.owner = statuses.join(" ");
+  row.draggable = manualDragEnabled();
   row.setAttribute("role", "button");
   row.tabIndex = 0;
   row.setAttribute("aria-label", `Open ${game.title}`);
@@ -2654,7 +2713,7 @@ function cardFor(game, options = {}) {
   const owners = ownerTags(game);
   card.dataset.id = game.id;
   card.dataset.owner = statuses.join(" ");
-  card.draggable = !options.staticCard && state.canEdit && game.section === "backlog" && state.filters.sort === "custom";
+  card.draggable = !options.staticCard && manualDragEnabled() && ["backlog", "upcoming", "wanted"].includes(game.section);
   card.classList.toggle("owner-card-judy", owners.includes("Judy"));
   card.classList.toggle("owner-card-jordi", owners.includes("Jordi"));
   card.classList.toggle("digital-card", Boolean(game.digital));
@@ -3838,14 +3897,16 @@ function studioText(game) {
 
 function compareGames(a, b, section) {
   const direction = state.filters.direction === "desc" ? -1 : 1;
+  if (state.filters.sort === "custom") {
+    return (a.order ?? Number.POSITIVE_INFINITY) - (b.order ?? Number.POSITIVE_INFINITY)
+      || addedTimeValue(a) - addedTimeValue(b)
+      || stringCompare(a.title, b.title);
+  }
   const streamSort = compareStreamFirst(a, b);
   if (streamSort) return streamSort;
   if (Boolean(a.playing) !== Boolean(b.playing)) return a.playing ? -1 : 1;
   if (section === "upcoming") {
     return compareReleaseDates(a, b) || stringCompare(a.title, b.title);
-  }
-  if (state.filters.sort === "custom" && section === "backlog") {
-    return (a.order ?? 0) - (b.order ?? 0);
   }
   if (state.filters.sort === "platform") {
     return direction * (stringCompare(canonicalPlatform(a.platform), canonicalPlatform(b.platform)) || stringCompare(a.title, b.title));
@@ -4267,7 +4328,20 @@ function platformDisplayName(platform) {
 }
 
 function normalizeGameRecords(games) {
-  return Array.isArray(games) ? games.map(normalizeGameRecord) : [];
+  const normalized = Array.isArray(games) ? games.map(normalizeGameRecord) : [];
+  ["backlog", "upcoming", "wanted"].forEach((section) => {
+    normalized
+      .filter((game) => !game.deletedAt && !game.completedAt && !game.playing && game.section === section)
+      .sort((a, b) => {
+        const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.POSITIVE_INFINITY;
+        const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.POSITIVE_INFINITY;
+        return orderA - orderB || addedTimeValue(a) - addedTimeValue(b) || stringCompare(a.title, b.title);
+      })
+      .forEach((game, index) => {
+        game.order = index;
+      });
+  });
+  return normalized;
 }
 
 function normalizeGameRecord(game) {
@@ -5030,21 +5104,23 @@ function getGame(id) {
 }
 
 function nextOrder(section) {
-  return Math.max(-1, ...state.games.filter((game) => game.section === section).map((game) => game.order ?? 0)) + 1;
+  return Math.max(-1, ...state.games
+    .filter((game) => !game.deletedAt && !game.completedAt && !game.playing && game.section === section)
+    .map((game) => Number(game.order) || 0)) + 1;
 }
 
 function setupDrag(list) {
-  list.querySelectorAll(".game-card").forEach((card) => {
-    card.addEventListener("dragstart", () => {
-      state.draggingId = card.dataset.id;
-      card.classList.add("dragging");
+  list.querySelectorAll(".game-card, .game-row").forEach((item) => {
+    item.addEventListener("dragstart", () => {
+      state.draggingId = item.dataset.id;
+      item.classList.add("dragging");
     });
-    card.addEventListener("dragend", () => {
-      card.classList.remove("dragging");
-      saveBacklogOrder(list);
+    item.addEventListener("dragend", () => {
+      item.classList.remove("dragging");
+      saveSectionOrder(list);
       state.draggingId = "";
     });
-    card.addEventListener("dragover", (event) => {
+    item.addEventListener("dragover", (event) => {
       event.preventDefault();
       const dragging = list.querySelector(".dragging");
       const after = getDragAfterElement(list, event.clientY);
@@ -5056,8 +5132,8 @@ function setupDrag(list) {
 }
 
 function getDragAfterElement(container, y) {
-  const cards = [...container.querySelectorAll(".game-card:not(.dragging)")];
-  return cards.reduce((closest, child) => {
+  const items = [...container.querySelectorAll(".game-card:not(.dragging), .game-row:not(.dragging)")];
+  return items.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
     const offset = y - box.top - box.height / 2;
     if (offset < 0 && offset > closest.offset) return { offset, element: child };
@@ -5065,11 +5141,11 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
 }
 
-function saveBacklogOrder(list) {
+function saveSectionOrder(list) {
   const editedAt = new Date().toISOString();
   let changed = false;
-  [...list.querySelectorAll(".game-card")].forEach((card, index) => {
-    const game = getGame(card.dataset.id);
+  [...list.querySelectorAll(".game-card, .game-row")].forEach((item, index) => {
+    const game = getGame(item.dataset.id);
     if (!game || game.order === index) return;
     game.order = index;
     markGameEdited(game, editedAt);

@@ -191,7 +191,8 @@
           <span>Order</span>
           <div class="order-control">
             <select id="sortFilter">
-              <option value="time" selected>Time</option>
+              <option value="custom" selected>Custom</option>
+              <option value="time">Time</option>
               <option value="added">Last added</option>
               <option value="title">Name</option>
               <option value="platform">Platform</option>
@@ -227,7 +228,7 @@
             </div>
             <span id="upcomingCount"></span>
           </div>
-          <div class="card-list" data-section="upcoming"></div>
+          <div class="card-list sortable" data-section="upcoming"></div>
         </article>
 
         <article class="column" id="wanted">
@@ -237,7 +238,7 @@
             </div>
             <span id="wantedCount"></span>
           </div>
-          <div class="card-list" data-section="wanted"></div>
+          <div class="card-list sortable" data-section="wanted"></div>
         </article>
       </section>
 

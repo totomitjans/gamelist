@@ -123,12 +123,15 @@ button:disabled {
   cursor: default;
 }
 
-.sortable .game-card[draggable="true"] {
+.sortable .game-card[draggable="true"],
+.sortable .game-row[draggable="true"] {
   cursor: grab;
 }
 
-.sortable .game-card.dragging {
+.sortable .game-card.dragging,
+.sortable .game-row.dragging {
   cursor: grabbing;
+  opacity: 0.55;
 }
 
 .backdrop {
@@ -4660,8 +4663,9 @@ body.dialog-open .mobile-section-tabs {
   text-transform: uppercase;
 }
 
-.settings-theme-card {
-  grid-column: 1 / -1;
+.settings-theme-card,
+.settings-order-card {
+  grid-column: span 2;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
   align-items: center;
   gap: 14px;
@@ -4673,11 +4677,13 @@ body.dialog-open .mobile-section-tabs {
   gap: 5px;
 }
 
-.settings-theme-card .settings-wire {
+.settings-theme-card .settings-wire,
+.settings-order-card .settings-wire {
   display: none;
 }
 
-.settings-theme-card > strong {
+.settings-theme-card > strong,
+.settings-order-card > strong {
   min-height: 0;
   text-align: left;
   font-size: 14px;
