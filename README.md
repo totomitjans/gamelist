@@ -93,6 +93,8 @@ This repo has two KV bindings configured so the GitHub and GitLab Cloudflare dep
 
 Set each Cloudflare site's deploy command to the matching environment. The top-level/default config is kept on the GitHub KV namespace so GitHub can also use Cloudflare's default `npx wrangler deploy` command. This keeps each site connected to its own `GAMELIST` KV namespace instead of one deploy overwriting the other's binding.
 
+The standalone Shelf and its imported collection data are enabled only for the default/GitHub deployment. The `gitlab` environment sets `SHELF_ENABLED=false`, so Shelf routes, source data, generated data, and the cover proxy return `404` on that copy.
+
 If the GitLab Cloudflare project cannot change its deploy command, add this plaintext environment variable in that Cloudflare project's **Settings > Variables and Secrets**:
 
 ```text

@@ -1,6 +1,7 @@
 import * as auth from "./functions/api/auth.js";
 import * as achievements from "./functions/api/achievements.js";
 import * as calendar from "./functions/api/calendar.js";
+import * as cover from "./functions/api/cover.js";
 import * as prices from "./functions/api/prices.js";
 import * as search from "./functions/api/search.js";
 import * as sync from "./functions/api/sync.js";
@@ -12,6 +13,7 @@ const routes = {
   "/api/achievements": achievements,
   "/api/auth": auth,
   "/api/calendar": calendar,
+  "/api/cover": cover,
   "/api/prices": prices,
   "/api/search": search,
   "/api/steam-achievements": steamAchievements,
@@ -20,9 +22,27 @@ const routes = {
   "/api/xbox-achievements": xboxAchievements,
 };
 
+const shelfOnlyPaths = new Set([
+  "/shelf",
+  "/shelf/",
+  "/shelf.html",
+  "/shelf.css",
+  "/shelf.js",
+  "/api/cover",
+  "/data/2026_06_22_ge_collection.csv",
+  "/data/collection-games.json",
+  "/scripts/build-collection-data.mjs",
+]);
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (shelfOnlyPaths.has(url.pathname) && env.SHELF_ENABLED !== "true") {
+      return new Response("Not found", {
+        status: 404,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
     const module = routes[url.pathname];
     if (module) {
       const method = request.method.toLowerCase();

@@ -3,6 +3,9 @@ main = "worker.js"
 compatibility_date = "2026-06-10"
 workers_dev = true
 
+[vars]
+SHELF_ENABLED = "true"
+
 [assets]
 directory = "."
 binding = "ASSETS"
@@ -15,6 +18,9 @@ id = "97e3869a3cfc407bb25e7470d3942f5e"
 name = "gamelist"
 workers_dev = true
 
+[env.github.vars]
+SHELF_ENABLED = "true"
+
 [[env.github.kv_namespaces]]
 binding = "GAMELIST"
 id = "97e3869a3cfc407bb25e7470d3942f5e"
@@ -22,6 +28,9 @@ id = "97e3869a3cfc407bb25e7470d3942f5e"
 [env.gitlab]
 name = "gamelist"
 workers_dev = true
+
+[env.gitlab.vars]
+SHELF_ENABLED = "false"
 
 [[env.gitlab.kv_namespaces]]
 binding = "GAMELIST"
