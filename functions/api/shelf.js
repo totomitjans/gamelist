@@ -3,9 +3,9 @@ import { isEditorRequest } from "./editor-auth.js";
 const KV_KEY = "shelf-data";
 
 export async function onRequestGet({ env }) {
-  if (!env.GAMELIST) return json({ sourceGames: [], games: [], overrides: {} });
+  if (!env.GAMELIST) return json({ sourceGames: [], games: [], overrides: {}, layout: null });
   const data = await env.GAMELIST.get(KV_KEY, "json");
-  return json(data || { sourceGames: [], games: [], overrides: {} });
+  return json(data || { sourceGames: [], games: [], overrides: {}, layout: null });
 }
 
 export async function onRequestPut({ request, env }) {
@@ -23,6 +23,7 @@ export async function onRequestPut({ request, env }) {
     sourceGames: Array.isArray(existing.sourceGames) ? existing.sourceGames : [],
     games: body.games.slice(0, 1000),
     overrides: body.overrides,
+    layout: validLayout(body.layout) ? body.layout : (validLayout(existing.layout) ? existing.layout : null),
     updatedAt: new Date().toISOString(),
   };
   await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
@@ -34,7 +35,8 @@ export async function onRequestDelete({ request, env }) {
   if (!env.GAMELIST) return json({ error: "Missing GAMELIST KV binding" }, 501);
   if (!env.EDIT_PASSWORD) return json({ error: "Missing EDIT_PASSWORD secret" }, 503);
   if (!await isEditorRequest(request, env)) return json({ error: "Unauthorized" }, 401);
-  const data = { sourceGames: [], games: [], overrides: {}, updatedAt: new Date().toISOString() };
+  const existing = await env.GAMELIST.get(KV_KEY, "json") || {};
+  const data = { sourceGames: [], games: [], overrides: {}, layout: validLayout(existing.layout) ? existing.layout : null, updatedAt: new Date().toISOString() };
   await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
   return json({ ok: true, updatedAt: data.updatedAt });
 }
@@ -91,6 +93,10 @@ function shortPlatform(value) {
     "Sony PlayStation 4": "PS4", "Sony PlayStation 5": "PS5", "Nintendo Switch": "Switch",
     "Nintendo Switch 2": "Switch 2", "Nintendo DS": "DS", "Nintendo 3DS": "3DS", "Nintendo 64": "N64",
   })[value] || value || "Unknown";
+}
+
+function validLayout(value) {
+  return Boolean(value && Array.isArray(value.order) && Array.isArray(value.hidden));
 }
 
 function json(data, status = 200) {

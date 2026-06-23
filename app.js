@@ -9,10 +9,11 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v157";
-const SITE_UPDATED_AT = "2026-06-22T21:45:00Z";
+const SITE_VERSION = "v158";
+const SITE_UPDATED_AT = "2026-06-23T10:48:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
-const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
+const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
+const MAX_PRICE_STORES = 5;
 const THEMES = {
   shabii: {
     name: "Shabii",
@@ -41,7 +42,8 @@ const DEFAULT_SETTINGS = {
   steamUser: "",
   currency: "EUR",
   region: "ES",
-  stores: ["Amazon", "Xtralife", "GAME.es", "Retro Island NY"],
+  stores: ["Amazon", "eBay", "Xtralife", "GAME.es", "Retro Island NY"],
+  storeSettingsVersion: 2,
   defaultOwner: "Xavi",
 };
 const STATUS_OPTIONS = [
@@ -713,9 +715,10 @@ function normalizeSettings(settings = {}) {
   const migratedHidden = Array.isArray(settings.hiddenSections)
     ? settings.hiddenSections.flatMap((item) => item === "dashboard" ? ["calendar", "highlights"] : [item])
     : [];
-  const stores = Array.isArray(settings.stores)
+  const selectedStores = Array.isArray(settings.stores)
     ? settings.stores.filter((store) => STORE_OPTIONS.includes(store))
     : DEFAULT_SETTINGS.stores;
+  const stores = settings.storeSettingsVersion === 2 || selectedStores.includes("eBay") ? selectedStores : [...selectedStores, "eBay"];
   const hiddenSections = migratedHidden.filter((item) => LAYOUT_SECTION_KEYS.includes(item));
   return {
     ...DEFAULT_SETTINGS,
@@ -729,7 +732,8 @@ function normalizeSettings(settings = {}) {
     steamUser: cleanSteamUser(settings.steamUser),
     currency: settings.currency === "USD" ? "USD" : "EUR",
     region: ["ES", "US", "UK"].includes(settings.region) ? settings.region : DEFAULT_SETTINGS.region,
-    stores: stores.slice(0, 4),
+    stores: stores.slice(0, MAX_PRICE_STORES),
+    storeSettingsVersion: 2,
     defaultOwner: cleanOwnerLabel(settings.defaultOwner) || DEFAULT_SETTINGS.defaultOwner,
   };
 }
@@ -899,7 +903,7 @@ function renderSettingsDialog() {
   el.settingsStores.querySelectorAll("input[type='checkbox']").forEach((input) => {
     input.addEventListener("change", () => {
       const checked = [...el.settingsStores.querySelectorAll("input[type='checkbox']:checked")];
-      if (checked.length <= 4) return;
+      if (checked.length <= MAX_PRICE_STORES) return;
       input.checked = false;
     });
   });
@@ -1013,7 +1017,7 @@ async function saveSettingsFromForm(event) {
   const stores = [...el.settingsStores.querySelectorAll("input[type='checkbox']:checked")]
     .map((input) => input.value)
     .filter((store) => STORE_OPTIONS.includes(store))
-    .slice(0, 4);
+    .slice(0, MAX_PRICE_STORES);
   const visibleSections = new Set([...el.settingsLayoutList.querySelectorAll("[data-layout-hidden]:checked")].map((input) => input.value));
   state.settings = normalizeSettings({
     ...state.settings,
@@ -4687,6 +4691,7 @@ function fallbackPriceLinks(game) {
   }
   return [
     { store: amazonStoreName(), url: amazonSearchUrl(q, state.settings.region) },
+    { store: "eBay", url: ebaySearchUrl(q, state.settings.region) },
     { store: "Xtralife", url: `https://www.xtralife.com/buscar/${q}` },
     { store: "GAME.es", url: `https://www.game.es/buscar/${q}` },
     { store: "Retro Island NY", url: `https://retroislandny.com/search?q=${q}&country=${state.settings.region}&currency=${state.settings.currency}` },
@@ -4723,7 +4728,7 @@ function priceProvidersForGame(game) {
 }
 
 function physicalStoreProviders() {
-  return (state.settings.stores || []).slice(0, 4).map((store) => {
+  return (state.settings.stores || []).slice(0, MAX_PRICE_STORES).map((store) => {
     if (store === "Amazon") return amazonStoreName();
     return store;
   });
@@ -4766,6 +4771,11 @@ function amazonSearchUrl(query, region = state.settings.region) {
   return `https://www.amazon.es/s?k=${query}`;
 }
 
+function ebaySearchUrl(query, region = state.settings.region) {
+  const host = region === "US" ? "www.ebay.com" : region === "UK" ? "www.ebay.co.uk" : "www.ebay.es";
+  return `https://${host}/sch/i.html?_nkw=${query}&LH_BIN=1`;
+}
+
 function nintendoSearchUrl(query, region = state.settings.region) {
   if (region === "US") return `https://www.nintendo.com/us/search/?q=${query}`;
   if (region === "UK") return `https://www.nintendo.com/en-gb/Search/Search-299117.html?q=${query}`;
@@ -4785,6 +4795,7 @@ function xboxSearchUrl(query, region = state.settings.region) {
 
 function storeIcon(store) {
   if (store.startsWith("Amazon")) return "assets/stores/amazon.ico";
+  if (store === "eBay") return "https://www.ebay.com/favicon.ico";
   if (store === "Xtralife") return "assets/stores/xtralife.ico";
   if (store === "GAME.es") return "assets/stores/game.ico";
   if (store === "Retro Island NY") return "assets/stores/retroisland.png";

@@ -1,5 +1,6 @@
-const DEFAULT_STORES = ["Amazon", "Xtralife", "GAME.es", "Retro Island NY"];
-const STORE_OPTIONS = ["Amazon", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
+const DEFAULT_STORES = ["Amazon", "eBay", "Xtralife", "GAME.es", "Retro Island NY"];
+const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
+const MAX_PRICE_STORES = 5;
 const PRICE_LOOKUP_TIMEOUT_MS = 6500;
 
 const PLAYSTATION_CATALOG_ID = "28c9c2b2-cecc-415c-9a08-482a605cb104";
@@ -28,7 +29,7 @@ export async function onRequestGet({ request, env = {} }) {
 }
 
 function physicalProviders(stores, region, currency) {
-  return stores.slice(0, 4).map((store) => {
+  return stores.slice(0, MAX_PRICE_STORES).map((store) => {
     if (store === "Amazon") {
       return {
         store: amazonStoreName(region),
@@ -36,6 +37,7 @@ function physicalProviders(stores, region, currency) {
         parse: (html, title, platform) => parseAmazon(html, title, platform, currency),
       };
     }
+    if (store === "eBay") return { store: "eBay", search: (q) => ebaySearchUrl(q, region), lookup: lookupLinkOnly };
     if (store === "Xtralife") return { store: "Xtralife", search: (q) => `https://www.xtralife.com/buscar/${encodeURIComponent(q)}`, lookup: lookupXtralife };
     if (store === "GAME.es") return { store: "GAME.es", search: (q) => `https://www.game.es/buscar/${encodeURIComponent(q)}`, lookup: lookupGameEs };
     if (store === "Retro Island NY") return { store: "Retro Island NY", search: (q) => retroIslandSearchUrl(q, region, currency), lookup: lookupRetroIslandNy };
@@ -91,7 +93,7 @@ function cleanStores(value) {
     .split(",")
     .map((store) => store.trim())
     .filter((store) => STORE_OPTIONS.includes(store));
-  return stores.slice(0, 4);
+  return stores.slice(0, MAX_PRICE_STORES);
 }
 
 function unique(values) {
@@ -108,6 +110,11 @@ function amazonSearchUrl(query, region) {
   if (region === "US") return `https://www.amazon.com/s?k=${encodeURIComponent(query)}`;
   if (region === "UK") return `https://www.amazon.co.uk/s?k=${encodeURIComponent(query)}`;
   return `https://www.amazon.es/s?k=${encodeURIComponent(query)}`;
+}
+
+function ebaySearchUrl(query, region) {
+  const host = region === "US" ? "www.ebay.com" : region === "UK" ? "www.ebay.co.uk" : "www.ebay.es";
+  return `https://${host}/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_BIN=1`;
 }
 
 function nintendoStoreName(region) {

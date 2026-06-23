@@ -18,6 +18,15 @@ export async function onRequestPut({ request, env }) {
     return json({ error: "Unauthorized" }, 401);
   }
   const body = await request.json().catch(() => null);
+  if (body?.settingsOnly === true && body.settings && typeof body.settings === "object") {
+    const previous = await env.GAMELIST.get(KV_KEY, "json") || { games: [] };
+    await env.GAMELIST.put(KV_KEY, JSON.stringify({
+      games: Array.isArray(previous.games) ? previous.games : [],
+      settings: body.settings,
+      updatedAt: new Date().toISOString(),
+    }));
+    return json({ ok: true });
+  }
   if (!body || !Array.isArray(body.games)) {
     return json({ error: "Expected { games: [], settings?: {} }" }, 400);
   }
@@ -87,6 +96,7 @@ async function syncBacklogGamesToShelf(env, allGames, games) {
     sourceGames,
     games: [...additions, ...shelfGames].slice(0, 1000),
     overrides: shelf.overrides || {},
+    layout: shelf.layout || null,
     updatedAt: new Date().toISOString(),
   }));
 }

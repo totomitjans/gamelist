@@ -42,20 +42,11 @@
     </header>
 
     <main class="shell shelf-shell">
-      <section class="shelf-intro">
-        <div>
-          <h1>Shelf</h1>
-        </div>
-      </section>
-
       <div class="shelf-modules" id="shelfModules">
         <section class="playing-section shelf-carousel-module" data-module="playing" hidden>
-          <div class="column-head"><div><h2>Currently Playing</h2></div></div>
+          <div class="column-head"><div><h2>Currently Playing</h2></div><div class="playing-head-actions"><span id="shelfPlayingCount"></span><button class="icon-button playing-slider-button" id="shelfPlayingPrev" type="button" title="Previous playing game" aria-label="Previous playing game">←</button><button class="icon-button playing-slider-button" id="shelfPlayingNext" type="button" title="Next playing game" aria-label="Next playing game">→</button></div></div>
           <div class="playing-panel"><div class="card-list playing-list shelf-carousel" id="playingCarousel"></div></div>
-        </section>
-        <section class="playing-finished shelf-carousel-module" data-module="latestFinished" hidden>
-          <div class="column-head"><div><h2>Last finished games</h2></div></div>
-          <div class="playing-finished-list shelf-carousel" id="finishedCarousel"></div>
+          <div class="playing-finished" id="shelfPlayingFinished" hidden><span class="achievement-subtitle">Last finished games</span><div class="playing-finished-list shelf-carousel" id="finishedCarousel"></div></div>
         </section>
         <section class="achievement-section shelf-trophy-module" data-module="trophies" hidden>
           <div class="column-head"><div><h2>Achievements</h2></div></div>
@@ -107,9 +98,6 @@
         <section class="shelf-library" data-module="library">
           <div class="shelf-tabs" id="shelfTabs" hidden></div>
           <div class="column-head">
-            <div>
-              <h2>Shelf</h2>
-            </div>
             <span id="resultCount"></span>
           </div>
           <div class="shelf-grid" id="gameShelf" aria-live="polite"></div>
@@ -139,14 +127,16 @@
             <h2 id="detailTitle"></h2>
             <div class="studio-line" id="detailStudio"></div>
             <div class="meta" id="detailMeta"></div>
+            <div class="play-dates detail-dates" id="detailDates"></div>
             <div class="chips" id="detailChips"></div>
-            <dl class="detail-list" id="detailList"></dl>
-            <section class="detail-condition"><h3>Collection condition</h3><div class="condition-grid" id="detailCondition"></div></section>
             <div class="store-links" id="detailLinks"></div>
-            <section class="detail-guide-panel"><h3>Guides &amp; stores</h3><div class="store-links" id="detailGuideLinks"></div><div class="prices detail-prices detail-store-prices" id="detailStorePrices"></div></section>
-            <section class="detail-price-panel" id="detailPricePanel"><div class="detail-section-head"><h3>Collection value</h3><button class="ghost-button editor-only" id="fetchValueButton" type="button">Fetch value</button></div><div id="detailPriceSummary"></div><svg id="detailPriceGraph" class="price-history-graph" viewBox="0 0 600 150" role="img" aria-label="Collection value history"></svg></section>
-            <section class="detail-trophies" id="shelfDetailTrophies" hidden><div class="detail-trophies-head"><h3><svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path><path d="M8 6H5a3 3 0 0 0 3 3"></path><path d="M16 6h3a3 3 0 0 1-3 3"></path><path d="M12 12v4"></path><path d="M9 20h6"></path><path d="M10 16h4v4h-4z"></path></svg>TROPHIES</h3><div class="detail-trophy-tools"><span id="shelfTrophyCount"></span></div></div><div class="detail-trophy-scroller"><div class="detail-trophy-list" id="shelfTrophyList"></div></div></section>
             <div class="detail-note" id="detailNote" hidden></div>
+            <p id="detailDescription"></p>
+            <div class="prices detail-prices detail-store-prices" id="detailStorePrices"></div>
+            <section class="detail-guides" id="detailGuides"><h3>Guides</h3><div class="guide-links" id="detailGuideLinks"></div></section>
+            <section class="detail-price-panel" id="detailPricePanel"><div class="detail-section-head"><h3>Collection value</h3><button class="ghost-button editor-only" id="fetchValueButton" type="button">Fetch value</button></div><div id="detailPriceSummary"></div><svg id="detailPriceGraph" class="price-history-graph" viewBox="0 0 600 150" role="img" aria-label="Collection value history"></svg></section>
+            <section class="detail-condition" id="detailConditionPanel"><h3>Collection condition</h3><div class="condition-grid" id="detailCondition"></div></section>
+            <section class="detail-trophies" id="shelfDetailTrophies" hidden><div class="detail-trophies-head"><h3><svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path><path d="M8 6H5a3 3 0 0 0 3 3"></path><path d="M16 6h3a3 3 0 0 1-3 3"></path><path d="M12 12v4"></path><path d="M9 20h6"></path><path d="M10 16h4v4h-4z"></path></svg>TROPHIES</h3><div class="detail-trophy-tools"><span id="shelfTrophyCount"></span></div></div><div class="detail-trophy-scroller"><div class="detail-trophy-list" id="shelfTrophyList"></div></div></section>
             <div class="modal-actions" id="detailActions"></div>
           </div>
       </article>
@@ -164,7 +154,9 @@
             <span>Find a game</span>
             <input id="lookupInput" type="search" placeholder="Search IGDB / HowLongToBeat">
           </label>
-          <button class="ghost-button" id="lookupButton" type="button">Fetch info</button>
+          <button class="ghost-button icon-only-button" id="lookupButton" type="button" title="Fetch info" aria-label="Fetch info">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5 21 21"></path></svg>
+          </button>
         </div>
         <div class="lookup-results shelf-lookup-results" id="lookupResults"></div>
 
@@ -173,24 +165,30 @@
           <label><span>Console</span><select id="platformInput" required></select></label>
           <label><span>Region</span><select id="countryInput" required></select></label>
           <fieldset class="form-span condition-editor"><legend>Completeness</legend><div class="condition-grid">
-            <label><input id="conditionGameInput" type="checkbox"><span>Game</span></label>
-            <label><input id="conditionManualInput" type="checkbox"><span>Manual</span></label>
-            <label><input id="conditionBoxInput" type="checkbox"><span>Box</span></label>
-            <label><input id="conditionOtherInput" type="checkbox"><span>Other</span></label>
-            <label class="condition-sealed"><input id="conditionSealedInput" type="checkbox"><span>Sealed</span></label>
+            <label class="check-filter toggle-check"><input id="conditionGameInput" type="checkbox"><span>Game</span></label>
+            <label class="check-filter toggle-check"><input id="conditionManualInput" type="checkbox"><span>Manual</span></label>
+            <label class="check-filter toggle-check"><input id="conditionBoxInput" type="checkbox"><span>Box</span></label>
+            <label class="check-filter toggle-check"><input id="conditionOtherInput" type="checkbox"><span>Other</span></label>
+            <label class="check-filter toggle-check condition-sealed"><input id="conditionSealedInput" type="checkbox"><span>Sealed</span></label>
           </div></fieldset>
-          <label><span>Estimated value (€)</span><input id="priceInput" type="number" min="0" step="0.01" placeholder="0.00"></label>
+          <label><span>Estimated value</span><input id="priceInput" type="number" min="0" step="0.01" placeholder="0.00"></label>
           <label><span>Owners</span><input id="ownersInput" placeholder="Judy, Jordi"></label>
           <label><span>Category</span><input id="categoryInput" placeholder="Game, Collector's Edition..."></label>
           <label><span>Publisher</span><input id="publisherInput"></label>
           <label><span>Developer</span><input id="developerInput"></label>
           <label class="form-span"><span>Genre</span><input id="genreInput"></label>
           <label><span>Release date</span><input id="releaseDateInput" type="date"></label>
+          <label><span>UPC / EAN</span><input id="upcInput" inputmode="numeric"></label>
+          <label><span>SKU / catalog number</span><input id="skuInput"></label>
+          <label><span>ASIN</span><input id="asinInput"></label>
+          <label><span>eBay product ID</span><input id="epidInput"></label>
+          <label><span>PriceCharting product ID</span><input id="pricechartingIdInput"></label>
           <label><span>Trophy search name</span><input id="trophyNameInput" placeholder="Optional alternate title"></label>
           <label class="form-span"><span>Website links</span><input id="websitesInput" placeholder="https://..., https://..."></label>
           <label class="form-span"><span>Cover URL</span><input id="coverInput" type="url"></label>
           <label class="form-span cover-project-field"><span>The Cover Project page, cover ID, or CDN scan</span><div class="cover-project-control"><input id="coverProjectInput" placeholder="e.g. 18078 or https://www.thecoverproject.net/view.php?cover_id=18078"><button class="ghost-button" id="coverProjectButton" type="button">Find cover</button></div></label>
           <label class="form-span"><span>Condition notes</span><textarea id="notesInput" rows="3" placeholder="Missing booklet, sealed, damaged case..."></textarea></label>
+          <label class="form-span"><span>Description</span><textarea id="shelfDescriptionInput" rows="4"></textarea></label>
         </div>
         <p class="save-note">Added games are saved to this browser for now.</p>
         <div class="modal-actions">
@@ -208,6 +206,14 @@
         </div>
         <p class="layout-help">Show, hide, and reorder Shelf sections.</p>
         <div class="settings-layout" id="layoutList"></div>
+        <section class="settings-section shelf-price-settings">
+          <div class="detail-section-head"><div><p class="eyebrow">Synced with Gamelist</p><h3>Store prices</h3></div></div>
+          <div class="settings-grid">
+            <label class="settings-detail-compact"><span>Currency</span><select id="shelfSettingsCurrency"><option value="EUR">EUR (€)</option><option value="USD">USD ($)</option></select></label>
+            <label class="settings-detail-compact"><span>Region</span><select id="shelfSettingsRegion"><option value="ES">Spain</option><option value="US">United States</option><option value="UK">United Kingdom</option></select></label>
+          </div>
+          <div class="settings-store-list" id="shelfSettingsStores"></div>
+        </section>
         <section class="settings-danger-zone">
           <div><strong>Delete physical games list</strong><span>Removes every game and override from Shelf. Your Gamelist backlog is not deleted.</span></div>
           <button class="danger-button" id="deleteShelfButton" type="button">Delete list</button>
