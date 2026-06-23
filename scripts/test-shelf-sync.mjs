@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import { onRequestPut as putGamelist } from "../functions/api/sync.js";
+import { onRequestPut as putShelf } from "../functions/api/shelf.js";
+
+class MemoryKv {
+  values = new Map();
+  async get(key, type) { const value = this.values.get(key); return type === "json" && value ? JSON.parse(value) : value || null; }
+  async put(key, value) { this.values.set(key, value); }
+}
+
+const kv = new MemoryKv();
+const env = { GAMELIST: kv, EDIT_PASSWORD: "test" };
+const request = (url, body) => new Request(url, { method: "PUT", headers: { "Content-Type": "application/json", "x-edit-password": "test" }, body: JSON.stringify(body) });
+
+await putGamelist({ request: request("https://example.test/api/sync", { games: [{ id: "g1", title: "Physical", platform: "PS5", section: "backlog", digital: false, owners: ["Judy"] }], settings: {} }), env });
+let shelf = await kv.get("shelf-data", "json");
+assert.equal(shelf.games.length, 1);
+assert.deepEqual(shelf.games[0].owners, ["Judy"]);
+assert.deepEqual(shelf.games[0].tags, ["Gamelist"]);
+
+await putShelf({ request: request("https://example.test/api/shelf", { games: [...shelf.games, { id: "s2", title: "Shelf Add", platform: "Nintendo Switch", country: "Spain", owners: ["Jordi"], genre: "RPG" }], overrides: {} }), env });
+let list = await kv.get("gamelist-data", "json");
+assert.equal(list.games.some((game) => game.shelfId === "s2" && game.section === "backlog"), true);
+assert.deepEqual(list.games.find((game) => game.shelfId === "s2").owners, ["Jordi"]);
+
+console.log("Shelf/Gamelist synchronization checks passed.");

@@ -44,14 +44,23 @@
     <main class="shell shelf-shell">
       <section class="shelf-intro">
         <div>
-          <p class="eyebrow">Physical archive</p>
           <h1>Shelf</h1>
-          <p>Physical games, regional editions, and collection condition—all in one place.</p>
         </div>
-        <div class="intro-mark" aria-hidden="true">278</div>
       </section>
 
       <div class="shelf-modules" id="shelfModules">
+        <section class="shelf-carousel-module" data-module="playing" hidden>
+          <div class="column-head"><div><p class="eyebrow">From Gamelist</p><h2>Playing</h2></div></div>
+          <div class="shelf-carousel" id="playingCarousel"></div>
+        </section>
+        <section class="shelf-carousel-module" data-module="latestFinished" hidden>
+          <div class="column-head"><div><p class="eyebrow">From Gamelist</p><h2>Last finished</h2></div></div>
+          <div class="shelf-carousel" id="finishedCarousel"></div>
+        </section>
+        <section class="shelf-trophy-module glass" data-module="trophies" hidden>
+          <div class="column-head"><div><p class="eyebrow">Achievement activity</p><h2>Trophy card</h2></div></div>
+          <div id="shelfTrophyCard" class="shelf-trophy-card"></div>
+        </section>
         <section class="highlights-section" data-module="kpis">
           <div class="stats" id="shelfStats" aria-live="polite"></div>
         </section>
@@ -62,7 +71,7 @@
             <input id="searchInput" type="search" placeholder="Game, publisher, genre...">
           </label>
           <label>
-            <span>Console</span>
+            <span>Platform</span>
             <select id="platformFilter"></select>
           </label>
           <label>
@@ -74,16 +83,16 @@
             <select id="conditionFilter">
               <option value="all">All conditions</option>
               <option value="complete">Complete</option>
-              <option value="boxed">Boxed</option>
+              <option value="complete-plus">Complete +</option>
               <option value="loose">Loose</option>
-              <option value="new">New / sealed</option>
-              <option value="issues">With notes</option>
+              <option value="sealed">Sealed</option>
             </select>
           </label>
+          <label><span>Category</span><select id="categoryFilter"></select></label>
           <label class="order-label">
             <span>Order</span>
             <select id="sortFilter">
-              <option value="platform">Console</option>
+              <option value="platform">Platform</option>
               <option value="title">Name</option>
               <option value="added">Last added</option>
               <option value="value">Value</option>
@@ -96,10 +105,10 @@
         </section>
 
         <section class="shelf-library" data-module="library">
+          <div class="shelf-tabs" id="shelfTabs" hidden></div>
           <div class="column-head">
             <div>
-              <p class="eyebrow">Library</p>
-              <h2>Physical games</h2>
+              <h2>Shelf</h2>
             </div>
             <span id="resultCount"></span>
           </div>
@@ -129,10 +138,15 @@
           <button class="icon-button" id="detailClose" type="button" title="Close" aria-label="Close">×</button>
         </div>
         <div class="shelf-detail-body">
-          <div class="detail-cover"><img id="detailCover" alt=""></div>
-          <div>
+          <div class="detail-cover cover-showcase" id="detailCoverWrap"><img id="detailCover" alt=""></div>
+          <div class="shelf-detail-content">
             <div class="chips" id="detailChips"></div>
             <dl class="detail-list" id="detailList"></dl>
+            <section class="detail-condition"><h3>Collection condition</h3><div class="condition-grid" id="detailCondition"></div></section>
+            <div class="store-links" id="detailLinks"></div>
+            <section class="detail-guide-panel"><h3>Guides &amp; stores</h3><div class="store-links" id="detailGuideLinks"></div><div class="detail-store-prices" id="detailStorePrices"></div></section>
+            <section class="detail-price-panel" id="detailPricePanel"><div class="detail-section-head"><h3>Collection value</h3><button class="ghost-button editor-only" id="fetchValueButton" type="button">Fetch value</button></div><div id="detailPriceSummary"></div><svg id="detailPriceGraph" class="price-history-graph" viewBox="0 0 600 150" role="img" aria-label="Collection value history"></svg></section>
+            <section class="detail-trophies" id="shelfDetailTrophies" hidden><div class="detail-section-head"><h3>Trophies</h3><span id="shelfTrophyCount"></span></div><div class="detail-trophy-list" id="shelfTrophyList"></div></section>
             <div class="detail-note" id="detailNote" hidden></div>
             <div class="modal-actions" id="detailActions"></div>
           </div>
@@ -160,18 +174,22 @@
           <label><span>Title</span><input id="titleInput" required></label>
           <label><span>Console</span><select id="platformInput" required></select></label>
           <label><span>Region</span><select id="countryInput" required></select></label>
-          <label><span>Completeness</span>
-            <select id="ownershipInput">
-              <option value="CIB+">CIB+</option><option value="CIB">CIB</option><option value="Boxed+">Boxed+</option><option value="Boxed">Boxed</option><option value="Loose">Loose</option><option value="New">New / sealed</option>
-            </select>
-          </label>
-          <label><span>Play status</span>
-            <select id="playStatusInput"><option>Backlog</option><option>Playing</option><option>Completed</option><option>Unplayed</option></select>
-          </label>
+          <fieldset class="form-span condition-editor"><legend>Completeness</legend><div class="condition-grid">
+            <label><input id="conditionGameInput" type="checkbox"><span>Game</span></label>
+            <label><input id="conditionManualInput" type="checkbox"><span>Manual</span></label>
+            <label><input id="conditionBoxInput" type="checkbox"><span>Box</span></label>
+            <label><input id="conditionOtherInput" type="checkbox"><span>Other</span></label>
+            <label class="condition-sealed"><input id="conditionSealedInput" type="checkbox"><span>Sealed</span></label>
+          </div></fieldset>
           <label><span>Estimated value (€)</span><input id="priceInput" type="number" min="0" step="0.01" placeholder="0.00"></label>
+          <label><span>Owners</span><input id="ownersInput" placeholder="Judy, Jordi"></label>
+          <label><span>Category</span><input id="categoryInput" placeholder="Game, Collector's Edition..."></label>
           <label><span>Publisher</span><input id="publisherInput"></label>
           <label><span>Developer</span><input id="developerInput"></label>
           <label class="form-span"><span>Genre</span><input id="genreInput"></label>
+          <label><span>Release date</span><input id="releaseDateInput" type="date"></label>
+          <label><span>Trophy search name</span><input id="trophyNameInput" placeholder="Optional alternate title"></label>
+          <label class="form-span"><span>Website links</span><input id="websitesInput" placeholder="https://..., https://..."></label>
           <label class="form-span"><span>Cover URL</span><input id="coverInput" type="url"></label>
           <label class="form-span cover-project-field"><span>The Cover Project page, cover ID, or CDN scan</span><div class="cover-project-control"><input id="coverProjectInput" placeholder="e.g. 18078 or https://www.thecoverproject.net/view.php?cover_id=18078"><button class="ghost-button" id="coverProjectButton" type="button">Find cover</button></div></label>
           <label class="form-span"><span>Condition notes</span><textarea id="notesInput" rows="3" placeholder="Missing booklet, sealed, damaged case..."></textarea></label>

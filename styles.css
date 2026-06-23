@@ -2213,6 +2213,33 @@ body.theme-kash .game-row:hover {
   border-color: rgba(0, 92, 255, 0.32);
 }
 
+.game-row.owner-card-judy,
+.game-row.owner-card-judy:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 158, 210, 0.18), rgba(255, 158, 210, 0.04) 42%, rgba(20, 22, 28, 0.58)),
+    var(--panel);
+  border-color: rgba(255, 158, 210, 0.36);
+  box-shadow: 0 0 20px rgba(255, 158, 210, 0.12);
+}
+
+.game-row.owner-card-jordi,
+.game-row.owner-card-jordi:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 173, 95, 0.18), rgba(255, 173, 95, 0.04) 42%, rgba(20, 22, 28, 0.58)),
+    var(--panel);
+  border-color: rgba(255, 173, 95, 0.36);
+  box-shadow: 0 0 20px rgba(255, 173, 95, 0.12);
+}
+
+.game-row.owner-card-judy.owner-card-jordi,
+.game-row.owner-card-judy.owner-card-jordi:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 158, 210, 0.16), rgba(255, 173, 95, 0.12) 46%, rgba(20, 22, 28, 0.58)),
+    var(--panel);
+  border-color: rgba(255, 203, 150, 0.38);
+  box-shadow: 0 0 20px rgba(255, 203, 150, 0.12);
+}
+
 .game-row.stream-card,
 .game-row.stream-card:hover,
 body.theme-kash .game-row.stream-card,
@@ -2956,11 +2983,13 @@ body.theme-kash .playing-section .cover-button {
 }
 
 .game-card h3.owner-judy,
+.game-row-identity strong.owner-judy,
 .detail-body h2.owner-judy {
   color: var(--judy);
 }
 
 .game-card h3.owner-jordi,
+.game-row-identity strong.owner-jordi,
 .detail-body h2.owner-jordi {
   color: var(--jordi);
 }

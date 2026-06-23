@@ -95,6 +95,14 @@ Set each Cloudflare site's deploy command to the matching environment. The top-l
 
 The standalone Shelf is enabled only for the default/GitHub deployment. Its one-time imported collection now lives in the GitHub KV namespace rather than repository data files. The `gitlab` environment sets `SHELF_ENABLED=false`, so Shelf routes and the cover proxy return `404` on that copy.
 
+Shelf collection values use PriceCharting's product API. Configure its token with:
+
+```bash
+npx wrangler secret put PRICECHARTING_TOKEN
+```
+
+Without that optional token, the Shelf value button opens the matching PriceCharting search for manual edition confirmation.
+
 If the GitLab Cloudflare project cannot change its deploy command, add this plaintext environment variable in that Cloudflare project's **Settings > Variables and Secrets**:
 
 ```text

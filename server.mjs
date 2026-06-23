@@ -8,6 +8,9 @@ import { onRequestGet as prices } from "./functions/api/prices.js";
 import { onRequestGet as cover } from "./functions/api/cover.js";
 import * as auth from "./functions/api/auth.js";
 import * as shelf from "./functions/api/shelf.js";
+import { onRequestGet as collectionPrice } from "./functions/api/collection-price.js";
+import { onRequestGet as trophies } from "./functions/api/trophies.js";
+import { onRequestGet as achievements } from "./functions/api/achievements.js";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 8790);
@@ -26,6 +29,9 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === "/api/prices") return sendFunction(res, prices, req, url);
   if (url.pathname === "/api/cover") return sendFunction(res, cover, req, url);
   if (url.pathname === "/api/shelf") return sendModule(res, shelf, req, url);
+  if (url.pathname === "/api/collection-price") return sendFunction(res, collectionPrice, req, url);
+  if (url.pathname === "/api/trophies") return sendFunction(res, trophies, req, url);
+  if (url.pathname === "/api/achievements") return sendFunction(res, achievements, req, url);
   if (url.pathname === "/api/sync") return sendJson(res, { games: [] });
   if (url.pathname === "/api/auth") return sendModule(res, auth, req, url);
   return sendFile(res, url.pathname);
@@ -61,7 +67,8 @@ function sendJson(res, data, status = 200) {
 }
 
 async function sendFile(res, pathname) {
-  const safePath = pathname === "/" ? "/index.html" : decodeURIComponent(pathname);
+  const decoded = decodeURIComponent(pathname);
+  const safePath = pathname === "/" ? "/index.html" : decoded === "/shelf" ? "/shelf.html" : decoded;
   const filePath = path.normalize(path.join(root, safePath));
   if (!filePath.startsWith(root) || !existsSync(filePath)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
