@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { onRequestPut as putGamelist } from "../functions/api/sync.js";
-import { onRequestPut as putShelf } from "../functions/api/shelf.js";
+import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
 
 class MemoryKv {
   values = new Map();
@@ -22,5 +22,13 @@ await putShelf({ request: request("https://example.test/api/shelf", { games: [..
 let list = await kv.get("gamelist-data", "json");
 assert.equal(list.games.some((game) => game.shelfId === "s2" && game.section === "backlog"), true);
 assert.deepEqual(list.games.find((game) => game.shelfId === "s2").owners, ["Jordi"]);
+
+let denied = await deleteShelf({ request: new Request("https://example.test/api/shelf", { method: "DELETE", headers: { "x-edit-password": "wrong" } }), env });
+assert.equal(denied.status, 401);
+await deleteShelf({ request: new Request("https://example.test/api/shelf", { method: "DELETE", headers: { "x-edit-password": "test" } }), env });
+shelf = await kv.get("shelf-data", "json");
+assert.deepEqual(shelf, { sourceGames: [], games: [], overrides: {}, updatedAt: shelf.updatedAt });
+list = await kv.get("gamelist-data", "json");
+assert.equal(list.games.some((game) => game.shelfId === "s2"), true);
 
 console.log("Shelf/Gamelist synchronization checks passed.");

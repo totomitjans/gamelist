@@ -210,7 +210,24 @@
         </div>
         <p class="layout-help">Show, hide, and reorder Shelf sections.</p>
         <div class="settings-layout" id="layoutList"></div>
+        <section class="settings-danger-zone">
+          <div><strong>Delete physical games list</strong><span>Removes every game and override from Shelf. Your Gamelist backlog is not deleted.</span></div>
+          <button class="danger-button" id="deleteShelfButton" type="button">Delete list</button>
+        </section>
         <div class="modal-actions"><button class="primary-button" type="submit">Save layout</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="deleteShelfDialog" class="shelf-dialog">
+      <form class="modal auth-modal" id="deleteShelfForm">
+        <div class="modal-head">
+          <div><p class="eyebrow">Permanent action</p><h2>Delete physical games list?</h2></div>
+          <button class="icon-button" id="deleteShelfClose" type="button" title="Close" aria-label="Close">×</button>
+        </div>
+        <p class="layout-help">This clears the entire Shelf collection. Enter your editor password again to confirm.</p>
+        <label><span>Editor password</span><input id="deleteShelfPassword" type="password" autocomplete="current-password" required></label>
+        <p class="auth-error" id="deleteShelfError" hidden>Incorrect password. Nothing was deleted.</p>
+        <div class="modal-actions"><button class="ghost-button" id="deleteShelfCancel" type="button">Cancel</button><button class="danger-button" id="deleteShelfConfirm" type="submit">Delete physical games</button></div>
       </form>
     </dialog>
 

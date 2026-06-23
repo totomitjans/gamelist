@@ -1,5 +1,5 @@
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v154";
+const SITE_VERSION = "v155";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -94,6 +94,11 @@ const el = {
   layoutForm: document.querySelector("#layoutForm"),
   layoutClose: document.querySelector("#layoutClose"),
   layoutList: document.querySelector("#layoutList"),
+  deleteShelfButton: document.querySelector("#deleteShelfButton"),
+  deleteShelfDialog: document.querySelector("#deleteShelfDialog"), deleteShelfForm: document.querySelector("#deleteShelfForm"),
+  deleteShelfClose: document.querySelector("#deleteShelfClose"), deleteShelfCancel: document.querySelector("#deleteShelfCancel"),
+  deleteShelfPassword: document.querySelector("#deleteShelfPassword"), deleteShelfError: document.querySelector("#deleteShelfError"),
+  deleteShelfConfirm: document.querySelector("#deleteShelfConfirm"),
   authDialog: document.querySelector("#authDialog"),
   authForm: document.querySelector("#authForm"),
   authClose: document.querySelector("#authClose"),
@@ -167,6 +172,11 @@ function bindEvents() {
   el.layoutDialog.addEventListener("click", (event) => { if (event.target === el.layoutDialog) closeDialog(el.layoutDialog); });
   el.layoutForm.addEventListener("submit", saveLayout);
   el.layoutList.addEventListener("click", handleLayoutMove);
+  el.deleteShelfButton.addEventListener("click", openDeleteShelfDialog);
+  el.deleteShelfClose.addEventListener("click", () => closeDialog(el.deleteShelfDialog));
+  el.deleteShelfCancel.addEventListener("click", () => closeDialog(el.deleteShelfDialog));
+  el.deleteShelfDialog.addEventListener("click", (event) => { if (event.target === el.deleteShelfDialog) closeDialog(el.deleteShelfDialog); });
+  el.deleteShelfForm.addEventListener("submit", deletePhysicalGamesList);
 
   el.authClose.addEventListener("click", () => closeDialog(el.authDialog));
   el.authCancel.addEventListener("click", () => closeDialog(el.authDialog));
@@ -504,6 +514,41 @@ function saveLayout(event) {
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout));
   applyLayout();
   closeDialog(el.layoutDialog);
+}
+
+function openDeleteShelfDialog() {
+  el.deleteShelfPassword.value = "";
+  el.deleteShelfError.hidden = true;
+  closeDialog(el.layoutDialog);
+  openDialog(el.deleteShelfDialog);
+  requestAnimationFrame(() => el.deleteShelfPassword.focus());
+}
+
+async function deletePhysicalGamesList(event) {
+  event.preventDefault();
+  const password = el.deleteShelfPassword.value;
+  if (!password) return;
+  el.deleteShelfConfirm.disabled = true;
+  el.deleteShelfConfirm.textContent = "Deleting…";
+  try {
+    const response = await fetch("/api/shelf", { method: "DELETE", headers: { "x-edit-password": password } });
+    if (!response.ok) { el.deleteShelfError.hidden = false; return; }
+    const data = await response.json();
+    state.sourceGames = [];
+    state.additions = [];
+    state.overrides = {};
+    state.updatedAt = data.updatedAt || new Date().toISOString();
+    localStorage.removeItem(LOCAL_DRAFT_KEY);
+    rebuildGames();
+    renderAll();
+    closeDialog(el.deleteShelfDialog);
+  } catch {
+    el.deleteShelfError.textContent = "Shelf could not be deleted. Try again.";
+    el.deleteShelfError.hidden = false;
+  } finally {
+    el.deleteShelfConfirm.disabled = false;
+    el.deleteShelfConfirm.textContent = "Delete physical games";
+  }
 }
 
 function applyLayout() {

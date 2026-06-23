@@ -30,6 +30,15 @@ export async function onRequestPut({ request, env }) {
   return json({ ok: true, updatedAt: data.updatedAt });
 }
 
+export async function onRequestDelete({ request, env }) {
+  if (!env.GAMELIST) return json({ error: "Missing GAMELIST KV binding" }, 501);
+  if (!env.EDIT_PASSWORD) return json({ error: "Missing EDIT_PASSWORD secret" }, 503);
+  if (!await isEditorRequest(request, env)) return json({ error: "Unauthorized" }, 401);
+  const data = { sourceGames: [], games: [], overrides: {}, updatedAt: new Date().toISOString() };
+  await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
+  return json({ ok: true, updatedAt: data.updatedAt });
+}
+
 async function syncShelfGamesToBacklog(env, allShelfGames, games) {
   const list = await env.GAMELIST.get("gamelist-data", "json") || { games: [], settings: {} };
   const shelfById = new Map(allShelfGames.map((game) => [game.id, game]));
