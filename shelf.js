@@ -1,10 +1,10 @@
-import { createGameCardShell, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, completedCardMarkup, horizontalCarouselState, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, formatFooterDate, formatFooterDateTime } from "./activity-ui.js";
+import { createGameCardShell, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityCoverOverride, activityLocalGameForTitle, activityTitleMatchScore, formatFooterDate, formatFooterDateTime } from "./activity-ui.js";
 
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v162";
-const SITE_UPDATED_AT = "2026-06-23T16:00:00Z";
+const SITE_VERSION = "v163";
+const SITE_UPDATED_AT = "2026-06-23T16:30:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -47,6 +47,7 @@ const state = {
   viewMode: localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid",
   completedYear: "all", completedPlatform: "all", completedSort: "time", completedDirection: "desc", completedView: "grid",
   gamelistDetailGame: null, gamelistDetailTrophyData: [], gamelistDetailTrophyEarned: 0, gamelistDetailTrophyTotal: 0, gamelistDetailTrophyKind: "TROPHIES", gamelistDetailTrophyDirection: "asc",
+  completedCoverCache: {},
   playingHeightFrame: 0,
   layout: loadLayout(),
 };
@@ -844,14 +845,26 @@ function openGamelistDetails(sourceGame) {
   el.gamelistDetailCover.alt = `${game.title} cover`;
   el.gamelistDetailDescription.textContent = game.description || "";
   el.gamelistDetailDescription.hidden = !game.description;
-  const links = websiteLinks(game);
-  el.gamelistDetailStoreLinks.innerHTML = links.map((link) => `<a class="store-button" href="${escapeHtml(link)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(siteIcon(link))}" alt="">${escapeHtml(linkLabel(link))}</a>`).join("");
+  el.gamelistDetailStoreLinks.innerHTML = activityStoreLinks(game);
   el.gamelistDetailPrices.innerHTML = "";
   const guides = activityGuideLinks(game);
   el.gamelistDetailGuides.hidden = !guides.length;
   el.gamelistDetailGuideLinks.innerHTML = guides.join("");
   loadGamelistDetailTrophies(game);
   openDialog(el.gamelistDetailDialog);
+}
+function activityStoreLinks(game) {
+  const platform = shortPlatform(game.platform || "").toLowerCase();
+  const q = encodeURIComponent(game.title);
+  const links = game.storeLinks || {};
+  const stores = [];
+  if (/ps[1-5]|playstation/.test(platform)) stores.push({ label: "PlayStation", url: links.playstation || `https://store.playstation.com/search/${q}`, cls: "store-playstation", icon: "assets/sites/playstation.png" });
+  else if (/switch|nintendo/.test(platform)) stores.push({ label: "Nintendo", url: links.nintendo || `https://www.nintendo.com/search/#q=${q}`, cls: "store-nintendo", icon: "assets/sites/nintendo.png" });
+  else if (/steam|\bpc\b/.test(platform)) stores.push({ label: "Steam", url: links.steam || `https://store.steampowered.com/search/?term=${q}`, cls: "store-steam", icon: "assets/sites/steam.png" });
+  else if (/xbox|x360|xone/.test(platform)) stores.push({ label: "Xbox", url: links.xbox || `https://www.xbox.com/search?q=${q}`, cls: "store-xbox", icon: "assets/platforms/xbox.png" });
+  else stores.push({ label: "Wikipedia", url: `https://en.wikipedia.org/wiki/Special:Search?search=${q}`, cls: "store-wikipedia", icon: "assets/sites/wikipedia.ico" });
+  stores.push({ label: "HowLongToBeat", url: game.hltbUrl || game.howLongToBeatUrl || `https://howlongtobeat.com/?q=${q}`, cls: "store-hltb", icon: "assets/sites/howlongtobeat.png" });
+  return storeButtonsMarkup(stores, escapeHtml);
 }
 function slidePlaying(direction) { slideHorizontalCarousel(el.playingCarousel, direction); }
 function updatePlayingControls() { const state = horizontalCarouselState(el.playingCarousel); const section = el.playingCarousel.closest(".playing-section"); section?.classList.toggle("playing-at-start", state.atStart); section?.classList.toggle("playing-at-end", state.atEnd); el.playingPrev.hidden = !state.overflow; el.playingNext.hidden = !state.overflow; el.playingPrev.disabled = state.atStart; el.playingNext.disabled = state.atEnd; }
@@ -884,8 +897,7 @@ function gamelistProjectionCard(game) {
 function projectionMeta(game) { return `${platformBadge(game.platform)}${game.digital ? `<span class="digital-pill">Digital</span>` : ""}${game.emulator ? `<span class="emulator-pill">Emulator</span>` : ""}${game.lengthHours ? timeBadgeMarkup(game.lengthHours, game.hltbUrl || game.howLongToBeatUrl || `https://howlongtobeat.com/?q=${encodeURIComponent(game.title)}`, escapeHtml) : ""}${game.stream ? `<span class="stream-pill">Stream</span>` : ""}${game.coop ? `<span class="coop-pill">Coop</span>` : ""}${game.replayCount ? `<span class="replay-pill">Replay ${escapeHtml(game.replayCount)}</span>` : ""}`; }
 function activityGameFor(game) {
   if (!/(^|\s)ps[1-5](\s|$)|playstation/i.test(shortPlatform(game.platform || ""))) return null;
-  const query = normalize(game.trophyName || game.title);
-  return (state.trophyActivity?.games || []).find((item) => { const title = normalize(item.title || item.game || ""); return title && (title === query || title.includes(query) || query.includes(title)); }) || null;
+  return (state.trophyActivity?.games || []).map((item) => ({ item, score: activityTitleMatchScore(game.trophyName || game.title, item.title || item.game || "") })).filter(({ score }) => score >= 75).sort((a, b) => b.score - a.score)[0]?.item || null;
 }
 function activityProgressFor(game) {
   const external = externalActivityFor(game); if (external?.total) return Math.round((external.earned / external.total) * 100);
@@ -928,7 +940,11 @@ async function loadGamelistDetailTrophies(game) {
   }
   const remote = activityGameFor(game);
   const id = remote?.npCommunicationId || remote?.id || "";
-  if (!id) return;
+  if (!id) {
+    const recent = (state.trophyActivity?.achievements || []).filter((item) => activityTitleMatchScore(game.trophyName || game.title, item.game || item.title || "") >= 75);
+    if (recent.length) renderGamelistDetailTrophies(game, recent, recent.length, recent.length, "TROPHIES");
+    return;
+  }
   el.gamelistDetailTrophies.hidden = false;
   el.gamelistDetailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned trophies...</div>`;
   try {
@@ -1005,19 +1021,11 @@ async function loadTrophyActivity() {
     state.trophyActivity = psnResult.status === "fulfilled" ? psnResult.value : null;
     state.steamActivity = steamResult.status === "fulfilled" ? steamResult.value : { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
     state.xboxActivity = xboxResult.status === "fulfilled" ? xboxResult.value : { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
-    el.achievementProfile.href = state.trophyActivity?.sourceUrl || "https://www.playstation.com/";
-    el.achievementProfile.textContent = `${["PSN", state.steamActivity.achievements.length ? "Steam" : "", state.xboxActivity.achievements.length ? "Xbox" : ""].filter(Boolean).join(" + ")} activity`;
-    const summary = state.trophyActivity?.summary?.trophies || {};
-    const latest = [...(state.trophyActivity?.achievements || []), ...state.steamActivity.achievements, ...state.xboxActivity.achievements].sort((a, b) => (Date.parse(b.rawEarnedAt || b.earnedAt || 0) || 0) - (Date.parse(a.rawEarnedAt || a.earnedAt || 0) || 0)).slice(0, 6);
-    const counts = [["Platinum", Number(summary.platinum || 0)], ["Gold", Number(summary.gold || 0)], ["Silver", Number(summary.silver || 0)], ["Bronze", Number(summary.bronze || 0)]];
-    const psnTotal = counts.reduce((sum, [, count]) => sum + count, 0);
-    const total = psnTotal + state.steamActivity.totalEarned + state.xboxActivity.totalEarned;
-    const psnCompleted = Number(summary.platinum || (state.trophyActivity?.platinums || []).length || 0); const pcCompleted = state.steamActivity.completed.length; const xboxCompleted = state.xboxActivity.completed.length; const completed = psnCompleted + pcCompleted + xboxCompleted;
-    const dashboard = achievementDashboardMarkup({ completedCount: completed, completedBreakdown: achievementKpiBreakdown([[pcCompleted, completed, "PC"], [xboxCompleted, completed, "Xbox"], [psnCompleted, completed, "PlayStation"]]), trophyTotal: total, trophyBreakdown: achievementKpiBreakdown([[state.steamActivity.totalEarned, total, "PC"], [state.xboxActivity.totalEarned, total, "Xbox"], [psnTotal, total, "PlayStation"]]), level: state.trophyActivity?.summary?.level || 0, levelLabel: `LEVEL <small>${escapeHtml(String(state.trophyActivity?.summary?.progress || 0))}% next</small>`, counts, sourceUrl: state.trophyActivity?.sourceUrl || "https://www.playstation.com/", trophyIconHtml: trophyIcon(), barHeight: trophyBarHeight, escape: escapeHtml });
-    const cards = latest.map((item, index) => achievementCardMarkup({ index, tone: trophyTone(item.rarity), href: "#", localGame: item.game || "", game: item.game || "", title: item.title || "Trophy", icon: item.icon || platformLogo(item.platform || "PS5"), meta: `${platformBadge(item.platform || "PlayStation")}${item.earnedAt ? `<span class="achievement-earned-date">${escapeHtml(item.earnedAt)}</span>` : ""}`, escape: escapeHtml })).join("");
-    el.trophyCard.innerHTML = `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Achievements</span>${cards}`;
+    const panel = achievementPanelMarkup({ psn: state.trophyActivity || {}, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml });
+    el.achievementProfile.href = panel.sourceUrl;
+    el.achievementProfile.textContent = panel.activityLabel;
+    el.trophyCard.innerHTML = panel.html;
     el.trophyCard.querySelector("[data-action='platinums']")?.addEventListener("click", openCompletedGames);
-    el.trophyCard.querySelectorAll("[data-achievement-game]").forEach((button) => button.addEventListener("click", (event) => { event.preventDefault(); openGamelistGameByTitle(button.dataset.achievementGame); }));
     renderGamelistModules();
     renderLibrary();
   } catch { el.trophyCard.innerHTML = `<span>Trophy activity is unavailable.</span>`; }
@@ -1034,7 +1042,7 @@ async function fetchShelfSteamActivity() {
     games.push(...(data.games || [])); cursor = data.nextCursor !== null && Number.isFinite(Number(data.nextCursor)) ? Number(data.nextCursor) : null;
   }
   const achievements = games.flatMap((game) => (game.achievements || []).filter((item) => item.earned && item.earnedAt).map((item) => ({ ...item, title: item.title || "Achievement unlocked", game: game.name, platform: "Steam", source: "steam", rawEarnedAt: item.rawEarnedAt || item.earnedAt, icon: item.icon || platformLogo("Steam") })));
-  const completed = games.filter((game) => (game.achievements || []).length && (game.achievements || []).every((item) => item.earned)).map((game) => { const latest = [...game.achievements].filter((item) => item.earned).sort((a, b) => (Date.parse(b.rawEarnedAt || b.earnedAt || 0) || 0) - (Date.parse(a.rawEarnedAt || a.earnedAt || 0) || 0))[0]; const local = state.gamelistGames.find((item) => normalize(item.title) === normalize(game.name)); return { title: game.name, cover: local?.cover || "", trophyName: "100% Achievements", trophyIcon: game.imgIconUrl ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appId}/${game.imgIconUrl}.jpg` : platformLogo("Steam"), platform: "Steam", earnedAt: latest?.earnedAt || "", rawEarnedAt: latest?.rawEarnedAt || latest?.earnedAt || "" }; });
+  const completed = games.filter((game) => (game.achievements || []).length && (game.achievements || []).every((item) => item.earned)).map((game) => { const latest = [...game.achievements].filter((item) => item.earned).sort((a, b) => (Date.parse(b.rawEarnedAt || b.earnedAt || 0) || 0) - (Date.parse(a.rawEarnedAt || a.earnedAt || 0) || 0))[0]; const local = activityLocalGameForTitle(game.name, state.gamelistGames); return { title: game.name, cover: activityCoverOverride(game.name) || local?.cover || (game.appId ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${encodeURIComponent(game.appId)}/library_600x900.jpg` : ""), trophyName: "100% Achievements", trophyIcon: game.imgIconUrl ? `https://media.steampowered.com/steamcommunity/public/images/apps/${game.appId}/${game.imgIconUrl}.jpg` : platformLogo("Steam"), platform: "Steam", earnedAt: latest?.earnedAt || "", rawEarnedAt: latest?.rawEarnedAt || latest?.earnedAt || "" }; });
   return { achievements, games, completed, totalEarned: games.reduce((sum, game) => sum + (game.achievements || []).filter((item) => item.earned).length, 0), sourceUrl: /^https?:/i.test(user) ? user : `https://steamcommunity.com/id/${encodeURIComponent(user)}/games/?tab=all` };
 }
 async function fetchShelfXboxActivity() {
@@ -1043,14 +1051,29 @@ async function fetchShelfXboxActivity() {
   if (!response.ok || data.error || data.authError) return { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
   return { achievements: data.achievements || [], games: data.games || [], completed: data.completed || [], totalEarned: Number(data.totalEarned || 0), sourceUrl: data.sourceUrl || "" };
 }
-function achievementKpiBreakdown(rows) { return `<span class="kpi-breakdown" aria-hidden="true">${rows.map(([value, total, platform]) => `<small class="kpi-breakdown-pill kpi-breakdown-${normalize(platform)}"><strong>${value}</strong> out of ${total} on ${escapeHtml(platform)}</small>`).join("")}</span>`; }
-function trophyBarHeight(count, counts) { const max = Math.max(1, ...counts.map(([, value]) => value)); return count ? Math.max(8, Math.round((Math.log1p(count) / Math.log1p(max)) * 100)) : 8; }
-function openGamelistGameByTitle(title) { const query = normalize(title); if (!query) return; const game = state.gamelistGames.find((item) => { const value = normalize(item.title); return value === query || value.includes(query) || query.includes(value); }); if (game) openDetails(projectedDetailGame(game)); }
+function openGamelistGameByTitle(title) { const game = activityLocalGameForTitle(title, state.gamelistGames); if (game) openGamelistDetails(game); }
 function openCompletedGames() {
   const remote = [...(state.trophyActivity?.platinums || []), ...state.steamActivity.completed, ...state.xboxActivity.completed];
-  const completed = (remote.length ? remote : state.gamelistGames.filter((game) => game.platinum || game.completedAt)).map((item) => { const title = item.title || item.game || "Completed game"; const local = state.gamelistGames.find((game) => normalize(game.title) === normalize(title)); return { ...item, title, cover: local?.cover || item.cover || "", trophyIcon: item.icon || item.trophyIcon || platformLogo(item.platform || local?.platform || "PS5"), trophyName: item.trophyName || "Platinum", platform: item.platform || local?.platform || "PlayStation", earnedAt: item.earnedAt || (local?.completedAt ? formatDate(local.completedAt) : ""), rawEarnedAt: item.rawEarnedAt || local?.completedAt || "" }; });
+  const completed = (remote.length ? remote : state.gamelistGames.filter((game) => game.platinum || game.completedAt)).map((item) => { const title = item.title || item.game || "Completed game"; const local = activityLocalGameForTitle(title, state.gamelistGames); return { ...item, title, cover: activityCoverOverride(item) || local?.cover || item.cover || "", trophyIcon: item.icon || item.trophyIcon || platformLogo(item.platform || local?.platform || "PS5"), trophyName: item.trophyName || "Platinum", platform: item.platform || local?.platform || "PlayStation", earnedAt: item.earnedAt || (local?.completedAt ? formatLongDate(local.completedAt) : ""), rawEarnedAt: item.rawEarnedAt || local?.completedAt || "" }; });
   renderCompletedGames(completed);
   openDialog(el.completedDialog);
+  hydrateCompletedCovers(completed);
+}
+
+async function hydrateCompletedCovers(items) {
+  const missing = items.filter((item) => !item.cover && !state.completedCoverCache[normalize(item.title)]);
+  if (!missing.length) return;
+  await Promise.all(missing.map(async (item) => {
+    const key = normalize(item.title);
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(item.title)}`);
+      const data = response.ok ? await response.json() : { results: [] };
+      const result = (data.results || [])[0];
+      state.completedCoverCache[key] = result?.cover ? coverUrl(result.cover) : "__missing";
+      if (state.completedCoverCache[key] !== "__missing") item.cover = state.completedCoverCache[key];
+    } catch { state.completedCoverCache[key] = "__missing"; }
+  }));
+  if (el.completedDialog.open) renderCompletedGames(items);
 }
 function renderCompletedGames(items) {
   const years = uniqueSorted(items.map(completedYearFor).filter(Boolean)).reverse();

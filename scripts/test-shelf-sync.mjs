@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { onRequestPut as putGamelist } from "../functions/api/sync.js";
 import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
+import { activityCoverOverride, activityTitleMatchScore } from "../activity-ui.js";
 
-const [appSource, shelfSource] = await Promise.all([
+const [appSource, shelfSource, shelfCss] = await Promise.all([
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.js", import.meta.url), "utf8"),
+  readFile(new URL("../shelf.css", import.meta.url), "utf8"),
 ]);
 for (const source of [appSource, shelfSource]) {
   assert.match(source, /from "\.\/activity-ui\.js"/);
@@ -14,6 +16,10 @@ for (const source of [appSource, shelfSource]) {
   }
 }
 assert.match(shelfSource, /function gameCard\(game\)[\s\S]*?shelfCardTrophies\(game\)/, "physical Shelf cards must load trophies");
+assert.equal(activityCoverOverride("Mandagon"), "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg");
+assert.equal(activityTitleMatchScore("Mandagon", "MANDAGON Trophies") >= 75, true);
+assert.doesNotMatch(shelfCss, /^\.detail-cover\s*\{/m, "Shelf CSS must not override the shared activity detail cover");
+assert.doesNotMatch(shelfCss, /^\.detail-trophies h3/m, "Shelf CSS must not override the shared activity trophy typography");
 
 class MemoryKv {
   values = new Map();

@@ -212,7 +212,7 @@
 }
 
 .cover-showcase.has-wrap .cover-button img,
-.detail-cover.has-wrap img {
+.shelf-dialog .detail-cover.has-wrap img {
   width: 210%;
   max-width: none;
   object-fit: fill;
@@ -326,7 +326,7 @@
   gap: 24px;
 }
 
-.detail-cover {
+.shelf-dialog .detail-cover {
   overflow: hidden;
   padding: 9px;
   border: 1px solid var(--line);
@@ -334,7 +334,7 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
-.detail-cover img {
+.shelf-dialog .detail-cover img {
   display: block;
   width: 100%;
   aspect-ratio: 2 / 3;
@@ -444,7 +444,7 @@
 .shelf-dialog .detail-cover { align-self:start; aspect-ratio:104/142; min-height:0; padding:0; overflow:hidden; }
 .shelf-dialog .detail-cover img { width:100%; height:100%; aspect-ratio:auto; object-fit:cover; border-radius:0; }
 .shelf-detail-content { display:grid; gap:16px; min-width:0; }
-.detail-condition h3,.detail-price-panel h3,.detail-trophies h3 { margin:0; font-size:15px; }
+.shelf-dialog .detail-condition h3,.shelf-dialog .detail-price-panel h3,.shelf-dialog .detail-trophies h3 { margin:0; font-size:15px; }
 .condition-grid { display:grid; grid-template-columns:repeat(5,minmax(90px,1fr)); gap:8px; }
 .detail-condition-check { min-width:0; min-height:42px; margin:0; accent-color:var(--accent); }
 .detail-condition-check input:disabled { opacity:1; filter:none; }
@@ -505,7 +505,7 @@
   .shelf-detail-body { grid-template-columns: 1fr; }
   .shelf-dialog .detail-cover { width:100%; max-width:none; max-height:360px; margin:38px 0 0; aspect-ratio:16/10; }
   .condition-grid { grid-template-columns: repeat(2, 1fr); }
-  .detail-trophy-list, .collection-price-grid { grid-template-columns: 1fr 1fr; }
+  .shelf-dialog .detail-trophy-list, .collection-price-grid { grid-template-columns: 1fr 1fr; }
   .detail-store-prices { --price-columns:2; }
   .shelf-form-grid { grid-template-columns: 1fr; }
   .shelf-form-grid .form-span { grid-column: auto; }

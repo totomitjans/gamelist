@@ -21,6 +21,87 @@ export function achievementDashboardMarkup({ completedCount, completedBreakdown 
   return `<div class="achievement-summary"><button class="achievement-kpi platinum-highlight ${completedCount ? "has-platinum" : ""}" type="button" data-action="platinums"><strong class="kpi-with-icon">${trophyIconHtml}${escape(String(completedCount))}</strong><span>COMPLETED</span>${completedBreakdown}</button><a class="achievement-kpi trophy-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(trophyTotal))}</strong><span>TROPHIES</span>${trophyBreakdown}</a><a class="achievement-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(level))}</strong><span>${levelLabel}</span></a><div class="rarity-graph" aria-label="Trophy rarity graph">${counts.map(([type, count]) => `<span class="rarity-bar rarity-${escape(type.toLowerCase())}" title="${escape(`${type}: ${count}`)}"><em style="--bar:${barHeight(count, counts)}%"></em><small>${escape(type)}</small><strong>${escape(String(count))}</strong></span>`).join("")}</div></div>`;
 }
 
+export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophyIconHtml, platformBadge, platformLogo, trophyTone, escape }) {
+  const sourceUrl = psn.sourceUrl || "https://www.playstation.com/";
+  const psnAchievements = Array.isArray(psn.achievements) ? psn.achievements : [];
+  const steamAchievements = Array.isArray(steam.achievements) ? steam.achievements : [];
+  const xboxAchievements = Array.isArray(xbox.achievements) ? xbox.achievements : [];
+  const achievements = [...psnAchievements, ...steamAchievements, ...xboxAchievements]
+    .sort((a, b) => earnedTime(b) - earnedTime(a) || String(a.title || "").localeCompare(String(b.title || "")))
+    .slice(0, 6);
+  const activitySources = ["PSN", steamAchievements.length ? "Steam" : "", xboxAchievements.length ? "Xbox" : ""].filter(Boolean);
+  if (!achievements.length) {
+    const fallbackText = psn.needsSetup
+      ? "Set PSN_NPSSO in Cloudflare to show recent PSN trophy activity here."
+      : psn.authError
+        ? "PSN token needs refreshing. Update PSN_NPSSO in Cloudflare."
+        : psn.blocked
+          ? "The public tracker is blocking embedded scraping, but your profile is one click away."
+          : "No recent achievement activity found yet.";
+    return {
+      sourceUrl,
+      activityLabel: `${activitySources.join(" + ")} activity`,
+      html: `<a class="achievement-fallback" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><img src="${escape(platformLogo("PS5"))}" alt=""><div><strong>Achievement activity</strong><span>${escape(fallbackText)}</span></div></a>`,
+    };
+  }
+  const trophies = psn.summary?.trophies || {};
+  const psnCompleted = Number(trophies.platinum || 0);
+  const pcCompleted = Number(steam.completed?.length || 0);
+  const xboxCompleted = Number(xbox.completed?.length || 0);
+  const completed = psnCompleted + pcCompleted + xboxCompleted;
+  const counts = [["Platinum", psnCompleted], ["Gold", Number(trophies.gold || 0)], ["Silver", Number(trophies.silver || 0)], ["Bronze", Number(trophies.bronze || 0)]];
+  const psnTotal = counts.reduce((sum, [, count]) => sum + count, 0);
+  const total = psnTotal + Number(steam.totalEarned || 0) + Number(xbox.totalEarned || 0);
+  const breakdown = (rows) => `<span class="kpi-breakdown" aria-hidden="true">${rows.map(([value, totalValue, platform]) => `<small class="kpi-breakdown-pill kpi-breakdown-${escape(normalizeTitle(platform))}"><strong>${escape(String(value))}</strong> out of ${escape(String(totalValue))} on ${escape(platform)}</small>`).join("")}</span>`;
+  const games = Array.isArray(psn.games) ? psn.games.slice(0, 3) : [];
+  const average = games.length ? Math.round(games.reduce((sum, game) => sum + progressFromText(game.game), 0) / games.length) : 0;
+  const dashboard = achievementDashboardMarkup({
+    completedCount: completed,
+    completedBreakdown: breakdown([[pcCompleted, completed, "PC"], [xboxCompleted, completed, "Xbox"], [psnCompleted, completed, "PlayStation"]]),
+    trophyTotal: total,
+    trophyBreakdown: breakdown([[steam.totalEarned || 0, total, "PC"], [xbox.totalEarned || 0, total, "Xbox"], [psnTotal, total, "PlayStation"]]),
+    level: psn.summary?.level || average || 0,
+    levelLabel: psn.summary?.level ? `LEVEL <small>${escape(String(psn.summary.progress || 0))}% next</small>` : "LATEST GAME AVG",
+    counts, sourceUrl, trophyIconHtml, barHeight: sharedTrophyBarHeight, escape,
+  });
+  const cards = achievements.map((item, index) => {
+    const platform = item.source === "steam" ? "Steam" : String(item.platform || (item.source === "xbox" ? "Xbox" : "PlayStation")).trim() || "PlayStation";
+    return achievementCardMarkup({ index, tone: trophyTone(item.rarity), href: item.url || sourceUrl, game: item.game || "", title: item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"), icon: item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"), meta: `${platformBadge(platform)}${item.earnedAt ? `<span class="achievement-earned-date">${escape(item.earnedAt)}</span>` : ""}`, escape });
+  }).join("");
+  return { sourceUrl, activityLabel: `${activitySources.join(" + ")} activity`, html: `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Achievements</span>${cards}` };
+}
+
+export function activityCoverOverride(input) {
+  const title = typeof input === "string" ? input : input?.title || input?.game || "";
+  return {
+    mandagon: "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg",
+  }[normalizeTitle(title)] || "";
+}
+
+export function activityLocalGameForTitle(title, games = []) {
+  const query = normalizeTitle(title);
+  if (!query) return null;
+  return games.map((game) => ({ game, title: normalizeTitle(game.title) })).filter(({ title: candidate }) => candidate && (candidate === query || candidate.includes(query) || query.includes(candidate))).sort((a, b) => Number(b.title === query) - Number(a.title === query) || b.title.length - a.title.length)[0]?.game || null;
+}
+
+export function activityTitleMatchScore(a, b) {
+  const left = titleParts(a);
+  const right = titleParts(b);
+  if (!left.compact || !right.compact) return 0;
+  if (left.compact === right.compact || left.phrase === right.phrase) return 100;
+  if (left.acronym && (left.acronym === right.compact || right.acronym === left.compact)) return 96;
+  if (left.tokens.length === right.tokens.length && left.tokens.every((token) => right.tokens.includes(token))) return 92;
+  if (left.tokens.length >= 2 && left.tokens.every((token) => right.tokens.includes(token))) return 82;
+  if (right.tokens.length >= 2 && right.tokens.every((token) => left.tokens.includes(token))) return 80;
+  return 0;
+}
+
+function earnedTime(item) { const time = Date.parse(item?.rawEarnedAt || item?.earnedAt || 0); return Number.isNaN(time) ? 0 : time; }
+function sharedTrophyBarHeight(count, counts) { const max = Math.max(1, ...counts.map(([, value]) => value)); if (!count) return 8; return Math.round(18 + (Math.log1p(count) / Math.log1p(max)) * 82); }
+function progressFromText(value) { const match = String(value || "").match(/(\d{1,3})%/); return match ? Math.min(100, Number(match[1])) : 0; }
+function normalizeTitle(value) { return String(value || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, ""); }
+function titleParts(value) { const phrase = String(value || "").toLowerCase().replace(/&/g, " and ").replace(/\btrophies\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " "); const tokens = phrase.split(" ").filter(Boolean); return { phrase, tokens, compact: tokens.join(""), acronym: tokens.map((token) => token[0]).join("") }; }
+
 export function completedCardMarkup({ title, cover = "", trophyIcon, trophyName, platform, earnedAt, actionAttribute = "", escape, cssEscape }) {
   const artStyle = cover ? ` style="--platinum-art:url('${cssEscape(cover)}')"` : "";
   const artClass = cover ? " has-platinum-art" : "";
@@ -114,6 +195,10 @@ export function guideLinksMarkup(game, { title = game?.title || "", playstation 
   links.push(button("Neoseeker", neoseeker, "guide-neoseeker", "assets/sites/neoseeker.png"));
   links.push(button("RPG Site", rpgsite, "guide-rpgsite", "assets/sites/rpgsite.png"));
   return links;
+}
+
+export function storeButtonsMarkup(stores = [], escape = escapeHtml) {
+  return stores.filter((store) => store?.url).map((store) => `<a class="store-button ${store.cls || ""}" href="${escape(store.url)}" target="_blank" rel="noreferrer">${store.icon ? `<img src="${escape(store.icon)}" alt="" width="18" height="18" decoding="async">` : ""}${escape(store.label)}</a>`).join("");
 }
 
 export function formatFooterDate(value) {
