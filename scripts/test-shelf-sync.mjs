@@ -1,6 +1,19 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { onRequestPut as putGamelist } from "../functions/api/sync.js";
 import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
+
+const [appSource, shelfSource] = await Promise.all([
+  readFile(new URL("../app.js", import.meta.url), "utf8"),
+  readFile(new URL("../shelf.js", import.meta.url), "utf8"),
+]);
+for (const source of [appSource, shelfSource]) {
+  assert.match(source, /from "\.\/activity-ui\.js"/);
+  for (const sharedBehavior of ["createGameCardShell", "finishedGameMarkup", "achievementCardMarkup", "achievementDashboardMarkup", "completedCardMarkup", "comparePlayingGames", "finishedDurationText"]) {
+    assert.match(source, new RegExp(`\\b${sharedBehavior}\\b`), `${sharedBehavior} must remain shared between Gamelist and Shelf`);
+  }
+}
+assert.match(shelfSource, /function gameCard\(game\)[\s\S]*?shelfCardTrophies\(game\)/, "physical Shelf cards must load trophies");
 
 class MemoryKv {
   values = new Map();

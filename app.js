@@ -1,3 +1,5 @@
+import { createGameCardShell, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, completedCardMarkup, horizontalCarouselState, slideHorizontalCarousel, comparePlayingGames, finishedDurationText } from "./activity-ui.js";
+
 const STORAGE_KEY = "gamelist:v1";
 const LEGACY_STORAGE_KEY = "buylist-tracker:v6";
 const SESSION_KEY = "gamelist-editor";
@@ -9,8 +11,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v159";
-const SITE_UPDATED_AT = "2026-06-23T11:30:00Z";
+const SITE_VERSION = "v160";
+const SITE_UPDATED_AT = "2026-06-23T12:10:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -1096,17 +1098,7 @@ function renderPlayingFinished() {
     const achievementProgress = achievementProgressForGame(game);
     const progress = achievementProgress ? progressValue(achievementProgress.game) : 0;
     const badges = completedBadges(game, { includePsn: false });
-    return `
-      <button class="achievement-game playing-finished-game ${game.platinum ? "completed-trophy-card" : ""}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`Open ${game.title}`)}">
-        <img src="${escapeHtml(game.cover || platformLogo(game.platform || "PS5"))}" alt="" loading="lazy" decoding="async">
-        <div>
-          <strong class="${game.platinum ? "completed-achievements-title" : ""}">${escapeHtml(game.title)}</strong>
-          ${badges ? `<span class="playing-finished-tags">${badges}</span>` : ""}
-          <span>${escapeHtml([formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "))}</span>
-          ${achievementProgress ? `<em style="--progress:${progress}%"></em>` : ""}
-        </div>
-      </button>
-    `;
+    return finishedGameMarkup({ id: game.id, title: game.title, cover: game.cover || platformLogo(game.platform || "PS5"), completedClass: game.platinum ? "completed-trophy-card" : "", badges, dateText: [formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "), progress: achievementProgress ? progress : null, escape: escapeHtml });
   }).join("");
   el.playingFinishedList.querySelectorAll(".playing-finished-game").forEach((button) => {
     button.addEventListener("click", () => openDetail(button.dataset.id));
@@ -1128,21 +1120,17 @@ function updatePlayingFinishedEdges() {
 }
 
 function slidePlaying(direction) {
-  const card = el.playingList.querySelector(".game-card");
-  const gap = Number.parseFloat(getComputedStyle(el.playingList).columnGap) || 0;
-  const distance = card ? card.getBoundingClientRect().width + gap : el.playingList.clientWidth;
-  el.playingList.scrollBy({ left: direction * distance, behavior: "smooth" });
+  slideHorizontalCarousel(el.playingList, direction);
 }
 
 function updatePlayingSliderControls() {
-  const maxScroll = Math.max(0, el.playingList.scrollWidth - el.playingList.clientWidth - 1);
-  const hasOverflow = maxScroll > 2;
-  el.playingPrevButton.hidden = !hasOverflow;
-  el.playingNextButton.hidden = !hasOverflow;
-  el.playingPrevButton.disabled = !hasOverflow || el.playingList.scrollLeft <= 2;
-  el.playingNextButton.disabled = !hasOverflow || el.playingList.scrollLeft >= maxScroll;
-  el.playingSection.classList.toggle("playing-at-start", !hasOverflow || el.playingList.scrollLeft <= 2);
-  el.playingSection.classList.toggle("playing-at-end", !hasOverflow || el.playingList.scrollLeft >= maxScroll);
+  const state = horizontalCarouselState(el.playingList);
+  el.playingPrevButton.hidden = !state.overflow;
+  el.playingNextButton.hidden = !state.overflow;
+  el.playingPrevButton.disabled = state.atStart;
+  el.playingNextButton.disabled = state.atEnd;
+  el.playingSection.classList.toggle("playing-at-start", state.atStart);
+  el.playingSection.classList.toggle("playing-at-end", state.atEnd);
 }
 
 function schedulePlayingCardHeightSync() {
@@ -1380,19 +1368,7 @@ function renderAchievements(data = {}, steamData = state.steamActivity || emptyS
 
   const trophyCards = achievements.map((item, index) => {
     const platform = achievementPlatformLabel(item);
-    return `
-      <a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escapeHtml(trophyTone(item.rarity))}" href="${escapeHtml(item.url || sourceUrl)}" target="_blank" rel="noreferrer">
-        <img class="achievement-icon" src="${escapeHtml(item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"))}" alt="">
-        <div>
-          <strong>${escapeHtml(item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"))}</strong>
-          ${item.game ? `<span class="achievement-game-name">${escapeHtml(item.game)}</span>` : ""}
-          <span class="achievement-card-meta playing-finished-tags">
-            ${platformBadge(platform)}
-            ${item.earnedAt ? `<span class="achievement-earned-date">${escapeHtml(item.earnedAt)}</span>` : ""}
-          </span>
-        </div>
-      </a>
-    `;
+    return achievementCardMarkup({ index, tone: trophyTone(item.rarity), href: item.url || sourceUrl, game: item.game || "", title: item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"), icon: item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"), meta: `${platformBadge(platform)}${item.earnedAt ? `<span class="achievement-earned-date">${escapeHtml(item.earnedAt)}</span>` : ""}`, escape: escapeHtml });
   }).join("");
   const dashboard = achievementDashboard(achievements, games, sourceUrl, data.summary, state.steamActivity, state.xboxActivity);
   el.achievementPanel.innerHTML = `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Achievements</span>${trophyCards}`;
@@ -1419,41 +1395,7 @@ function achievementDashboard(achievements, games, sourceUrl, summary = null, st
   const average = games.length
     ? Math.round(games.reduce((sum, game) => sum + progressValue(game.game), 0) / games.length)
     : 0;
-  return `
-    <div class="achievement-summary">
-      <button class="achievement-kpi platinum-highlight ${latestPlatinum ? "has-platinum" : ""}" type="button" data-action="platinums">
-        <strong class="kpi-with-icon">${trophyIcon()}${escapeHtml(String(completedCount))}</strong>
-        <span>COMPLETED</span>
-        ${achievementKpiBreakdown([
-          [pcCompleted, completedCount, "PC"],
-          [xboxCompleted, completedCount, "Xbox"],
-          [playStationCompleted, completedCount, "PlayStation"],
-        ])}
-      </button>
-      <a class="achievement-kpi trophy-kpi" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">
-        <strong>${escapeHtml(String(achievementTotal))}</strong>
-        <span>TROPHIES</span>
-        ${achievementKpiBreakdown([
-          [steamActivity.totalEarned || 0, achievementTotal, "PC"],
-          [xboxActivity.totalEarned || 0, achievementTotal, "Xbox"],
-          [psnTrophyTotal, achievementTotal, "PlayStation"],
-        ])}
-      </a>
-      <a class="achievement-kpi" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">
-        <strong>${escapeHtml(String(summary?.level || average || 0))}</strong>
-        <span>${summary?.level ? `LEVEL <small>${escapeHtml(String(summary.progress || 0))}% next</small>` : "LATEST GAME AVG"}</span>
-      </a>
-      <div class="rarity-graph" aria-label="Trophy rarity graph">
-        ${counts.map(([type, count]) => `
-          <span class="rarity-bar rarity-${escapeHtml(type.toLowerCase())}" title="${escapeHtml(`${type}: ${count}`)}">
-            <em style="--bar:${trophyBarHeight(count, counts)}%"></em>
-            <small>${escapeHtml(type)}</small>
-            <strong>${escapeHtml(String(count))}</strong>
-          </span>
-        `).join("")}
-      </div>
-    </div>
-  `;
+  return achievementDashboardMarkup({ completedCount, completedBreakdown: achievementKpiBreakdown([[pcCompleted, completedCount, "PC"], [xboxCompleted, completedCount, "Xbox"], [playStationCompleted, completedCount, "PlayStation"]]), trophyTotal: achievementTotal, trophyBreakdown: achievementKpiBreakdown([[steamActivity.totalEarned || 0, achievementTotal, "PC"], [xboxActivity.totalEarned || 0, achievementTotal, "Xbox"], [psnTrophyTotal, achievementTotal, "PlayStation"]]), level: summary?.level || average || 0, levelLabel: summary?.level ? `LEVEL <small>${escapeHtml(String(summary.progress || 0))}% next</small>` : "LATEST GAME AVG", counts, sourceUrl, trophyIconHtml: trophyIcon(), barHeight: trophyBarHeight, escape: escapeHtml, hasCompleted: Boolean(latestPlatinum) });
 }
 
 function achievementPlatformLabel(item) {
@@ -1816,7 +1758,7 @@ function platinumCard(item) {
     </div>
   `;
   if (item.gameId) {
-    return `<button class="platinum-card platinum-card-button${artClass}" type="button" data-game-id="${escapeHtml(item.gameId)}"${artStyle}>${content}</button>`;
+    return completedCardMarkup({ title: item.title, cover: item.cover, trophyIcon: item.trophyIcon, trophyName: item.trophyName || "Platinum", platform: item.platform, earnedAt: item.earnedAt, actionAttribute: `data-game-id="${escapeHtml(item.gameId)}"`, escape: escapeHtml, cssEscape: cssUrl });
   }
   if (item.url) {
     return `<a class="platinum-card${artClass}" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"${artStyle}>${content}</a>`;
@@ -2647,34 +2589,6 @@ function completedDurationLine(game) {
   return duration ? `<span class="completed-duration">${escapeHtml(duration)}</span>` : "";
 }
 
-function finishedDurationText(startValue, doneValue) {
-  const start = dateOnly(startValue);
-  const done = dateOnly(doneValue);
-  if (!start || !done) return "";
-  const [startYear, startMonth, startDay] = start.split("-").map(Number);
-  const [doneYear, doneMonth, doneDay] = done.split("-").map(Number);
-  const startTime = new Date(startYear, startMonth - 1, startDay).getTime();
-  const doneTime = new Date(doneYear, doneMonth - 1, doneDay).getTime();
-  if (!Number.isFinite(startTime) || !Number.isFinite(doneTime) || doneTime < startTime) return "";
-  let years = doneYear - startYear;
-  let months = doneMonth - startMonth;
-  let days = doneDay - startDay;
-  if (days < 0) {
-    months -= 1;
-    days += daysInMonth(doneYear, doneMonth - 1);
-  }
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
-  if (!years && !months && !days) days = 1;
-  return [
-    years ? plural(years, "year") : "",
-    months ? plural(months, "month") : "",
-    days ? plural(days, "day") : "",
-  ].filter(Boolean).join(" ");
-}
-
 function nextReplayCountForTitle(title, currentId = "") {
   const normalizedTitle = normalizeReplayTitle(title);
   if (!normalizedTitle) return 0;
@@ -2695,14 +2609,6 @@ function normalizeReplayTitle(value) {
 function replayCountValue(value) {
   const count = Number(value);
   return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
-}
-
-function plural(value, label) {
-  return `${value} ${label}${value === 1 ? "" : "s"}`;
-}
-
-function daysInMonth(year, month) {
-  return new Date(year, month, 0).getDate();
 }
 
 function updateCompletedDate(id, key, value) {
@@ -2756,7 +2662,7 @@ function filteredGames(options = {}) {
 }
 
 function cardFor(game, options = {}) {
-  const card = el.template.content.firstElementChild.cloneNode(true);
+  const card = createGameCardShell(document);
   const statuses = gameStatuses(game);
   const owners = ownerTags(game);
   card.dataset.id = game.id;
@@ -3969,19 +3875,8 @@ function compareGames(a, b, section) {
   return direction * stringCompare(a.title, b.title);
 }
 
-function comparePlayingGames(a, b) {
-  return compareStreamFirst(a, b)
-    || Number(Boolean(a.coop)) - Number(Boolean(b.coop))
-    || playingStartSortValue(a) - playingStartSortValue(b)
-    || stringCompare(a.title, b.title);
-}
-
 function compareStreamFirst(a, b) {
   return Number(Boolean(b.stream)) - Number(Boolean(a.stream));
-}
-
-function playingStartSortValue(game) {
-  return game.startedAt ? new Date(`${game.startedAt}T00:00:00`).getTime() : Number.POSITIVE_INFINITY;
 }
 
 function compareReleaseDates(a, b) {

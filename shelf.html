@@ -229,7 +229,7 @@
     </dialog>
 
     <dialog id="shelfCompletedDialog" class="shelf-dialog">
-      <article class="platinum-modal glass"><div class="modal-head"><div><p class="eyebrow">Achievements</p><h2>Completed games</h2></div><button class="icon-button" id="shelfCompletedClose" type="button" title="Close" aria-label="Close">×</button></div><div class="platinum-list" id="shelfCompletedList"></div></article>
+      <article class="platinum-modal glass"><div class="modal-head"><div><p class="eyebrow">Achievements</p><h2 id="shelfCompletedTitle"></h2></div><div class="platinum-head-actions"><button class="icon-button" id="shelfCompletedClose" type="button" title="Close" aria-label="Close">×</button><span class="platinum-count-pill" id="shelfCompletedCount"></span></div></div><div class="platinum-filter-bar"><label class="platinum-year-select"><span>Year</span><select id="shelfCompletedYear"><option value="all">All</option></select></label><label class="platinum-platform-select"><span>Platform</span><select id="shelfCompletedPlatform"><option value="all">All</option></select></label><label class="platinum-order-label"><span>Order</span><div class="platinum-order-control"><select id="shelfCompletedSort"><option value="time">Time</option><option value="name">Name</option></select><button class="direction-toggle" id="shelfCompletedDirection" type="button" title="Sort descending" aria-label="Sort descending"></button><button class="icon-button view-toggle section-view-toggle" id="shelfCompletedView" type="button" title="Grid view" aria-label="Grid view"></button></div></label></div><div class="platinum-list" id="shelfCompletedList"></div></article>
     </dialog>
 
     <dialog id="deleteShelfDialog" class="shelf-dialog">
@@ -257,6 +257,6 @@
       </form>
     </dialog>
 
-    <script src="shelf.js" defer></script>
+    <script type="module" src="shelf.js"></script>
   </body>
 </html>
