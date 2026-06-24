@@ -172,7 +172,7 @@ body.theme-kash .backdrop {
   position: relative;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
   max-width: 100%;
@@ -215,37 +215,6 @@ body.theme-kash .brand-mark {
   height: 70px !important;
 }
 
-.nav-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 3px;
-}
-
-.nav-tabs:empty {
-  display: none;
-}
-
-.nav-tabs a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 42px;
-  color: var(--muted);
-  text-decoration: none;
-  padding: 0 12px;
-  border-radius: 6px;
-}
-
-.nav-tabs a:hover {
-  color: var(--text);
-  background: rgba(255, 0, 81, 0.16);
-  border-color: rgba(255, 0, 81, 0.32);
-}
-
-body.theme-kash .nav-tabs a:hover {
-  background: rgba(0, 92, 255, 0.18);
-  border-color: rgba(0, 92, 255, 0.36);
-}
-
 .top-actions,
 .modal-actions,
 .card-actions,
@@ -253,6 +222,10 @@ body.theme-kash .nav-tabs a:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.topbar > .top-actions {
+  justify-self: end;
 }
 
 .shell {
@@ -5954,12 +5927,6 @@ body.theme-kash .guide-button:hover {
 
   .complete-action .check-icon + .action-label {
     display: none;
-  }
-
-  .nav-tabs {
-    grid-column: 1 / -1;
-    justify-content: start;
-    overflow-x: auto;
   }
 
   .toolbar,

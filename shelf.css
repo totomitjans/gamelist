@@ -262,12 +262,13 @@
 .condition-loose { color: #ff6f85; }
 .play-status { color: #f7df69; }
 
-.shelf-page.list-view-mode .shelf-grid {
+.shelf-grid.list-view {
   grid-template-columns: 1fr;
+  gap: 8px;
 }
 
-.shelf-page.list-view-mode .shelf-grid .game-card {
-  min-height: 190px;
+.shelf-grid.list-view .game-row {
+  width: 100%;
 }
 
 .empty-state {
@@ -488,15 +489,15 @@
   .shelf-intro h1 { font-size: 48px; }
   .shelf-intro p:last-child { font-size: 11px; }
   .intro-mark { display: none; }
-  .shelf-page .stats { display:flex; flex-direction:column; gap:8px; }
-  .shelf-page .stats .stat { width:100%; }
+  .shelf-page .stats { display:grid; grid-template-columns:1fr; gap:8px; }
+  .shelf-page .stats .stat { width:auto; flex:none; }
   .shelf-page .stats .stat { padding:10px 6px; }
   .shelf-page .stats .stat strong { font-size:clamp(18px,7vw,28px); }
   .shelf-page .stats .stat span { font-size:9px; }
-  .shelf-toolbar { position: static; grid-template-columns: 1fr 1fr; }
-  .shelf-toolbar .search { grid-column: 1 / -1; }
+  .shelf-toolbar { position:static; grid-template-columns:minmax(0,1fr) var(--toolbar-control-height); gap:8px; }
+  .shelf-toolbar > label { grid-column:1 / -1; }
   .shelf-toolbar .order-label { grid-column:1; }
-  .shelf-toolbar .view-toggle { display:grid; grid-column:2; align-self:end; width:100%; }
+  .shelf-toolbar .view-toggle { display:grid; grid-column:2; align-self:end; justify-self:stretch; width:var(--toolbar-control-height); height:var(--toolbar-control-height); }
   .shelf-grid { grid-template-columns: 1fr; }
   .shelf-grid .game-card { grid-template-columns: 96px minmax(0, 1fr); min-height: 214px; }
   .cover-showcase { width: 104px; height: 151px; }

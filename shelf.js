@@ -3,8 +3,8 @@ import { createGameCardShell, mountActivitySlider, finishedGameMarkup, achieveme
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v173";
-const SITE_UPDATED_AT = "2026-06-24T15:30:00Z";
+const SITE_VERSION = "v174";
+const SITE_UPDATED_AT = "2026-06-24T15:50:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -265,8 +265,7 @@ function renderChrome() {
     : `<svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="M13.5 6.5l4 4"></path></svg>`;
   el.login.title = state.canEdit ? "Stop Editing" : "Edit";
   el.login.setAttribute("aria-label", el.login.title);
-  el.view.title = state.viewMode === "grid" ? "Show as list" : "Show as grid";
-  el.view.innerHTML = state.viewMode === "grid" ? linesIcon() : gridIcon();
+  syncViewModeButton(el.view, state.viewMode, { gridIcon, linesIcon });
   el.sortDirection.innerHTML = sortArrowIcon(state.filters.direction === "desc");
   el.sortDirection.classList.toggle("desc", state.filters.direction === "desc");
   el.sortDirection.title = `Sort ${state.filters.direction === "desc" ? "descending" : "ascending"}`;
@@ -386,7 +385,8 @@ function renderLibrary() {
   el.tabs.hidden = !gamelistCount;
   el.tabs.innerHTML = gamelistCount ? `<button class="${state.filters.tab === "all" ? "active" : ""}" data-shelf-tab="all" type="button">All</button><button class="${state.filters.tab === "gamelist" ? "active" : ""}" data-shelf-tab="gamelist" type="button">Gamelist <span>${gamelistCount}</span></button>` : "";
   el.count.textContent = `${games.length} ${games.length === 1 ? "game" : "games"}`;
-  el.shelf.innerHTML = games.map(gameCard).join("");
+  el.shelf.classList.toggle("list-view", state.viewMode === "list");
+  el.shelf.innerHTML = games.map((game) => state.viewMode === "list" ? gameRow(game) : gameCard(game)).join("");
   el.shelf.querySelectorAll(".game-card.has-art").forEach(setupShelfParallax);
   el.empty.hidden = games.length > 0;
 }
@@ -431,6 +431,15 @@ function gameCard(game) {
   const note = card.querySelector(".notes"); note.textContent = game.notes || ""; note.classList.add("shelf-card-notes"); note.hidden = !game.notes;
   if (game.description) note.insertAdjacentHTML("afterend", `<p class="shelf-card-description">${escapeHtml(game.description)}</p>`);
   return card.outerHTML;
+}
+
+function gameRow(game) {
+  const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
+  const studio = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
+  const owners = game.owners || [];
+  const ownerClasses = `${owners.includes("Judy") ? " owner-card-judy" : ""}${owners.includes("Jordi") ? " owner-card-jordi" : ""}`;
+  const tags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((tag) => String(tag).trim()).filter((tag, index, list) => tag && normalize(tag) !== "game" && list.indexOf(tag) === index);
+  return `<article class="game-row${ownerClasses}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}"><span class="game-row-cover-wrap"><img class="game-row-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"><img class="game-row-cover-preview" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" aria-hidden="true"></span><div class="game-row-identity"><strong class="${owners.includes("Judy") ? "owner-judy" : ""} ${owners.includes("Jordi") ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong>${studio ? `<span>${escapeHtml(studio)}</span>` : ""}</div><div class="game-row-core"><span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(conditionLabel(game))}${owners.map(ownerBadge).join("")}</div><div class="game-row-tags">${tags.map((tag) => `<span class="chip ${normalize(tag) === "gamelist" ? "accent" : ""}">${escapeHtml(tag)}</span>`).join("")}</div><div class="game-row-actions"><button class="icon-button row-edit-action" data-action="edit" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button></div></article>`;
 }
 
 function conditionBadge(condition) { const tone = condition === "Complete +" ? "complete-plus" : normalize(condition).replace(/ /g, "-"); return `<span class="condition-pill condition-${tone}"><img src="assets/platforms/disk.png" alt="" width="18" height="18"><span>${escapeHtml(condition)}</span></span>`; }
@@ -782,6 +791,7 @@ function toggleView() {
   state.viewMode = state.viewMode === "grid" ? "list" : "grid";
   localStorage.setItem(VIEW_KEY, state.viewMode);
   renderChrome();
+  renderLibrary();
 }
 
 function clearFilters() {

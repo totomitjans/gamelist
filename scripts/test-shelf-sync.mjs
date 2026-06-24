@@ -4,12 +4,13 @@ import { onRequestPut as putGamelist } from "../functions/api/sync.js";
 import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
 import { activityAllowsPsnCardTrophies, activityCoverOverride, activityTitleMatchScore } from "../activity-ui.js";
 
-const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss] = await Promise.all([
+const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss, appHtml] = await Promise.all([
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.css", import.meta.url), "utf8"),
   readFile(new URL("../shelf.html", import.meta.url), "utf8"),
   readFile(new URL("../styles.css", import.meta.url), "utf8"),
+  readFile(new URL("../index.html", import.meta.url), "utf8"),
 ]);
 for (const source of [appSource, shelfSource]) {
   assert.match(source, /from "\.\/activity-ui\.js"/);
@@ -55,6 +56,11 @@ assert.match(shelfSource, /const FIXED_LAYOUT = \["playing", "latestFinished"\]/
 assert.match(appSource, /playingSection\.hidden = el\.playingCurrent\.hidden && el\.playingFinished\.hidden/, "Main must keep Last Finished visible when Currently Playing is hidden");
 assert.match(shelfSource, /closest\("\[data-module='playing'\]"\)\.hidden = el\.playingCurrent\.hidden && el\.playingFinished\.hidden/, "Shelf must keep Last Finished visible when Currently Playing is hidden");
 assert.doesNotMatch(shelfHtml, /<option value="custom">Custom<\/option>/, "Shelf must not offer the Custom order filter");
+for (const html of [appHtml, shelfHtml]) assert.doesNotMatch(html, /<nav class="nav-tabs"/, "Main and Shelf must not show the temporary cross-site navbar");
+assert.match(shelfSource, /state\.viewMode === "list" \? gameRow\(game\) : gameCard\(game\)/, "Shelf list mode must render Main-style compact rows");
+assert.match(shelfSource, /syncViewModeButton\(el\.view, state\.viewMode/, "Shelf view control must show the current mode");
+assert.match(shelfCss, /\.shelf-page \.stats \{ display:grid; grid-template-columns:1fr;/, "Shelf mobile KPIs must use naturally sized vertical rows");
+assert.match(shelfCss, /\.shelf-toolbar \{ position:static; grid-template-columns:minmax\(0,1fr\) var\(--toolbar-control-height\)/, "Shelf mobile order row must reserve square action controls like Main");
 for (const source of [appSource, shelfSource]) assert.match(source, /settings-preference-row/, "Main and Shelf must keep Theme and Default order together in the shared preference row");
 assert.match(shelfSource, /function updateShelfCardTrophyStrips\(gameId\)[\s\S]*?\.game-card\[data-gamelist-id=[\s\S]*?shelfCardTrophies\(game\)/, "Shelf must update the visible playing-card trophy strip when its async data arrives");
 assert.match(shelfSource, /async function loadShelfCardTrophies\(game, remote\)[\s\S]*?updateShelfCardTrophyStrips\(game\.id\)/, "Shelf PSN trophy loading must refresh the outside playing card directly");
