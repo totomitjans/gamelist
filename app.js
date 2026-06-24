@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v163";
-const SITE_UPDATED_AT = "2026-06-23T16:30:00Z";
+const SITE_VERSION = "v164";
+const SITE_UPDATED_AT = "2026-06-24T09:00:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -90,7 +90,7 @@ const UI_ICON_URLS = [
   "/assets/stores/xtralife.ico",
 ];
 const MANUAL_GAME_COVER_OVERRIDES = {
-  mandagon: "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg",
+  mandagon: "https://cdn2.steamgriddb.com/grid/a0ac3f221e625a1f87857b7d19c4c7d5.png",
 };
 const MANUAL_PLATINUM_COVER_OVERRIDES = [
   { exact: ["Cartoon Network PTE: XL"], match: [], cover: "https://m.media-amazon.com/images/I/81gYqhi47AL.jpg" },

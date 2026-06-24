@@ -74,7 +74,7 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophy
 export function activityCoverOverride(input) {
   const title = typeof input === "string" ? input : input?.title || input?.game || "";
   return {
-    mandagon: "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg",
+    mandagon: "https://cdn2.steamgriddb.com/grid/a0ac3f221e625a1f87857b7d19c4c7d5.png",
   }[normalizeTitle(title)] || "";
 }
 

@@ -4,10 +4,11 @@ import { onRequestPut as putGamelist } from "../functions/api/sync.js";
 import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
 import { activityCoverOverride, activityTitleMatchScore } from "../activity-ui.js";
 
-const [appSource, shelfSource, shelfCss] = await Promise.all([
+const [appSource, shelfSource, shelfCss, shelfHtml] = await Promise.all([
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.css", import.meta.url), "utf8"),
+  readFile(new URL("../shelf.html", import.meta.url), "utf8"),
 ]);
 for (const source of [appSource, shelfSource]) {
   assert.match(source, /from "\.\/activity-ui\.js"/);
@@ -16,10 +17,13 @@ for (const source of [appSource, shelfSource]) {
   }
 }
 assert.match(shelfSource, /function gameCard\(game\)[\s\S]*?shelfCardTrophies\(game\)/, "physical Shelf cards must load trophies");
-assert.equal(activityCoverOverride("Mandagon"), "https://cdn.thegamesdb.net/images/original/boxart/front/45783-1.jpg");
+assert.equal(activityCoverOverride("Mandagon"), "https://cdn2.steamgriddb.com/grid/a0ac3f221e625a1f87857b7d19c4c7d5.png");
 assert.equal(activityTitleMatchScore("Mandagon", "MANDAGON Trophies") >= 75, true);
 assert.doesNotMatch(shelfCss, /^\.detail-cover\s*\{/m, "Shelf CSS must not override the shared activity detail cover");
 assert.doesNotMatch(shelfCss, /^\.detail-trophies h3/m, "Shelf CSS must not override the shared activity trophy typography");
+assert.match(shelfHtml, /<dialog id="detailDialog">\s*<article class="detail-modal glass">/, "Shelf details must use Main's detail component classes");
+assert.doesNotMatch(shelfHtml, /gamelistDetailDialog/, "Shelf must not create a second activity detail component");
+assert.match(shelfSource, /detailStorePrices\.hidden = true/, "Projected activity details must keep prices disabled");
 
 class MemoryKv {
   values = new Map();

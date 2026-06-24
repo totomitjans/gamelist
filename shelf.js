@@ -3,8 +3,8 @@ import { createGameCardShell, mountActivitySlider, finishedGameMarkup, achieveme
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v163";
-const SITE_UPDATED_AT = "2026-06-23T16:30:00Z";
+const SITE_VERSION = "v164";
+const SITE_UPDATED_AT = "2026-06-24T09:00:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -96,14 +96,8 @@ const el = {
   detailGuideLinks: document.querySelector("#detailGuideLinks"), detailStorePrices: document.querySelector("#detailStorePrices"),
   fetchValue: document.querySelector("#fetchValueButton"), detailPricePanel: document.querySelector("#detailPricePanel"), detailPriceSummary: document.querySelector("#detailPriceSummary"),
   detailPriceGraph: document.querySelector("#detailPriceGraph"), detailTrophies: document.querySelector("#shelfDetailTrophies"),
-  detailTrophyCount: document.querySelector("#shelfTrophyCount"), detailTrophyList: document.querySelector("#shelfTrophyList"),
-  gamelistDetailDialog: document.querySelector("#gamelistDetailDialog"), gamelistDetailClose: document.querySelector("#gamelistDetailClose"),
-  gamelistDetailCover: document.querySelector("#gamelistDetailCover"), gamelistDetailTitle: document.querySelector("#gamelistDetailTitle"), gamelistDetailStudio: document.querySelector("#gamelistDetailStudio"),
-  gamelistDetailMeta: document.querySelector("#gamelistDetailMeta"), gamelistDetailDates: document.querySelector("#gamelistDetailDates"), gamelistDetailChips: document.querySelector("#gamelistDetailChips"),
-  gamelistDetailStoreLinks: document.querySelector("#gamelistDetailStoreLinks"), gamelistDetailDescription: document.querySelector("#gamelistDetailDescription"), gamelistDetailPrices: document.querySelector("#gamelistDetailPrices"),
-  gamelistDetailGuides: document.querySelector("#gamelistDetailGuides"), gamelistDetailGuideLinks: document.querySelector("#gamelistDetailGuideLinks"), gamelistDetailTrophies: document.querySelector("#gamelistDetailTrophies"),
-  gamelistDetailTrophyTitle: document.querySelector("#gamelistDetailTrophyTitle"), gamelistDetailTrophyCount: document.querySelector("#gamelistDetailTrophyCount"), gamelistDetailTrophyPercent: document.querySelector("#gamelistDetailTrophyPercent"), gamelistDetailTrophyList: document.querySelector("#gamelistDetailTrophyList"),
-  gamelistDetailTrophySort: document.querySelector("#gamelistDetailTrophySort"), gamelistDetailTrophyDirection: document.querySelector("#gamelistDetailTrophyDirection"),
+  detailTrophyTitle: document.querySelector("#shelfTrophyTitle"), detailTrophyCount: document.querySelector("#shelfTrophyCount"), detailTrophyPercent: document.querySelector("#shelfTrophyPercent"), detailTrophyList: document.querySelector("#shelfTrophyList"),
+  detailTrophySort: document.querySelector("#shelfTrophySort"), detailTrophyDirection: document.querySelector("#shelfTrophyDirection"),
   addDialog: document.querySelector("#addDialog"),
   addForm: document.querySelector("#addGameForm"),
   addClose: document.querySelector("#addClose"),
@@ -215,10 +209,8 @@ function bindEvents() {
   el.tabs.addEventListener("click", (event) => { const tab = event.target.closest("[data-shelf-tab]"); if (!tab) return; state.filters.tab = tab.dataset.shelfTab; renderLibrary(); });
   el.detailClose.addEventListener("click", () => closeDialog(el.detailDialog));
   el.detailDialog.addEventListener("click", (event) => { if (event.target === el.detailDialog) closeDialog(el.detailDialog); });
-  el.gamelistDetailClose.addEventListener("click", () => closeDialog(el.gamelistDetailDialog));
-  el.gamelistDetailDialog.addEventListener("click", (event) => { if (event.target === el.gamelistDetailDialog) closeDialog(el.gamelistDetailDialog); });
-  el.gamelistDetailTrophySort.addEventListener("change", renderGamelistDetailTrophyList);
-  el.gamelistDetailTrophyDirection.addEventListener("click", () => { state.gamelistDetailTrophyDirection = state.gamelistDetailTrophyDirection === "asc" ? "desc" : "asc"; renderGamelistDetailTrophyList(); });
+  el.detailTrophySort.addEventListener("change", renderGamelistDetailTrophyList);
+  el.detailTrophyDirection.addEventListener("click", () => { state.gamelistDetailTrophyDirection = state.gamelistDetailTrophyDirection === "asc" ? "desc" : "asc"; renderGamelistDetailTrophyList(); });
 
   el.addClose.addEventListener("click", () => closeDialog(el.addDialog));
   el.addCancel.addEventListener("click", () => closeDialog(el.addDialog));
@@ -478,6 +470,7 @@ function openDetails(game) {
   const guides = activityGuideLinks(game);
   el.detailGuides.hidden = !guides.length;
   el.detailGuideLinks.innerHTML = guides.join("");
+  el.detailStorePrices.hidden = false;
   loadStorePrices(game);
   el.detailPricePanel.hidden = Boolean(game._gamelistProjection);
   if (!game._gamelistProjection) renderPriceDetails(game);
@@ -832,26 +825,36 @@ function activityGuideLinks(game) { return guideLinksMarkup(game, { title: game.
 function openGamelistDetails(sourceGame) {
   const game = projectedDetailGame(sourceGame);
   state.gamelistDetailGame = game;
+  el.detailDialog.dataset.id = game.id;
+  el.detailDialog.dataset.projection = "true";
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
   const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
-  el.gamelistDetailTitle.textContent = game.title;
-  el.gamelistDetailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
-  el.gamelistDetailTitle.classList.toggle("owner-jordi", owners.includes("Jordi"));
-  el.gamelistDetailStudio.textContent = [game.developer, game.publisher].filter(Boolean).join(" / ");
-  el.gamelistDetailMeta.innerHTML = projectionMeta(game);
-  el.gamelistDetailDates.innerHTML = `${game.startedAt ? `<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>` : ""}${game.completedAt ? `<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatLongDate(game.completedAt))}</strong></span>` : ""}${finishedDurationText(game.startedAt, game.completedAt) ? `<span class="history-pill history-date-pill"><small>Time</small><strong>${escapeHtml(finishedDurationText(game.startedAt, game.completedAt))}</strong></span>` : ""}`;
-  el.gamelistDetailChips.innerHTML = (game.genres || []).slice(0, 4).map((genre) => `<span class="chip genre">${escapeHtml(genre)}</span>`).join("");
-  el.gamelistDetailCover.src = cover;
-  el.gamelistDetailCover.alt = `${game.title} cover`;
-  el.gamelistDetailDescription.textContent = game.description || "";
-  el.gamelistDetailDescription.hidden = !game.description;
-  el.gamelistDetailStoreLinks.innerHTML = activityStoreLinks(game);
-  el.gamelistDetailPrices.innerHTML = "";
+  el.detailTitle.textContent = game.title;
+  el.detailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
+  el.detailTitle.classList.toggle("owner-jordi", owners.includes("Jordi"));
+  el.detailStudio.textContent = [game.developer, game.publisher].filter(Boolean).join(" / ");
+  el.detailStudio.hidden = !el.detailStudio.textContent;
+  el.detailMeta.innerHTML = projectionMeta(game);
+  el.detailDates.innerHTML = `${game.startedAt ? `<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>` : ""}${game.completedAt ? `<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatLongDate(game.completedAt))}</strong></span>` : ""}${finishedDurationText(game.startedAt, game.completedAt) ? `<span class="history-pill history-date-pill"><small>Time</small><strong>${escapeHtml(finishedDurationText(game.startedAt, game.completedAt))}</strong></span>` : ""}`;
+  el.detailDates.hidden = !el.detailDates.innerHTML;
+  el.detailChips.innerHTML = (game.genres || []).slice(0, 4).map((genre) => `<span class="chip genre">${escapeHtml(genre)}</span>`).join("");
+  el.detailCover.src = cover;
+  el.detailCover.hidden = !cover;
+  el.detailCover.alt = cover ? `${game.title} cover` : "";
+  el.detailDescription.textContent = game.description || "No description yet.";
+  el.detailDescription.hidden = false;
+  el.detailLinks.innerHTML = activityStoreLinks(game);
+  el.detailStorePrices.innerHTML = "";
+  el.detailStorePrices.hidden = true;
+  el.detailNote.hidden = true;
+  el.detailPricePanel.hidden = true;
+  el.detailConditionPanel.hidden = true;
+  el.detailActions.innerHTML = "";
   const guides = activityGuideLinks(game);
-  el.gamelistDetailGuides.hidden = !guides.length;
-  el.gamelistDetailGuideLinks.innerHTML = guides.join("");
+  el.detailGuides.hidden = !guides.length;
+  el.detailGuideLinks.innerHTML = guides.join("");
   loadGamelistDetailTrophies(game);
-  openDialog(el.gamelistDetailDialog);
+  openDialog(el.detailDialog);
 }
 function activityStoreLinks(game) {
   const platform = shortPlatform(game.platform || "").toLowerCase();
@@ -931,8 +934,8 @@ function shelfCardTrophies(game) {
 }
 
 async function loadGamelistDetailTrophies(game) {
-  el.gamelistDetailTrophies.hidden = true;
-  el.gamelistDetailTrophyList.innerHTML = "";
+  el.detailTrophies.hidden = true;
+  el.detailTrophyList.innerHTML = "";
   const external = externalActivityFor(game);
   if (external) {
     renderGamelistDetailTrophies(game, external.achievements, external.earned, external.total, "ACHIEVEMENTS");
@@ -945,15 +948,15 @@ async function loadGamelistDetailTrophies(game) {
     if (recent.length) renderGamelistDetailTrophies(game, recent, recent.length, recent.length, "TROPHIES");
     return;
   }
-  el.gamelistDetailTrophies.hidden = false;
-  el.gamelistDetailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned trophies...</div>`;
+  el.detailTrophies.hidden = false;
+  el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned trophies...</div>`;
   try {
     const response = await fetch(`/api/trophies?id=${encodeURIComponent(id)}&service=${encodeURIComponent(remote.npServiceName || "trophy")}&user=${encodeURIComponent(state.gamelistSettings.psnUser || "")}`);
     const data = await response.json();
     const trophies = Array.isArray(data.trophies) ? data.trophies : [];
     renderGamelistDetailTrophies(game, trophies, trophies.filter((item) => item.earned).length, trophies.length, "TROPHIES");
   } catch {
-    el.gamelistDetailTrophyList.innerHTML = `<div class="detail-trophy-empty">Could not load trophies right now.</div>`;
+    el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Could not load trophies right now.</div>`;
   }
 }
 
@@ -963,33 +966,33 @@ function renderGamelistDetailTrophies(game, trophies, earned, total, title) {
   state.gamelistDetailTrophyEarned = earned;
   state.gamelistDetailTrophyTotal = total;
   state.gamelistDetailTrophyKind = title;
-  el.gamelistDetailTrophies.hidden = false;
-  el.gamelistDetailTrophyTitle.textContent = title;
-  el.gamelistDetailTrophyCount.textContent = "";
+  el.detailTrophies.hidden = false;
+  el.detailTrophyTitle.textContent = title;
+  el.detailTrophyCount.textContent = "";
   const progress = total ? Math.round((earned / total) * 100) : 0;
-  el.gamelistDetailTrophyPercent.innerHTML = total ? `<span class="psn-progress-pill"><em style="--progress:${progress}%"></em><strong>${progress}%</strong></span>` : "";
+  el.detailTrophyPercent.innerHTML = total ? `<span class="psn-progress-pill"><em style="--progress:${progress}%"></em><strong>${progress}%</strong></span>` : "";
   renderGamelistDetailTrophyList();
 }
 
 function renderGamelistDetailTrophyList() {
   const game = state.gamelistDetailGame;
   const direction = state.gamelistDetailTrophyDirection === "asc" ? 1 : -1;
-  const sort = el.gamelistDetailTrophySort.value;
+  const sort = el.detailTrophySort.value;
   const trophies = [...state.gamelistDetailTrophyData].sort((a, b) => {
     if (sort === "name") return direction * String(a.title || "").localeCompare(String(b.title || ""), undefined, { sensitivity: "base" });
     if (sort === "completed") return direction * (Number(Boolean(a.earned)) - Number(Boolean(b.earned))) || String(a.earnedAt || "").localeCompare(String(b.earnedAt || ""));
     return direction * (Number(a.order ?? a.index ?? 0) - Number(b.order ?? b.index ?? 0));
   });
-  el.gamelistDetailTrophyDirection.innerHTML = sortArrowIcon(state.gamelistDetailTrophyDirection === "desc");
-  el.gamelistDetailTrophyDirection.classList.toggle("desc", state.gamelistDetailTrophyDirection === "desc");
-  el.gamelistDetailTrophyDirection.title = state.gamelistDetailTrophyDirection === "asc" ? "Sort ascending" : "Sort descending";
-  el.gamelistDetailTrophyDirection.setAttribute("aria-label", el.gamelistDetailTrophyDirection.title);
-  el.gamelistDetailTrophyList.innerHTML = trophies.length ? trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game?.platform || "PS5"))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("") : `<div class="detail-trophy-empty">No ${state.gamelistDetailTrophyKind === "TROPHIES" ? "trophies" : "achievements"} found for this game yet.</div>`;
+  el.detailTrophyDirection.innerHTML = sortArrowIcon(state.gamelistDetailTrophyDirection === "desc");
+  el.detailTrophyDirection.classList.toggle("desc", state.gamelistDetailTrophyDirection === "desc");
+  el.detailTrophyDirection.title = state.gamelistDetailTrophyDirection === "asc" ? "Sort ascending" : "Sort descending";
+  el.detailTrophyDirection.setAttribute("aria-label", el.detailTrophyDirection.title);
+  el.detailTrophyList.innerHTML = trophies.length ? trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game?.platform || "PS5"))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("") : `<div class="detail-trophy-empty">No ${state.gamelistDetailTrophyKind === "TROPHIES" ? "trophies" : "achievements"} found for this game yet.</div>`;
 }
 function externalActivityFor(game) {
-  const platform = normalize(shortPlatform(game.platform)); const title = normalize(game.trophyName || game.title);
-  if (platform.includes("steam") || platform === "pc") { const match = state.steamActivity.games.find((item) => { const value = normalize(item.name || item.title); return value === title || value.includes(title) || title.includes(value); }); if (!match) return null; const achievements = match.achievements || []; return { achievements, earned: achievements.filter((item) => item.earned).length, total: achievements.length }; }
-  if (platform.includes("xbox") || platform === "x360" || platform === "xone") { const match = state.xboxActivity.games.find((item) => { const value = normalize(item.title || item.game); return value === title || value.includes(title) || title.includes(value); }); if (!match) return null; const achievements = match.achievements || []; return { achievements, earned: Number(match.earned || achievements.filter((item) => item.earned).length), total: Number(match.total || achievements.length) }; }
+  const platform = normalize(shortPlatform(game.platform)); const title = game.trophyName || game.title;
+  if (platform.includes("steam") || platform === "pc") { const match = state.steamActivity.games.map((item) => ({ item, score: activityTitleMatchScore(title, item.name || item.title) })).filter(({ score }) => score >= 75).sort((a, b) => b.score - a.score)[0]?.item; if (!match) return null; const achievements = match.achievements || []; return { achievements, earned: achievements.filter((item) => item.earned).length, total: achievements.length }; }
+  if (platform.includes("xbox") || platform === "x360" || platform === "xone") { const match = state.xboxActivity.games.map((item) => ({ item, score: activityTitleMatchScore(title, item.title || item.game) })).filter(({ score }) => score >= 75).sort((a, b) => b.score - a.score)[0]?.item; if (!match) return null; const achievements = match.achievements || []; return { achievements, earned: Number(match.earned || achievements.filter((item) => item.earned).length), total: Number(match.total || achievements.length) }; }
   return null;
 }
 async function loadShelfCardTrophies(game, remote) {
@@ -1189,13 +1192,18 @@ async function loadShelfTrophies(game) {
   const external = externalActivityFor(game);
   if (external) {
     el.detailTrophies.hidden = false;
-    el.detailTrophyCount.textContent = `${external.earned}/${external.total}`;
+    el.detailTrophyTitle.textContent = "ACHIEVEMENTS";
+    el.detailTrophyCount.textContent = "";
+    const progress = external.total ? Math.round((external.earned / external.total) * 100) : 0;
+    el.detailTrophyPercent.innerHTML = external.total ? `<span class="psn-progress-pill"><em style="--progress:${progress}%"></em><strong>${progress}%</strong></span>` : "";
     el.detailTrophyList.innerHTML = external.achievements.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game.platform))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
     return;
   }
   const match = activityGameFor(game);
   const id = match?.npCommunicationId || match?.id || "";
-  if (!id) { el.detailTrophies.hidden = true; return; }
+  if (!id) { el.detailTrophies.hidden = true; el.detailTrophyPercent.innerHTML = ""; return; }
+  el.detailTrophyTitle.textContent = "TROPHIES";
+  el.detailTrophyPercent.innerHTML = "";
   el.detailTrophies.hidden = false; el.detailTrophyList.innerHTML = `<span>Loading trophies…</span>`;
   try { const response = await fetch(`/api/trophies?id=${encodeURIComponent(id)}&service=${encodeURIComponent(match.npServiceName || "trophy")}&user=${encodeURIComponent(state.gamelistSettings.psnUser || "")}`); const data = await response.json(); const trophies = data.trophies || []; el.detailTrophyCount.textContent = `${trophies.filter((item) => item.earned).length}/${trophies.length}`; el.detailTrophyList.innerHTML = trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml([item.earned ? item.earnedAt : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join(""); } catch { el.detailTrophies.hidden = true; }
 }
