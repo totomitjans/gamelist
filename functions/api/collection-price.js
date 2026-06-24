@@ -15,15 +15,17 @@ export async function onRequestGet({ request, env = {} }) {
 
   const query = [title, physicalRegionTerm(region), priceChartingPlatformTerm(platform)].filter(Boolean).join(" ");
   const searchUrl = `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedUpc || title || query)}`;
+  const fallbackUrls = directProductUrls(title, platform, region);
   const token = env.PRICECHARTING_TOKEN || globalThis.process?.env?.PRICECHARTING_TOKEN || "";
   try {
     if (searchMode) {
-      const results = rankCandidates(await fetchPublicCandidates(searchUrl), query);
+      let results = rankCandidates(await fetchPublicCandidates(searchUrl), query);
+      if (!results.length) results = rankCandidates(await fetchDirectCandidates(fallbackUrls, query, searchUrl), query);
       return json({ results: results.slice(0, 12), searchUrl, source: "PriceCharting" });
     }
     const apiProduct = token ? await fetchApiProduct(token, { id: requestedId, upc: requestedUpc, query }) : null;
     const [publicProduct, retailProduct] = await Promise.all([
-      fetchPublicProduct({ query, searchUrl, requestedId: requestedId || apiProduct?.id || "", requestedUrl }),
+      fetchPublicProduct({ query, searchUrl, requestedId: requestedId || apiProduct?.id || "", requestedUrl, fallbackUrls }),
       fetchXtralifeProduct({ title, platform, region }).catch(() => null),
     ]);
     const product = convertCurrency(mergeProduct(apiProduct, publicProduct, retailProduct, { title, platform, searchUrl }), currency, publicProduct?.forexRates);
@@ -110,9 +112,10 @@ async function fetchPublicCandidates(searchUrl) {
   return parseSearchCandidates(await response.text());
 }
 
-async function fetchPublicProduct({ query, searchUrl, requestedId, requestedUrl }) {
+async function fetchPublicProduct({ query, searchUrl, requestedId, requestedUrl, fallbackUrls = [] }) {
   const candidates = requestedUrl ? [] : await fetchPublicCandidates(searchUrl);
   const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : candidates.find((item) => requestedId && item.productId === requestedId) || bestCandidate(candidates, query);
+  if (!candidate?.url && fallbackUrls.length) return (await fetchDirectCandidates(fallbackUrls, query, searchUrl))[0] || null;
   if (!candidate?.url) return candidate || null;
   const productResponse = await fetch(candidate.url, { headers: browserHeaders(), cf: { cacheTtl: 3600, cacheEverything: true } });
   if (!productResponse.ok) return candidate;
@@ -130,6 +133,11 @@ async function fetchPublicProduct({ query, searchUrl, requestedId, requestedUrl 
     prices: { ...(candidate.prices || {}), loose: priceCellById(html, "used_price") ?? candidate.prices?.loose, complete: priceCellById(html, "complete_price") ?? candidate.prices?.complete, sealed: priceCellById(html, "new_price") ?? candidate.prices?.sealed, graded: priceCellById(html, "graded_price") ?? candidate.prices?.graded, box: priceCellById(html, "boxonly_price") ?? candidate.prices?.box, manual: priceCellById(html, "manualonly_price") ?? candidate.prices?.manual },
     forexRates: parseForexRates(html),
   };
+}
+
+async function fetchDirectCandidates(urls, query, searchUrl) {
+  const products = await Promise.all(urls.map((requestedUrl) => fetchPublicProduct({ query, searchUrl, requestedId: "", requestedUrl })));
+  return products.filter((product) => product?.productId && product?.productName);
 }
 
 function parseSearchCandidates(html) {
@@ -215,6 +223,8 @@ function cents(value) { const number = Number(value); return Number.isFinite(num
 function withoutNulls(value) { return Object.fromEntries(Object.entries(value).filter(([, item]) => item != null)); }
 function physicalRegionTerm(region) { const value = normalize(region); if (/japan|jp/.test(value)) return "JP"; if (/spain|europe|france|germany|united kingdom|uk|australia/.test(value)) return "PAL"; if (/united states|usa|ntsc/.test(value)) return "NTSC"; if (/taiwan|asia/.test(value)) return "Asian English"; return ""; }
 function priceChartingPlatformTerm(platform) { const value = normalize(platform); const playstation = value.match(/^(?:ps|playstation)\s*([1-5])$/); if (playstation) return `Playstation ${playstation[1]}`; if (value === "switch") return "Nintendo Switch"; if (value === "switch 2") return "Nintendo Switch 2"; if (value === "xone") return "Xbox One"; if (value === "x360") return "Xbox 360"; return platform; }
+function directProductUrls(title, platform, region) { const titleSlug = slug(title); const consoleSlug = slug(priceChartingPlatformTerm(platform)); if (!titleSlug || !consoleSlug) return []; const prefix = physicalRegionTerm(region) === "PAL" ? "pal-" : physicalRegionTerm(region) === "JP" ? "jp-" : ""; return [...new Set([`${SITE_URL}/game/${prefix}${consoleSlug}/${titleSlug}`, `${SITE_URL}/game/${consoleSlug}/${titleSlug}`])]; }
+function slug(value) { return normalize(value).replace(/\s+/g, "-"); }
 function isoDate(value) { const textValue = String(value || "").trim(); if (!textValue) return ""; const leadingDate = textValue.match(/^\d{4}-\d{2}-\d{2}/)?.[0]; if (leadingDate) return leadingDate; const date = new Date(`${textValue} UTC`); return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10); }
 function text(value) { return decodeHtml(String(value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()); }
 function decodeHtml(value) { return String(value || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#43;/g, "+").replace(/&nbsp;/g, " "); }

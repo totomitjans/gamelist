@@ -1,4 +1,4 @@
-import { createGameCardShell, bindActivityCardParallax, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, activityTrailerFrameMarkup, activityReleaseStatus, activityCoverOverride, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime } from "./activity-ui.js";
+import { normalizeSearchText, createGameCardShell, bindActivityCardParallax, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, activityTrailerFrameMarkup, activityReleaseStatus, activityCoverOverride, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime } from "./activity-ui.js";
 
 mountActivitySlider(document.querySelector("#playingSection"), { count: "playingCount", previous: "playingPrevButton", next: "playingNextButton", list: "playingList", dataSection: "playing", finished: "playingFinished", finishedList: "playingFinishedList" });
 
@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v182";
-const SITE_UPDATED_AT = "2026-06-24T19:00:00Z";
+const SITE_VERSION = "v183";
+const SITE_UPDATED_AT = "2026-06-24T19:20:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -486,7 +486,7 @@ function bindEvents() {
   });
   window.addEventListener("scroll", hideSelectOverflowPopover, { passive: true });
   el.searchInput.addEventListener("input", (event) => {
-    state.filters.query = event.target.value.trim().toLowerCase();
+    state.filters.query = normalizeSearchText(event.target.value);
     state.completedVisiblePages = 1;
     render();
   });
@@ -2563,9 +2563,9 @@ function filteredGames(options = {}) {
       ...(game.statuses || []),
       ...(game.tags || []),
       ...(game.owners || []),
-    ].join(" ").toLowerCase();
+    ].join(" ");
     const tagText = [...(game.genres || []), ...gameStatuses(game), canonicalStatus(game.preorderStore), canonicalStatus(game.preferredStore)].filter(Boolean);
-    return (!state.filters.query || haystack.includes(state.filters.query))
+    return (!state.filters.query || normalizeSearchText(haystack).includes(state.filters.query))
       && (state.filters.platform === "all" || platformFilterGroup(game.platform) === state.filters.platform)
       && (state.filters.tag === "all" || tagText.includes(state.filters.tag))
       && (!applyPreorder || !state.filters.preordered || Boolean(game.preorderStore));
