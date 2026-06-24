@@ -27,6 +27,8 @@ assert.doesNotMatch(shelfHtml, /gamelistDetailDialog/, "Shelf must not create a 
 assert.match(shelfSource, /detailStorePrices\.hidden = true/, "Projected activity details must keep prices disabled");
 assert.match(appSource, /function platinumCard\(item\)[\s\S]*?activityCoverOverride\(item\)/, "Main completed cards must apply shared cover overrides at render time");
 assert.doesNotMatch(shelfSource, /card\.querySelector\("\.edit-action"\)\.remove\(\)/, "Shelf playing cards must retain Main's edit action");
+assert.match(shelfSource, /el\.addButton\.hidden = false/, "Shelf must keep Add Game visible while logged out");
+assert.match(shelfSource, /function openEditor\(game = null\) \{\s*if \(!state\.canEdit\) return openAuth\(\)/, "Shelf Add Game must request login while logged out");
 
 class MemoryKv {
   values = new Map();

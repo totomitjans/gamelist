@@ -3,8 +3,8 @@ import { createGameCardShell, mountActivitySlider, finishedGameMarkup, achieveme
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v166";
-const SITE_UPDATED_AT = "2026-06-24T13:00:00Z";
+const SITE_VERSION = "v167";
+const SITE_UPDATED_AT = "2026-06-24T13:30:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -253,7 +253,7 @@ function renderAll() {
 function renderChrome() {
   document.body.classList.toggle("can-edit", state.canEdit);
   document.body.classList.toggle("list-view-mode", state.viewMode === "list");
-  el.addButton.hidden = !state.canEdit;
+  el.addButton.hidden = false;
   el.layoutButton.hidden = !state.canEdit;
   el.syncButton.hidden = !state.canEdit;
   el.fetchPricesButton.hidden = !state.canEdit;
