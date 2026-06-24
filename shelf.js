@@ -3,8 +3,8 @@ import { createGameCardShell, mountActivitySlider, finishedGameMarkup, achieveme
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v168";
-const SITE_UPDATED_AT = "2026-06-24T14:00:00Z";
+const SITE_VERSION = "v169";
+const SITE_UPDATED_AT = "2026-06-24T14:20:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -1014,8 +1014,17 @@ async function loadShelfCardTrophies(game, remote) {
     const all = Array.isArray(data.trophies) ? data.trophies : [];
     state.cardTrophies[cacheKey] = { loading: false, trophies: all.filter((item) => item.earned).sort((a, b) => Date.parse(b.rawEarnedAt || b.earnedAt || 0) - Date.parse(a.rawEarnedAt || a.earnedAt || 0)).slice(0, 3), earned: all.filter((item) => item.earned).length, total: all.length };
   } catch { state.cardTrophies[cacheKey] = { loading: false, trophies: [], earned: 0, total: 0 }; }
-  renderGamelistModules();
+  updateShelfCardTrophyStrips(game.id);
   renderLibrary();
+}
+function updateShelfCardTrophyStrips(gameId) {
+  const game = state.gamelistGames.find((item) => item.id === gameId && !item.deletedAt);
+  if (!game) return;
+  document.querySelectorAll(`.game-card[data-gamelist-id="${CSS.escape(gameId)}"] .card-trophies`).forEach((node) => {
+    node.innerHTML = game.playing ? shelfCardTrophies(game) : "";
+    node.hidden = !node.innerHTML;
+  });
+  if (game.playing) schedulePlayingCardHeightSync();
 }
 function finishedProjectionCard(game) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
