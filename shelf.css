@@ -297,32 +297,9 @@
   line-height: 1.55;
 }
 
-.shelf-lookup { align-items: end; }
-.shelf-lookup label { flex: 1; }
-.shelf-lookup-results { display: grid; gap: 7px; margin: 10px 0 18px; }
-.lookup-result {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 7px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  text-align: left;
-}
-.lookup-result:hover { border-color: rgba(255, 0, 81, 0.46); }
-.lookup-result img { width: 46px; height: 62px; object-fit: cover; border-radius: 4px; }
-.lookup-result strong { display: block; font-size: 12px; }
-.lookup-result small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
-.lookup-result > span:last-child { color: var(--accent-2); font-size: 9px; font-weight: 850; text-transform: uppercase; }
-
-.shelf-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.shelf-form-grid .form-span { grid-column: 1 / -1; }
+.physical-id-grid { margin-top: 12px; }
 .cover-project-control { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .cover-project-control .ghost-button { min-height: 42px; white-space: nowrap; }
-.save-note,
 .layout-help { color: var(--dim); font-size: 11px; }
 
 .layout-list { display: grid; gap: 7px; }
@@ -386,7 +363,7 @@
 .condition-pill.condition-sealed { color:#f7df69; background:rgba(247,223,105,.11); box-shadow:0 0 16px rgba(247,223,105,.1); }
 .shelf-grid .card-trophies { grid-column:1/-1; }
 .physical-lookup-selected { display:flex; align-items:center; gap:9px; }.physical-lookup-selected img { width:22px; height:22px; object-fit:contain; }
-.shelf-lookup .icon-only-button.is-loading svg { animation: shelf-search-pulse .75s ease-in-out infinite alternate; }
+#addDialog #lookupButton.is-loading svg { animation: shelf-search-pulse .75s ease-in-out infinite alternate; }
 @keyframes shelf-search-pulse { to { opacity:.35; transform:scale(.86); } }
 .shelf-library>.column-head { min-height:0; justify-content:flex-end; padding:0 2px 8px; }
 
@@ -418,9 +395,5 @@
   .condition-grid { grid-template-columns: repeat(2, 1fr); }
   .shelf-dialog .detail-trophy-list, .collection-price-grid { grid-template-columns: 1fr 1fr; }
   .detail-store-prices { --price-columns:2; }
-  .shelf-form-grid { grid-template-columns: 1fr; }
-  .shelf-form-grid .form-span { grid-column: auto; }
   .cover-project-control { grid-template-columns: 1fr; }
-  .lookup-result { grid-template-columns: 42px minmax(0, 1fr); }
-  .lookup-result > span:last-child { display: none; }
 }

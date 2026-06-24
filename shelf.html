@@ -140,55 +140,69 @@
       </article>
     </dialog>
 
-    <dialog id="addDialog" class="shelf-dialog">
-      <form class="modal add-modal" id="addGameForm">
+    <dialog id="addDialog">
+      <form method="dialog" class="modal add-modal" id="addGameForm">
         <div class="modal-head">
-          <div><p class="eyebrow">Shelf editor</p><h2>Add physical game</h2></div>
+          <div><p class="eyebrow">Game data</p><h2>Add Game</h2></div>
           <button class="icon-button" id="addClose" type="button" title="Close" aria-label="Close">×</button>
         </div>
 
-        <div class="lookup-row shelf-lookup">
+        <div class="lookup-row">
           <label>
-            <span>Find a game</span>
-            <input id="lookupInput" type="search" placeholder="Search IGDB / HowLongToBeat">
+            <span>Search DB or PriceCharting</span>
+            <input id="lookupInput" type="search" placeholder="Game name or PriceCharting page">
           </label>
           <button class="ghost-button icon-only-button" id="lookupButton" type="button" title="Fetch info" aria-label="Fetch info">
             <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5 21 21"></path></svg>
           </button>
         </div>
-        <div class="lookup-results shelf-lookup-results" id="lookupResults"></div>
+        <div class="lookup-results" id="lookupResults"></div>
 
-        <div class="form-grid shelf-form-grid">
-          <label><span>Title</span><input id="titleInput" required></label>
-          <label><span>Console</span><input id="platformInput" list="shelfPlatformOptions" required><datalist id="shelfPlatformOptions"></datalist></label>
-          <label><span>Region</span><select id="countryInput" required></select></label>
-          <fieldset class="form-span condition-editor"><legend>Completeness</legend><div class="condition-grid">
-            <label class="check-filter toggle-check"><input id="conditionGameInput" type="checkbox"><span>Game</span></label>
-            <label class="check-filter toggle-check"><input id="conditionManualInput" type="checkbox"><span>Manual</span></label>
-            <label class="check-filter toggle-check"><input id="conditionBoxInput" type="checkbox"><span>Box</span></label>
-            <label class="check-filter toggle-check"><input id="conditionOtherInput" type="checkbox"><span>Other</span></label>
-            <label class="check-filter toggle-check condition-sealed"><input id="conditionSealedInput" type="checkbox"><span>Sealed</span></label>
+        <section class="form-group">
+          <h3>Collecting Information</h3>
+          <div class="form-grid">
+            <label><span>Title</span><input id="titleInput" required></label>
+            <label><span>Console</span><input id="platformInput" list="shelfPlatformOptions" required><datalist id="shelfPlatformOptions"></datalist></label>
+            <label><span>Region</span><select id="countryInput" required></select></label>
+            <label><span>Release Date</span><input id="releaseDateInput" type="date"></label>
+            <label><span>Owners</span><input id="ownersInput" placeholder="Judy, Jordi"></label>
+            <label><span>Category</span><input id="categoryInput" placeholder="Game, Collector's Edition..."></label>
+            <label><span>Estimated Value</span><input id="priceInput" type="number" min="0" step="0.01" placeholder="0.00"></label>
+            <label><span>Trophy Search Name</span><input id="trophyNameInput" placeholder="Optional alternate title"></label>
+          </div>
+        </section>
+
+        <section class="form-group">
+          <h3>Physical Edition</h3>
+          <fieldset class="condition-editor"><legend>Completeness</legend><div class="condition-grid">
+              <label class="check-filter toggle-check"><input id="conditionGameInput" type="checkbox"><span>Game</span></label>
+              <label class="check-filter toggle-check"><input id="conditionManualInput" type="checkbox"><span>Manual</span></label>
+              <label class="check-filter toggle-check"><input id="conditionBoxInput" type="checkbox"><span>Box</span></label>
+              <label class="check-filter toggle-check"><input id="conditionOtherInput" type="checkbox"><span>Other</span></label>
+              <label class="check-filter toggle-check condition-sealed"><input id="conditionSealedInput" type="checkbox"><span>Sealed</span></label>
           </div></fieldset>
-          <label><span>Estimated value</span><input id="priceInput" type="number" min="0" step="0.01" placeholder="0.00"></label>
-          <label><span>Owners</span><input id="ownersInput" placeholder="Judy, Jordi"></label>
-          <label><span>Category</span><input id="categoryInput" placeholder="Game, Collector's Edition..."></label>
-          <label><span>Publisher</span><input id="publisherInput"></label>
-          <label><span>Developer</span><input id="developerInput"></label>
-          <label class="form-span"><span>Genre</span><input id="genreInput"></label>
-          <label><span>Release date</span><input id="releaseDateInput" type="date"></label>
-          <label><span>UPC / EAN</span><input id="upcInput" inputmode="numeric"></label>
-          <label><span>SKU / catalog number</span><input id="skuInput"></label>
-          <label><span>ASIN</span><input id="asinInput"></label>
-          <label><span>eBay product ID</span><input id="epidInput"></label>
-          <label><span>PriceCharting product ID</span><input id="pricechartingIdInput"></label>
-          <label><span>Trophy search name</span><input id="trophyNameInput" placeholder="Optional alternate title"></label>
-          <label class="form-span"><span>Website links</span><input id="websitesInput" placeholder="https://..., https://..."></label>
-          <label class="form-span"><span>Cover URL</span><input id="coverInput" type="url"></label>
-          <label class="form-span cover-project-field"><span>The Cover Project page, cover ID, or CDN scan</span><div class="cover-project-control"><input id="coverProjectInput" placeholder="e.g. 18078 or https://www.thecoverproject.net/view.php?cover_id=18078"><button class="ghost-button" id="coverProjectButton" type="button">Find cover</button></div></label>
-          <label class="form-span"><span>Condition notes</span><textarea id="notesInput" rows="3" placeholder="Missing booklet, sealed, damaged case..."></textarea></label>
-          <label class="form-span"><span>Description</span><textarea id="shelfDescriptionInput" rows="4"></textarea></label>
-        </div>
-        <p class="save-note">Added games are saved to this browser for now.</p>
+          <div class="form-grid physical-id-grid">
+            <label><span>UPC / EAN</span><input id="upcInput" inputmode="numeric"></label>
+            <label><span>SKU / Catalog Number</span><input id="skuInput"></label>
+            <label><span>ASIN</span><input id="asinInput"></label>
+            <label><span>eBay Product ID</span><input id="epidInput"></label>
+            <label class="wide"><span>PriceCharting Page or Product ID</span><input id="pricechartingIdInput" placeholder="https://www.pricecharting.com/game/... or product ID"></label>
+            <label class="wide"><span>Condition Notes</span><textarea id="notesInput" rows="3" placeholder="Missing booklet, sealed, damaged case..."></textarea></label>
+          </div>
+        </section>
+
+        <section class="form-group">
+          <h3>Game Data</h3>
+          <div class="form-grid">
+            <label><span>Developer</span><input id="developerInput" placeholder="Studio"></label>
+            <label><span>Publisher</span><input id="publisherInput" placeholder="Publisher"></label>
+            <label class="wide"><span>Genre</span><input id="genreInput"></label>
+            <label class="wide"><span>Description</span><textarea id="shelfDescriptionInput" rows="4"></textarea></label>
+            <label class="wide"><span>Website Links</span><input id="websitesInput" placeholder="https://..., https://..."></label>
+            <label class="wide"><span>Cover URL</span><input id="coverInput" type="url"></label>
+            <label class="wide cover-project-field"><span>The Cover Project Page, Cover ID, or CDN Scan</span><div class="cover-project-control"><input id="coverProjectInput" placeholder="e.g. 18078 or https://www.thecoverproject.net/view.php?cover_id=18078"><button class="ghost-button" id="coverProjectButton" type="button">Find Cover</button></div></label>
+          </div>
+        </section>
         <div class="modal-actions">
           <button class="ghost-button" id="addCancel" type="button">Cancel</button>
           <button class="primary-button" type="submit">Add to Shelf</button>

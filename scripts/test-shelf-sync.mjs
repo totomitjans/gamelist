@@ -4,13 +4,14 @@ import { onRequestPut as putGamelist } from "../functions/api/sync.js";
 import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
 import { activityAllowsPsnCardTrophies, activityCoverOverride, activityTitleMatchScore } from "../activity-ui.js";
 
-const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss, appHtml] = await Promise.all([
+const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss, appHtml, collectionPriceSource] = await Promise.all([
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.css", import.meta.url), "utf8"),
   readFile(new URL("../shelf.html", import.meta.url), "utf8"),
   readFile(new URL("../styles.css", import.meta.url), "utf8"),
   readFile(new URL("../index.html", import.meta.url), "utf8"),
+  readFile(new URL("../functions/api/collection-price.js", import.meta.url), "utf8"),
 ]);
 for (const source of [appSource, shelfSource]) {
   assert.match(source, /from "\.\/activity-ui\.js"/);
@@ -77,6 +78,15 @@ assert.match(shelfSource, /async function loadTrophyActivity\(\)[\s\S]*?updateAl
 for (const source of [appSource, shelfSource]) assert.match(source, /settings-preference-row/, "Main and Shelf must keep Theme and Default order together in the shared preference row");
 assert.match(shelfSource, /function updateShelfCardTrophyStrips\(gameId\)[\s\S]*?\.game-card\[data-gamelist-id=[\s\S]*?shelfCardTrophies\(game\)/, "Shelf must update the visible playing-card trophy strip when its async data arrives");
 assert.match(shelfSource, /async function loadShelfCardTrophies\(game, remote\)[\s\S]*?updateShelfCardTrophyStrips\(game\.id\)/, "Shelf PSN trophy loading must refresh the outside playing card directly");
+assert.match(shelfHtml, /<dialog id="addDialog">\s*<form method="dialog" class="modal add-modal"/, "Shelf physical editor must use Main's dialog and modal shell");
+assert.match(shelfHtml, /<p class="eyebrow">Game data<\/p><h2>Add Game<\/h2>/, "Shelf physical editor must use a normal Add Game title beneath the Game data eyebrow");
+for (const section of ["Collecting Information", "Physical Edition", "Game Data"]) assert.match(shelfHtml, new RegExp(`<h3>${section}<\\/h3>`), `Shelf physical editor must group ${section} like Main`);
+assert.doesNotMatch(shelfHtml, /Added games are saved to this browser/, "Shelf must not show the obsolete browser-only save note");
+assert.doesNotMatch(shelfCss, /^\.lookup-result/m, "Shelf lookup must use Main's shared result CSS");
+assert.match(shelfSource, /classList\.add\("loaded"\)/, "Shelf lookup results must activate Main's visible result state");
+assert.match(shelfSource, /mode: "search"[\s\S]*?PriceCharting physical edition/, "Shelf lookup must show selectable PriceCharting editions");
+assert.match(collectionPriceSource, /region-name=all&exclude-variants=false/, "PriceCharting edition search must include PAL, Japan, and other regional variants");
+assert.match(collectionPriceSource, /cleanPriceChartingUrl/, "PriceCharting lookup must accept an exact product page URL");
 
 class MemoryKv {
   values = new Map();

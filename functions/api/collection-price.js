@@ -9,15 +9,21 @@ export async function onRequestGet({ request, env = {} }) {
   const currency = ["EUR", "USD"].includes(String(url.searchParams.get("currency") || "").toUpperCase()) ? String(url.searchParams.get("currency")).toUpperCase() : "EUR";
   const requestedId = cleanIdentifier(url.searchParams.get("id"));
   const requestedUpc = cleanIdentifier(url.searchParams.get("upc"));
-  if (!title && !requestedId && !requestedUpc) return json({ error: "Missing title, product id, or UPC" }, 400);
+  const requestedUrl = cleanPriceChartingUrl(url.searchParams.get("url"));
+  const searchMode = url.searchParams.get("mode") === "search";
+  if (!title && !requestedId && !requestedUpc && !requestedUrl) return json({ error: "Missing title, product id, UPC, or PriceCharting URL" }, 400);
 
   const query = [title, physicalRegionTerm(region), platform].filter(Boolean).join(" ");
-  const searchUrl = `${SITE_URL}/search-products?type=prices&q=${encodeURIComponent(requestedUpc || query)}`;
+  const searchUrl = `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedUpc || query)}`;
   const token = env.PRICECHARTING_TOKEN || globalThis.process?.env?.PRICECHARTING_TOKEN || "";
   try {
+    if (searchMode) {
+      const results = await fetchPublicCandidates(searchUrl);
+      return json({ results: results.slice(0, 12), searchUrl, source: "PriceCharting" });
+    }
     const apiProduct = token ? await fetchApiProduct(token, { id: requestedId, upc: requestedUpc, query }) : null;
     const [publicProduct, retailProduct] = await Promise.all([
-      fetchPublicProduct({ query, searchUrl, requestedId: requestedId || apiProduct?.id || "" }),
+      fetchPublicProduct({ query, searchUrl, requestedId: requestedId || apiProduct?.id || "", requestedUrl }),
       fetchXtralifeProduct({ title, platform, region }).catch(() => null),
     ]);
     const product = convertCurrency(mergeProduct(apiProduct, publicProduct, retailProduct, { title, platform, searchUrl }), currency, publicProduct?.forexRates);
@@ -98,12 +104,15 @@ async function fetchApiProduct(token, { id, upc, query }) {
   };
 }
 
-async function fetchPublicProduct({ query, searchUrl, requestedId }) {
-  const searchResponse = await fetch(searchUrl, { headers: browserHeaders(), cf: { cacheTtl: 3600, cacheEverything: true } });
-  if (!searchResponse.ok) return null;
-  const searchHtml = await searchResponse.text();
-  const candidates = parseSearchCandidates(searchHtml);
-  const candidate = candidates.find((item) => requestedId && item.productId === requestedId) || bestCandidate(candidates, query);
+async function fetchPublicCandidates(searchUrl) {
+  const response = await fetch(searchUrl, { headers: browserHeaders(), cf: { cacheTtl: 3600, cacheEverything: true } });
+  if (!response.ok) return [];
+  return parseSearchCandidates(await response.text());
+}
+
+async function fetchPublicProduct({ query, searchUrl, requestedId, requestedUrl }) {
+  const candidates = requestedUrl ? [] : await fetchPublicCandidates(searchUrl);
+  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : candidates.find((item) => requestedId && item.productId === requestedId) || bestCandidate(candidates, query);
   if (!candidate?.url) return candidate || null;
   const productResponse = await fetch(candidate.url, { headers: browserHeaders(), cf: { cacheTtl: 3600, cacheEverything: true } });
   if (!productResponse.ok) return candidate;
@@ -112,12 +121,13 @@ async function fetchPublicProduct({ query, searchUrl, requestedId }) {
   return {
     ...candidate,
     productName: candidate.productName || attributeHeading(html),
-    consoleName: candidate.consoleName || "",
+    consoleName: candidate.consoleName || consoleNameFromProductUrl(candidate.url),
     releaseDate: isoDate(attributeValue(html, "Release Date")),
     upc: attributeValue(html, "UPC"), asin: attributeValue(html, "ASIN (Amazon)"), epid: attributeValue(html, "ePID (eBay)"),
     productId: attributeValue(html, "PriceCharting ID") || candidate.productId,
     genre: attributeValue(html, "Genre"), publisher: attributeValue(html, "Publisher"), rating: attributeValue(html, "ESRB Rating"),
-    image: metaContent(html, "og:image"), history: chart,
+    image: metaContent(html, "og:image") || itemImage(html), history: chart,
+    prices: { ...(candidate.prices || {}), loose: priceCellById(html, "used_price") ?? candidate.prices?.loose, complete: priceCellById(html, "complete_price") ?? candidate.prices?.complete, sealed: priceCellById(html, "new_price") ?? candidate.prices?.sealed, graded: priceCellById(html, "graded_price") ?? candidate.prices?.graded, box: priceCellById(html, "boxonly_price") ?? candidate.prices?.box, manual: priceCellById(html, "manualonly_price") ?? candidate.prices?.manual },
     forexRates: parseForexRates(html),
   };
 }
@@ -125,11 +135,13 @@ async function fetchPublicProduct({ query, searchUrl, requestedId }) {
 function parseSearchCandidates(html) {
   return [...String(html).matchAll(/<tr[^>]+id="product-(\d+)"[\s\S]*?<\/tr>/gi)].map((match) => {
     const row = match[0];
-    const link = row.match(/href="(https:\/\/www\.pricecharting\.com\/game\/[^"]+)"/i)?.[1] || "";
+    const link = row.match(/href="(https:\/\/www\.pricecharting\.com\/(?:[a-z]{2}\/)?game\/[^"]+)"/i)?.[1] || "";
     const titleCell = row.match(/<td class="title">([\s\S]*?)<\/td>/i)?.[1] || "";
     const consoleCell = row.match(/<td class="console[^>]*>([\s\S]*?)<\/td>/i)?.[1] || "";
+    const consoleName = text(consoleCell);
+    const rawProductName = text(titleCell);
     return {
-      productId: match[1], url: decodeHtml(link), productName: text(titleCell), consoleName: text(consoleCell),
+      productId: match[1], url: decodeHtml(link), productName: consoleName && rawProductName.endsWith(consoleName) ? rawProductName.slice(0, -consoleName.length).trim() : rawProductName, consoleName,
       prices: { loose: moneyCell(row, "used_price"), complete: moneyCell(row, "cib_price"), sealed: moneyCell(row, "new_price") },
     };
   });
@@ -189,8 +201,10 @@ function attributeValue(html, label) {
   const match = String(html).match(new RegExp(`<td[^>]*class="title"[^>]*>\\s*${escaped}:?\\s*<\\/td>\\s*<td[^>]*class="details"[^>]*>([\\s\\S]*?)<\\/td>`, "i"));
   return text(match?.[1] || "").replace(/^none$/i, "");
 }
-function attributeHeading(html) { return text(String(html).match(/<div id="full_details"[\s\S]*?<h2>([\s\S]*?)<\/h2>/i)?.[1] || "").replace(/\s*\([^)]*\)\s*Details\s*$/i, ""); }
+function attributeHeading(html) { return text(String(html).match(/<div id="full_details"[\s\S]*?<h2>([\s\S]*?)<\/h2>/i)?.[1] || "").replace(/\s*\([^)]*\)\s*(?:Details|Detalles)\s*$/i, ""); }
 function metaContent(html, property) { return decodeHtml(String(html).match(new RegExp(`<meta[^>]+property="${property}"[^>]+content="([^"]+)"`, "i"))?.[1] || ""); }
+function itemImage(html) { return decodeHtml(String(html).match(/<img[^>]+src=['"]([^'"]+)['"][^>]+itemprop=['"]image['"]/i)?.[1] || ""); }
+function priceCellById(html, id) { const cell = String(html).match(new RegExp(`<td[^>]+id="${id}"[^>]*>([\\s\\S]*?)<\\/td>`, "i"))?.[1] || ""; const value = text(cell).match(/(?:\$|€|£)\s*([\d,.]+)/)?.[1]?.replace(/,/g, ""); const number = Number(value); return Number.isFinite(number) && number > 0 ? number : null; }
 function parseForexRates(html) { try { return JSON.parse(String(html).match(/VGPC\.forex_rates\s*=\s*(\{[^;]+\})/)?.[1] || "{}"); } catch { return {}; } }
 function moneyCell(row, className) { const cell = row.match(new RegExp(`<td[^>]+class="[^"]*${className}[^"]*"[^>]*>([\\s\\S]*?)<\\/td>`, "i"))?.[1] || ""; const value = text(cell).replace(/[^0-9.]/g, ""); const number = Number(value); return Number.isFinite(number) && number > 0 ? number : null; }
 function cents(value) { const number = Number(value); return Number.isFinite(number) && number > 0 ? number / 100 : null; }
@@ -202,5 +216,7 @@ function decodeHtml(value) { return String(value || "").replace(/&amp;/g, "&").r
 function normalize(value) { return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
 function clean(value, max) { return String(value || "").trim().slice(0, max); }
 function cleanIdentifier(value) { return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64); }
+function cleanPriceChartingUrl(value) { try { const url = new URL(String(value || "")); return url.hostname === "www.pricecharting.com" && /^\/(?:[a-z]{2}\/)?game\//i.test(url.pathname) ? `${url.origin}${url.pathname}` : ""; } catch { return ""; } }
+function consoleNameFromProductUrl(value) { try { const parts = new URL(value).pathname.split("/").filter(Boolean); const gameIndex = parts.indexOf("game"); const slug = parts[gameIndex + 1] || ""; return slug.split("-").map((part, index) => index === 0 && ["pal", "jp"].includes(part) ? part.toUpperCase() : part.charAt(0).toUpperCase() + part.slice(1)).join(" "); } catch { return ""; } }
 function browserHeaders() { return { "Accept": "text/html,application/xhtml+xml", "Accept-Language": "en-US,en;q=0.9", "User-Agent": "Mozilla/5.0 (compatible; GamelistShelf/1.0)" }; }
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=900" } }); }

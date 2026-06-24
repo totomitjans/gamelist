@@ -3,8 +3,8 @@ import { createGameCardShell, bindActivityCardParallax, mountActivitySlider, fin
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v179";
-const SITE_UPDATED_AT = "2026-06-24T17:00:00Z";
+const SITE_VERSION = "v180";
+const SITE_UPDATED_AT = "2026-06-24T18:30:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -519,6 +519,7 @@ function openEditor(game = null) {
   if (!state.canEdit) return openAuth();
   state.editingId = game?.id || "";
   state.lookupResults = [];
+  el.lookupResults.classList.remove("loaded");
   el.lookupResults.innerHTML = "";
   el.lookupInput.value = game?.title || "";
   const values = game || { platform: "Nintendo Switch", country: "United Kingdom", game: true, box: true, manual: true, category: "Game" };
@@ -527,33 +528,66 @@ function openEditor(game = null) {
   el.fields.websites.value = websiteLinks(values).join(", ");
   Object.entries(el.conditionFields).forEach(([key, input]) => { input.checked = conditionValue(values, key); });
   syncConditionInputs();
-  el.addForm.querySelector(".modal-head h2").textContent = game ? "Edit physical game" : "Add physical game";
+  el.addForm.querySelector(".modal-head h2").textContent = game ? "Edit Game" : "Add Game";
   el.addForm.querySelector("button[type='submit']").textContent = game ? "Save changes" : "Add to Shelf";
   openDialog(el.addDialog);
 }
 
 async function lookupGame() {
-  const query = el.lookupInput.value.trim();
+  const query = el.lookupInput.value.trim() || el.fields.title.value.trim();
   if (!query) return;
   el.lookupButton.disabled = true;
   el.lookupButton.classList.add("is-loading");
   el.lookupButton.title = "Fetching game information";
-  el.lookupResults.innerHTML = `<div class="lookup-loading">Searching game databases…</div>`;
+  el.lookupResults.classList.remove("loaded");
+  el.lookupResults.innerHTML = `<div class="empty">Searching game data and PriceCharting editions…</div>`;
+  el.lookupResults.classList.add("loaded");
   try {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-    const data = response.ok ? await response.json() : { results: [] };
-    state.lookupResults = (data.results || []).slice(0, 8);
-    el.lookupResults.innerHTML = state.lookupResults.length ? state.lookupResults.map((result, index) => {
-      const platforms = (result.platforms || [result.platform]).filter(Boolean);
-      return `<button class="lookup-result" type="button" data-result-index="${index}"><img src="${escapeHtml(coverUrl(result.cover || "") || "assets/Icon.png")}" alt=""><span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml(platforms.join(" · ") || "Platform unknown")}</small></span><span>Use this</span></button>`;
-    }).join("") : `<div class="lookup-loading">No close match found. You can still enter the details manually.</div>`;
+    const directUrl = priceChartingPageUrl(query);
+    if (directUrl) {
+      const physical = await fetchPhysicalMetadata(el.fields.title.value.trim(), { url: directUrl });
+      if (!physical) throw new Error("PriceCharting edition unavailable");
+      el.fields.platform.value = bestCollectionPlatform([physical.consoleName], el.fields.platform.value);
+      applyPriceChartingRegion(physical.consoleName);
+      applyPhysicalMetadata(physical);
+      renderPhysicalSelection(physical);
+      return;
+    }
+    const physicalParams = new URLSearchParams({ mode: "search", title: query, platform: shortPlatform(el.fields.platform.value), region: el.fields.country.value, currency: state.gamelistSettings.currency || "EUR" });
+    const [gameResponse, physicalResponse] = await Promise.all([
+      fetch(`/api/search?q=${encodeURIComponent(query)}`),
+      fetch(`/api/collection-price?${physicalParams}`),
+    ]);
+    const gameData = gameResponse.ok ? await gameResponse.json() : { results: [] };
+    const physicalData = physicalResponse.ok ? await physicalResponse.json() : { results: [] };
+    const gameResults = (gameData.results || []).slice(0, 6).map((result) => ({ ...result, lookupSource: "game" }));
+    const physicalResults = (physicalData.results || []).slice(0, 8).map((result) => ({ ...result, title: result.productName, platform: result.consoleName, lookupSource: "pricecharting" }));
+    state.lookupResults = [...physicalResults, ...gameResults];
+    renderShelfLookupResults();
   } catch {
-    el.lookupResults.innerHTML = `<div class="lookup-loading">Lookup is unavailable right now. Manual entry still works.</div>`;
+    el.lookupResults.innerHTML = `<div class="empty">Lookup is unavailable right now. Manual entry still works.</div>`;
   } finally {
+    requestAnimationFrame(() => el.lookupResults.classList.add("loaded"));
     el.lookupButton.disabled = false;
     el.lookupButton.classList.remove("is-loading");
     el.lookupButton.title = "Fetch info";
   }
+}
+
+function renderShelfLookupResults() {
+  el.lookupResults.classList.remove("loaded");
+  if (!state.lookupResults.length) {
+    el.lookupResults.innerHTML = `<div class="empty">No close match found. You can still enter the details manually.</div>`;
+    requestAnimationFrame(() => el.lookupResults.classList.add("loaded"));
+    return;
+  }
+  el.lookupResults.innerHTML = state.lookupResults.map((result, index) => {
+    const physical = result.lookupSource === "pricecharting";
+    const platforms = (result.platforms || [result.platform]).filter(Boolean);
+    const image = physical ? "https://www.pricecharting.com/images/favicon.ico" : coverUrl(result.cover || "");
+    return `<div class="lookup-result"><img src="${escapeHtml(image)}" alt="" ${image ? "" : "hidden"}><div><strong>${escapeHtml(result.title || "Untitled game")}</strong><p>${escapeHtml(platforms.join(" · ") || "Platform unknown")}</p><p>${physical ? "PriceCharting physical edition" : "Game database metadata"}</p></div><button class="ghost-button" type="button" data-result-index="${index}">Use</button></div>`;
+  }).join("");
+  requestAnimationFrame(() => el.lookupResults.classList.add("loaded"));
 }
 
 async function chooseLookupResult(event) {
@@ -561,6 +595,17 @@ async function chooseLookupResult(event) {
   if (!button) return;
   const result = state.lookupResults[Number(button.dataset.resultIndex)];
   if (!result) return;
+  if (result.lookupSource === "pricecharting") {
+    el.lookupResults.classList.add("loaded");
+    el.lookupResults.innerHTML = `<div class="empty">Loading the selected PriceCharting edition…</div>`;
+    el.fields.title.value = result.productName || el.fields.title.value;
+    el.fields.platform.value = bestCollectionPlatform([result.consoleName], el.fields.platform.value);
+    applyPriceChartingRegion(result.consoleName);
+    const physical = await fetchPhysicalMetadata(result.productName, { id: result.productId, url: result.url });
+    if (physical) applyPhysicalMetadata(physical);
+    renderPhysicalSelection(physical || result);
+    return;
+  }
   el.fields.title.value = result.title || el.fields.title.value;
   el.fields.platform.value = bestCollectionPlatform(result.platforms || [result.platform], el.fields.platform.value);
   el.fields.publisher.value = result.publisher || "";
@@ -571,17 +616,21 @@ async function chooseLookupResult(event) {
   el.fields.websites.value = Object.values(result.storeLinks || {}).filter(Boolean).join(", ");
   el.fields.category.value = (result.genres || [])[0] || "Game";
   el.fields.description.value = result.description || "";
-  el.lookupResults.innerHTML = `<div class="lookup-loading">Matching the physical edition…</div>`;
+  el.lookupResults.classList.add("loaded");
+  el.lookupResults.innerHTML = `<div class="empty">Matching the physical edition…</div>`;
   const physical = await fetchPhysicalMetadata(result.title);
   if (physical) applyPhysicalMetadata(physical);
-  el.lookupResults.innerHTML = `<div class="lookup-selected physical-lookup-selected"><img src="${physical ? "https://www.pricecharting.com/images/favicon.ico" : "assets/Icon_shelf.png"}" alt=""><span>${physical ? `Using ${escapeHtml(physical.productName || result.title)}${physical.consoleName ? ` · ${escapeHtml(physical.consoleName)}` : ""}. Confirm the region and edition before saving.` : `Game information loaded. No exact physical edition match was found, so confirm the release and identifiers manually.`}</span></div>`;
+  renderPhysicalSelection(physical, result.title);
 }
 
-async function fetchPhysicalMetadata(title) {
+async function fetchPhysicalMetadata(title, options = {}) {
   try {
     const params = new URLSearchParams({ title, platform: shortPlatform(el.fields.platform.value), region: el.fields.country.value, currency: state.gamelistSettings.currency || "EUR" });
     if (el.fields.upc.value.trim()) params.set("upc", el.fields.upc.value.trim());
-    if (el.fields.pricechartingId.value.trim()) params.set("id", el.fields.pricechartingId.value.trim());
+    const enteredPriceCharting = el.fields.pricechartingId.value.trim();
+    const requestedUrl = options.url || priceChartingPageUrl(enteredPriceCharting);
+    if (requestedUrl) params.set("url", requestedUrl);
+    else if (options.id || enteredPriceCharting) params.set("id", options.id || enteredPriceCharting);
     const response = await fetch(`/api/collection-price?${params}`);
     const data = await response.json();
     return response.ok && !data.error ? data : null;
@@ -589,6 +638,7 @@ async function fetchPhysicalMetadata(title) {
 }
 
 function applyPhysicalMetadata(data) {
+  if (data.productName && !el.fields.title.value) el.fields.title.value = data.productName;
   if (data.releaseDate) el.fields.releaseDate.value = data.releaseDate;
   if (data.upc) el.fields.upc.value = data.upc;
   if (data.sku) el.fields.sku.value = data.sku;
@@ -597,8 +647,19 @@ function applyPhysicalMetadata(data) {
   if (data.productId) el.fields.pricechartingId.value = data.productId;
   if (data.genre && !el.fields.genre.value) el.fields.genre.value = data.genre;
   if (data.publisher && !el.fields.publisher.value) el.fields.publisher.value = data.publisher;
+  if (data.developer && !el.fields.developer.value) el.fields.developer.value = data.developer;
+  if (data.mainValue != null) el.fields.price.value = Number(data.mainValue).toFixed(2);
+  if (data.productUrl) el.fields.websites.value = [...new Set([...splitValues(el.fields.websites.value), data.productUrl])].join(", ");
   if (data.image) el.fields.cover.value = data.image;
 }
+
+function renderPhysicalSelection(physical, fallbackTitle = "") {
+  el.lookupResults.classList.add("loaded");
+  el.lookupResults.innerHTML = `<div class="lookup-selected physical-lookup-selected"><img src="${physical ? "https://www.pricecharting.com/images/favicon.ico" : "assets/Icon_shelf.png"}" alt=""><span>${physical ? `Using ${escapeHtml(physical.productName || fallbackTitle)}${physical.consoleName ? ` · ${escapeHtml(physical.consoleName)}` : ""}. Confirm the region and edition before saving.` : `Game information loaded. No exact physical edition match was found, so confirm the release and identifiers manually.`}</span></div>`;
+}
+
+function priceChartingPageUrl(value) { const match = String(value || "").trim().match(/^https:\/\/www\.pricecharting\.com\/(?:[a-z]{2}\/)?game\/[^?#]+/i); return match?.[0] || ""; }
+function applyPriceChartingRegion(consoleName) { const value = normalize(consoleName); if (value.startsWith("jp ")) el.fields.country.value = "Japan"; else if (value.startsWith("pal ") && !["United Kingdom", "Spain", "France", "Germany", "Europe", "Australia"].includes(el.fields.country.value)) el.fields.country.value = "Europe"; else if (!value.startsWith("pal ") && !value.startsWith("jp ") && ["Japan", "Europe"].includes(el.fields.country.value)) el.fields.country.value = "United States of America"; }
 
 async function saveEditor(event) {
   event.preventDefault();
