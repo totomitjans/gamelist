@@ -170,7 +170,7 @@
 
 .shelf-grid.list-view .region-flag {
   width: 32px;
-  padding: 2px;
+  padding: 0;
 }
 
 .shelf-grid.list-view .condition-pill img {

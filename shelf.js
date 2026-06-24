@@ -3,8 +3,8 @@ import { createGameCardShell, bindActivityCardParallax, mountActivitySlider, fin
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v176";
-const SITE_UPDATED_AT = "2026-06-24T16:15:00Z";
+const SITE_VERSION = "v177";
+const SITE_UPDATED_AT = "2026-06-24T16:25:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -386,9 +386,15 @@ function renderLibrary() {
   el.tabs.innerHTML = gamelistCount ? `<button class="${state.filters.tab === "all" ? "active" : ""}" data-shelf-tab="all" type="button">All</button><button class="${state.filters.tab === "gamelist" ? "active" : ""}" data-shelf-tab="gamelist" type="button">Gamelist <span>${gamelistCount}</span></button>` : "";
   el.count.textContent = `${games.length} ${games.length === 1 ? "game" : "games"}`;
   el.shelf.classList.toggle("list-view", state.viewMode === "list");
-  el.shelf.innerHTML = games.map((game) => state.viewMode === "list" ? gameRow(game) : gameCard(game)).join("");
-  el.shelf.querySelectorAll(".game-card.has-art").forEach(bindActivityCardParallax);
-  if (state.viewMode === "list") requestAnimationFrame(updateShelfRowTitleOverflow);
+  el.shelf.innerHTML = "";
+  if (state.viewMode === "list") {
+    el.shelf.innerHTML = games.map(gameRow).join("");
+    requestAnimationFrame(updateShelfRowTitleOverflow);
+  } else {
+    const fragment = document.createDocumentFragment();
+    games.forEach((game, index) => fragment.appendChild(gameCard(game, { imagePriority: index < 6 ? "eager" : "lazy" })));
+    el.shelf.appendChild(fragment);
+  }
   el.empty.hidden = games.length > 0;
 }
 
@@ -408,7 +414,7 @@ function filteredGames() {
   }).sort(sorter(state.filters.sort));
 }
 
-function gameCard(game) {
+function gameCard(game, options = {}) {
   const fallbackCover = coverUrl(game.cover || "") || platformFallback(game.platform);
   const cover = fallbackCover;
   const studio = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
@@ -420,9 +426,12 @@ function gameCard(game) {
   card.dataset.id = game.id;
   card.setAttribute("role", "button"); card.tabIndex = 0;
   card.className += `${cover ? " has-art" : ""}${ownerClasses}`;
-  if (cover) card.style.setProperty("--card-art", `url('${escapeCss(cover)}')`);
+  if (cover) {
+    card.style.setProperty("--card-art", `url("${escapeCss(cover)}")`);
+    bindActivityCardParallax(card);
+  }
   card.querySelector(".card-trailer")?.remove(); card.querySelector(".trailer-toggle")?.remove();
-  const image = card.querySelector(".cover-button img"); image.src = cover; image.dataset.coverFallback = fallbackCover; image.alt = `${game.title} cover`; image.loading = "lazy"; image.decoding = "async";
+  const image = card.querySelector(".cover-button img"); image.src = cover; image.dataset.coverFallback = fallbackCover; image.alt = `${game.title} cover`; image.loading = options.imagePriority || "lazy"; image.fetchPriority = options.imagePriority === "eager" ? "high" : "low"; image.decoding = "async";
   card.querySelector(".cover-button").dataset.action = "details";
   const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", owners.includes("Jordi"));
   card.querySelector(".title-owners").innerHTML = owners.map(ownerBadge).join("");
@@ -435,7 +444,7 @@ function gameCard(game) {
   card.querySelector(".card-actions").remove(); card.querySelector(".prices").remove();
   const note = card.querySelector(".notes"); note.textContent = game.notes || ""; note.classList.add("shelf-card-notes"); note.hidden = !game.notes;
   if (game.description) note.insertAdjacentHTML("afterend", `<p class="shelf-card-description">${escapeHtml(game.description)}</p>`);
-  return card.outerHTML;
+  return card;
 }
 
 function gameRow(game) {
