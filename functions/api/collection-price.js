@@ -13,12 +13,12 @@ export async function onRequestGet({ request, env = {} }) {
   const searchMode = url.searchParams.get("mode") === "search";
   if (!title && !requestedId && !requestedUpc && !requestedUrl) return json({ error: "Missing title, product id, UPC, or PriceCharting URL" }, 400);
 
-  const query = [title, physicalRegionTerm(region), platform].filter(Boolean).join(" ");
-  const searchUrl = `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedUpc || query)}`;
+  const query = [title, physicalRegionTerm(region), priceChartingPlatformTerm(platform)].filter(Boolean).join(" ");
+  const searchUrl = `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedUpc || title || query)}`;
   const token = env.PRICECHARTING_TOKEN || globalThis.process?.env?.PRICECHARTING_TOKEN || "";
   try {
     if (searchMode) {
-      const results = await fetchPublicCandidates(searchUrl);
+      const results = rankCandidates(await fetchPublicCandidates(searchUrl), query);
       return json({ results: results.slice(0, 12), searchUrl, source: "PriceCharting" });
     }
     const apiProduct = token ? await fetchApiProduct(token, { id: requestedId, upc: requestedUpc, query }) : null;
@@ -148,13 +148,17 @@ function parseSearchCandidates(html) {
 }
 
 function bestCandidate(candidates, query) {
+  return rankCandidates(candidates, query)[0] || null;
+}
+
+function rankCandidates(candidates, query) {
   const wanted = normalize(query);
   return candidates.map((item, index) => {
     const value = normalize(`${item.productName} ${item.consoleName}`);
-    const tokens = wanted.split(" ").filter((token) => token.length > 1);
+    const tokens = wanted.split(" ").filter((token) => token.length > 1 || /^\d$/.test(token));
     const overlap = tokens.filter((token) => value.includes(token)).length;
     return { item, score: overlap / Math.max(1, tokens.length) - index * 0.002 };
-  }).sort((a, b) => b.score - a.score)[0]?.item || null;
+  }).sort((a, b) => b.score - a.score).map(({ item }) => item);
 }
 
 function parseChart(html) {
@@ -210,6 +214,7 @@ function moneyCell(row, className) { const cell = row.match(new RegExp(`<td[^>]+
 function cents(value) { const number = Number(value); return Number.isFinite(number) && number > 0 ? number / 100 : null; }
 function withoutNulls(value) { return Object.fromEntries(Object.entries(value).filter(([, item]) => item != null)); }
 function physicalRegionTerm(region) { const value = normalize(region); if (/japan|jp/.test(value)) return "JP"; if (/spain|europe|france|germany|united kingdom|uk|australia/.test(value)) return "PAL"; if (/united states|usa|ntsc/.test(value)) return "NTSC"; if (/taiwan|asia/.test(value)) return "Asian English"; return ""; }
+function priceChartingPlatformTerm(platform) { const value = normalize(platform); const playstation = value.match(/^(?:ps|playstation)\s*([1-5])$/); if (playstation) return `Playstation ${playstation[1]}`; if (value === "switch") return "Nintendo Switch"; if (value === "switch 2") return "Nintendo Switch 2"; if (value === "xone") return "Xbox One"; if (value === "x360") return "Xbox 360"; return platform; }
 function isoDate(value) { const textValue = String(value || "").trim(); if (!textValue) return ""; const leadingDate = textValue.match(/^\d{4}-\d{2}-\d{2}/)?.[0]; if (leadingDate) return leadingDate; const date = new Date(`${textValue} UTC`); return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10); }
 function text(value) { return decodeHtml(String(value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()); }
 function decodeHtml(value) { return String(value || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#43;/g, "+").replace(/&nbsp;/g, " "); }

@@ -3,8 +3,8 @@ import { createGameCardShell, bindActivityCardParallax, mountActivitySlider, fin
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v180";
-const SITE_UPDATED_AT = "2026-06-24T18:30:00Z";
+const SITE_VERSION = "v181";
+const SITE_UPDATED_AT = "2026-06-24T18:45:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -490,7 +490,7 @@ function openDetails(game) {
   el.detailNote.textContent = game.notes || "";
   el.detailDescription.textContent = game.description || "";
   el.detailDescription.hidden = !game.description;
-  el.detailCondition.innerHTML = ["game", "manual", "box", "other", "sealed"].map((key) => `<label class="check-filter toggle-check detail-condition-check"><input type="checkbox" ${conditionValue(game, key) ? "checked" : ""} disabled><span>${escapeHtml(key[0].toUpperCase() + key.slice(1))}</span></label>`).join("");
+  el.detailCondition.innerHTML = ["game", "manual", "box", "other", "sealed"].map((key) => `<label class="check-filter toggle-check detail-condition-check condition-${key}"><input type="checkbox" ${conditionValue(game, key) ? "checked" : ""} disabled><span>${escapeHtml(key[0].toUpperCase() + key.slice(1))}</span></label>`).join("");
   el.detailConditionPanel.hidden = Boolean(game._gamelistProjection);
   const links = websiteLinks(game);
   el.detailLinks.innerHTML = links.map((link) => `<a class="store-button" href="${escapeHtml(link)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(siteIcon(link))}" alt="">${escapeHtml(linkLabel(link))}</a>`).join("");
@@ -596,8 +596,6 @@ async function chooseLookupResult(event) {
   const result = state.lookupResults[Number(button.dataset.resultIndex)];
   if (!result) return;
   if (result.lookupSource === "pricecharting") {
-    el.lookupResults.classList.add("loaded");
-    el.lookupResults.innerHTML = `<div class="empty">Loading the selected PriceCharting edition…</div>`;
     el.fields.title.value = result.productName || el.fields.title.value;
     el.fields.platform.value = bestCollectionPlatform([result.consoleName], el.fields.platform.value);
     applyPriceChartingRegion(result.consoleName);
@@ -616,8 +614,6 @@ async function chooseLookupResult(event) {
   el.fields.websites.value = Object.values(result.storeLinks || {}).filter(Boolean).join(", ");
   el.fields.category.value = (result.genres || [])[0] || "Game";
   el.fields.description.value = result.description || "";
-  el.lookupResults.classList.add("loaded");
-  el.lookupResults.innerHTML = `<div class="empty">Matching the physical edition…</div>`;
   const physical = await fetchPhysicalMetadata(result.title);
   if (physical) applyPhysicalMetadata(physical);
   renderPhysicalSelection(physical, result.title);
