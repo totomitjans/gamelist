@@ -3,8 +3,8 @@ import { createGameCardShell, bindActivityCardParallax, mountActivitySlider, fin
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 
 const SESSION_KEY = "gamelist-editor";
-const SITE_VERSION = "v177";
-const SITE_UPDATED_AT = "2026-06-24T16:25:00Z";
+const SITE_VERSION = "v178";
+const SITE_UPDATED_AT = "2026-06-24T16:40:00Z";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -440,7 +440,7 @@ function gameCard(game, options = {}) {
   card.querySelector(".meta").innerHTML = `<span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(condition)}`;
   card.querySelector(".play-dates").remove();
   card.querySelector(".chips").innerHTML = tags.map((tag) => `<span class="chip ${normalize(tag) === "gamelist" ? "accent" : ""}">${escapeHtml(tag)}</span>`).join("");
-  const trophies = card.querySelector(".card-trophies"); trophies.innerHTML = shelfCardTrophies(game); trophies.hidden = !trophies.innerHTML;
+  card.querySelector(".card-trophies").remove();
   card.querySelector(".card-actions").remove(); card.querySelector(".prices").remove();
   const note = card.querySelector(".notes"); note.textContent = game.notes || ""; note.classList.add("shelf-card-notes"); note.hidden = !game.notes;
   if (game.description) note.insertAdjacentHTML("afterend", `<p class="shelf-card-description">${escapeHtml(game.description)}</p>`);
@@ -1040,7 +1040,7 @@ function externalActivityFor(game) {
   return null;
 }
 function steamAppIdForShelfGame(game) { const direct = String(game.steamAppId || "").replace(/\D/g, ""); if (direct) return direct; const value = game.storeLinks?.steam || ""; try { const parts = new URL(value).pathname.split("/").filter(Boolean); const index = parts.indexOf("app"); return index >= 0 ? String(parts[index + 1] || "").replace(/\D/g, "") : ""; } catch { return ""; } }
-async function loadShelfSteamCardAchievements(game, appId) { const key = `steam:${appId}`; if (state.cardTrophies[key]) return; state.cardTrophies[key] = { loading: true, achievements: [], earned: 0, total: 0 }; try { const params = new URLSearchParams({ appId, debug: "1" }); if (state.gamelistSettings.steamUser) params.set("user", state.gamelistSettings.steamUser); const response = await fetch(`/api/steam-achievements?${params}`); const data = await response.json(); const achievements = Array.isArray(data.achievements) ? data.achievements : []; state.cardTrophies[key] = { loading: false, achievements, earned: Number(data.earnedCount ?? achievements.filter((item) => item.earned).length), total: Number(data.count ?? achievements.length) }; } catch { state.cardTrophies[key] = { loading: false, achievements: [], earned: 0, total: 0 }; } renderGamelistModules(); if (el.detailDialog.open && el.detailDialog.dataset.id === game.id) loadGamelistDetailTrophies(game); }
+async function loadShelfSteamCardAchievements(game, appId) { const key = `steam:${appId}`; if (state.cardTrophies[key]) return; state.cardTrophies[key] = { loading: true, achievements: [], earned: 0, total: 0 }; try { const params = new URLSearchParams({ appId, debug: "1" }); if (state.gamelistSettings.steamUser) params.set("user", state.gamelistSettings.steamUser); const response = await fetch(`/api/steam-achievements?${params}`); const data = await response.json(); const achievements = Array.isArray(data.achievements) ? data.achievements : []; state.cardTrophies[key] = { loading: false, achievements, earned: Number(data.earnedCount ?? achievements.filter((item) => item.earned).length), total: Number(data.count ?? achievements.length) }; } catch { state.cardTrophies[key] = { loading: false, achievements: [], earned: 0, total: 0 }; } updateShelfCardTrophyStrips(game.id); if (el.detailDialog.open && el.detailDialog.dataset.id === game.id) loadGamelistDetailTrophies(game); }
 async function loadShelfCardTrophies(game, remote) {
   const cacheKey = remote?.npCommunicationId || remote?.id || "";
   if (!cacheKey || state.cardTrophies[cacheKey]) return;
@@ -1053,7 +1053,6 @@ async function loadShelfCardTrophies(game, remote) {
     state.cardTrophies[cacheKey] = { loading: false, trophies: all.filter((item) => item.earned).sort((a, b) => Date.parse(b.rawEarnedAt || b.earnedAt || 0) - Date.parse(a.rawEarnedAt || a.earnedAt || 0)).slice(0, 3), earned: all.filter((item) => item.earned).length, total: all.length };
   } catch { state.cardTrophies[cacheKey] = { loading: false, trophies: [], earned: 0, total: 0 }; }
   updateShelfCardTrophyStrips(game.id);
-  renderLibrary();
 }
 function updateShelfCardTrophyStrips(gameId) {
   const game = state.gamelistGames.find((item) => item.id === gameId && !item.deletedAt);
@@ -1063,6 +1062,9 @@ function updateShelfCardTrophyStrips(gameId) {
     node.hidden = !node.innerHTML;
   });
   if (game.playing) schedulePlayingCardHeightSync();
+}
+function updateAllShelfTrophyStrips() {
+  state.gamelistGames.filter((game) => game.playing && !game.deletedAt).forEach((game) => updateShelfCardTrophyStrips(game.id));
 }
 function finishedProjectionCard(game) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
@@ -1082,8 +1084,7 @@ async function loadTrophyActivity() {
     const panel = achievementPanelMarkup({ psn: state.trophyActivity || {}, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml });
     el.trophyCard.innerHTML = panel.html;
     el.trophyCard.querySelector("[data-action='platinums']")?.addEventListener("click", openCompletedGames);
-    renderGamelistModules();
-    renderLibrary();
+    updateAllShelfTrophyStrips();
   } catch { el.trophyCard.innerHTML = `<span>Trophy activity is unavailable.</span>`; }
   module.hidden = state.layout.hidden.includes("trophies");
 }
