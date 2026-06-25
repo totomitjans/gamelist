@@ -1,18 +1,18 @@
 import { normalizeSearchText, createGameCardShell, bindActivityCardParallax, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, syncFocusedActivityTrailer, activityReleaseStatus, activityCoverOverride, activityLocalGameForTitle, activityTitleMatchScore, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime } from "./activity-ui.js";
 
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
+splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v191";
-const SITE_UPDATED_AT = "2026-06-25T12:06:19+02:00";
+const SITE_VERSION = "v193";
+const SITE_UPDATED_AT = "2026-06-25T13:10:00+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
 const LOCAL_DRAFT_KEY = "shelf:draft-data:v2";
-const FIXED_LAYOUT = ["playing", "latestFinished"];
-const DEFAULT_LAYOUT = ["trophies", "kpis", "filters", "library"];
-const LAYOUT_KEYS = [...FIXED_LAYOUT, ...DEFAULT_LAYOUT];
+const DEFAULT_LAYOUT = ["playing", "latestFinished", "trophies", "kpis", "filters", "library"];
+const LAYOUT_KEYS = [...DEFAULT_LAYOUT];
 const DEFAULT_HIDDEN_MODULES = ["playing", "trophies"];
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const DEFAULT_PRICE_STORES = ["Amazon", "eBay", "Xtralife", "GAME.es"];
@@ -97,10 +97,9 @@ const el = {
   detailCover: document.querySelector("#detailCover"),
   detailChips: document.querySelector("#detailChips"), detailGuides: document.querySelector("#detailGuides"),
   detailNote: document.querySelector("#detailNote"),
-  detailActions: document.querySelector("#detailActions"),
   detailCondition: document.querySelector("#detailCondition"), detailConditionPanel: document.querySelector("#detailConditionPanel"), detailLinks: document.querySelector("#detailLinks"),
-  detailGuideLinks: document.querySelector("#detailGuideLinks"), detailStorePrices: document.querySelector("#detailStorePrices"),
-  fetchValue: document.querySelector("#fetchValueButton"), detailPricePanel: document.querySelector("#detailPricePanel"), detailPriceSummary: document.querySelector("#detailPriceSummary"),
+  detailGuideLinks: document.querySelector("#detailGuideLinks"), detailStorePricePanel: document.querySelector("#detailStorePricePanel"), detailStorePrices: document.querySelector("#detailStorePrices"),
+  fetchValue: document.querySelector("#fetchValueButton"), detailPricePanel: document.querySelector("#detailPricePanel"), detailPriceToggle: document.querySelector("#detailPriceToggle"), detailPriceContent: document.querySelector("#detailPriceContent"), detailPriceHeadline: document.querySelector("#detailPriceHeadline"), detailPriceSummary: document.querySelector("#detailPriceSummary"),
   detailPriceGraph: document.querySelector("#detailPriceGraph"), detailTrophies: document.querySelector("#shelfDetailTrophies"),
   detailTrophyTitle: document.querySelector("#shelfTrophyTitle"), detailTrophyCount: document.querySelector("#shelfTrophyCount"), detailTrophyPercent: document.querySelector("#shelfTrophyPercent"), detailTrophyList: document.querySelector("#shelfTrophyList"),
   detailTrophySort: document.querySelector("#shelfTrophySort"), detailTrophyDirection: document.querySelector("#shelfTrophyDirection"),
@@ -218,8 +217,8 @@ function bindEvents() {
 
   el.shelf.addEventListener("click", handleShelfClick);
   el.shelf.addEventListener("keydown", (event) => { if (event.key !== "Enter" && event.key !== " ") return; const card = event.target.closest("[data-id]"); if (!card || event.target.closest("button, a, input")) return; event.preventDefault(); const game = state.games.find((item) => item.id === card.dataset.id); if (game) openDetails(game); });
-  el.detailActions.addEventListener("click", handleDetailAction);
   el.fetchValue.addEventListener("click", fetchCollectionValue);
+  el.detailPriceToggle.addEventListener("click", toggleCollectionValuePanel);
   el.tabs.addEventListener("click", (event) => { const tab = event.target.closest("[data-shelf-tab]"); if (!tab) return; state.filters.tab = tab.dataset.shelfTab; renderLibrary(); });
   el.detailClose.addEventListener("click", () => closeDialog(el.detailDialog));
   el.detailDialog.addEventListener("click", (event) => { if (event.target === el.detailDialog) closeDialog(el.detailDialog); });
@@ -514,29 +513,21 @@ function openDetails(game) {
   el.detailNote.textContent = game.notes || "";
   el.detailDescription.textContent = game.description || "";
   el.detailDescription.hidden = !game.description;
+  el.detailPricePanel.classList.remove("is-collapsed");
+  el.detailPriceToggle.setAttribute("aria-expanded", "true");
   el.detailCondition.innerHTML = ["game", "manual", "box", "other", "sealed"].map((key) => `<label class="check-filter toggle-check detail-condition-check condition-${key}"><input type="checkbox" ${conditionValue(game, key) ? "checked" : ""} disabled><span>${escapeHtml(key[0].toUpperCase() + key.slice(1))}</span></label>`).join("");
   el.detailConditionPanel.hidden = Boolean(game._gamelistProjection);
   const links = websiteLinks(game);
-  el.detailLinks.innerHTML = links.map((link) => `<a class="store-button" href="${escapeHtml(link)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(siteIcon(link))}" alt="">${escapeHtml(linkLabel(link))}</a>`).join("");
+  el.detailLinks.innerHTML = storeLinkButtons(game, links);
   const guides = activityGuideLinks(game);
   el.detailGuides.hidden = !guides.length;
   el.detailGuideLinks.innerHTML = guides.join("");
-  el.detailStorePrices.hidden = false;
-  loadStorePrices(game);
+  el.detailStorePricePanel.hidden = Boolean(game._gamelistProjection);
+  renderSavedStorePrices(game);
   el.detailPricePanel.hidden = Boolean(game._gamelistProjection);
   if (!game._gamelistProjection) renderPriceDetails(game);
   loadShelfTrophies(game);
-  el.detailActions.innerHTML = state.canEdit && !game._gamelistProjection ? `<button class="ghost-button" type="button" data-detail-action="edit">Edit game</button>${game.sourceRecord ? `<button class="ghost-button" type="button" data-detail-action="reset">Reset changes</button>` : ""}<button class="danger-button" type="button" data-detail-action="delete">Delete</button>` : "";
   openDialog(el.detailDialog);
-}
-
-function handleDetailAction(event) {
-  const action = event.target.closest("[data-detail-action]")?.dataset.detailAction;
-  const game = state.games.find((item) => item.id === el.detailDialog.dataset.id);
-  if (!action || !game || !state.canEdit) return;
-  if (action === "edit") { closeDialog(el.detailDialog); openEditor(game); }
-  if (action === "reset") resetGame(game);
-  if (action === "delete") deleteGame(game);
 }
 
 function openEditor(game = null) {
@@ -877,8 +868,7 @@ function openLayout() {
 function renderLayoutEditor() {
   el.layoutList.className = "settings-layout";
   el.layoutList.innerHTML = [
-    ...FIXED_LAYOUT.map((key) => settingsLayoutCard(key, -1, true)),
-    ...state.layout.order.map((key, index) => settingsLayoutCard(key, index, false)),
+    ...state.layout.order.map((key, index) => settingsLayoutCard(key, index)),
     `<div class="settings-preference-row">${settingsSelectCard("theme", "Theme", "shelfSettingsTheme", [{ value: "shabii", label: "Shabii" }, { value: "kash", label: "Kash" }])}${settingsSelectCard("order", "Default order", "shelfSettingsDefaultOrder", [{ value: "added", label: "Last added" }, { value: "title", label: "Name" }, { value: "platform", label: "Platform" }, { value: "region", label: "Region" }, { value: "value", label: "Value" }])}</div>`,
   ].join("");
   el.settingsTheme = document.querySelector("#shelfSettingsTheme");
@@ -900,10 +890,10 @@ function renderLayoutEditor() {
   el.settingsTheme.onchange = () => { state.gamelistSettings.theme = el.settingsTheme.value; applyTheme(); };
 }
 
-function settingsLayoutCard(key, index, fixed) {
+function settingsLayoutCard(key, index) {
   const visible = !state.layout.hidden.includes(key);
   const wire = { latestFinished: "latest-finished", kpis: "highlights", filters: "search", library: "list" }[key] || key;
-  return `<article class="settings-layout-card ${fixed ? "is-fixed" : ""} ${visible ? "" : "is-hidden-section"}" data-layout-key="${key}"><div class="settings-wire wire-${wire}" aria-hidden="true">${Array.from({ length: 6 }, () => "<span></span>").join("")}</div><strong>${escapeHtml(MODULE_NAMES[key])}</strong><div class="settings-layout-actions">${fixed ? `<span class="settings-fixed-label">Fixed</span>` : `<button class="icon-button" type="button" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(MODULE_NAMES[key])} up">↑</button><button class="icon-button" type="button" data-layout-move="1" ${index === state.layout.order.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(MODULE_NAMES[key])} down">↓</button>`}<label class="check-filter toggle-check settings-visible-check" title="${visible ? "Visible" : "Hidden"}"><input type="checkbox" data-layout-visible value="${key}" ${visible ? "checked" : ""}><span>${visible ? "Show" : "Hide"}</span></label></div></article>`;
+  return `<article class="settings-layout-card ${visible ? "" : "is-hidden-section"}" data-layout-key="${key}"><div class="settings-wire wire-${wire}" aria-hidden="true">${Array.from({ length: 6 }, () => "<span></span>").join("")}</div><strong>${escapeHtml(MODULE_NAMES[key])}</strong><div class="settings-layout-actions"><button class="icon-button" type="button" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(MODULE_NAMES[key])} up">↑</button><button class="icon-button" type="button" data-layout-move="1" ${index === state.layout.order.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(MODULE_NAMES[key])} down">↓</button><label class="check-filter toggle-check settings-visible-check" title="${visible ? "Visible" : "Hidden"}"><input type="checkbox" data-layout-visible value="${key}" ${visible ? "checked" : ""}><span>${visible ? "Show" : "Hide"}</span></label></div></article>`;
 }
 
 function settingsSelectCard(type, title, id, options) {
@@ -956,7 +946,7 @@ async function persistGamelistSettings() {
 function applyLayout() {
   const order = new Map(state.layout.order.map((key, index) => [key, index + 1]));
   el.modules.querySelectorAll("[data-module]").forEach((section) => {
-    section.style.order = section.dataset.module === "playing" ? "0" : String(order.get(section.dataset.module) ?? 99);
+    section.style.order = String(order.get(section.dataset.module) ?? 99);
     if (section.dataset.module !== "playing") section.hidden = state.layout.hidden.includes(section.dataset.module);
   });
   syncShelfActivityVisibility();
@@ -965,7 +955,8 @@ function applyLayout() {
 function syncShelfActivityVisibility() {
   el.playingCurrent.hidden = state.layout.hidden.includes("playing") || !el.playingCarousel.children.length;
   el.playingFinished.hidden = state.layout.hidden.includes("latestFinished") || !el.finishedCarousel.children.length;
-  el.playingCurrent.closest("[data-module='playing']").hidden = el.playingCurrent.hidden && el.playingFinished.hidden;
+  el.playingCurrent.closest("[data-module='playing']").hidden = el.playingCurrent.hidden;
+  el.playingFinished.closest("[data-module='latestFinished']").hidden = el.playingFinished.hidden;
 }
 
 function toggleView() {
@@ -1005,6 +996,18 @@ function normalizeLayout(value) {
   const order = Array.isArray(value?.order) ? value.order.filter((key) => DEFAULT_LAYOUT.includes(key)) : [];
   const hidden = Array.isArray(value?.hidden) ? value.hidden.filter((key) => LAYOUT_KEYS.includes(key)) : [...DEFAULT_HIDDEN_MODULES];
   return { order: [...order, ...DEFAULT_LAYOUT.filter((key) => !order.includes(key))], hidden };
+}
+
+function splitShelfPlayingModules() {
+  const playingModule = document.querySelector("[data-module='playing']");
+  const finishedSection = document.querySelector("#shelfPlayingFinished");
+  if (!playingModule || !finishedSection || finishedSection.closest("[data-module='latestFinished']")) return;
+  const finishedModule = document.createElement("section");
+  finishedModule.className = playingModule.className;
+  finishedModule.dataset.module = "latestFinished";
+  finishedModule.hidden = true;
+  finishedModule.appendChild(finishedSection);
+  playingModule.after(finishedModule);
 }
 
 function loadDraft() { try { return JSON.parse(localStorage.getItem(LOCAL_DRAFT_KEY) || "{}"); } catch { return {}; } }
@@ -1048,13 +1051,14 @@ function openGamelistDetails(sourceGame) {
   bindCoverFrame(el.detailCover);
   el.detailDescription.textContent = game.description || "No description yet.";
   el.detailDescription.hidden = false;
+  el.detailPricePanel.classList.remove("is-collapsed");
+  el.detailPriceToggle.setAttribute("aria-expanded", "true");
   el.detailLinks.innerHTML = activityStoreLinks(game);
   el.detailStorePrices.innerHTML = "";
-  el.detailStorePrices.hidden = true;
+  el.detailStorePricePanel.hidden = true;
   el.detailNote.hidden = true;
   el.detailPricePanel.hidden = true;
   el.detailConditionPanel.hidden = true;
-  el.detailActions.innerHTML = "";
   const guides = activityGuideLinks(game);
   el.detailGuides.hidden = !guides.length;
   el.detailGuideLinks.innerHTML = guides.join("");
@@ -1353,9 +1357,56 @@ function syncConditionInputs(changed) {
 function conditionFromInputs() { return Object.fromEntries(Object.entries(el.conditionFields).map(([key, input]) => [key, input.checked])); }
 function splitValues(value) { return String(value || "").split(",").map((item) => item.trim()).filter(Boolean); }
 function websiteLinks(game) { return [...new Set([...(game.websites || []), ...Object.values(game.storeLinks || {})].filter(Boolean))]; }
-function linkLabel(value) { try { return new URL(value).hostname.replace(/^www\./, ""); } catch { return "Website"; } }
+function storeLinkButtons(game, links = websiteLinks(game)) {
+  const buttons = links.map((link) => ({ label: linkLabel(link), url: link, cls: siteClass(link), icon: siteIcon(link) }));
+  return storeButtonsMarkup(buttons, escapeHtml);
+}
+function linkLabel(value) {
+  try {
+    const host = new URL(value).hostname.replace(/^www\./, "");
+    if (host.includes("pricecharting")) return "PriceCharting";
+    if (host.includes("playstation")) return "PlayStation";
+    if (host.includes("nintendo")) return "Nintendo";
+    if (host.includes("steam")) return "Steam";
+    if (host.includes("xbox")) return "Xbox";
+    if (host.includes("amazon")) return "Amazon";
+    if (host.includes("ebay")) return "eBay";
+    if (host.includes("xtralife")) return "Xtralife";
+    if (host.includes("game.es")) return "GAME.es";
+    if (host.includes("howlongtobeat")) return "HowLongToBeat";
+    if (host.includes("igdb")) return "IGDB";
+    if (host.includes("wikipedia")) return "Wikipedia";
+    return host.split(".").slice(0, -1).join(".") || host;
+  } catch { return "Website"; }
+}
+function siteClass(value) {
+  const label = normalize(linkLabel(value)).replace(/ /g, "-");
+  return label ? `store-${label}` : "";
+}
 function siteIcon(value) { const host = (() => { try { return new URL(value).hostname; } catch { return ""; } })(); if (host.includes("playstation")) return "assets/sites/playstation.png"; if (host.includes("nintendo")) return "assets/sites/nintendo.png"; if (host.includes("steam")) return "assets/sites/steam.png"; if (host.includes("howlongtobeat")) return "assets/sites/howlongtobeat.png"; return host ? `https://${host}/favicon.ico` : "assets/Icon.png"; }
-async function loadStorePrices(game) { el.detailStorePrices.innerHTML = `<span class="muted">Checking store prices…</span>`; try { const settings = normalizePriceSettings(state.gamelistSettings); const stores = settings.stores.join(","); const region = settings.region; const currency = settings.currency; const response = await fetch(`/api/prices?title=${encodeURIComponent(game.title)}&platform=${encodeURIComponent(shortPlatform(game.platform))}&region=${encodeURIComponent(region)}&currency=${encodeURIComponent(currency)}&stores=${encodeURIComponent(stores)}`); const data = await response.json(); const prices = data.prices || []; const available = prices.filter((price) => price.numericPrice != null).sort((a, b) => a.numericPrice - b.numericPrice); const best = available[0]?.store; el.detailStorePrices.innerHTML = prices.map((price) => { const label = price.price || `- ${currency === "USD" ? "$" : "€"}`; return `<a class="price-link ${best === price.store && price.price ? "best" : ""} ${price.price ? "has-price" : "missing-price"}" href="${escapeHtml(price.url || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml(price.store)}"><img class="store-icon" src="${escapeHtml(storeIcon(price.store))}" alt=""><strong>${escapeHtml(label)}</strong></a>`; }).join("") || `<span class="muted">No store prices found.</span>`; } catch { el.detailStorePrices.innerHTML = `<span class="muted">Store prices unavailable.</span>`; } }
+function renderSavedStorePrices(game) {
+  const prices = Array.isArray(game.storePrices) ? game.storePrices : [];
+  const currency = game.storePriceCurrency || normalizePriceSettings(state.gamelistSettings).currency;
+  el.detailStorePrices.innerHTML = storePricesMarkup(prices, currency) || `<span class="muted">No saved store prices yet.</span>`;
+}
+async function fetchAndSaveStorePrices(game) {
+  const settings = normalizePriceSettings(state.gamelistSettings);
+  const params = new URLSearchParams({ title: game.title, platform: shortPlatform(game.platform), region: settings.region, currency: settings.currency, stores: settings.stores.join(",") });
+  const response = await fetch(`/api/prices?${params}`);
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error(data.error || "Store prices unavailable.");
+  game.storePrices = Array.isArray(data.prices) ? data.prices : [];
+  game.storePriceCurrency = settings.currency;
+  game.storePricesFetchedAt = new Date().toISOString();
+}
+function storePricesMarkup(prices, currency) {
+  const available = prices.filter((price) => price.numericPrice != null).sort((a, b) => a.numericPrice - b.numericPrice);
+  const best = available[0]?.store;
+  return prices.map((price) => {
+    const label = price.price || `- ${currency === "USD" ? "$" : "€"}`;
+    return `<a class="price-link ${best === price.store && price.price ? "best" : ""} ${price.price ? "has-price" : "missing-price"}" href="${escapeHtml(price.url || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml(price.store)}"><img class="store-icon" src="${escapeHtml(storeIcon(price.store))}" alt=""><strong>${escapeHtml(label)}</strong></a>`;
+  }).join("");
+}
 function storeIcon(store) { if (String(store).startsWith("Amazon")) return "assets/stores/amazon.ico"; if (store === "eBay") return "https://www.ebay.com/favicon.ico"; if (store === "Xtralife") return "assets/stores/xtralife.ico"; if (store === "GAME.es") return "assets/stores/game.ico"; if (store === "Retro Island NY") return "assets/stores/retroisland.png"; if (store === "GameStop") return "https://www.gamestop.com/favicon.ico"; if (store === "Walmart") return "https://www.walmart.com/favicon.ico"; if (String(store).startsWith("Nintendo")) return "assets/sites/nintendo.png"; if (String(store).startsWith("PlayStation")) return "assets/sites/playstation.png"; if (store === "Steam") return "assets/sites/steam.png"; if (store === "Xbox") return "assets/platforms/xbox.png"; return "assets/Icon.png"; }
 function renderPriceDetails(game) {
   const prices = game.collectionPrices || {};
@@ -1365,9 +1416,14 @@ function renderPriceDetails(game) {
   const priceMarkup = rows.length ? `<div class="collection-price-grid">${rows.map(([label, value]) => `<span><small>${label}</small><strong>${symbol}${Number(value).toFixed(2)}</strong></span>`).join("")}</div>` : `<span class="muted">No collection value fetched yet.</span>`;
   const identifierMarkup = identifiers.length ? `<div class="collection-product-meta">${identifiers.map(([label, value]) => `<span><small>${label}</small><strong>${escapeHtml(value)}</strong></span>`).join("")}</div>` : "";
   el.detailPriceSummary.innerHTML = `${priceMarkup}${identifierMarkup}`;
+  el.detailPriceHeadline.textContent = Number.isFinite(Number(game.price)) ? `${symbol}${Number(game.price).toFixed(2)}` : "";
   const history = game.priceHistory || [];
   el.detailPriceGraph.innerHTML = priceGraph(history);
   el.detailPriceGraph.hidden = history.length < 1;
+}
+function toggleCollectionValuePanel() {
+  const collapsed = el.detailPricePanel.classList.toggle("is-collapsed");
+  el.detailPriceToggle.setAttribute("aria-expanded", String(!collapsed));
 }
 function priceGraph(history) {
   if (!history.length) return "";
@@ -1386,7 +1442,9 @@ async function fetchCollectionValue() {
     const data = await response.json();
     if (!response.ok || data.error) { el.detailPriceSummary.innerHTML = `<span class="auth-error">${escapeHtml(data.error || "No matching physical edition was found.")}</span>`; return; }
     applyCollectionPrice(game, data);
-    await persistShelf(); renderPriceDetails(game); renderStats();
+    el.detailStorePrices.innerHTML = `<span class="muted">Checking store prices...</span>`;
+    await fetchAndSaveStorePrices(game).catch((error) => { el.detailStorePrices.innerHTML = `<span class="auth-error">${escapeHtml(error?.message || "Store prices unavailable.")}</span>`; });
+    await persistShelf(); renderPriceDetails(game); renderSavedStorePrices(game); renderStats();
   } catch (error) { el.detailPriceSummary.innerHTML = `<span class="auth-error">${escapeHtml(error?.message || "Collection value is unavailable.")}</span>`; } finally { el.fetchValue.disabled = false; el.fetchValue.textContent = "Fetch value"; }
 }
 
