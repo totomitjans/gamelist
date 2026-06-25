@@ -4,8 +4,8 @@ mountActivitySlider(document.querySelector("[data-module='playing']"), { count: 
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v188";
-const SITE_UPDATED_AT = "2026-06-25T11:18:04+02:00";
+const SITE_VERSION = "v190";
+const SITE_UPDATED_AT = "2026-06-25T12:02:14+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -39,6 +39,7 @@ const state = {
   games: [],
   gamelistGames: [],
   gamelistSettings: loadSharedSettings(),
+  metadataLookupResults: [],
   trophyActivity: null,
   steamActivity: { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" },
   xboxActivity: { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" },
@@ -106,7 +107,6 @@ const el = {
   addDialog: document.querySelector("#addDialog"),
   addForm: document.querySelector("#addGameForm"),
   addClose: document.querySelector("#addClose"),
-  addCancel: document.querySelector("#addCancel"),
   editDelete: document.querySelector("#editDeleteButton"),
   lookupInput: document.querySelector("#lookupInput"),
   lookupButton: document.querySelector("#lookupButton"),
@@ -227,7 +227,6 @@ function bindEvents() {
   el.detailTrophyDirection.addEventListener("click", () => { state.gamelistDetailTrophyDirection = state.gamelistDetailTrophyDirection === "asc" ? "desc" : "asc"; renderGamelistDetailTrophyList(); });
 
   el.addClose.addEventListener("click", () => closeDialog(el.addDialog));
-  el.addCancel.addEventListener("click", () => closeDialog(el.addDialog));
   el.editDelete.addEventListener("click", deleteCurrentEditedGame);
   el.addDialog.addEventListener("click", (event) => { if (event.target === el.addDialog) closeDialog(el.addDialog); });
   el.addForm.addEventListener("submit", saveEditor);
@@ -453,7 +452,7 @@ function gameCard(game, options = {}) {
     bindActivityCardParallax(card);
   }
   card.querySelector(".card-trailer")?.remove(); card.querySelector(".trailer-toggle")?.remove();
-  const image = card.querySelector(".cover-button img"); image.src = cover; image.dataset.coverFallback = fallbackCover; image.alt = `${game.title} cover`; image.loading = options.imagePriority || "lazy"; image.fetchPriority = options.imagePriority === "eager" ? "high" : "low"; image.decoding = "async";
+  const image = card.querySelector(".cover-button img"); image.src = cover; image.dataset.coverFallback = fallbackCover; image.alt = `${game.title} cover`; image.loading = options.imagePriority || "lazy"; image.fetchPriority = options.imagePriority === "eager" ? "high" : "low"; image.decoding = "async"; bindCoverFrame(image);
   card.querySelector(".cover-button").dataset.action = "details";
   const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", hasJordiToneOwner(owners));
   card.querySelector(".title-owners").innerHTML = owners.map(ownerBadge).join("");
@@ -506,6 +505,7 @@ function openDetails(game) {
   el.detailCover.dataset.coverFallback = fallbackCover;
   el.detailCover.parentElement.classList.remove("has-wrap");
   el.detailCover.alt = `${game.title} cover`;
+  bindCoverFrame(el.detailCover);
   const detailTags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((value) => String(value).trim()).filter((value, index, list) => value && normalize(value) !== "game" && list.indexOf(value) === index);
   el.detailChips.innerHTML = `${(game.owners || []).map(ownerBadge).join("")}${detailTags.map((value) => `<span class="chip genre">${escapeHtml(value)}</span>`).join("")}`;
   const categories = [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).filter(Boolean);
@@ -591,9 +591,13 @@ async function lookupGame() {
     const gameResponse = gameResult.status === "fulfilled" ? gameResult.value : null;
     const gameData = gameResponse?.ok ? await gameResponse.json() : { results: [] };
     const gameResults = (gameData.results || []).slice(0, 6).map((result) => ({ ...result, lookupSource: "game" }));
+    state.metadataLookupResults = gameResults;
     const physicalResults = (physicalData.status === "fulfilled" ? physicalData.value.results || [] : []).slice(0, 8).map((result) => ({ ...result, title: result.productName, platform: result.consoleName, lookupSource: "pricecharting" }));
     state.lookupResults = physicalResults.length ? physicalResults : gameResults;
-    if (physicalResults[0]) await prefillPhysicalResult(physicalResults[0]);
+    if (physicalResults[0]) {
+      await prefillPhysicalResult(physicalResults[0]);
+      applyGameMetadata(bestGameMetadata(physicalResults[0].productName || query));
+    }
     renderShelfLookupResults();
   } catch {
     el.lookupResults.innerHTML = `<div class="empty">Lookup is unavailable right now. Manual entry still works.</div>`;
@@ -630,8 +634,8 @@ function renderShelfLookupResults() {
   el.lookupResults.innerHTML = state.lookupResults.map((result, index) => {
     const physical = result.lookupSource === "pricecharting";
     const platforms = (result.platforms || [result.platform]).filter(Boolean);
-    const image = physical ? "https://www.pricecharting.com/images/favicon.ico" : coverUrl(result.cover || "");
-    return `<div class="lookup-result"><img src="${escapeHtml(image)}" alt="" ${image ? "" : "hidden"}><div><strong>${escapeHtml(result.title || "Untitled game")}</strong><p>${escapeHtml(platforms.join(" · ") || "Platform unknown")}</p><p>${physical ? "PriceCharting physical edition" : "Game database metadata"}</p></div><button class="ghost-button" type="button" data-result-index="${index}">Use</button></div>`;
+    const image = coverUrl((physical ? result.image : result.cover) || "");
+    return `<div class="lookup-result"><img src="${escapeHtml(image)}" alt="" ${image ? "" : "hidden"}><div><strong>${escapeHtml(result.title || "Untitled game")}</strong><p>${escapeHtml(platforms.join(" · ") || "Platform unknown")}</p></div><button class="ghost-button" type="button" data-result-index="${index}">Use</button></div>`;
   }).join("");
   requestAnimationFrame(() => el.lookupResults.classList.add("loaded"));
 }
@@ -643,6 +647,7 @@ async function chooseLookupResult(event) {
   if (!result) return;
   if (result.lookupSource === "pricecharting") {
     const physical = await prefillPhysicalResult(result);
+    applyGameMetadata(bestGameMetadata(result.productName));
     renderPhysicalSelection(physical || result);
     return;
   }
@@ -658,6 +663,25 @@ async function chooseLookupResult(event) {
   const physical = await fetchPhysicalMetadata(result.title);
   if (physical) applyPhysicalMetadata(physical);
   renderPhysicalSelection(physical, result.title);
+}
+
+function bestGameMetadata(title) {
+  const wanted = normalizeSearchText(title || "");
+  return state.metadataLookupResults.find((result) => normalizeSearchText(result.title || "") === wanted)
+    || state.metadataLookupResults.find((result) => wanted && normalizeSearchText(result.title || "").includes(wanted.split(" ")[0] || wanted))
+    || state.metadataLookupResults[0]
+    || null;
+}
+
+function applyGameMetadata(result) {
+  if (!result) return;
+  if (result.publisher && !el.fields.publisher.value) el.fields.publisher.value = result.publisher;
+  if (result.developer && !el.fields.developer.value) el.fields.developer.value = result.developer;
+  if ((result.genres || []).length && !el.fields.genre.value) el.fields.genre.value = result.genres.join(", ");
+  if (result.releaseDate && !el.fields.releaseDate.value) el.fields.releaseDate.value = result.releaseDate;
+  if (result.description && !el.fields.description.value) el.fields.description.value = result.description;
+  const links = Object.values(result.storeLinks || {}).filter(Boolean);
+  if (links.length) el.fields.websites.value = [...new Set([...splitValues(el.fields.websites.value), ...links])].join(", ");
 }
 
 async function prefillPhysicalResult(result) {
@@ -718,7 +742,7 @@ function estimatedPhysicalValue(data) {
 
 function renderPhysicalSelection(physical, fallbackTitle = "") {
   el.lookupResults.classList.add("loaded");
-  el.lookupResults.innerHTML = `<div class="lookup-selected physical-lookup-selected"><img src="${physical ? "https://www.pricecharting.com/images/favicon.ico" : "assets/Icon_shelf.png"}" alt=""><span>${physical ? `Using ${escapeHtml(physical.productName || fallbackTitle)}${physical.consoleName ? ` · ${escapeHtml(physical.consoleName)}` : ""}. Confirm the region and edition before saving.` : `Game information loaded. No exact physical edition match was found, so confirm the release and identifiers manually.`}</span></div>`;
+  el.lookupResults.innerHTML = `<div class="lookup-selected physical-lookup-selected"><img src="${physical?.image ? escapeHtml(physical.image) : physical ? "https://www.pricecharting.com/images/favicon.ico" : "assets/Icon_shelf.png"}" alt=""><span>${physical ? `Using ${escapeHtml(physical.productName || fallbackTitle)}${physical.consoleName ? ` · ${escapeHtml(physical.consoleName)}` : ""}` : "Game information loaded."}</span></div>`;
 }
 
 function priceChartingPageUrl(value) { const match = String(value || "").trim().match(/^https:\/\/www\.pricecharting\.com\/(?:[a-z]{2}\/)?game\/[^?#]+/i); return match?.[0] || ""; }
@@ -975,7 +999,7 @@ function renderGamelistModules() {
   el.playingCarousel.innerHTML = playing.map(gamelistProjectionCard).join("");
   el.finishedCarousel.innerHTML = finished.map(finishedProjectionCard).join("");
   el.playingCarousel.querySelectorAll(".game-card.has-art").forEach(bindActivityCardParallax);
-  el.playingCarousel.querySelectorAll(".cover-button img").forEach((image) => image.addEventListener("load", schedulePlayingCardHeightSync, { once: true }));
+  el.playingCarousel.querySelectorAll(".cover-button img").forEach((image) => { bindCoverFrame(image); image.addEventListener("load", schedulePlayingCardHeightSync, { once: true }); });
   el.playingCarousel.querySelectorAll(".trailer-toggle").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); const card = button.closest(".game-card"); const paused = card.classList.toggle("trailer-user-paused"); button.innerHTML = paused ? playTrailerIcon() : pauseTrailerIcon(); button.title = paused ? "Play trailer" : "Pause trailer"; button.setAttribute("aria-label", button.title); scheduleShelfTrailerUpdate(); }));
   el.playingCarousel.querySelectorAll(".edit-action").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); const game = state.gamelistGames.find((item) => item.id === button.closest("[data-gamelist-id]")?.dataset.gamelistId); if (!state.canEdit) openAuth(); else if (game) openGamelistDetails(game); }));
   [...el.playingCarousel.querySelectorAll("[data-gamelist-id]"), ...el.finishedCarousel.querySelectorAll("[data-gamelist-id]")].forEach((card) => { const open = (event) => { if (event?.target.closest("a,.edit-action,.trailer-toggle")) return; const game = state.gamelistGames.find((item) => item.id === card.dataset.gamelistId); if (game) openGamelistDetails(game); }; card.addEventListener("click", open); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } }); });
@@ -1005,6 +1029,7 @@ function openGamelistDetails(sourceGame) {
   el.detailCover.src = cover;
   el.detailCover.hidden = !cover;
   el.detailCover.alt = cover ? `${game.title} cover` : "";
+  bindCoverFrame(el.detailCover);
   el.detailDescription.textContent = game.description || "No description yet.";
   el.detailDescription.hidden = false;
   el.detailLinks.innerHTML = activityStoreLinks(game);
@@ -1049,7 +1074,7 @@ function gamelistProjectionCard(game) {
   card.className += ` playing-card has-art${ownerClasses}${game.digital ? " digital-card" : ""}${game.stream ? " stream-card" : ""}${game.platinum ? " completed-trophy-card" : ""}`;
   card.style.setProperty("--card-art", `url('${escapeCss(cover)}')`);
   const trailer = card.querySelector(".card-trailer"); const trailerUrl = window.matchMedia("(min-width: 900px)").matches ? activityTrailerUrl(game.trailerUrl, window.location.origin) : ""; if (trailerUrl) { card.classList.add("has-trailer"); trailer.dataset.src = trailerUrl; const toggle = card.querySelector(".trailer-toggle"); toggle.hidden = false; toggle.innerHTML = pauseTrailerIcon(); } else { trailer.remove(); card.querySelector(".trailer-toggle")?.remove(); }
-  const image = card.querySelector(".cover-button img"); image.src = cover; image.alt = `${game.title} cover`; image.loading = "eager"; image.fetchPriority = "high"; image.decoding = "async";
+  const image = card.querySelector(".cover-button img"); image.src = cover; image.alt = `${game.title} cover`; image.loading = "eager"; image.fetchPriority = "high"; image.decoding = "async"; bindCoverFrame(image);
   const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", hasJordiToneOwner(owners)); title.classList.toggle("completed-achievements-title", Boolean(game.platinum));
   const visibleOwners = owners.filter((owner) => owner !== (state.gamelistSettings.defaultOwner || "Xavi")); card.querySelector(".title-owners").innerHTML = visibleOwners.map(ownerBadge).join("");
   card.querySelector(".edit-action").classList.remove("editor-only");
@@ -1446,6 +1471,25 @@ function handleCoverImageError(event) {
   image.dataset.fallbackUsed = "true";
   image.closest(".has-wrap")?.classList.remove("has-wrap");
   image.src = image.dataset.coverFallback;
+  bindCoverFrame(image);
+}
+function bindCoverFrame(image) {
+  if (!(image instanceof HTMLImageElement)) return;
+  const sync = () => syncCoverFrame(image);
+  if (image.complete && image.naturalWidth && image.naturalHeight) sync();
+  else image.addEventListener("load", sync, { once: true });
+}
+function syncCoverFrame(image) {
+  const ratio = image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 104 / 142;
+  if (!Number.isFinite(ratio) || ratio <= 0) return;
+  const frame = image.closest(".cover-button, .detail-cover");
+  if (!frame) return;
+  const height = frame.classList.contains("detail-cover") ? Math.min(360, Math.max(150, image.naturalHeight)) : 142;
+  const width = Math.round(Math.min(frame.classList.contains("detail-cover") ? 280 : 180, Math.max(frame.classList.contains("detail-cover") ? 90 : 72, height * ratio)));
+  frame.style.setProperty("--shelf-cover-ratio", `${image.naturalWidth} / ${image.naturalHeight}`);
+  frame.style.setProperty("--shelf-cover-width", `${width}px`);
+  frame.style.setProperty("--shelf-cover-height", `${Math.round(width / ratio)}px`);
+  frame.closest(".game-card")?.style.setProperty("--shelf-cover-width", `${width}px`);
 }
 function platformFallback(platform) { const key = normalize(platform); if (key.includes("switch")) return "assets/platforms/switch.png"; if (key.includes("3ds")) return "assets/platforms/3ds.png"; if (key.includes("ds")) return "assets/platforms/nds.png"; if (key.includes("64")) return "assets/platforms/n64.png"; return "assets/platforms/playstation.png"; }
 function shortPlatform(value) { return ({ "Sony PlayStation": "PS1", "Sony PlayStation 2": "PS2", "Sony PlayStation 4": "PS4", "Sony PlayStation 5": "PS5", "Nintendo Switch": "Switch", "Nintendo Switch 2": "Switch 2", "Nintendo DS": "DS", "Nintendo 3DS": "3DS", "Nintendo 64": "N64" })[value] || value; }

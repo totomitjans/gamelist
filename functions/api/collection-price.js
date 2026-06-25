@@ -21,6 +21,7 @@ export async function onRequestGet({ request, env = {} }) {
     if (searchMode) {
       let results = uniqueCandidates(rankCandidates(await fetchPublicCandidates(searchUrl), query));
       if (!results.length) results = uniqueCandidates(rankCandidates(await fetchDirectCandidates(fallbackUrls, query, searchUrl), query));
+      results = await hydrateSearchCandidateImages(results.slice(0, 12), query, searchUrl);
       return json({ results: results.slice(0, 12), searchUrl, source: "PriceCharting" });
     }
     const apiProduct = token ? await fetchApiProduct(token, { id: requestedId, upc: requestedUpc, query }) : null;
@@ -138,6 +139,13 @@ async function fetchPublicProduct({ query, searchUrl, requestedId, requestedUrl,
 async function fetchDirectCandidates(urls, query, searchUrl) {
   const products = await Promise.all(urls.map((requestedUrl) => fetchPublicProduct({ query, searchUrl, requestedId: "", requestedUrl })));
   return products.filter((product) => product?.productId && product?.productName);
+}
+
+async function hydrateSearchCandidateImages(candidates, query, searchUrl) {
+  return Promise.all(candidates.map(async (candidate) => {
+    if (candidate.image || !candidate.url) return candidate;
+    return fetchPublicProduct({ query, searchUrl, requestedId: candidate.productId, requestedUrl: candidate.url }).catch(() => candidate);
+  }));
 }
 
 function parseSearchCandidates(html) {

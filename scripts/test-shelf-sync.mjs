@@ -84,11 +84,13 @@ for (const section of ["Collecting Information", "Physical Edition", "Game Data"
 assert.doesNotMatch(shelfHtml, /Added games are saved to this browser/, "Shelf must not show the obsolete browser-only save note");
 assert.doesNotMatch(shelfCss, /^\.lookup-result/m, "Shelf lookup must use Main's shared result CSS");
 assert.match(shelfSource, /classList\.add\("loaded"\)/, "Shelf lookup results must activate Main's visible result state");
-assert.match(shelfSource, /mode: "search"[\s\S]*?PriceCharting physical edition/, "Shelf lookup must show selectable PriceCharting editions");
+assert.match(shelfSource, /lookupSource: "pricecharting"/, "Shelf lookup must show selectable PriceCharting editions");
+assert.match(shelfSource, /physical \? result\.image : result\.cover/, "Shelf lookup must show PriceCharting covers when available");
 assert.match(collectionPriceSource, /region-name=all&exclude-variants=false/, "PriceCharting edition search must include PAL, Japan, and other regional variants");
 assert.match(collectionPriceSource, /cleanPriceChartingUrl/, "PriceCharting lookup must accept an exact product page URL");
 assert.match(collectionPriceSource, /encodeURIComponent\(requestedUpc \|\| title \|\| query\)/, "PriceCharting search must fetch broad title results before ranking regional editions");
 assert.match(collectionPriceSource, /rankCandidates\(await fetchPublicCandidates\(searchUrl\), query\)/, "PriceCharting results must rank PAL, Japan, and platform matches locally");
+assert.match(collectionPriceSource, /hydrateSearchCandidateImages/, "PriceCharting search results must include cover images");
 assert.match(collectionPriceSource, /fetchDirectCandidates\(fallbackUrls, query, searchUrl\)/, "PriceCharting must fall back to exact regional product pages when search returns no rows");
 assert.doesNotMatch(shelfSource, /Loading the selected PriceCharting edition|Matching the physical edition/, "Selecting a lookup result must not replace it with fetching text");
 assert.match(shelfCss, /\.condition-sealed input\[type="checkbox"\]:checked[\s\S]*?#ffe982[\s\S]*?#c8920a/, "The Sealed checkbox must use the gold condition treatment");
