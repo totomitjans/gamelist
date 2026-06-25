@@ -2200,7 +2200,9 @@ body.theme-kash .game-row:hover {
 }
 
 .game-row.owner-card-jordi,
-.game-row.owner-card-jordi:hover {
+.game-row.owner-card-jordi:hover,
+.game-row.owner-card-cage,
+.game-row.owner-card-cage:hover {
   background:
     linear-gradient(135deg, rgba(255, 173, 95, 0.18), rgba(255, 173, 95, 0.04) 42%, rgba(20, 22, 28, 0.58)),
     var(--panel);
@@ -2209,7 +2211,9 @@ body.theme-kash .game-row:hover {
 }
 
 .game-row.owner-card-judy.owner-card-jordi,
-.game-row.owner-card-judy.owner-card-jordi:hover {
+.game-row.owner-card-judy.owner-card-jordi:hover,
+.game-row.owner-card-judy.owner-card-cage,
+.game-row.owner-card-judy.owner-card-cage:hover {
   background:
     linear-gradient(135deg, rgba(255, 158, 210, 0.16), rgba(255, 173, 95, 0.12) 46%, rgba(20, 22, 28, 0.58)),
     var(--panel);
@@ -2499,14 +2503,16 @@ body.theme-kash .game-row.stream-card:hover {
   border-color: rgba(255, 158, 210, 0.36);
 }
 
-.game-card.owner-card-jordi {
+.game-card.owner-card-jordi,
+.game-card.owner-card-cage {
   background:
     linear-gradient(135deg, rgba(255, 173, 95, 0.18), rgba(255, 173, 95, 0.04) 42%, rgba(20, 22, 28, 0.58)),
     var(--panel);
   border-color: rgba(255, 173, 95, 0.36);
 }
 
-.game-card.owner-card-judy.owner-card-jordi {
+.game-card.owner-card-judy.owner-card-jordi,
+.game-card.owner-card-judy.owner-card-cage {
   background:
     linear-gradient(135deg, rgba(255, 158, 210, 0.16), rgba(255, 173, 95, 0.12) 46%, rgba(20, 22, 28, 0.58)),
     var(--panel);
@@ -2976,7 +2982,10 @@ body.theme-kash .playing-section .cover-button {
 
 .game-card h3.owner-jordi,
 .game-row-identity strong.owner-jordi,
-.detail-body h2.owner-jordi {
+.detail-body h2.owner-jordi,
+.game-card h3.owner-cage,
+.game-row-identity strong.owner-cage,
+.detail-body h2.owner-cage {
   color: var(--jordi);
 }
 
@@ -3364,7 +3373,8 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   background: rgba(255, 158, 210, 0.1);
 }
 
-.owner-pill.owner-jordi {
+.owner-pill.owner-jordi,
+.owner-pill.owner-cage {
   color: var(--jordi);
   border-color: rgba(255, 173, 95, 0.48);
   background: rgba(255, 173, 95, 0.1);

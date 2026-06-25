@@ -112,7 +112,7 @@ const el = {
   fields: {
     title: document.querySelector("#titleInput"), platform: document.querySelector("#platformInput"),
     country: document.querySelector("#countryInput"), price: document.querySelector("#priceInput"),
-    owners: document.querySelector("#ownersInput"), category: document.querySelector("#categoryInput"),
+    owners: document.querySelector("#ownersInput"),
     releaseDate: document.querySelector("#releaseDateInput"), trophyName: document.querySelector("#trophyNameInput"),
     upc: document.querySelector("#upcInput"), sku: document.querySelector("#skuInput"), asin: document.querySelector("#asinInput"),
     epid: document.querySelector("#epidInput"), pricechartingId: document.querySelector("#pricechartingIdInput"),
@@ -422,7 +422,7 @@ function gameCard(game, options = {}) {
   const cover = fallbackCover;
   const studio = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
   const owners = game.owners || [];
-  const ownerClasses = `${(game.owners || []).includes("Judy") ? " owner-card-judy" : ""}${(game.owners || []).includes("Jordi") ? " owner-card-jordi" : ""}`;
+  const ownerClasses = `${(game.owners || []).includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(game.owners) ? " owner-card-jordi" : ""}`;
   const tags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((tag) => String(tag).trim()).filter((tag, index, list) => tag && normalize(tag) !== "game" && list.indexOf(tag) === index);
   const condition = conditionLabel(game);
   const card = createGameCardShell(document);
@@ -436,16 +436,16 @@ function gameCard(game, options = {}) {
   card.querySelector(".card-trailer")?.remove(); card.querySelector(".trailer-toggle")?.remove();
   const image = card.querySelector(".cover-button img"); image.src = cover; image.dataset.coverFallback = fallbackCover; image.alt = `${game.title} cover`; image.loading = options.imagePriority || "lazy"; image.fetchPriority = options.imagePriority === "eager" ? "high" : "low"; image.decoding = "async";
   card.querySelector(".cover-button").dataset.action = "details";
-  const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", owners.includes("Jordi"));
+  const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", hasJordiToneOwner(owners));
   card.querySelector(".title-owners").innerHTML = owners.map(ownerBadge).join("");
   const edit = card.querySelector(".edit-action"); edit.dataset.action = "edit";
-  edit.insertAdjacentHTML("afterend", `<button class="icon-button danger-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`);
   card.querySelector(".studio-line").textContent = studio || game.genre || "Physical edition";
   card.querySelector(".meta").innerHTML = `<span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(condition)}`;
   card.querySelector(".play-dates").remove();
   card.querySelector(".chips").innerHTML = tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("");
   card.querySelector(".card-trophies").remove();
-  card.querySelector(".card-actions").remove(); card.querySelector(".prices").remove();
+  card.querySelector(".card-actions").innerHTML = `<button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
+  card.querySelector(".prices").remove();
   const note = card.querySelector(".notes"); note.textContent = game.notes || ""; note.classList.add("shelf-card-notes"); note.hidden = !game.notes;
   if (game.description) note.insertAdjacentHTML("afterend", `<p class="shelf-card-description">${escapeHtml(game.description)}</p>`);
   return card;
@@ -455,10 +455,10 @@ function gameRow(game) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
   const studio = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
   const owners = game.owners || [];
-  const ownerClasses = `${owners.includes("Judy") ? " owner-card-judy" : ""}${owners.includes("Jordi") ? " owner-card-jordi" : ""}`;
+  const ownerClasses = `${owners.includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(owners) ? " owner-card-jordi" : ""}`;
   const tags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((tag) => String(tag).trim()).filter((tag, index, list) => tag && normalize(tag) !== "game" && list.indexOf(tag) === index);
   const description = game.description || "";
-  return `<article class="game-row${ownerClasses}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}"><span class="game-row-cover-wrap"><img class="game-row-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"><img class="game-row-cover-preview" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" aria-hidden="true"></span><div class="game-row-identity"><strong class="${owners.includes("Judy") ? "owner-judy" : ""} ${owners.includes("Jordi") ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong>${studio ? `<span>${escapeHtml(studio)}</span>` : ""}${description ? `<span class="shelf-row-description">${escapeHtml(description)}</span>` : ""}</div><div class="game-row-core"><span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(conditionLabel(game))}${owners.map(ownerBadge).join("")}</div><div class="game-row-tags">${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</div><div class="game-row-actions"><button class="icon-button row-edit-action" data-action="edit" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button></div></article>`;
+  return `<article class="game-row${ownerClasses}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}"><span class="game-row-cover-wrap"><img class="game-row-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"><img class="game-row-cover-preview" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" aria-hidden="true"></span><div class="game-row-identity"><strong class="${owners.includes("Judy") ? "owner-judy" : ""} ${hasJordiToneOwner(owners) ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong>${studio ? `<span>${escapeHtml(studio)}</span>` : ""}${description ? `<span class="shelf-row-description">${escapeHtml(description)}</span>` : ""}</div><div class="game-row-core"><span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(conditionLabel(game))}${owners.map(ownerBadge).join("")}</div><div class="game-row-tags">${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</div><div class="game-row-actions"><button class="icon-button row-edit-action" data-action="edit" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button></div></article>`;
 }
 
 function conditionBadge(condition) { const tone = condition === "Complete +" ? "complete-plus" : normalize(condition).replace(/ /g, "-"); return `<span class="condition-pill condition-${tone}"><img src="assets/platforms/disk.png" alt="" width="18" height="18"><span>${escapeHtml(condition)}</span></span>`; }
@@ -479,7 +479,7 @@ function openDetails(game) {
   el.detailDialog.dataset.projection = game._gamelistProjection ? "true" : "false";
   el.detailTitle.textContent = game.title;
   el.detailTitle.classList.toggle("owner-judy", (game.owners || []).includes("Judy"));
-  el.detailTitle.classList.toggle("owner-jordi", (game.owners || []).includes("Jordi"));
+  el.detailTitle.classList.toggle("owner-jordi", hasJordiToneOwner(game.owners));
   el.detailStudio.textContent = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
   el.detailMeta.innerHTML = `${game.country ? `<span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>` : ""}${platformBadge(game.platform)}`;
   const fallbackCover = coverUrl(game.cover || "") || platformFallback(game.platform);
@@ -527,7 +527,7 @@ function openEditor(game = null) {
   el.lookupResults.classList.remove("loaded");
   el.lookupResults.innerHTML = "";
   el.lookupInput.value = game?.title || "";
-  const values = game || { platform: "Nintendo Switch", country: "United Kingdom", game: true, box: true, manual: true, category: "Game" };
+  const values = game || { platform: "Nintendo Switch", country: "United Kingdom", game: true, box: true, manual: true };
   for (const [key, input] of Object.entries(el.fields)) input.value = values[key] ?? "";
   el.fields.owners.value = (values.owners || []).join(", ");
   el.fields.websites.value = websiteLinks(values).join(", ");
@@ -611,6 +611,7 @@ async function chooseLookupResult(event) {
     el.fields.title.value = result.productName || el.fields.title.value;
     el.fields.platform.value = bestCollectionPlatform([result.consoleName], el.fields.platform.value);
     applyPriceChartingRegion(result.consoleName);
+    applyPriceChartingSearchResult(result);
     const physical = await fetchPhysicalMetadata(result.productName, { id: result.productId, url: result.url });
     if (physical) applyPhysicalMetadata(physical);
     renderPhysicalSelection(physical || result);
@@ -624,7 +625,6 @@ async function chooseLookupResult(event) {
   el.fields.cover.value = result.cover || "";
   el.fields.releaseDate.value = result.releaseDate || "";
   el.fields.websites.value = Object.values(result.storeLinks || {}).filter(Boolean).join(", ");
-  el.fields.category.value = (result.genres || [])[0] || "Game";
   el.fields.description.value = result.description || "";
   const physical = await fetchPhysicalMetadata(result.title);
   if (physical) applyPhysicalMetadata(physical);
@@ -656,9 +656,25 @@ function applyPhysicalMetadata(data) {
   if (data.genre && !el.fields.genre.value) el.fields.genre.value = data.genre;
   if (data.publisher && !el.fields.publisher.value) el.fields.publisher.value = data.publisher;
   if (data.developer && !el.fields.developer.value) el.fields.developer.value = data.developer;
-  if (data.mainValue != null) el.fields.price.value = Number(data.mainValue).toFixed(2);
+  const estimate = estimatedPhysicalValue(data);
+  if (estimate != null) el.fields.price.value = Number(estimate).toFixed(2);
   if (data.productUrl) el.fields.websites.value = [...new Set([...splitValues(el.fields.websites.value), data.productUrl])].join(", ");
   if (data.image) el.fields.cover.value = data.image;
+}
+
+function applyPriceChartingSearchResult(result) {
+  if (result.productId) el.fields.pricechartingId.value = result.productId;
+  const estimate = estimatedPhysicalValue(result);
+  if (estimate != null) el.fields.price.value = Number(estimate).toFixed(2);
+  if (result.url) el.fields.websites.value = [...new Set([...splitValues(el.fields.websites.value), result.url])].join(", ");
+  if (result.image) el.fields.cover.value = result.image;
+}
+
+function estimatedPhysicalValue(data) {
+  const prices = data?.prices || {};
+  if (el.conditionFields.sealed.checked) return prices.sealed ?? prices.complete ?? prices.loose ?? data?.mainValue ?? null;
+  if (el.conditionFields.game.checked && el.conditionFields.box.checked) return prices.complete ?? prices.loose ?? prices.sealed ?? data?.mainValue ?? null;
+  return prices.loose ?? prices.complete ?? prices.sealed ?? data?.mainValue ?? null;
 }
 
 function renderPhysicalSelection(physical, fallbackTitle = "") {
@@ -680,7 +696,7 @@ async function saveEditor(event) {
     region: regionFor(el.fields.country.value), ...conditionFromInputs(),
     price: numberOrNull(el.fields.price.value), publisher: el.fields.publisher.value.trim(), developer: el.fields.developer.value.trim(),
     genre: el.fields.genre.value.trim(), cover: rawCoverUrl(el.fields.cover.value.trim()), notes: el.fields.notes.value.trim(),
-    owners: splitValues(el.fields.owners.value), category: el.fields.category.value.trim() || "Game",
+    owners: splitValues(el.fields.owners.value).map(canonicalOwner).filter(Boolean), category: existing?.category || "Game",
     releaseDate: el.fields.releaseDate.value, trophyName: el.fields.trophyName.value.trim(), websites: splitValues(el.fields.websites.value),
     upc: el.fields.upc.value.trim(), sku: el.fields.sku.value.trim(), asin: el.fields.asin.value.trim(), epid: el.fields.epid.value.trim(),
     pricechartingId: el.fields.pricechartingId.value.trim(), description: el.fields.description.value.trim(),
@@ -940,7 +956,7 @@ function openGamelistDetails(sourceGame) {
   const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
   el.detailTitle.textContent = game.title;
   el.detailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
-  el.detailTitle.classList.toggle("owner-jordi", owners.includes("Jordi"));
+  el.detailTitle.classList.toggle("owner-jordi", hasJordiToneOwner(owners));
   el.detailStudio.textContent = [game.developer, game.publisher].filter(Boolean).join(" / ");
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = projectionMeta(game, { includePast: true });
@@ -987,7 +1003,7 @@ function scheduleShelfTrailerUpdate() { if (state.playingTrailerFrame) return; s
 function gamelistProjectionCard(game) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
   const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
-  const ownerClasses = `${owners.includes("Judy") ? " owner-card-judy" : ""}${owners.includes("Jordi") ? " owner-card-jordi" : ""}`;
+  const ownerClasses = `${owners.includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(owners) ? " owner-card-jordi" : ""}`;
   const studio = [game.developer, game.publisher].filter(Boolean).join(" / ");
   const card = createGameCardShell(document);
   card.dataset.gamelistId = game.id; card.setAttribute("role", "button"); card.tabIndex = 0;
@@ -995,7 +1011,7 @@ function gamelistProjectionCard(game) {
   card.style.setProperty("--card-art", `url('${escapeCss(cover)}')`);
   const trailer = card.querySelector(".card-trailer"); const trailerUrl = window.matchMedia("(min-width: 900px)").matches ? activityTrailerUrl(game.trailerUrl, window.location.origin) : ""; if (trailerUrl) { card.classList.add("has-trailer"); trailer.dataset.src = trailerUrl; const toggle = card.querySelector(".trailer-toggle"); toggle.hidden = false; toggle.innerHTML = pauseTrailerIcon(); } else { trailer.remove(); card.querySelector(".trailer-toggle")?.remove(); }
   const image = card.querySelector(".cover-button img"); image.src = cover; image.alt = `${game.title} cover`; image.loading = "eager"; image.fetchPriority = "high"; image.decoding = "async";
-  const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", owners.includes("Jordi")); title.classList.toggle("completed-achievements-title", Boolean(game.platinum));
+  const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", owners.includes("Judy")); title.classList.toggle("owner-jordi", hasJordiToneOwner(owners)); title.classList.toggle("completed-achievements-title", Boolean(game.platinum));
   const visibleOwners = owners.filter((owner) => owner !== (state.gamelistSettings.defaultOwner || "Xavi")); card.querySelector(".title-owners").innerHTML = visibleOwners.map(ownerBadge).join("");
   card.querySelector(".edit-action").classList.remove("editor-only");
   const studioLine = card.querySelector(".studio-line"); studioLine.textContent = studio; studioLine.hidden = !studio;
@@ -1342,6 +1358,16 @@ function sortArrowIcon(desc = false) { return `<svg class="sort-arrow-icon" view
 function linesIcon() { return `<svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"></path></svg>`; }
 function gridIcon() { return `<svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="5.5" height="5.5"></rect><rect x="14" y="4.5" width="5.5" height="5.5"></rect><rect x="4.5" y="14" width="5.5" height="5.5"></rect><rect x="14" y="14" width="5.5" height="5.5"></rect></svg>`; }
 function ownerBadge(owner) { return `<span class="owner-pill owner-${normalize(owner)}">${escapeHtml(owner)}</span>`; }
+function canonicalOwner(owner) {
+  const value = String(owner || "").trim();
+  const normalized = normalize(value);
+  if (normalized === "judy") return "Judy";
+  if (normalized === "jordi") return "Jordi";
+  if (normalized === "cage") return "Cage";
+  if (normalized === "xavi") return "Xavi";
+  return value;
+}
+function hasJordiToneOwner(owners = []) { return owners.includes("Jordi") || owners.includes("Cage"); }
 function trophyTone(value) { const text = String(value || "").toLowerCase(); if (text.includes("platinum")) return "platinum"; if (text.includes("gold")) return "gold"; if (text.includes("silver")) return "silver"; return "bronze"; }
 function handleSelectOverflowTitle(event) { const select = event.target.closest?.("select"); if (select && updateSelectOverflowTitle(select)) showSelectOverflowPopover(select); }
 function handleSelectOverflowLeave(event) { if (event.target.closest?.("select")) hideSelectOverflowPopover(); }

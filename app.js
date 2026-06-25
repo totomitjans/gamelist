@@ -2185,7 +2185,7 @@ function rowFor(game, section, options = {}) {
   row.tabIndex = 0;
   row.setAttribute("aria-label", `Open ${game.title}`);
   row.classList.toggle("owner-card-judy", owners.includes("Judy"));
-  row.classList.toggle("owner-card-jordi", owners.includes("Jordi"));
+  row.classList.toggle("owner-card-jordi", hasJordiToneOwner(owners));
   row.classList.toggle("digital-card", Boolean(game.digital));
   row.classList.toggle("stream-card", Boolean(game.stream));
   row.innerHTML = `
@@ -2194,7 +2194,7 @@ function rowFor(game, section, options = {}) {
       <img class="game-row-cover-preview" src="${escapeHtml(game.cover ? coverDisplayUrl(game.cover, "card") : "")}" alt="" loading="lazy" decoding="async" aria-hidden="true">
     </span>
     <div class="game-row-identity">
-      <strong class="${game.platinum ? "completed-achievements-title" : ""} ${owners.includes("Judy") ? "owner-judy" : ""} ${owners.includes("Jordi") ? "owner-jordi" : ""}" tabindex="0">${escapeHtml(game.title)}</strong>
+      <strong class="${game.platinum ? "completed-achievements-title" : ""} ${owners.includes("Judy") ? "owner-judy" : ""} ${hasJordiToneOwner(owners) ? "owner-jordi" : ""}" tabindex="0">${escapeHtml(game.title)}</strong>
       ${studioText(game) ? `<span>${escapeHtml(studioText(game))}</span>` : ""}
     </div>
     <div class="game-row-core">${rowCoreStats(game)}</div>
@@ -2580,7 +2580,7 @@ function cardFor(game, options = {}) {
   card.dataset.owner = statuses.join(" ");
   card.draggable = !options.staticCard && manualDragEnabled() && ["backlog", "upcoming", "wanted"].includes(game.section);
   card.classList.toggle("owner-card-judy", owners.includes("Judy"));
-  card.classList.toggle("owner-card-jordi", owners.includes("Jordi"));
+  card.classList.toggle("owner-card-jordi", hasJordiToneOwner(owners));
   card.classList.toggle("digital-card", Boolean(game.digital));
   card.classList.toggle("playing-card", Boolean(game.playing));
   card.classList.toggle("stream-card", Boolean(game.stream));
@@ -2610,7 +2610,7 @@ function cardFor(game, options = {}) {
   }
   card.querySelector("h3").textContent = game.title;
   card.querySelector("h3").classList.toggle("owner-judy", owners.includes("Judy"));
-  card.querySelector("h3").classList.toggle("owner-jordi", owners.includes("Jordi"));
+  card.querySelector("h3").classList.toggle("owner-jordi", hasJordiToneOwner(owners));
   card.querySelector("h3").classList.toggle("completed-achievements-title", Boolean(game.platinum));
   const titleOwners = card.querySelector(".title-owners");
   titleOwners.innerHTML = owners.filter((owner) => owner !== (state.settings.defaultOwner || DEFAULT_SETTINGS.defaultOwner)).map(ownerBadge).join("");
@@ -2848,7 +2848,7 @@ function openDetail(id, options = {}) {
   const owners = ownerTags(game);
   el.detailTitle.textContent = game.title;
   el.detailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
-  el.detailTitle.classList.toggle("owner-jordi", owners.includes("Jordi"));
+  el.detailTitle.classList.toggle("owner-jordi", hasJordiToneOwner(owners));
   el.detailStudio.textContent = studioText(game);
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = metaFor(game, { includePsn: false, includePastRelease: true }).join("");
@@ -3988,7 +3988,12 @@ function canonicalOwner(owner) {
   if (normalized === "xavi") return "Xavi";
   if (normalized === "judy") return "Judy";
   if (normalized === "jordi") return "Jordi";
+  if (normalized === "cage") return "Cage";
   return cleaned;
+}
+
+function hasJordiToneOwner(owners = []) {
+  return owners.includes("Jordi") || owners.includes("Cage");
 }
 
 function ownerInputValues(value) {

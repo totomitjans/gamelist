@@ -161,12 +161,57 @@ function bestCandidate(candidates, query) {
 
 function rankCandidates(candidates, query) {
   const wanted = normalize(query);
+  const wantedTitle = stripSearchQualifiers(wanted);
+  const wantedConsole = consoleSignature(wanted);
+  const wantedRegion = regionSignature(wanted);
   return candidates.map((item, index) => {
-    const value = normalize(`${item.productName} ${item.consoleName}`);
-    const tokens = wanted.split(" ").filter((token) => token.length > 1 || /^\d$/.test(token));
-    const overlap = tokens.filter((token) => value.includes(token)).length;
-    return { item, score: overlap / Math.max(1, tokens.length) - index * 0.002 };
+    const title = normalize(item.productName);
+    const consoleName = normalize(item.consoleName);
+    const value = `${title} ${consoleName}`;
+    const tokens = wantedTitle.split(" ").filter((token) => token.length > 1 || /^\d$/.test(token));
+    const overlap = tokens.filter((token) => title.includes(token)).length / Math.max(1, tokens.length);
+    const extraTitleTokens = Math.max(0, title.split(" ").filter((token) => token && !tokens.includes(token)).length - 1);
+    const exactTitleBonus = title === wantedTitle ? 0.75 : title.startsWith(`${wantedTitle} `) ? 0.25 : 0;
+    const consoleBonus = wantedConsole && consoleSignature(consoleName) === wantedConsole ? 0.65 : wantedConsole && value.includes(wantedConsole) ? 0.25 : 0;
+    const regionBonus = !wantedRegion || regionSignature(value) === wantedRegion ? 0.35 : -0.45;
+    return { item, score: overlap + exactTitleBonus + consoleBonus + regionBonus - extraTitleTokens * 0.035 - index * 0.002 };
   }).sort((a, b) => b.score - a.score).map(({ item }) => item);
+}
+
+function stripSearchQualifiers(value) {
+  return normalize(value)
+    .replace(/\b(?:pal|ntsc|jp|japan|japanese|asian english|asia|usa|us|united states|europe|spain|france|germany|australia|uk|united kingdom)\b/g, " ")
+    .replace(/\b(?:nintendo )?switch(?: 2)?\b/g, " ")
+    .replace(/\b(?:sony )?playstation ?[1-5]\b/g, " ")
+    .replace(/\bps ?[1-5]\b/g, " ")
+    .replace(/\b(?:xbox one|xbox 360|xbox series|xbox)\b/g, " ")
+    .replace(/\b(?:nintendo )?(?:ds|3ds|64|gamecube|wii u|wii|gba|gbc|game boy advance|game boy color|game boy)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function consoleSignature(value) {
+  const textValue = normalize(value);
+  const playstation = textValue.match(/\b(?:sony )?(?:playstation|ps) ?([1-5])\b/);
+  if (playstation) return `playstation ${playstation[1]}`;
+  if (/\bswitch 2\b/.test(textValue)) return "nintendo switch 2";
+  if (/\bswitch\b/.test(textValue)) return "nintendo switch";
+  if (/\bxbox 360\b/.test(textValue)) return "xbox 360";
+  if (/\bxbox one\b|\bxone\b/.test(textValue)) return "xbox one";
+  if (/\bxbox series\b/.test(textValue)) return "xbox series";
+  if (/\b3ds\b/.test(textValue)) return "nintendo 3ds";
+  if (/\bds\b/.test(textValue)) return "nintendo ds";
+  if (/\bn64\b|\bnintendo 64\b/.test(textValue)) return "nintendo 64";
+  return "";
+}
+
+function regionSignature(value) {
+  const textValue = normalize(value);
+  if (/\b(?:jp|japan|japanese)\b/.test(textValue)) return "jp";
+  if (/\b(?:pal|europe|spain|france|germany|australia|uk|united kingdom)\b/.test(textValue)) return "pal";
+  if (/\b(?:ntsc|usa|us|united states)\b/.test(textValue)) return "ntsc";
+  if (/\b(?:asian english|asia|taiwan)\b/.test(textValue)) return "asia";
+  return "";
 }
 
 function parseChart(html) {
