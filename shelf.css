@@ -570,15 +570,7 @@
   gap: 16px;
   min-width: 0;
 }
-.shelf-page .detail-condition h3,
-.shelf-page .detail-store-price-panel h3,
-.shelf-page {
-  margin: 0;
-  color: var(--accent-2);
-  font-size: 13px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
+
 .condition-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(90px, 1fr));
@@ -857,7 +849,7 @@
   display: -webkit-box;
   max-height: calc(1.45em * 3);
   overflow: hidden;
-  color: var(--text);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
   text-overflow: ellipsis;
