@@ -403,7 +403,7 @@ function renderLibrary() {
   if (!pendingCount && state.filters.tab === "new") state.filters.tab = "shelf";
   const games = filteredGames();
   el.tabs.hidden = !pendingCount;
-  el.tabs.innerHTML = pendingCount ? `<button class="${state.filters.tab !== "new" ? "active" : ""}" data-shelf-tab="shelf" type="button">Shelf</button><button class="${state.filters.tab === "new" ? "active" : ""}" data-shelf-tab="new" type="button">New additions <span>${pendingCount}</span></button>` : "";
+  el.tabs.innerHTML = pendingCount ? `<button class="${state.filters.tab !== "new" ? "active" : ""}" data-shelf-tab="shelf" type="button">Shelf</button><button class="${state.filters.tab === "new" ? "active" : ""}" data-shelf-tab="new" type="button"><span class="label">New additions</span> <span class="count">${pendingCount}</span></button>` : "";
   el.count.textContent = `${games.length} ${games.length === 1 ? "game" : "games"}`;
   el.shelf.classList.toggle("list-view", state.viewMode === "list");
   el.shelf.innerHTML = "";

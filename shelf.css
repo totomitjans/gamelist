@@ -504,13 +504,21 @@
   box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 42%, transparent);
   font-weight: 820;
 }
-.shelf-tabs button span {
+.shelf-tabs button span .label {
+  color: red;
+  width: 25px;
+  height: 25px;
+}
+
+.shelf-tabs button span .count {
   display: inline-grid;
   place-items: center;
   border-radius: 5px;
   background: color-mix(in srgb, var(--accent) 25%, #262626);
   color: white;
   font-size: 11px;
+  width: 25px;
+  height: 25px;
 }
 .owner-pill.owner-judy {
   color: var(--judy);
@@ -934,9 +942,6 @@
   animation: shelf-search-pulse 0.75s ease-in-out infinite alternate;
 }
 
-.shelf-tabs button.active #text {
-  color: blue;
-}
 @keyframes shelf-search-pulse {
   to {
     opacity: 0.35;
