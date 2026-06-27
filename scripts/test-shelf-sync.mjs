@@ -84,6 +84,8 @@ assert.match(appSource, /function canSeeNewAdditions\(\)[\s\S]*?state\.canEdit/,
 assert.match(appSource, /function finishSetupGame\(id\)[\s\S]*?openEditor\(id\)/, "Main New additions must use Finish setup to complete missing info");
 assert.match(appSource, /if \(game\.section === "new"\)[\s\S]*?completeAction\.addEventListener\("click", \(\) => startPlaying\(game\.id\)\)/, "Main New additions cards must play directly");
 assert.match(appSource, /row\.classList\.toggle\("new-addition-row", section === "new"\)/, "Main New additions must support list mode row styling");
+assert.match(appSource, /function trashIcon\(\)[\s\S]*?class="trash-icon"/, "Main must provide a local delete icon helper");
+assert.match(appSource, /row-delete-action[\s\S]*?trashIcon\(\)/, "Main New additions list rows must render the delete icon");
 assert.match(sharedCss, /@media \(max-width: 760px\)[\s\S]*?\.game-row\.new-addition-row \.game-row-actions\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\) 34px;/, "Main New additions list rows must fit their Play, Finish setup, and Delete actions on mobile");
 assert.match(appSource, /card\.querySelector\("\.chips"\)\.innerHTML = cardChipsFor\(game\)\.join\(""\)/, "Main cards must show owner tags in the tag row");
 assert.match(appSource, /function cardChipsFor\(game\)[\s\S]*?visibleOwnerTags\(game\)\.map\(ownerBadge\)[\s\S]*?chipsFor\(game\)/, "Main card tag row must include owner pills before normal tags");

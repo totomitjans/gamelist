@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v214";
-const SITE_UPDATED_AT = "2026-06-27T23:36:02+02:00";
+const SITE_VERSION = "v215";
+const SITE_UPDATED_AT = "2026-06-27T23:40:42+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -3894,6 +3894,18 @@ function pencilIcon() {
     <svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
       <path d="M13.5 6.5l4 4"></path>
+    </svg>
+  `;
+}
+
+function trashIcon() {
+  return `
+    <svg class="trash-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h18"></path>
+      <path d="M8 6V4h8v2"></path>
+      <path d="M19 6l-1 14H6L5 6"></path>
+      <path d="M10 11v5"></path>
+      <path d="M14 11v5"></path>
     </svg>
   `;
 }
