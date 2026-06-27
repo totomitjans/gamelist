@@ -83,6 +83,14 @@
 
 .detail-cover {
   aspect-ratio: unset;
+  border: unset;
+  background: unset;
+}
+
+@media (max-width: 760px) {
+  .detail-cover {
+    max-height: unset;
+  }
 }
 
 .shelf-toolbar .search {
