@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v210";
-const SITE_UPDATED_AT = "2026-06-27T23:20:07+02:00";
+const SITE_VERSION = "v211";
+const SITE_UPDATED_AT = "2026-06-27T23:24:17+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -2020,6 +2020,15 @@ function renderMobileTabs() {
   document.querySelector(".mobile-section-tabs")?.style.setProperty("--mobile-tab-count", String(sections.length));
   document.querySelector(".mobile-section-tabs")?.style.setProperty("--mobile-tab-width", `calc((100% - ${6 * (sections.length + 1)}px) / ${sections.length})`);
   document.querySelector(".mobile-section-tabs")?.style.setProperty("--mobile-tab-index", String(index));
+  el.board.style.setProperty("--mobile-section-count", String(sections.length));
+  el.board.style.setProperty("--mobile-section-index", String(index));
+  el.board.querySelectorAll(".column").forEach((column) => {
+    const columnIndex = sections.indexOf(column.id);
+    column.classList.toggle("is-mobile-active", column.id === state.mobileSection);
+    column.classList.toggle("is-mobile-pane", columnIndex >= 0);
+    column.style.setProperty("--mobile-column-index", String(Math.max(0, columnIndex)));
+    column.setAttribute("aria-hidden", String(columnIndex < 0 || column.id !== state.mobileSection));
+  });
   document.body.dataset.mobileSection = state.mobileSection;
 }
 

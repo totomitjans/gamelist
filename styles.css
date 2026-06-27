@@ -6538,7 +6538,28 @@ body.theme-kash .guide-button:hover {
   }
 
   .board {
+    position: relative;
+    display: block;
+    overflow: hidden;
     touch-action: pan-y;
+  }
+
+  body[data-mobile-section] .board .column.is-mobile-pane:not([hidden]) {
+    display: block !important;
+    width: 100%;
+    transform: translateX(calc((var(--mobile-column-index) - var(--mobile-section-index)) * 100%));
+    transition: transform 190ms ease;
+  }
+
+  body[data-mobile-section] .board .column.is-mobile-pane:not(.is-mobile-active):not([hidden]) {
+    position: absolute;
+    inset: 0 auto auto 0;
+    pointer-events: none;
+  }
+
+  body[data-mobile-section] .board .column.is-mobile-active:not([hidden]) {
+    position: relative;
+    pointer-events: auto;
   }
 
   .platinum-filter-bar {

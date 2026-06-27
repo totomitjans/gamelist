@@ -76,6 +76,8 @@ assert.match(shelfHtml, /id="playstationUrlInput"[\s\S]*?id="nintendoUrlInput"[\
 assert.match(shelfSource, /kpis: "Highlights", filters: "Search"/, "Shelf settings must use shorter Highlights and Search labels");
 assert.doesNotMatch(appSource, /stat\("New additions"/, "Main must not show a New additions KPI");
 assert.match(appSource, /function mobileSectionCounts\(\)/, "Main mobile tabs must show section counts");
+assert.match(appSource, /el\.board\.style\.setProperty\("--mobile-section-index", String\(index\)\)[\s\S]*?column\.classList\.toggle\("is-mobile-pane", columnIndex >= 0\)/, "Main mobile board must treat New additions as part of the horizontal pane slider");
+assert.match(sharedCss, /@media \(max-width: 760px\)[\s\S]*?body\[data-mobile-section\] \.board \.column\.is-mobile-pane:not\(\[hidden\]\)\s*\{[\s\S]*?transform: translateX\(calc\(\(var\(--mobile-column-index\) - var\(--mobile-section-index\)\) \* 100%\)\)/, "Main mobile board panes must slide horizontally instead of rendering New additions separately");
 assert.match(appSource, /function canSeeNewAdditions\(\)[\s\S]*?state\.canEdit/, "Main New additions must only appear while logged in");
 assert.match(appSource, /function finishSetupGame\(id\)[\s\S]*?openEditor\(id\)/, "Main New additions must use Finish setup to complete missing info");
 assert.match(appSource, /if \(game\.section === "new"\)[\s\S]*?completeAction\.addEventListener\("click", \(\) => startPlaying\(game\.id\)\)/, "Main New additions cards must play directly");
@@ -98,6 +100,7 @@ assert.match(shelfSource, /const badges = `\$\{visibleProjectionOwners\(game\)\.
 assert.match(shelfCss, /\.shelf-page \.game-card \.title-owners \.owner-pill\s*\{[\s\S]*?min-height:\s*31px;[\s\S]*?font-size:\s*12px;/, "Shelf card owner tags must match tag chip height");
 assert.match(shelfCss, /\.shelf-page \.game-row-core \.owner-pill\s*\{[\s\S]*?min-height:\s*18px;[\s\S]*?font-size:\s*10px;/, "Shelf row owner tags must stay compact");
 assert.match(shelfCss, /@media \(max-width: 760px\)[\s\S]*?\.shelf-grid \.game-card \.card-actions\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\) 42px;[\s\S]*?\.shelf-grid \.game-card \.card-actions:has\(\.add-collection-action\)\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\) minmax\(0,\s*1fr\) 42px;/, "Shelf mobile card actions must keep Add to Backlog from overlaying Delete");
+assert.match(shelfCss, /@media \(max-width: 760px\)[\s\S]*?\.shelf-dialog \.detail-cover\s*\{[\s\S]*?height:\s*var\(--shelf-cover-height, auto\);[\s\S]*?\.shelf-dialog \.detail-cover img\s*\{[\s\S]*?height:\s*100%;[\s\S]*?object-fit:\s*contain;/, "Shelf mobile detail cover must be sized by its parent frame, not intrinsic image height");
 assert.match(appSource, /<div class="settings-check-field">[\s\S]*?data-shelf-sync/, "Main Shelf Sync check must sit inside a field wrapper");
 assert.match(shelfSource, /<div class="settings-check-field">[\s\S]*?id="shelfSettingsSync"[\s\S]*?<div class="settings-check-field">[\s\S]*?id="shelfSettingsShowPrices"/, "Shelf Sync and Prices checks must sit inside field wrappers");
 assert.match(sharedCss, /\.settings-sync-card \.settings-visible-check\s*\{[\s\S]*?background-color: rgba\(255, 255, 255, 0\.075\);[\s\S]*?border: 1px solid rgba\(255, 255, 255, 0\.14\);/, "Shelf Sync and Prices checks must sit in dropdown-like controls");
