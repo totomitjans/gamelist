@@ -505,8 +505,8 @@
   font-weight: 820;
 }
 .shelf-tabs button .label {
-  color: red;
-  width: 25px;
+  display: inline-grid;
+  padding-top: 3px;
   height: 25px;
 }
 
