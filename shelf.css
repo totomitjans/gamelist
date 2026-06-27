@@ -632,19 +632,28 @@
 }
 .shelf-dialog .detail-cover {
   align-self: start;
-  aspect-ratio: auto;
+  display: grid;
+  place-items: center;
+  width: var(--shelf-cover-width, auto);
+  height: var(--shelf-cover-height, auto);
+  aspect-ratio: var(--shelf-cover-ratio, auto);
   min-height: 0;
+  line-height: 0;
   padding: 0;
   overflow: hidden;
   border: 0;
+  border-radius: 8px;
   background: transparent;
 }
 .shelf-dialog .detail-cover img {
+  display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: auto;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: var(--shelf-cover-ratio, auto);
   object-fit: contain;
-  border-radius: 0;
+  border-radius: inherit;
 }
 .shelf-detail-content {
   display: grid;
@@ -1169,7 +1178,7 @@
     grid-template-columns: 1fr;
   }
   .shelf-dialog .detail-cover {
-    display: flex;
+    display: grid;
     width: min(100%, var(--shelf-cover-width, 360px));
     height: var(--shelf-cover-height, auto);
     max-width: none;
