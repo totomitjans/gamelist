@@ -94,10 +94,6 @@
   box-shadow: none;
 }
 
-.shelf-toolbar .search input {
-  font: inherit;
-}
-
 .view-toggle svg {
   fill: none;
   stroke: currentColor;
