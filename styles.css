@@ -1999,13 +1999,13 @@ body.theme-kash .mobile-section-tabs::before {
 .mobile-section-tabs button .count {
   display: inline-grid;
   place-items: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
   border-radius: 5px;
   color: #ffffff;
   background: color-mix(in srgb, var(--accent) 78%, #262626);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 850;
 }
 
@@ -6118,6 +6118,10 @@ body.theme-kash .guide-button:hover {
     margin: 12px 0 16px;
   }
 
+  .mobile-section-tabs button[data-mobile-section="new"] .label {
+    display: none;
+  }
+
   .prices,
   .game-card .prices {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -6566,26 +6570,24 @@ body.theme-kash .guide-button:hover {
 
   .board {
     position: relative;
-    display: block;
+    display: flex;
     overflow: hidden;
     touch-action: pan-y;
+    transform: translateX(calc(var(--mobile-section-index, 0) * -100%));
+    transition: transform 190ms ease;
   }
 
   body[data-mobile-section] .board .column.is-mobile-pane:not([hidden]) {
     display: block !important;
+    flex: 0 0 100%;
     width: 100%;
-    transform: translateX(calc((var(--mobile-column-index) - var(--mobile-section-index)) * 100%));
-    transition: transform 190ms ease;
   }
 
   body[data-mobile-section] .board .column.is-mobile-pane:not(.is-mobile-active):not([hidden]) {
-    position: absolute;
-    inset: 0 auto auto 0;
     pointer-events: none;
   }
 
   body[data-mobile-section] .board .column.is-mobile-active:not([hidden]) {
-    position: relative;
     pointer-events: auto;
   }
 
