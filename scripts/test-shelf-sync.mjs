@@ -70,15 +70,16 @@ assert.match(shelfSource, /shelfDefaultOrder: el\.settingsDefaultOrder\.value/, 
 for (const source of [appSource, shelfSource]) assert.match(source, /Shelf Sync/, "Main and Shelf settings must expose Shelf Sync");
 assert.match(appSource, /shelfSync: settings\.shelfSync !== false/, "Main must normalize Shelf Sync as enabled by default");
 assert.match(shelfSource, /shelfSync: document\.querySelector\("#shelfSettingsSync"\)\?\.checked !== false/, "Shelf must persist the shared Shelf Sync setting");
-assert.match(shelfSource, /shelfHidePrices: Boolean\(document\.querySelector\("#shelfSettingsHidePrices"\)\?\.checked\)/, "Shelf must persist the Hide prices setting without changing price data");
+assert.match(shelfSource, /shelfHidePrices: document\.querySelector\("#shelfSettingsShowPrices"\)\?\.checked === false/, "Shelf must persist the Show prices setting without changing price data");
 assert.match(shelfSource, /function shelfPricesVisible\(\)[\s\S]*?shelfHidePrices !== true/, "Shelf price visibility must be a display-only setting");
 assert.match(shelfHtml, /id="playstationUrlInput"[\s\S]*?id="nintendoUrlInput"[\s\S]*?id="steamUrlInput"[\s\S]*?id="xboxUrlInput"[\s\S]*?id="hltbUrlInput"/, "Shelf editor must use fixed website link slots");
+assert.match(shelfSource, /kpis: "Highlights", filters: "Search"/, "Shelf settings must use shorter Highlights and Search labels");
 assert.doesNotMatch(appSource, /stat\("New additions"/, "Main must not show a New additions KPI");
 assert.match(appSource, /function mobileSectionCounts\(\)/, "Main mobile tabs must show section counts");
 assert.match(appSource, /function canSeeNewAdditions\(\)[\s\S]*?state\.canEdit/, "Main New additions must only appear while logged in");
 assert.match(appSource, /function finishSetupGame\(id\)[\s\S]*?openEditor\(id\)/, "Main New additions must use Finish setup to complete missing info");
 assert.match(appSource, /if \(game\.section === "new"\)[\s\S]*?completeAction\.addEventListener\("click", \(\) => startPlaying\(game\.id\)\)/, "Main New additions cards must play directly");
-assert.match(appSource, /card\.querySelector\("\.meta"\)\.innerHTML = metaFor\(game, \{ includePsn: !game\.playing, includeOwners: true \}\)\.join\(""\)/, "Main cards must show owner tags inside card info");
+assert.match(appSource, /titleOwners\.innerHTML = visibleOwnerTags\(game\)\.map\(ownerBadge\)\.join\(""\)/, "Main cards must show owner tags beside the title like Shelf");
 assert.match(appSource, /const badges = `\$\{completedOwnerBadges\(game\)\}\$\{completedBadges\(game, \{ includePsn: false \}\)\}`[\s\S]*?itemClass: ownerCardClass\(game\)/, "Main Last Finished cards must include mini owner tags and owner color classes");
 assert.match(appSource, /class="completed-row[\s\S]*?\$\{ownerCardClass\(game\)\}[\s\S]*?<span class="completed-platform">\$\{completedOwnerBadges\(game\)\}\$\{completedBadges\(game\)\}<\/span>/, "Main Finished list rows must include mini owner tags and owner color classes");
 assert.doesNotMatch(shelfSource, /<span class="label">Shelf<\/span><span class="count">/, "Shelf must only show a count on New additions");
@@ -93,6 +94,7 @@ assert.match(shelfCss, /\.shelf-tabs button:hover\s*\{\s*color:\s*var\(--accent\
 assert.match(shelfSource, /const badges = `\$\{visibleProjectionOwners\(game\)\.map\(ownerBadge\)\.join\(""\)\}[\s\S]*?itemClass: projectionOwnerCardClass\(game\)/, "Shelf Last Finished projection cards must include mini owner tags and owner color classes");
 assert.match(shelfCss, /\.shelf-page \.game-card \.title-owners \.owner-pill,[\s\S]*?\.shelf-page \.game-row-core \.owner-pill[\s\S]*?font-size:\s*10px;/, "Shelf owner tags must stay compact");
 assert.match(sharedCss, /\.playing-finished-game\.owner-card-judy strong,[\s\S]*?\.completed-row\.owner-card-jordi strong/, "Finished sliders and rows must support owner title colors");
+assert.match(sharedCss, /\.playing-finished-game\.owner-card-judy,[\s\S]*?box-shadow: 0 0 20px rgba\(255, 158, 210, 0\.12\);[\s\S]*?\.playing-finished-game\.owner-card-jordi,[\s\S]*?box-shadow: 0 0 20px rgba\(255, 173, 95, 0\.12\);/, "Finished sliders and rows must support owner border glow");
 assert.match(shelfSource, /function platformStoreProvidersForGame\(game\)[\s\S]*?return \["Nintendo"\][\s\S]*?return \["PlayStation"\][\s\S]*?return \["Steam"\][\s\S]*?return \["Xbox"\]/, "Shelf website links must follow platform-specific store rules");
 assert.match(shelfSource, /state\.pendingLengthHours = result\.lengthHours \|\| state\.pendingLengthHours/, "Shelf metadata lookup must store HLTB time without displaying it");
 assert.match(shelfSource, /currency: settings\.currency/, "Shelf navbar price fetch must use normalized selected currency");
@@ -123,12 +125,13 @@ assert.match(shelfSource, /lookupSource: "pricecharting"/, "Shelf lookup must sh
 assert.match(shelfSource, /const image = physical \? "" : coverUrl\(result\.cover \|\| ""\)/, "Shelf lookup must not show PriceCharting images for physical editions");
 assert.match(collectionPriceSource, /region-name=all&exclude-variants=false/, "PriceCharting edition search must include PAL, Japan, and other regional variants");
 assert.match(collectionPriceSource, /cleanPriceChartingUrl/, "PriceCharting lookup must accept an exact product page URL");
-assert.match(collectionPriceSource, /encodeURIComponent\(requestedUpc \|\| query \|\| title\)/, "PriceCharting search must include platform and region before ranking regional editions");
+assert.match(collectionPriceSource, /encodeURIComponent\(requestedId \|\| requestedUpc \|\| query \|\| title\)/, "PriceCharting search must use entered product IDs before title matching");
 assert.match(collectionPriceSource, /filterVideoGameCandidates/, "PriceCharting search must reject cards, comics, and other non-video-game categories");
 assert.match(collectionPriceSource, /rankCandidates\(filterVideoGameCandidates\(await fetchPublicCandidates\(searchUrl\), query\), query\)/, "PriceCharting results must rank PAL, Japan, and platform matches locally after filtering non-games");
 assert.doesNotMatch(collectionPriceSource, /hydrateSearchCandidateImages/, "PriceCharting search results must not hydrate images from possible non-game matches");
 assert.match(collectionPriceSource, /fetchDirectCandidates\(fallbackUrls, query, searchUrl\)/, "PriceCharting must fall back to exact regional product pages when search returns no rows");
 assert.doesNotMatch(shelfSource, /Loading the selected PriceCharting edition|Matching the physical edition/, "Selecting a lookup result must not replace it with fetching text");
+assert.match(shelfSource, /lookup-placeholder/, "Shelf PriceCharting lookup rows must keep a blank image slot when no image is available");
 assert.match(shelfSource, /function applyCollectionPrice\(game, data\)[\s\S]*?game\.priceHistory[\s\S]*?game\.updatedAt = new Date\(\)\.toISOString\(\);/, "Shelf price fetch must update price data only");
 assert.doesNotMatch(shelfSource, /function applyCollectionPrice\(game, data\)[\s\S]*?game\.(?:cover|pricechartingId|upc|sku|asin|epid|releaseDate) =/, "Shelf price fetch must not overwrite metadata, ids, or cover art");
 assert.match(shelfCss, /\.condition-sealed input\[type="checkbox"\]:checked[\s\S]*?#ffe982[\s\S]*?#c8920a/, "The Sealed checkbox must use the gold condition treatment");
@@ -136,6 +139,14 @@ assert.match(shelfCss, /\.condition-sealed input\[type="checkbox"\]:checked[\s\S
 assert.equal(normalizeSearchText("Pokémon"), normalizeSearchText("pokemon"), "Shared search must ignore accents");
 assert.equal(normalizeSearchText("Afterimage: Deluxe"), normalizeSearchText("Afterimage Deluxe"), "Shared search must ignore punctuation");
 for (const source of [appSource, shelfSource]) assert.match(source, /normalizeSearchText/, "Main and Shelf must share accent- and punctuation-insensitive search");
+assert.match(appSource, /gamegear: "Game Gear"/, "Main must canonicalize Game Gear");
+assert.match(appSource, /function platformClass\(platform\)[\s\S]*?isSegaPlatform\(value\)/, "Main must force Sega platforms through the Sega platform pill style");
+assert.match(shelfSource, /gamegear: "Game Gear"/, "Shelf must canonicalize Game Gear");
+assert.match(shelfSource, /function platformClass\(platform\)[\s\S]*?isSegaPlatform\(value\)/, "Shelf must support Sega platform pill styles");
+assert.match(shelfSource, /"Game Boy Advance"[\s\S]*?"Game Boy"[\s\S]*?"Sega Game Gear"/, "Shelf platform autofill must include classic Nintendo and Sega platforms");
+assert.match(shelfSource, /gameboyadvance: "GBA"/, "Shelf must canonicalize Game Boy Advance");
+assert.match(shelfSource, /gameboy: "GB"/, "Shelf must canonicalize Game Boy");
+assert.match(shelfSource, /supernintendoentertainmentsystem: "SNES"/, "Shelf must canonicalize SNES");
 
 class MemoryKv {
   values = new Map();

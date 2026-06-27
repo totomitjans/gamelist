@@ -306,7 +306,25 @@ export function formatFooterDateTime(value) {
 }
 
 export function confirmGameDelete(title = "this game") {
-  return window.confirm(`Delete ${title || "this game"}? This cannot be undone.`);
+  const label = title || "this game";
+  let dialog = document.querySelector("#sharedDeleteConfirmDialog");
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.id = "sharedDeleteConfirmDialog";
+    dialog.innerHTML = `<form method="dialog" class="auth-modal glass shared-confirm-modal"><div class="modal-head"><div><p class="eyebrow">Confirm delete</p><h2>Delete game?</h2></div><button class="icon-button" value="cancel" type="submit" title="Close" aria-label="Close">×</button></div><p class="shared-confirm-message"></p><div class="modal-actions"><button class="ghost-button" value="cancel" type="submit">Cancel</button><button class="danger-button" value="confirm" type="submit">Delete</button></div></form>`;
+    document.body.appendChild(dialog);
+  }
+  dialog.querySelector(".shared-confirm-message").textContent = `Delete ${label}? This cannot be undone.`;
+  return new Promise((resolve) => {
+    const done = () => {
+      dialog.removeEventListener("close", done);
+      document.body.classList.remove("dialog-open");
+      resolve(dialog.returnValue === "confirm");
+    };
+    dialog.addEventListener("close", done, { once: true });
+    dialog.showModal();
+    document.body.classList.add("dialog-open");
+  });
 }
 
 function escapeHtml(value) {

@@ -3117,11 +3117,31 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   color: var(--judy);
 }
 
+.playing-finished-game.owner-card-judy,
+.playing-finished-game.owner-card-judy:hover,
+.completed-row.owner-card-judy,
+.completed-row.owner-card-judy:hover {
+  border-color: rgba(255, 158, 210, 0.36);
+  box-shadow: 0 0 20px rgba(255, 158, 210, 0.12);
+}
+
 .playing-finished-game.owner-card-jordi strong,
 .playing-finished-game.owner-card-cage strong,
 .completed-row.owner-card-jordi strong,
 .completed-row.owner-card-cage strong {
   color: var(--jordi);
+}
+
+.playing-finished-game.owner-card-jordi,
+.playing-finished-game.owner-card-jordi:hover,
+.playing-finished-game.owner-card-cage,
+.playing-finished-game.owner-card-cage:hover,
+.completed-row.owner-card-jordi,
+.completed-row.owner-card-jordi:hover,
+.completed-row.owner-card-cage,
+.completed-row.owner-card-cage:hover {
+  border-color: rgba(255, 173, 95, 0.36);
+  box-shadow: 0 0 20px rgba(255, 173, 95, 0.12);
 }
 .game-card .edit-action {
   position: absolute;
@@ -4350,6 +4370,10 @@ dialog {
   width: min(420px, calc(100vw - 24px));
 }
 
+#sharedDeleteConfirmDialog {
+  width: min(420px, calc(100vw - 24px));
+}
+
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
@@ -4398,6 +4422,13 @@ body.dialog-open .mobile-section-tabs {
   color: var(--danger);
   font-size: 12px;
   font-weight: 800;
+}
+
+.shared-confirm-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .detail-modal {
@@ -6069,6 +6100,10 @@ body.theme-kash .guide-button:hover {
   .mobile-section-tabs {
     top: 10px;
     margin: 12px 0 16px;
+  }
+
+  .game-card .prices {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .stats {

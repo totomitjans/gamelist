@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v207";
-const SITE_UPDATED_AT = "2026-06-27T18:48:59+02:00";
+const SITE_VERSION = "v208";
+const SITE_UPDATED_AT = "2026-06-27T23:09:46+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -1025,10 +1025,13 @@ function settingsShelfSyncItem() {
   return `
     <article class="settings-layout-card settings-sync-card" data-layout-key="shelf-sync">
       <div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div>
-      <label class="check-filter toggle-check settings-visible-check" title="Shelf Sync">
-        <input type="checkbox" data-shelf-sync ${state.settings.shelfSync ? "checked" : ""}>
+      <div class="settings-theme-select">
         <span>Shelf Sync</span>
-      </label>
+        <label class="check-filter toggle-check settings-visible-check" title="Shelf Sync">
+          <input type="checkbox" data-shelf-sync ${state.settings.shelfSync ? "checked" : ""}>
+          <span>Enabled</span>
+        </label>
+      </div>
     </article>
   `;
 }
@@ -2681,12 +2684,12 @@ function cardFor(game, options = {}) {
   card.querySelector("h3").classList.toggle("owner-jordi", hasJordiToneOwner(owners));
   card.querySelector("h3").classList.toggle("completed-achievements-title", Boolean(game.platinum));
   const titleOwners = card.querySelector(".title-owners");
-  titleOwners.innerHTML = "";
-  titleOwners.hidden = true;
+  titleOwners.innerHTML = visibleOwnerTags(game).map(ownerBadge).join("");
+  titleOwners.hidden = !titleOwners.innerHTML;
   const studioLine = card.querySelector(".studio-line");
   studioLine.textContent = studioText(game);
   studioLine.hidden = !studioLine.textContent;
-  card.querySelector(".meta").innerHTML = metaFor(game, { includePsn: !game.playing, includeOwners: true }).join("");
+  card.querySelector(".meta").innerHTML = metaFor(game, { includePsn: !game.playing }).join("");
   const playDates = card.querySelector(".play-dates");
   playDates.innerHTML = playDatesFor(game, { includePastRelease: Boolean(options.includePastRelease) }).join("");
   playDates.hidden = !playDates.innerHTML;
@@ -3192,7 +3195,6 @@ function metaFor(game, options = {}) {
   if (game.emulator) values.push(`<span class="emulator-pill">Emulator</span>`);
   if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
   if (game.stream) values.push(`<span class="stream-pill">Stream</span>`);
-  if (options.includeOwners) visibleOwnerTags(game).forEach((owner) => values.push(ownerBadge(owner)));
   gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
   const progress = achievementProgressForGame(game);
   if (options.includePsn !== false && progress) values.push(psnProgressBadge(progress));
@@ -3985,7 +3987,7 @@ function trophyIcon() {
 }
 
 function platformLogo(platform) {
-  const value = platform.toLowerCase();
+  const value = String(canonicalPlatform(platform) || platform || "").toLowerCase();
   if (value === "wii") return "assets/platforms/wii.png";
   if (value === "wii u" || value === "wiiu") return "assets/platforms/wiiu.png";
   if (value === "n64") return "assets/platforms/n64.png";
@@ -3996,7 +3998,7 @@ function platformLogo(platform) {
   if (value === "3ds") return "assets/platforms/3ds.png";
   if (value === "gba") return "assets/platforms/gba.png";
   if (value === "gbc") return "assets/platforms/gbc.png";
-  if (value === "gb") return "assets/platforms/gb";
+  if (value === "gb") return "assets/platforms/gb.png";
   if (value === "dc" || value.includes("dreamcast")) return "assets/platforms/dreamcast.png";
   if (isSegaPlatform(value)) return "assets/platforms/sega.png";
   if (value.includes("switch")) return "assets/platforms/switch.png";
@@ -4007,7 +4009,7 @@ function platformLogo(platform) {
 }
 
 function platformClass(platform) {
-  const value = platform.toLowerCase();
+  const value = String(canonicalPlatform(platform) || platform || "").toLowerCase();
   if (value === "wii") return "platform-wii";
   if (value === "wii u" || value === "wiiu") return "platform-wiiu";
   if (value === "n64") return "platform-n64";
@@ -4896,14 +4898,14 @@ function restoreCompletedToBacklog(id) {
   upsertGame(game);
 }
 
-function deleteCurrentGame() {
-  if (state.editingId && deleteGame(state.editingId)) el.dialog.close();
+async function deleteCurrentGame() {
+  if (state.editingId && await deleteGame(state.editingId)) el.dialog.close();
 }
 
-function deleteGame(id) {
+async function deleteGame(id) {
   const game = getGame(id);
   if (!game) return false;
-  if (!confirmGameDelete(game.title)) return false;
+  if (!await confirmGameDelete(game.title)) return false;
   const deletedAt = new Date().toISOString();
   game.deletedAt = deletedAt;
   markGameEdited(game, deletedAt);

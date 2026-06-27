@@ -5,8 +5,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v207";
-const SITE_UPDATED_AT = "2026-06-27T18:48:59+02:00";
+const SITE_VERSION = "v208";
+const SITE_UPDATED_AT = "2026-06-27T23:09:46+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -21,10 +21,15 @@ const THEMES = {
   shabii: { title: "Shabii's Shelf", icon: "assets/Icon_shelf.png", color: "#ff0039" },
   kash: { title: "Kash's Shelf", icon: "assets/kh_icon.png", color: "#005cff" },
 };
-const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", trophies: "Achievements", kpis: "Collection highlights", filters: "Search and filters", library: "Shelf" };
+const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", trophies: "Achievements", kpis: "Highlights", filters: "Search", library: "Shelf" };
 const PLATFORM_OPTIONS = [
   "Nintendo Switch", "Nintendo Switch 2", "Sony PlayStation 5", "Sony PlayStation 4",
   "Sony PlayStation 2", "Sony PlayStation", "Nintendo 3DS", "Nintendo DS", "Nintendo 64",
+  "Nintendo GameCube", "Super Nintendo Entertainment System", "Nintendo Entertainment System",
+  "Game Boy Advance", "Game Boy Color", "Game Boy", "Nintendo Wii U", "Nintendo Wii",
+  "Sega Game Gear", "Sega Genesis", "Sega Mega Drive", "Sega Saturn", "Sega Dreamcast",
+  "Sega Master System", "Sega CD", "Sega 32X",
+  "Xbox Series", "Xbox One", "Xbox 360", "Steam",
 ];
 const COUNTRY_OPTIONS = [
   ["Australia", "Australia"], ["China", "China"], ["Europe", "EU"], ["France", "France"], ["Germany", "Germany"],
@@ -526,7 +531,7 @@ function gameCard(game, options = {}) {
   card.querySelector(".play-dates").remove();
   card.querySelector(".chips").innerHTML = tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("");
   card.querySelector(".card-trophies").remove();
-  card.querySelector(".card-actions").innerHTML = isPendingCollectionGame(game) ? `<button class="primary-button add-collection-action editor-only" data-action="add-collection" type="button">Add to Collection</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>` : `<button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
+  card.querySelector(".card-actions").innerHTML = isPendingCollectionGame(game) ? `<button class="primary-button add-collection-action editor-only" data-action="add-collection" type="button">Add to Collection</button><button class="ghost-button shelf-add-backlog-action editor-only" data-action="add-backlog" type="button">Add to Backlog</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>` : `<button class="ghost-button shelf-add-backlog-action editor-only" data-action="add-backlog" type="button">Add to Backlog</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
   card.querySelector(".prices").remove();
   const note = card.querySelector(".notes"); note.textContent = game.notes || ""; note.classList.add("shelf-card-notes"); note.hidden = !game.notes;
   if (game.description) note.insertAdjacentHTML("afterend", `<p class="shelf-card-description">${escapeHtml(game.description)}</p>`);
@@ -541,7 +546,7 @@ function gameRow(game) {
   const ownerClasses = `${visibleOwners.includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(visibleOwners) ? " owner-card-jordi" : ""}`;
   const tags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((tag) => String(tag).trim()).filter((tag, index, list) => tag && normalize(tag) !== "game" && list.indexOf(tag) === index);
   const description = game.description || "";
-  const actions = isPendingCollectionGame(game) ? `<button class="primary-button add-collection-action" data-action="add-collection" type="button">Add to Collection</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>` : `<button class="icon-button row-edit-action" data-action="edit" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
+  const actions = isPendingCollectionGame(game) ? `<button class="primary-button add-collection-action" data-action="add-collection" type="button">Add to Collection</button><button class="ghost-button shelf-add-backlog-action" data-action="add-backlog" type="button">Add to Backlog</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>` : `<button class="icon-button row-edit-action" data-action="edit" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button><button class="ghost-button shelf-add-backlog-action" data-action="add-backlog" type="button">Add to Backlog</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
   return `<article class="game-row${ownerClasses}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}"><span class="game-row-cover-wrap"><img class="game-row-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"><img class="game-row-cover-preview" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" aria-hidden="true"></span><div class="game-row-identity"><strong class="${visibleOwners.includes("Judy") ? "owner-judy" : ""} ${hasJordiToneOwner(visibleOwners) ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong>${studio ? `<span>${escapeHtml(studio)}</span>` : ""}</div><div class="game-row-core"><span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(conditionLabel(game))}${visibleOwners.map(ownerBadge).join("")}${shelfProgressPill(game)}</div><div class="game-row-tags">${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</div>${description ? `<div class="game-row-description shelf-row-description">${escapeHtml(description)}</div>` : ""}<div class="game-row-actions">${actions}</div></article>`;
 }
 
@@ -574,6 +579,7 @@ function handleShelfClick(event) {
   if (!game) return;
   if (action === "edit") state.canEdit ? openEditor(game) : openAuth();
   else if (action === "add-collection") state.canEdit ? openEditor(game) : openAuth();
+  else if (action === "add-backlog") state.canEdit ? addShelfGameToGamelistNew(game) : openAuth();
   else if (action === "delete") state.canEdit ? deleteGame(game) : openAuth();
   else openDetails(game);
 }
@@ -745,7 +751,7 @@ function renderShelfLookupResults() {
     const physical = result.lookupSource === "pricecharting";
     const platforms = (result.platforms || [result.platform]).filter(Boolean);
     const image = physical ? "" : coverUrl(result.cover || "");
-    return `<div class="lookup-result"><img src="${escapeHtml(image)}" alt="" ${image ? "" : "hidden"}><div><strong>${escapeHtml(result.title || "Untitled game")}</strong><p>${escapeHtml(platforms.join(" · ") || "Platform unknown")}</p></div><button class="ghost-button" type="button" data-result-index="${index}">Use</button></div>`;
+    return `<div class="lookup-result shelf-lookup-result"><img class="${image ? "" : "lookup-placeholder"}" src="${escapeHtml(image || blankImage())}" alt=""><div><strong>${escapeHtml(result.title || "Untitled game")}</strong><p>${escapeHtml(platforms.join(" · ") || "Platform unknown")}</p></div><button class="ghost-button" type="button" data-result-index="${index}">Use</button></div>`;
   }).join("");
   requestAnimationFrame(() => el.lookupResults.classList.add("loaded"));
 }
@@ -858,6 +864,7 @@ function renderPhysicalSelection(physical, fallbackTitle = "") {
 }
 
 function priceChartingPageUrl(value) { const match = String(value || "").trim().match(/^https:\/\/www\.pricecharting\.com\/(?:[a-z]{2}\/)?game\/[^?#]+/i); return match?.[0] || ""; }
+function blankImage() { return "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="; }
 function applyPriceChartingRegion(consoleName) { const value = normalize(consoleName); if (value.startsWith("jp ")) el.fields.country.value = "Japan"; else if (value.startsWith("pal ") && !["United Kingdom", "Spain", "France", "Germany", "Europe", "Australia"].includes(el.fields.country.value)) el.fields.country.value = "Europe"; else if (!value.startsWith("pal ") && !value.startsWith("jp ") && ["Japan", "Europe"].includes(el.fields.country.value)) el.fields.country.value = "United States of America"; }
 
 async function saveEditor(event) {
@@ -904,8 +911,46 @@ async function resetGame(game) {
   closeDialog(el.addDialog);
 }
 
+async function addShelfGameToGamelistNew(game) {
+  const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
+  const data = await fetch("/api/sync", { cache: "no-store" }).then((response) => response.ok ? response.json() : { games: [], settings: state.gamelistSettings }).catch(() => ({ games: [], settings: state.gamelistSettings }));
+  const games = Array.isArray(data.games) ? data.games : [];
+  const existingIndex = games.findIndex((item) => item.shelfId === game.id || item.id === `shelf-${game.id}`);
+  const item = {
+    ...(existingIndex >= 0 ? games[existingIndex] : {}),
+    id: existingIndex >= 0 ? games[existingIndex].id : `shelf-${game.id}`,
+    shelfId: game.id,
+    title: game.title,
+    platform: shortPlatform(game.platform),
+    section: "new",
+    digital: false,
+    playing: false,
+    platinum: false,
+    completedAt: "",
+    owners: Array.isArray(game.owners) ? game.owners : [],
+    statuses: [],
+    tags: cleanTransferTags(game.tags),
+    genres: String(game.genre || "").split(",").map((value) => value.trim()).filter(Boolean),
+    publisher: game.publisher || "",
+    developer: game.developer || "",
+    cover: game.cover || "",
+    releaseDate: game.releaseDate || "",
+    description: game.description || "",
+    storeLinks: game.storeLinks || {},
+    createdAt: existingIndex >= 0 ? games[existingIndex].createdAt : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    order: existingIndex >= 0 ? games[existingIndex].order : 0,
+  };
+  const nextGames = existingIndex >= 0 ? games.map((entry, index) => index === existingIndex ? item : entry) : [item, ...games];
+  const response = await fetch("/api/sync", { method: "PUT", headers: { "Content-Type": "application/json", "x-edit-password": password }, body: JSON.stringify({ games: nextGames, settings: data.settings || state.gamelistSettings }) });
+  if (!response.ok) { alert("Could not add this game to Gamelist New additions."); return; }
+  state.gamelistGames = nextGames;
+  renderGamelistModules();
+  alert("Added to Gamelist New additions.");
+}
+
 async function deleteGame(game) {
-  if (!confirmGameDelete(game?.title)) return false;
+  if (!await confirmGameDelete(game?.title)) return false;
   if (game.sourceRecord) state.overrides[game.id] = { ...(state.overrides[game.id] || {}), deletedAt: new Date().toISOString() };
   else state.additions = state.additions.filter((item) => item.id !== game.id);
   await persistShelf();
@@ -1012,11 +1057,11 @@ function settingsSelectCard(type, title, id, options) {
 }
 
 function settingsShelfSyncCard() {
-  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><label class="check-filter toggle-check settings-visible-check" title="Shelf Sync"><input type="checkbox" id="shelfSettingsSync" ${state.gamelistSettings.shelfSync === false ? "" : "checked"}><span>Shelf Sync</span></label></article>`;
+  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>Shelf Sync</span><label class="check-filter toggle-check settings-visible-check" title="Shelf Sync"><input type="checkbox" id="shelfSettingsSync" ${state.gamelistSettings.shelfSync === false ? "" : "checked"}><span>Enabled</span></label></div></article>`;
 }
 
 function settingsShelfPricesCard() {
-  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><label class="check-filter toggle-check settings-visible-check" title="Hide prices"><input type="checkbox" id="shelfSettingsHidePrices" ${state.gamelistSettings.shelfHidePrices ? "checked" : ""}><span>Hide prices</span></label></article>`;
+  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>Prices</span><label class="check-filter toggle-check settings-visible-check" title="Show prices"><input type="checkbox" id="shelfSettingsShowPrices" ${state.gamelistSettings.shelfHidePrices ? "" : "checked"}><span>Show prices</span></label></div></article>`;
 }
 
 function handleLayoutMove(event) {
@@ -1035,7 +1080,7 @@ async function saveLayout(event) {
   state.layout.hidden = LAYOUT_KEYS.filter((key) => !el.layoutList.querySelector(`[data-layout-visible][value="${key}"]`)?.checked);
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout));
   const stores = [...el.settingsStores.querySelectorAll("input:checked")].map((input) => input.value).filter((store) => STORE_OPTIONS.includes(store)).slice(0, MAX_PRICE_STORES);
-  state.gamelistSettings = { ...state.gamelistSettings, theme: el.settingsTheme.value, shelfDefaultOrder: el.settingsDefaultOrder.value, currency: el.settingsCurrency.value, region: el.settingsRegion.value, psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: Boolean(document.querySelector("#shelfSettingsHidePrices")?.checked) };
+  state.gamelistSettings = { ...state.gamelistSettings, theme: el.settingsTheme.value, shelfDefaultOrder: el.settingsDefaultOrder.value, currency: el.settingsCurrency.value, region: el.settingsRegion.value, psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false };
   localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));
   applyShelfDefaultOrder(state.gamelistSettings.shelfDefaultOrder);
   await Promise.all([persistShelf(), persistGamelistSettings()]);
@@ -1504,6 +1549,7 @@ function syncConditionInputs(changed) {
 }
 function conditionFromInputs() { return Object.fromEntries(Object.entries(el.conditionFields).map(([key, input]) => [key, input.checked])); }
 function splitValues(value) { return String(value || "").split(",").map((item) => item.trim()).filter(Boolean); }
+function cleanTransferTags(tags) { return Array.isArray(tags) ? tags.filter((tag) => String(tag || "").trim().toLowerCase() !== "gamelist") : []; }
 function formatMoney(value, currency = "USD") {
   const number = Number(value);
   const amount = Number.isFinite(number) ? number.toFixed(2) : "0.00";
@@ -1862,13 +1908,36 @@ function syncRowCoverFrame(image) {
   frame.style.setProperty("--shelf-row-preview-width", `${width}px`);
   frame.style.setProperty("--shelf-row-preview-height", `${Math.round(width / ratio)}px`);
 }
-function platformFallback(platform) { const key = normalize(platform); if (key.includes("switch")) return "assets/platforms/switch.png"; if (key.includes("3ds")) return "assets/platforms/3ds.png"; if (key.includes("ds")) return "assets/platforms/nds.png"; if (key.includes("64")) return "assets/platforms/n64.png"; return "assets/platforms/playstation.png"; }
-function shortPlatform(value) { return ({ "Sony PlayStation": "PS1", "Sony PlayStation 2": "PS2", "Sony PlayStation 4": "PS4", "Sony PlayStation 5": "PS5", "Nintendo Switch": "Switch", "Nintendo Switch 2": "Switch 2", "Nintendo DS": "DS", "Nintendo 3DS": "3DS", "Nintendo 64": "N64" })[value] || value; }
+function platformFallback(platform) { return platformLogo(platform); }
+function shortPlatform(value) { return canonicalShelfPlatform(value); }
 function flagAsset(country) { return `assets/flags/${({ "United Kingdom": "gb", Spain: "es", "United States of America": "us", Japan: "jp", Taiwan: "tw", France: "fr", Germany: "de", Australia: "au", China: "cn", Europe: "eu", World: "world" })[country] || "world"}.svg`; }
 function flagIcon(country, withClass = false) { return `<img${withClass ? ` class="detail-flag"` : ""} src="${flagAsset(country)}" alt="" width="47" height="31" decoding="async">`; }
-function platformBadge(platform) { return `<span class="platform-badge ${platformClass(platform)}" title="${escapeHtml(shortPlatform(platform))}"><span class="platform-icon"><img src="${platformLogo(platform)}" alt="" width="18" height="18" decoding="async"></span><span class="platform-label">${escapeHtml(shortPlatform(platform))}</span></span>`; }
-function platformLogo(platform) { const value = normalize(shortPlatform(platform)); if (value === "n64") return "assets/platforms/n64.png"; if (value === "ds") return "assets/platforms/nds.png"; if (value === "3ds") return "assets/platforms/3ds.png"; if (value.includes("switch")) return "assets/platforms/switch.png"; if (value.includes("xbox") || value === "x360" || value === "xone") return "assets/platforms/xbox.png"; if (value.includes("steam") || value === "pc") return "assets/platforms/steam.png"; return "assets/platforms/playstation.png"; }
-function platformClass(platform) { const value = normalize(shortPlatform(platform)); if (value === "n64") return "platform-n64"; if (value === "ds") return "platform-ds"; if (value === "3ds") return "platform-3ds"; if (value.includes("switch")) return "platform-nintendo"; if (value.includes("xbox") || value === "x360" || value === "xone") return "platform-xbox"; if (value.includes("steam") || value === "pc") return "platform-pc"; if (value.includes("ps") || value.includes("playstation")) return "platform-playstation"; return "platform-generic"; }
+function platformBadge(platform) { const label = shortPlatform(platform); return `<span class="platform-badge ${platformClass(platform)}" title="${escapeHtml(label)}"><span class="platform-icon"><img src="${platformLogo(platform)}" alt="" width="18" height="18" decoding="async"></span><span class="platform-label">${escapeHtml(label)}</span></span>`; }
+function platformLogo(platform) { const value = normalize(shortPlatform(platform)); if (value === "wii") return "assets/platforms/wii.png"; if (value === "wii u" || value === "wiiu") return "assets/platforms/wiiu.png"; if (value === "n64") return "assets/platforms/n64.png"; if (value === "gc" || value.includes("gamecube")) return "assets/platforms/gc.png"; if (value === "nes") return "assets/platforms/nes.png"; if (value === "snes") return "assets/platforms/snes.png"; if (value === "ds") return "assets/platforms/nds.png"; if (value === "3ds") return "assets/platforms/3ds.png"; if (value === "gba") return "assets/platforms/gba.png"; if (value === "gbc") return "assets/platforms/gbc.png"; if (value === "gb") return "assets/platforms/gb.png"; if (value === "dc" || value.includes("dreamcast")) return "assets/platforms/dreamcast.png"; if (isSegaPlatform(value)) return "assets/platforms/sega.png"; if (value.includes("switch")) return "assets/platforms/switch.png"; if (value.includes("xbox") || value === "x360" || value === "xone") return "assets/platforms/xbox.png"; if (value.includes("steam") || value === "pc") return "assets/platforms/steam.png"; if (value.includes("ps") || value.includes("playstation") || value.includes("psp") || value.includes("vita")) return "assets/platforms/playstation.png"; return "assets/Icon_shelf.png"; }
+function platformClass(platform) { const value = normalize(shortPlatform(platform)); if (value === "wii") return "platform-wii"; if (value === "wii u" || value === "wiiu") return "platform-wiiu"; if (value === "n64") return "platform-n64"; if (value === "gc" || value.includes("gamecube")) return "platform-gamecube"; if (value === "nes") return "platform-nes"; if (value === "snes") return "platform-snes"; if (value === "ds") return "platform-ds"; if (value === "3ds") return "platform-3ds"; if (value === "gba") return "platform-gba"; if (value === "gbc") return "platform-gbc"; if (value === "gb") return "platform-gb"; if (value === "dc" || value.includes("dreamcast")) return "platform-dreamcast"; if (isSegaPlatform(value)) return "platform-sega"; if (value.includes("switch")) return "platform-nintendo"; if (value.includes("xbox") || value === "x360" || value === "xone") return "platform-xbox"; if (value.includes("steam") || value === "pc") return "platform-pc"; if (value.includes("ps") || value.includes("playstation") || value.includes("psp") || value.includes("vita")) return "platform-playstation"; return "platform-generic"; }
+function isSegaPlatform(value) { return /\b(gen|genesis|mega drive|megadrive|sega|saturn|cd|32x|master system|game gear)\b/i.test(value); }
+function canonicalShelfPlatform(value) {
+  const text = String(value || "").trim();
+  const key = normalize(text).replace(/\s+/g, "");
+  const aliases = {
+    sonyplaystation: "PS1", playstation: "PS1", psone: "PS1", psx: "PS1", ps1: "PS1",
+    sonyplaystation2: "PS2", playstation2: "PS2", ps2: "PS2",
+    sonyplaystation3: "PS3", playstation3: "PS3", ps3: "PS3",
+    sonyplaystation4: "PS4", playstation4: "PS4", ps4: "PS4",
+    sonyplaystation5: "PS5", playstation5: "PS5", ps5: "PS5",
+    playstationportable: "PSP", psp: "PSP", playstationvita: "PSVita", psvita: "PSVita", vita: "PSVita",
+    nintendoswitch: "Switch", switch: "Switch", nintendoswitch2: "Switch 2", switch2: "Switch 2",
+    nintendo64: "N64", n64: "N64", nintendogamecube: "GC", gamecube: "GC", gc: "GC",
+    nintendoentertainmentsystem: "NES", nes: "NES", supernintendo: "SNES", supernintendoentertainmentsystem: "SNES", snes: "SNES",
+    nintendods: "DS", nds: "DS", ds: "DS", nintendo3ds: "3DS", n3ds: "3DS", "3ds": "3DS",
+    gameboyadvance: "GBA", gba: "GBA", gameboycolor: "GBC", gbc: "GBC", gameboy: "GB", gb: "GB",
+    genesis: "Gen", megadrive: "Gen", segamegadrive: "Gen", segagenesis: "Gen", sega: "Sega",
+    dreamcast: "DC", segadreamcast: "DC", dc: "DC", segacd: "Sega CD", saturn: "Saturn", segasaturn: "Saturn",
+    mastersystem: "Master System", segamastersystem: "Master System", gamegear: "Game Gear", segagamegear: "Game Gear", sega32x: "32X", "32x": "32X",
+    steam: "Steam", pc: "Steam", xbox360: "X360", x360: "X360", xboxone: "XOne", xone: "XOne", xboxseries: "Xbox Series", xbox: "Xbox",
+  };
+  return aliases[key] || text;
+}
 function regionName(country) { return country === "United States of America" ? "United States" : country; }
 function regionFor(country) { if (country === "Japan") return "Japan"; if (country === "Taiwan") return "Taiwan"; if (country === "United States of America") return "USA"; if (["United Kingdom", "Spain", "France", "Germany", "Europe"].includes(country)) return country === "Spain" ? "Spain" : "Europe"; return country || "Other"; }
 function countValues(values) { const map = new Map(); values.filter(Boolean).forEach((value) => map.set(value, (map.get(value) || 0) + 1)); return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])); }
