@@ -5,8 +5,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v226";
-const SITE_UPDATED_AT = "2026-06-28T10:59:25+02:00";
+const SITE_VERSION = "v227";
+const SITE_UPDATED_AT = "2026-06-28T11:10:54+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -332,7 +332,7 @@ async function syncShelfNow() {
 
 async function refreshAllShelfPrices() {
   if (!state.canEdit || !shelfPricesVisible()) return;
-  const games = state.games.filter((game) => game.title);
+  const games = state.games.filter((game) => game.title && !isPendingCollectionGame(game));
   const settings = normalizePriceSettings(state.gamelistSettings);
   if (!games.length) return;
   el.fetchPricesButton.disabled = true;
@@ -345,10 +345,8 @@ async function refreshAllShelfPrices() {
       el.fetchPricesButton.title = `Prices ${index + 1}/${games.length}`;
       el.fetchPricesButton.setAttribute("aria-label", el.fetchPricesButton.title);
       try {
-        const params = collectionPriceParams(game, settings);
-        const response = await fetch(`/api/collection-price?${params}`);
-        const data = await response.json();
-        if (!response.ok || data.error) throw new Error(data.error || "Price unavailable");
+        if (index) await delay(450);
+        const data = await fetchCollectionPriceWithRetry(game, settings);
         applyCollectionPrice(game, data);
         updated += 1;
       } catch {
@@ -364,6 +362,23 @@ async function refreshAllShelfPrices() {
     el.fetchPricesButton.title = "Fetch New Prices";
     el.fetchPricesButton.setAttribute("aria-label", "Fetch New Prices");
   }
+}
+
+async function fetchCollectionPriceWithRetry(game, settings) {
+  try {
+    return await fetchCollectionPriceData(game, settings);
+  } catch (error) {
+    await delay(950);
+    return fetchCollectionPriceData(game, settings);
+  }
+}
+
+async function fetchCollectionPriceData(game, settings) {
+  const params = collectionPriceParams(game, settings);
+  const response = await fetch(`/api/collection-price?${params}`);
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error(data.error || "Price unavailable");
+  return data;
 }
 
 function applyTheme() {
@@ -387,6 +402,10 @@ function applyTheme() {
 
 function scrollToShelfLibrary() {
   document.querySelector("[data-module='library']")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function renderStats() {

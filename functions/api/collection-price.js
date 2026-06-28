@@ -117,10 +117,12 @@ async function fetchPublicCandidates(searchUrl) {
 }
 
 async function fetchPublicProduct({ query, searchUrl, idSearchUrl = "", requestedId, requestedUrl, fallbackUrls = [] }) {
-  const idCandidates = requestedUrl || !idSearchUrl ? [] : await fetchPublicCandidates(idSearchUrl).then((items) => filterVideoGameCandidates(items, query));
+  const idCandidates = requestedUrl || !idSearchUrl ? [] : await fetchPublicCandidates(idSearchUrl);
   const idCandidate = idCandidates.find((item) => requestedId && item.productId === requestedId);
-  const candidates = requestedUrl || idCandidate ? [] : await fetchPublicCandidates(searchUrl).then((items) => filterVideoGameCandidates(items, query));
-  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : idCandidate || candidates.find((item) => requestedId && item.productId === requestedId) || bestCandidate(candidates, query);
+  const rawCandidates = requestedUrl || idCandidate ? [] : await fetchPublicCandidates(searchUrl);
+  const exactCandidate = rawCandidates.find((item) => requestedId && item.productId === requestedId);
+  const candidates = exactCandidate ? [] : filterVideoGameCandidates(rawCandidates, query);
+  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : idCandidate || exactCandidate || bestCandidate(candidates, query);
   if (!candidate?.url && fallbackUrls.length) return (await fetchDirectCandidates(fallbackUrls, query, searchUrl))[0] || null;
   if (!candidate?.url) return candidate || null;
   if (!isVideoGameConsole(consoleNameFromProductUrl(candidate.url))) return null;
@@ -234,11 +236,13 @@ function consoleSignature(value) {
   const textValue = normalize(value);
   const playstation = textValue.match(/\b(?:sony )?(?:playstation|ps) ?([1-5])\b/);
   if (playstation) return `playstation ${playstation[1]}`;
+  if (/\b(?:sony )?playstation\b|\bps ?one\b|\bpsx\b/.test(textValue)) return "playstation 1";
   if (/\bswitch 2\b/.test(textValue)) return "nintendo switch 2";
   if (/\bswitch\b/.test(textValue)) return "nintendo switch";
   if (/\bxbox 360\b/.test(textValue)) return "xbox 360";
   if (/\bxbox one\b|\bxone\b/.test(textValue)) return "xbox one";
   if (/\bxbox series\b/.test(textValue)) return "xbox series";
+  if (/\bpc games?\b|\bpc\b/.test(textValue)) return "pc";
   if (/\b3ds\b/.test(textValue)) return "nintendo 3ds";
   if (/\bds\b/.test(textValue)) return "nintendo ds";
   if (/\bn64\b|\bnintendo 64\b/.test(textValue)) return "nintendo 64";
@@ -308,7 +312,7 @@ function cents(value) { const number = Number(value); return Number.isFinite(num
 function withoutNulls(value) { return Object.fromEntries(Object.entries(value).filter(([, item]) => item != null)); }
 function physicalRegionTerm(region) { const value = normalize(region); if (/japan|jp/.test(value)) return "JP"; if (/spain|europe|france|germany|united kingdom|uk|australia/.test(value)) return "PAL"; if (/united states|usa|ntsc/.test(value)) return "NTSC"; if (/taiwan|asia/.test(value)) return "Asian English"; return ""; }
 function priceChartingSearchTitle(title) { return String(title || "").replace(/\bversion\b/gi, " ").replace(/\s+/g, " ").trim(); }
-function priceChartingPlatformTerm(platform) { const value = normalize(platform); const playstation = value.match(/^(?:ps|playstation)\s*([1-5])$/); if (playstation) return `Playstation ${playstation[1]}`; if (value === "switch") return "Nintendo Switch"; if (value === "switch 2") return "Nintendo Switch 2"; if (value === "xone") return "Xbox One"; if (value === "x360") return "Xbox 360"; return platform; }
+function priceChartingPlatformTerm(platform) { const value = normalize(platform); const playstation = value.match(/^(?:sony\s*)?(?:ps|playstation)\s*([1-5])$/); if (playstation) return `Playstation ${playstation[1]}`; if (/^(?:sony\s*)?playstation$|^psx$|^ps\s*one$/.test(value)) return "Playstation"; if (value === "pc") return "PC"; if (value === "switch") return "Nintendo Switch"; if (value === "switch 2") return "Nintendo Switch 2"; if (value === "xone") return "Xbox One"; if (value === "x360") return "Xbox 360"; return platform; }
 function directProductUrls(title, platform, region) { const titleSlug = slug(title); const consoleSlug = slug(priceChartingPlatformTerm(platform)); if (!titleSlug || !consoleSlug) return []; const prefix = physicalRegionTerm(region) === "PAL" ? "pal-" : physicalRegionTerm(region) === "JP" ? "jp-" : ""; return [...new Set([`${SITE_URL}/game/${prefix}${consoleSlug}/${titleSlug}`, `${SITE_URL}/game/${consoleSlug}/${titleSlug}`])]; }
 function slug(value) { return normalize(value).replace(/\s+/g, "-"); }
 function isoDate(value) { const textValue = String(value || "").trim(); if (!textValue) return ""; const leadingDate = textValue.match(/^\d{4}-\d{2}-\d{2}/)?.[0]; if (leadingDate) return leadingDate; const date = new Date(`${textValue} UTC`); return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10); }
