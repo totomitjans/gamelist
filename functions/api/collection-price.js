@@ -19,6 +19,11 @@ export async function onRequestGet({ request, env = {} }) {
   const query = [priceChartingTitle || title, physicalRegionTerm(region), priceChartingPlatformTerm(platform)].filter(Boolean).join(" ");
   const searchUrl = `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedUpc || query || title || requestedId)}`;
   const idSearchUrl = requestedId ? `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedId)}` : "";
+  const broadSearchUrls = uniqueValues([
+    [priceChartingTitle || title, priceChartingPlatformTerm(platform)].filter(Boolean).join(" "),
+    priceChartingTitle || title,
+    stripSearchQualifiers(priceChartingTitle || title),
+  ].filter(Boolean).map((value) => `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(value)}`));
   const fallbackUrls = directProductUrls(priceChartingTitle || title, platform, region);
   const token = env.PRICECHARTING_TOKEN || globalThis.process?.env?.PRICECHARTING_TOKEN || "";
   try {
@@ -29,7 +34,7 @@ export async function onRequestGet({ request, env = {} }) {
     }
     const apiProduct = token ? await fetchApiProduct(token, { id: requestedId, upc: requestedUpc, query }) : null;
     const [publicProduct, retailProduct] = await Promise.all([
-      fetchPublicProduct({ query, searchUrl, idSearchUrl, requestedId: requestedId || apiProduct?.id || "", requestedUrl, fallbackUrls }),
+      fetchPublicProduct({ query, searchUrl, idSearchUrl, broadSearchUrls, requestedId: requestedId || apiProduct?.productId || "", requestedUrl, fallbackUrls }),
       fetchXtralifeProduct({ title, platform, region }).catch(() => null),
     ]);
     const product = convertCurrency(mergeProduct(apiProduct, publicProduct, retailProduct, { title, platform, searchUrl }), currency, publicProduct?.forexRates);
@@ -116,13 +121,14 @@ async function fetchPublicCandidates(searchUrl) {
   return parseSearchCandidates(await response.text());
 }
 
-async function fetchPublicProduct({ query, searchUrl, idSearchUrl = "", requestedId, requestedUrl, fallbackUrls = [] }) {
+async function fetchPublicProduct({ query, searchUrl, idSearchUrl = "", broadSearchUrls = [], requestedId, requestedUrl, fallbackUrls = [] }) {
   const idCandidates = requestedUrl || !idSearchUrl ? [] : await fetchPublicCandidates(idSearchUrl);
   const idCandidate = idCandidates.find((item) => requestedId && item.productId === requestedId);
   const rawCandidates = requestedUrl || idCandidate ? [] : await fetchPublicCandidates(searchUrl);
   const exactCandidate = rawCandidates.find((item) => requestedId && item.productId === requestedId);
-  const candidates = exactCandidate ? [] : filterVideoGameCandidates(rawCandidates, query);
-  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : idCandidate || exactCandidate || bestCandidate(candidates, query);
+  const broadExactCandidate = requestedUrl || idCandidate || exactCandidate || !requestedId ? null : await exactCandidateFromSearchUrls(broadSearchUrls, requestedId);
+  const candidates = exactCandidate || broadExactCandidate ? [] : filterVideoGameCandidates(rawCandidates, query);
+  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : idCandidate || exactCandidate || broadExactCandidate || bestCandidate(candidates, query);
   if (!candidate?.url && fallbackUrls.length) return (await fetchDirectCandidates(fallbackUrls, query, searchUrl))[0] || null;
   if (!candidate?.url) return candidate || null;
   if (!isVideoGameConsole(consoleNameFromProductUrl(candidate.url))) return null;
@@ -130,7 +136,7 @@ async function fetchPublicProduct({ query, searchUrl, idSearchUrl = "", requeste
   if (!productResponse.ok) return candidate;
   const html = await productResponse.text();
   const chart = parseChart(html);
-  return {
+  const product = {
     ...candidate,
     productName: candidate.productName || attributeHeading(html),
     consoleName: candidate.consoleName || consoleNameFromProductUrl(candidate.url),
@@ -142,11 +148,20 @@ async function fetchPublicProduct({ query, searchUrl, idSearchUrl = "", requeste
     prices: { ...(candidate.prices || {}), loose: priceCellById(html, "used_price") ?? candidate.prices?.loose, complete: priceCellById(html, "complete_price") ?? candidate.prices?.complete, sealed: priceCellById(html, "new_price") ?? candidate.prices?.sealed, graded: priceCellById(html, "graded_price") ?? candidate.prices?.graded, box: priceCellById(html, "boxonly_price") ?? candidate.prices?.box, manual: priceCellById(html, "manualonly_price") ?? candidate.prices?.manual },
     forexRates: parseForexRates(html),
   };
+  return product;
 }
 
 async function fetchDirectCandidates(urls, query, searchUrl) {
   const products = await Promise.all(urls.map((requestedUrl) => fetchPublicProduct({ query, searchUrl, requestedId: "", requestedUrl })));
   return products.filter((product) => product?.productId && product?.productName);
+}
+
+async function exactCandidateFromSearchUrls(urls, requestedId) {
+  for (const searchUrl of urls) {
+    const candidate = (await fetchPublicCandidates(searchUrl)).find((item) => item.productId === requestedId);
+    if (candidate?.url) return candidate;
+  }
+  return null;
 }
 
 function parseSearchCandidates(html) {
@@ -310,6 +325,7 @@ function parseForexRates(html) { try { return JSON.parse(String(html).match(/VGP
 function moneyCell(row, className) { const cell = row.match(new RegExp(`<td[^>]+class="[^"]*${className}[^"]*"[^>]*>([\\s\\S]*?)<\\/td>`, "i"))?.[1] || ""; const value = text(cell).replace(/[^0-9.]/g, ""); const number = Number(value); return Number.isFinite(number) && number > 0 ? number : null; }
 function cents(value) { const number = Number(value); return Number.isFinite(number) && number > 0 ? number / 100 : null; }
 function withoutNulls(value) { return Object.fromEntries(Object.entries(value).filter(([, item]) => item != null)); }
+function uniqueValues(values) { return [...new Set(values)]; }
 function physicalRegionTerm(region) { const value = normalize(region); if (/japan|jp/.test(value)) return "JP"; if (/spain|europe|france|germany|united kingdom|uk|australia/.test(value)) return "PAL"; if (/united states|usa|ntsc/.test(value)) return "NTSC"; if (/taiwan|asia/.test(value)) return "Asian English"; return ""; }
 function priceChartingSearchTitle(title) { return String(title || "").replace(/\bversion\b/gi, " ").replace(/\s+/g, " ").trim(); }
 function priceChartingPlatformTerm(platform) { const value = normalize(platform); const playstation = value.match(/^(?:sony\s*)?(?:ps|playstation)\s*([1-5])$/); if (playstation) return `Playstation ${playstation[1]}`; if (/^(?:sony\s*)?playstation$|^psx$|^ps\s*one$/.test(value)) return "Playstation"; if (value === "pc") return "PC"; if (value === "switch") return "Nintendo Switch"; if (value === "switch 2") return "Nintendo Switch 2"; if (value === "xone") return "Xbox One"; if (value === "x360") return "Xbox 360"; return platform; }

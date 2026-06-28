@@ -5,8 +5,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v229";
-const SITE_UPDATED_AT = "2026-06-28T15:25:30+02:00";
+const SITE_VERSION = "v230";
+const SITE_UPDATED_AT = "2026-06-28T15:32:17+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -860,7 +860,7 @@ function applyPhysicalMetadata(data) {
   if (data.sku) el.fields.sku.value = data.sku;
   if (data.asin) el.fields.asin.value = data.asin;
   if (data.epid) el.fields.epid.value = data.epid;
-  if (data.productId) el.fields.pricechartingId.value = data.productId;
+  if (data.productUrl || data.productId) el.fields.pricechartingId.value = data.productUrl || data.productId;
   if (data.genre && !el.fields.genre.value) el.fields.genre.value = data.genre;
   if (data.publisher && !el.fields.publisher.value) el.fields.publisher.value = data.publisher;
   if (data.developer && !el.fields.developer.value) el.fields.developer.value = data.developer;
@@ -1812,7 +1812,8 @@ function renderPriceDetails(game) {
   const rows = [["Loose", prices.loose], ["Complete", prices.complete], ["Sealed", prices.sealed]].filter(([, value]) => value != null);
   const currency = game.priceCurrency || "USD";
   const identifiers = [["UPC", game.upc], ["SKU", game.sku], ["ASIN", game.asin], ["eBay ID", game.epid], ["PriceCharting", game.pricechartingId]].filter(([, value]) => value);
-  const priceMarkup = rows.length ? `<div class="collection-price-grid">${rows.map(([label, value]) => `<span><small>${label}</small><strong>${formatMoney(value, currency)}</strong></span>`).join("")}</div>` : `<span class="muted">No collection value fetched yet.</span>`;
+  const productUrl = game.collectionProductUrl || priceChartingPageUrl(game.pricechartingId);
+  const priceMarkup = rows.length ? `<div class="collection-price-grid">${rows.map(([label, value]) => productUrl ? `<a href="${escapeHtml(productUrl)}" target="_blank" rel="noreferrer"><small>${label}</small><strong>${formatMoney(value, currency)}</strong></a>` : `<span><small>${label}</small><strong>${formatMoney(value, currency)}</strong></span>`).join("")}</div>` : `<span class="muted">No collection value fetched yet.</span>`;
   const identifierMarkup = identifiers.length ? `<div class="collection-product-meta">${identifiers.map(([label, value]) => `<span><small>${label}</small><strong>${escapeHtml(value)}</strong></span>`).join("")}</div>` : "";
   el.detailPriceSummary.innerHTML = `${priceMarkup}${identifierMarkup}`;
   const collectionValue = collectionValueFor(game);
@@ -1865,6 +1866,7 @@ function applyCollectionPrice(game, data) {
   const historyKey = collectionPriceKey(game);
   game.price = data.prices?.[historyKey] ?? data.mainValue;
   game.priceCurrency = data.currency || "USD";
+  game.collectionProductUrl = data.productUrl || game.collectionProductUrl || priceChartingPageUrl(game.pricechartingId);
   game.priceFetchedAt = data.checkedAt || new Date().toISOString();
   game.priceHistory = (data.history?.[historyKey]?.length ? data.history[historyKey] : [...(game.priceHistory || []), { date: String(data.checkedAt || "").slice(0, 10), value: game.price }]).filter((item) => item.value != null).slice(-60);
   game.updatedAt = new Date().toISOString();

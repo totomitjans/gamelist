@@ -5248,10 +5248,11 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-theme-select {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .settings-check-field {
+  display: grid;
   width: 100%;
 }
 
