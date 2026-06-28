@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v233";
-const SITE_UPDATED_AT = "2026-06-28T15:59:49+02:00";
+const SITE_VERSION = "v234";
+const SITE_UPDATED_AT = "2026-06-28T16:05:50+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -611,7 +611,7 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   const curtain = document.createElement("div");
   curtain.className = "page-pull-curtain";
   curtain.setAttribute("aria-hidden", "true");
-  curtain.innerHTML = pagePullPreviewMarkup(targetLabel);
+  curtain.innerHTML = pagePullPreviewMarkup(targetUrl);
   document.body.append(button, curtain);
   let startY = 0;
   let dragging = false;
@@ -670,12 +670,8 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   button.addEventListener("pointercancel", endDrag);
 }
 
-function pagePullPreviewMarkup(targetLabel) {
-  const shelf = targetLabel.toLowerCase().includes("shelf");
-  const cards = shelf
-    ? ["cover", "cover wide", "cover", "cover tall", "cover"]
-    : ["play", "soon", "backlog", "done", "play"];
-  return `<div class="page-pull-preview ${shelf ? "is-shelf" : "is-gamelist"}"><div class="page-pull-preview-top"><span></span><span></span><span></span></div><div class="page-pull-preview-grid">${cards.map((item) => `<span class="${item}"></span>`).join("")}</div></div>`;
+function pagePullPreviewMarkup(targetUrl) {
+  return `<div class="page-pull-preview"><iframe class="page-pull-frame" src="${escapeHtml(targetUrl)}" tabindex="-1" aria-hidden="true"></iframe></div>`;
 }
 
 function warmUiIcons() {

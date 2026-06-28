@@ -5364,8 +5364,8 @@ body.theme-kash .year-tab.active {
   top: 0;
   left: 50%;
   z-index: 1200;
-  width: min(240px, calc(100vw - 32px));
-  height: 52px;
+  width: min(260px, calc(100vw - 32px));
+  height: 56px;
   padding: 0;
   color: var(--text);
   background: transparent;
@@ -5379,18 +5379,20 @@ body.theme-kash .year-tab.active {
   position: absolute;
   top: 8px;
   left: 50%;
-  width: 76px;
-  height: 5px;
+  width: 164px;
+  height: 38px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 60%, rgba(255, 255, 255, 0.5));
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
-  transform: translateX(-50%);
+  opacity: 0.82;
+  transform: translateX(-50%) scaleX(0.46) scaleY(0.16);
   transition:
-    width 180ms ease,
-    height 180ms ease,
-    top 180ms ease,
+    transform 260ms cubic-bezier(0.2, 0.86, 0.2, 1),
+    opacity 180ms ease,
     background 180ms ease,
-    border-color 180ms ease;
+    box-shadow 180ms ease;
+  transform-origin: center top;
+  will-change: transform;
 }
 
 .page-pull-switch span {
@@ -5401,10 +5403,10 @@ body.theme-kash .year-tab.active {
   align-items: center;
   justify-content: center;
   min-height: 34px;
-  padding: 0 18px;
+  padding: 0 20px;
   color: #ffffff;
-  font-size: 11px;
-  font-weight: 860;
+  font-size: 13px;
+  font-weight: 900;
   text-transform: uppercase;
   background: transparent;
   border: 0;
@@ -5417,11 +5419,11 @@ body.theme-kash .year-tab.active {
 
 .page-pull-switch:hover::before,
 .page-pull-switch.is-dragging::before {
-  top: 5px;
-  width: 156px;
-  height: 36px;
+  top: 7px;
+  opacity: 1;
   background: color-mix(in srgb, var(--accent) 76%, rgba(20, 22, 28, 0.9));
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28), 0 0 26px color-mix(in srgb, var(--accent) 40%, transparent);
+  transform: translateX(-50%) scaleX(1) scaleY(1);
 }
 
 .page-pull-switch:hover span,
@@ -5453,15 +5455,12 @@ body.theme-kash .year-tab.active {
 }
 
 .page-pull-preview {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: clamp(14px, 2.5vw, 26px);
+  display: block;
   width: min(1120px, 100%);
   min-height: min(620px, calc(100vh - 112px));
-  padding: clamp(18px, 3vw, 34px);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--bg);
+  border: 0;
   border-radius: 18px;
   box-shadow: 0 36px 120px rgba(0, 0, 0, 0.45);
   filter: blur(var(--pull-blur, 18px));
@@ -5473,63 +5472,13 @@ body.theme-kash .year-tab.active {
     transform 420ms cubic-bezier(0.2, 0.86, 0.2, 1);
 }
 
-.page-pull-preview-top {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 10px;
-}
-
-.page-pull-preview-top span {
-  min-height: 36px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.page-pull-preview-top span:first-child {
-  width: min(360px, 56vw);
-}
-
-.page-pull-preview-top span:not(:first-child) {
-  width: 42px;
-}
-
-.page-pull-preview-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: clamp(10px, 1.8vw, 18px);
-  align-items: stretch;
-}
-
-.page-pull-preview-grid span {
-  min-height: clamp(190px, 32vw, 390px);
-  border-radius: 8px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.12)),
-      rgba(255, 255, 255, 0.055)
-    ),
-    rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-}
-
-.page-pull-preview.is-shelf .page-pull-preview-grid span {
-  min-height: clamp(220px, 36vw, 420px);
-}
-
-.page-pull-preview.is-gamelist .page-pull-preview-grid span {
-  display: grid;
-  align-content: end;
-  min-height: clamp(160px, 25vw, 300px);
-}
-
-.page-pull-preview.is-gamelist .page-pull-preview-grid span::after {
-  content: "";
+.page-pull-frame {
   display: block;
-  height: 44%;
-  margin: 10px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 100%;
+  height: min(620px, calc(100vh - 112px));
+  border: 0;
+  background: var(--bg);
+  pointer-events: none;
 }
 
 body.page-pulling .page-pull-curtain,
@@ -6601,7 +6550,7 @@ body.theme-kash .guide-button:hover {
 
   body.page-pull-hover .topbar,
   body.page-pulling .topbar {
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
 
   .playing-section .column-head span {
