@@ -13,9 +13,10 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v236";
-const SITE_UPDATED_AT = "2026-06-28T19:59:11+02:00";
+const SITE_VERSION = "v237";
+const SITE_UPDATED_AT = "2026-06-28T22:06:38+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
+const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
 const THEMES = {
@@ -388,6 +389,7 @@ function registerServiceWorker() {
 
 async function checkSiteVersion() {
   try {
+    const fromPullNavigation = consumeRecentPullNavigation();
     const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) return false;
     const remote = await response.json();
@@ -402,10 +404,25 @@ async function checkSiteVersion() {
       localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
       return false;
     }
+    if (fromPullNavigation) {
+      clearSiteCaches().catch(() => {});
+      localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
+      return false;
+    }
     await clearSiteCaches();
     localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
     window.location.reload();
     return true;
+  } catch {
+    return false;
+  }
+}
+
+function consumeRecentPullNavigation() {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}");
+    sessionStorage.removeItem(PULL_NAVIGATION_KEY);
+    return Date.now() - Number(value.at || 0) < 8000;
   } catch {
     return false;
   }
@@ -636,7 +653,10 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
     document.body.style.setProperty("--pull-blur", "0px");
     document.body.style.setProperty("--pull-preview-opacity", "1");
     document.body.style.setProperty("--pull-preview-scale", "1");
-    window.setTimeout(() => { window.location.href = targetUrl; }, 430);
+    try {
+      sessionStorage.setItem(PULL_NAVIGATION_KEY, JSON.stringify({ version: SITE_VERSION, at: Date.now() }));
+    } catch {}
+    window.setTimeout(() => { window.location.href = pullNavigationUrl(targetUrl); }, 430);
   };
   button.addEventListener("click", () => { if (!moved) switchPage(); moved = false; });
   button.addEventListener("pointerenter", () => document.body.classList.add("page-pull-hover"));
@@ -675,6 +695,13 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
 
 function pagePullPreviewMarkup(targetUrl) {
   return `<div class="page-pull-preview"><iframe class="page-pull-frame" src="${escapeHtml(targetUrl)}" tabindex="-1" aria-hidden="true"></iframe></div>`;
+}
+
+function pullNavigationUrl(targetUrl) {
+  const url = new URL(targetUrl, window.location.href);
+  url.searchParams.set("pull", "1");
+  url.searchParams.set("v", SITE_VERSION);
+  return url.href;
 }
 
 function warmUiIcons() {

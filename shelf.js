@@ -5,9 +5,10 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v236";
-const SITE_UPDATED_AT = "2026-06-28T19:59:11+02:00";
+const SITE_VERSION = "v237";
+const SITE_UPDATED_AT = "2026-06-28T22:06:38+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
+const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
 const LOCAL_DRAFT_KEY = "shelf:draft-data:v2";
@@ -366,7 +367,10 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
     document.body.style.setProperty("--pull-blur", "0px");
     document.body.style.setProperty("--pull-preview-opacity", "1");
     document.body.style.setProperty("--pull-preview-scale", "1");
-    window.setTimeout(() => { window.location.href = targetUrl; }, 430);
+    try {
+      sessionStorage.setItem(PULL_NAVIGATION_KEY, JSON.stringify({ version: SITE_VERSION, at: Date.now() }));
+    } catch {}
+    window.setTimeout(() => { window.location.href = pullNavigationUrl(targetUrl); }, 430);
   };
   button.addEventListener("click", () => { if (!moved) switchPage(); moved = false; });
   button.addEventListener("pointerenter", () => document.body.classList.add("page-pull-hover"));
@@ -405,6 +409,13 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
 
 function pagePullPreviewMarkup(targetUrl) {
   return `<div class="page-pull-preview"><iframe class="page-pull-frame" src="${escapeHtml(targetUrl)}" tabindex="-1" aria-hidden="true"></iframe></div>`;
+}
+
+function pullNavigationUrl(targetUrl) {
+  const url = new URL(targetUrl, window.location.href);
+  url.searchParams.set("pull", "1");
+  url.searchParams.set("v", SITE_VERSION);
+  return url.href;
 }
 
 async function refreshAllShelfPrices() {
@@ -2002,7 +2013,8 @@ function showSelectOverflowPopover(select) { if (!selectOverflowPopover) { selec
 function hideSelectOverflowPopover() { selectOverflowPopover?.classList.remove("visible"); }
 function showToast(message, tone = "info") { if (!message) return; const host = [...document.querySelectorAll("dialog[open]")].at(-1) || document.body; let toast = document.querySelector(".toast-notification"); if (!toast) { toast = document.createElement("div"); toast.className = "toast-notification"; toast.setAttribute("role", "status"); toast.setAttribute("aria-live", "polite"); } if (toast.parentElement !== host) host.appendChild(toast); window.clearTimeout(showToast.timer); toast.textContent = message; toast.classList.toggle("is-error", tone === "error"); toast.classList.remove("visible"); requestAnimationFrame(() => toast.classList.add("visible")); showToast.timer = window.setTimeout(() => toast.classList.remove("visible"), tone === "error" ? 4200 : 2800); }
 function registerServiceWorker() { if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(() => {})); }
-async function checkSiteVersion() { try { const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" }); if (!response.ok) return false; const remote = await response.json(); const remoteVersion = String(remote.version || "").trim(); if (!remoteVersion) return false; const current = localStorage.getItem(VERSION_STORAGE_KEY); if (!current || current === remoteVersion || remoteVersion === SITE_VERSION) { localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); window.location.reload(); return true; } catch { return false; } }
+async function checkSiteVersion() { try { const fromPullNavigation = consumeRecentPullNavigation(); const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" }); if (!response.ok) return false; const remote = await response.json(); const remoteVersion = String(remote.version || "").trim(); if (!remoteVersion) return false; const current = localStorage.getItem(VERSION_STORAGE_KEY); if (!current || current === remoteVersion || remoteVersion === SITE_VERSION) { localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } if (fromPullNavigation) { clearSiteCaches().catch(() => {}); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); window.location.reload(); return true; } catch { return false; } }
+function consumeRecentPullNavigation() { try { const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}"); sessionStorage.removeItem(PULL_NAVIGATION_KEY); return Date.now() - Number(value.at || 0) < 8000; } catch { return false; } }
 async function clearSiteCaches() { if ("caches" in window) { const keys = await caches.keys(); await Promise.all(keys.filter((key) => key.startsWith("gamelist-cache-")).map((key) => caches.delete(key))); } if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.map((registration) => registration.update().catch(() => {}))); } }
 async function clearSiteCachesAndReload() { await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, SITE_VERSION); window.location.reload(); }
 function stripRuntimeFields(game) { const { sourceRecord, ...clean } = game; return clean; }

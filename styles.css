@@ -5385,6 +5385,10 @@ body.theme-kash .year-tab.active {
   will-change: transform;
 }
 
+.page-pull-switch.is-dragging {
+  transition: none;
+}
+
 .page-pull-switch::before {
   content: "";
   position: absolute;
@@ -5396,7 +5400,7 @@ body.theme-kash .year-tab.active {
   background: var(--accent);
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
   opacity: 1;
-  transform: translateX(-50%) scaleX(0.42) scaleY(0.57);
+  transform: translateX(-50%) scaleX(0.42) scaleY(0.29);
   transition:
     transform 260ms cubic-bezier(0.2, 0.86, 0.2, 1),
     opacity 180ms ease,
@@ -5496,6 +5500,10 @@ body.theme-kash .year-tab.active {
 body.page-pulling .page-pull-curtain,
 body.page-switching .page-pull-curtain {
   opacity: 1;
+}
+
+body.page-pulling .page-pull-curtain {
+  transition: opacity 160ms ease;
 }
 
 body.page-switching .page-pull-curtain {
@@ -6520,16 +6528,17 @@ body.theme-kash .guide-button:hover {
 
 @media (max-width: 760px) {
   .page-pull-switch {
-    height: 62px;
+    width: min(340px, calc(100vw - 20px));
+    height: 76px;
   }
 
   .page-pull-switch::before {
-    top: 10px;
+    top: 12px;
   }
 
   .page-pull-switch:hover::before,
   .page-pull-switch.is-dragging::before {
-    top: 8px;
+    top: 10px;
   }
 
   .page-pull-curtain {
