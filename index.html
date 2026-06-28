@@ -276,7 +276,10 @@
             <p class="eyebrow">Game details</p>
             <h2 id="dialogTitle">Add Game</h2>
           </div>
-          <button class="icon-button" id="closeDialogButton" type="button" title="Close">×</button>
+          <div class="modal-head-actions">
+            <button class="primary-button modal-head-save" type="submit">Save</button>
+            <button class="icon-button" id="closeDialogButton" type="button" title="Close">×</button>
+          </div>
         </div>
 
         <input type="hidden" id="gameId">
@@ -498,7 +501,6 @@
               <path d="M14 11v5"></path>
             </svg>
           </button>
-          <button class="ghost-button" id="pricesButton" type="button">Refresh Prices</button>
           <button class="primary-button" type="submit">Save</button>
         </div>
       </form>
@@ -626,11 +628,14 @@
             <p class="eyebrow">Site settings</p>
             <h2>Settings</h2>
           </div>
-          <button class="icon-button" id="settingsCloseButton" type="button" title="Close">×</button>
+          <div class="modal-head-actions">
+            <button class="primary-button modal-head-save" type="submit">Save</button>
+            <button class="icon-button" id="settingsCloseButton" type="button" title="Close">×</button>
+          </div>
         </div>
 
         <section class="settings-section">
-          <h3>Page layout</h3>
+          <h3>Page</h3>
           <div class="settings-layout" id="settingsLayoutList" aria-label="Page order"></div>
         </section>
 
@@ -670,12 +675,12 @@
         </section>
 
         <section class="settings-section">
-          <h3>Shops</h3>
+          <h3>Stores</h3>
           <div class="settings-store-list" id="settingsStores"></div>
         </section>
 
         <div class="modal-actions">
-          <button class="primary-button" type="submit">Save Settings</button>
+          <button class="primary-button" type="submit">Save</button>
         </div>
       </form>
     </dialog>

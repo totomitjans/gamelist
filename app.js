@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v227";
-const SITE_UPDATED_AT = "2026-06-28T11:10:54+02:00";
+const SITE_VERSION = "v228";
+const SITE_UPDATED_AT = "2026-06-28T15:00:24+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -594,7 +594,7 @@ function bindEvents() {
   el.closeDialogButton.addEventListener("click", () => el.dialog.close());
   el.lookupButton.addEventListener("click", lookupGame);
   el.lookupInput.addEventListener("input", queueTitleLookup);
-  el.pricesButton.addEventListener("click", refreshCurrentPrices);
+  el.pricesButton?.addEventListener("click", refreshCurrentPrices);
   el.coverUpload.addEventListener("change", handleCoverUpload);
   window.addEventListener("resize", syncDisplayMode, { passive: true });
   window.matchMedia("(display-mode: standalone)").addEventListener?.("change", syncDisplayMode);
@@ -904,7 +904,7 @@ function renderSettingsDialog() {
     settingsLayoutItem("playing", -1, { fixed: true }),
     settingsLayoutItem("latestFinished", -1, { fixed: true }),
     ...state.settings.pageOrder.map((key) => settingsLayoutItem(key, pageIndex.get(key) ?? 0)),
-    `<div class="settings-preference-row">${settingsThemeItem()}${settingsDefaultOrderItem()}${settingsShelfSyncItem()}</div>`,
+    `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${settingsThemeItem()}${settingsDefaultOrderItem()}${settingsShelfSyncItem()}</div>`,
   ].join("");
   el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `
     <label class="check-filter toggle-check settings-store-check">
@@ -1815,11 +1815,12 @@ function stat(label, value, tone = "", options = {}) {
 
 function sectionStatDetail(section, games, total) {
   const sectionGames = games.filter((game) => game.section === section);
-  const preordered = sectionGames.filter((game) => game.preorderStore).length;
+  const preorderSummary = preorderStoreSummary(sectionGames);
+  const preordered = preorderSummary.reduce((sum, [, count]) => sum + count, 0);
   return `
     <div class="stat-detail">
       <span>${sectionGames.length} ${sectionGames.length === 1 ? "game" : "games"}</span>
-      ${preordered ? `<span class="preorder-count-pill">${preordered} preordered</span>` : ""}
+      ${preordered ? preorderCountPill(preordered, preorderSummary) : ""}
       <b>Total ${total}</b>
     </div>
   `;
@@ -1840,11 +1841,27 @@ function scrollToCompletedSection() {
 }
 
 function sectionCountLabel(section, games, count) {
-  const preordered = games.filter((game) => game.section === section && game.preorderStore).length;
+  const preorderSummary = preorderStoreSummary(games.filter((game) => game.section === section));
+  const preordered = preorderSummary.reduce((sum, [, storeCount]) => sum + storeCount, 0);
   return [
     `${count} ${count === 1 ? "game" : "games"}`,
-    preordered ? `<span class="preorder-count-pill">${preordered} preordered</span>` : "",
+    preordered ? preorderCountPill(preordered, preorderSummary) : "",
   ].filter(Boolean).join("");
+}
+
+function preorderStoreSummary(games) {
+  return topCounts(games.filter((game) => game.preorderStore), (game) => game.preorderStore);
+}
+
+function preorderCountPill(count, summary) {
+  const rows = summary.map(([store, storeCount]) => `<span><strong>${escapeHtml(store)}</strong><em>${storeCount}</em></span>`).join("");
+  const title = summary.map(([store, storeCount]) => `${store}: ${storeCount}`).join("\n");
+  return `
+    <span class="preorder-count-pill preorder-count-tooltip" tabindex="0" title="${escapeHtml(title)}">
+      ${count} preordered
+      <span class="preorder-store-list" role="tooltip">${rows}</span>
+    </span>
+  `;
 }
 
 function renderReleaseCalendar() {
@@ -2207,14 +2224,15 @@ function hideSelectOverflowPopover() {
 
 function showToast(message, tone = "info") {
   if (!message) return;
+  const host = [...document.querySelectorAll("dialog[open]")].at(-1) || document.body;
   let toast = document.querySelector(".toast-notification");
   if (!toast) {
     toast = document.createElement("div");
     toast.className = "toast-notification";
     toast.setAttribute("role", "status");
     toast.setAttribute("aria-live", "polite");
-    document.body.appendChild(toast);
   }
+  if (toast.parentElement !== host) host.appendChild(toast);
   window.clearTimeout(showToast.timer);
   toast.textContent = message;
   toast.classList.toggle("is-error", tone === "error");
@@ -2305,14 +2323,20 @@ function rowFor(game, section, options = {}) {
     </span>
     <div class="game-row-identity">
       <strong class="${game.platinum ? "completed-achievements-title" : ""} ${owners.includes("Judy") ? "owner-judy" : ""} ${hasJordiToneOwner(owners) ? "owner-jordi" : ""}" tabindex="0">${escapeHtml(game.title)}</strong>
+      <span class="game-row-owner-line">${visibleOwnerTags(game).map(ownerBadge).join("")}</span>
       ${studioText(game) ? `<span>${escapeHtml(studioText(game))}</span>` : ""}
     </div>
     <div class="game-row-core">${rowCoreStats(game)}</div>
     <div class="game-row-tags">${rowTags(game).join("")}</div>
     ${showRowPrices ? `<div class="game-row-prices">${rowPrices(game)}</div>` : ""}
     <div class="game-row-actions">
-      ${section === "new" ? "" : `<button class="icon-button row-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>`}
+      <div class="game-row-actions-top">
+        <button class="icon-button row-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
+        <button class="danger-button icon-only-button row-delete-action" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>
+      </div>
+      <div class="game-row-actions-bottom">
       ${rowPrimaryAction(game, section)}
+      </div>
     </div>
   `;
   row.addEventListener("click", (event) => {
@@ -2338,7 +2362,7 @@ function rowFor(game, section, options = {}) {
 function rowPrimaryAction(game, section) {
   if (section === "backlog") return `<button class="primary-button row-primary-action" type="button">Play</button>`;
   if (section === "new") {
-    return `<button class="primary-button row-primary-action" type="button">Play</button><button class="ghost-button row-setup-action" type="button">Finish setup</button><button class="danger-button icon-only-button row-delete-action" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
+    return `<button class="primary-button row-primary-action" type="button">Play</button><button class="ghost-button row-setup-action" type="button">Finish setup</button>`;
   }
   return `<button class="ghost-button row-primary-action" type="button">Got it</button>`;
 }
@@ -2353,7 +2377,6 @@ function rowCoreStats(game) {
     game.lengthHours ? timeBadge(game.lengthHours, hltbUrlFor(game)) : "",
     game.stream ? `<span class="stream-pill">Stream</span>` : "",
     release ? releaseStatusPill(release) : "",
-    ...ownerTags(game).filter((owner) => owner !== (state.settings.defaultOwner || DEFAULT_SETTINGS.defaultOwner)).map(ownerBadge),
     ...gameStatuses(game).map(statusBadge),
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
@@ -4863,7 +4886,7 @@ function syncDialogPriceVisibility() {
     platform: el.fields.platform.value,
     digital: el.fields.digital.checked,
   };
-  el.pricesButton.hidden = draft.section === "backlog" || !priceProvidersForGame(draft).length;
+  if (el.pricesButton) el.pricesButton.hidden = draft.section === "backlog" || !priceProvidersForGame(draft).length;
 }
 
 function syncReplaySection() {

@@ -242,6 +242,10 @@
   width: 100%;
 }
 
+.shelf-grid.list-view .game-row-actions-top {
+  gap: 9px;
+}
+
 .shelf-grid.list-view .region-flag,
 .shelf-grid.list-view .condition-pill {
   width: auto;
@@ -1165,7 +1169,7 @@
   .shelf-grid.list-view .game-row-actions-top {
     display: flex;
     justify-content: flex-end;
-    column-gap: 6px;
+    column-gap: 9px;
     row-gap: 5px;
   }
   .shelf-grid.list-view .game-row-actions-bottom {

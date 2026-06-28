@@ -184,7 +184,10 @@
       <form method="dialog" class="modal add-modal" id="addGameForm">
         <div class="modal-head">
           <div><p class="eyebrow">Game data</p><h2>Add Game</h2></div>
-          <button class="icon-button" id="addClose" type="button" title="Close" aria-label="Close">×</button>
+          <div class="modal-head-actions">
+            <button class="primary-button modal-head-save" type="submit">Save</button>
+            <button class="icon-button" id="addClose" type="button" title="Close" aria-label="Close">×</button>
+          </div>
         </div>
 
         <div class="lookup-row">
@@ -259,10 +262,13 @@
       <form class="settings-modal glass" id="layoutForm">
         <div class="modal-head">
           <div><p class="eyebrow">Shelf settings</p><h2>Settings</h2></div>
-          <button class="icon-button" id="layoutClose" type="button" title="Close" aria-label="Close">×</button>
+          <div class="modal-head-actions">
+            <button class="primary-button modal-head-save" type="submit">Save</button>
+            <button class="icon-button" id="layoutClose" type="button" title="Close" aria-label="Close">×</button>
+          </div>
         </div>
         <section class="settings-section">
-          <h3>Page layout</h3>
+          <h3>Page</h3>
           <div class="settings-layout" id="layoutList" aria-label="Page order"></div>
         </section>
         <p class="eyebrow settings-detail-title">Details</p>
@@ -275,10 +281,10 @@
           <label class="settings-detail-compact"><span>Default owner</span><input id="shelfSettingsDefaultOwner" autocomplete="off"></label>
         </section>
         <section class="settings-section">
-          <h3>Shops</h3>
+          <h3>Stores</h3>
           <div class="settings-store-list" id="shelfSettingsStores"></div>
         </section>
-        <div class="modal-actions"><button class="primary-button" type="submit">Save Settings</button></div>
+        <div class="modal-actions"><button class="primary-button" type="submit">Save</button></div>
       </form>
     </dialog>
 
