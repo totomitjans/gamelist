@@ -4,7 +4,7 @@ import { onRequestPut as putGamelist } from "../functions/api/sync.js";
 import { onRequestPut as putShelf, onRequestDelete as deleteShelf } from "../functions/api/shelf.js";
 import { activityAllowsPsnCardTrophies, activityCoverOverride, activityTitleMatchScore, normalizeSearchText } from "../activity-ui.js";
 
-const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss, appHtml, collectionPriceSource] = await Promise.all([
+const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss, appHtml, collectionPriceSource, themeSource, swSource] = await Promise.all([
   readFile(new URL("../app.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.js", import.meta.url), "utf8"),
   readFile(new URL("../shelf.css", import.meta.url), "utf8"),
@@ -12,6 +12,8 @@ const [appSource, shelfSource, shelfCss, shelfHtml, sharedCss, appHtml, collecti
   readFile(new URL("../styles.css", import.meta.url), "utf8"),
   readFile(new URL("../index.html", import.meta.url), "utf8"),
   readFile(new URL("../functions/api/collection-price.js", import.meta.url), "utf8"),
+  readFile(new URL("../theme-system.js", import.meta.url), "utf8"),
+  readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
 ]);
 for (const source of [appSource, shelfSource]) {
   assert.match(source, /from "\.\/activity-ui\.js"/);
@@ -20,6 +22,14 @@ for (const source of [appSource, shelfSource]) {
   }
   assert.match(source, /function showToast\(message, tone = "info"\)/, "Main and Shelf must expose the shared toast-style notification helper");
 }
+for (const source of [appSource, shelfSource]) assert.match(source, /from "\.\/theme-system\.js"/, "Main and Shelf must share the custom theme editor and renderer");
+assert.match(themeSource, /function renderThemeDialog[\s\S]*?Main color[\s\S]*?Gradient color[\s\S]*?Accent color[\s\S]*?Light or dark[\s\S]*?Background[\s\S]*?Gamelist icon[\s\S]*?Shelf icon[\s\S]*?Game app icon[\s\S]*?Custom Owner Colors/, "Theme editor must expose custom colors, light/dark mode, image uploads, icons, and owner colors");
+assert.match(themeSource, /canvas\.toDataURL\("image\/webp"[\s\S]*?maxSize > 600 \? 0\.76 : 0\.82/, "Theme image uploads must be compressed to webp data URLs");
+assert.match(themeSource, /name: theme\.title[\s\S]*?short_name: theme\.shortName[\s\S]*?icons: \[\{ src: absoluteAsset\(theme\.appIcon\)/, "Theme manifest must use the dynamic owner title and app icon");
+assert.match(sharedCss, /--accent-3:\s*#ee32b3;[\s\S]*?--title-gradient-start:[\s\S]*?\.column-head h2[\s\S]*?linear-gradient\(135deg, var\(--title-gradient-start/, "Title gradient pink must be controlled by accent-3");
+assert.doesNotMatch(sharedCss, /--jordi:\s|--judy:\s/, "Owner color variables must not be hard-coded as Jordi/Judy globals");
+assert.match(themeSource, /owner-color-card-\$\{slug\}/, "Custom owner card classes must use the dynamic owner color namespace");
+assert.match(swSource, /"\/theme-system\.js"[\s\S]*?"\/assets\/fonts\/Georgia-Bold\.ttf"[\s\S]*?"\/assets\/fonts\/Pokemon-GBA\.otf"[\s\S]*?"\/assets\/fonts\/04B_30\.TTF"[\s\S]*?"\/assets\/fonts\/Michroma\.ttf"/, "Service worker must cache the custom theme module and accent fonts");
 assert.match(sharedCss, /\.toast-notification\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?left: max\(16px, env\(safe-area-inset-left\)\);[\s\S]*?bottom: max\(18px, env\(safe-area-inset-bottom\)\);[\s\S]*?background:\s*var\(--accent\);/, "Toast notifications must float bottom-left with accent styling");
 assert.doesNotMatch(sharedCss, /\.toast-notification\.is-error\s*\{[\s\S]*?background:\s*var\(--danger\)/, "Toast notifications must keep the accent background for every tone");
 assert.match(shelfSource, /function gameCard\(game, options = \{\}\)[\s\S]*?querySelector\("\.card-trophies"\)\.remove\(\)/, "physical Shelf cards must not render outside trophy strips");

@@ -1,0 +1,415 @@
+export const FONT_OPTIONS = [
+  { value: "", label: "Default", family: "Cascadia Code" },
+  { value: "antique", label: "Antique Olive Nord", family: "Antique Olive Nord" },
+  { value: "georgia", label: "Georgia Bold", family: "Georgia Bold" },
+  { value: "pokemon", label: "Pokemon GBA", family: "Pokemon GBA" },
+  { value: "pixel", label: "04B 30", family: "04B 30" },
+  { value: "michroma", label: "Michroma", family: "Michroma" },
+];
+
+const DEFAULT_THEME = {
+  mainColor: "#ff0039",
+  mainColorReset: true,
+  gradient: false,
+  gradientColor: "#005cff",
+  accentColor: "#79f2ce",
+  accentColorReset: true,
+  accent3: "#ee32b3",
+  mode: "dark",
+  backgroundImage: "",
+  disableGlow: false,
+  accentFont: "",
+  gamelistIcon: "",
+  shelfIcon: "",
+  appIcon: "",
+  ownerColors: [],
+};
+
+const PRESETS = {
+  shabii: {},
+  kash: {
+    mainColor: "#005cff",
+    mainColorReset: false,
+    gradient: true,
+    gradientColor: "#ffb8dc",
+    accentColor: "#ffb8dc",
+    accentColorReset: false,
+    shelfIcon: "assets/kh_icon.png",
+    gamelistIcon: "assets/kh_icon.png",
+    appIcon: "assets/kh_app-icon.png",
+  },
+};
+
+export function normalizeThemeSettings(settings = {}) {
+  const legacy = PRESETS[settings.theme] || {};
+  const raw = { ...DEFAULT_THEME, ...legacy, ...(settings.customTheme || {}) };
+  const ownerColors = Array.isArray(raw.ownerColors) ? raw.ownerColors : [];
+  return {
+    ...raw,
+    mainColor: hexColor(raw.mainColor, DEFAULT_THEME.mainColor),
+    gradientColor: hexColor(raw.gradientColor, DEFAULT_THEME.gradientColor),
+    accentColor: hexColor(raw.accentColor, DEFAULT_THEME.accentColor),
+    accent3: hexColor(raw.accent3, DEFAULT_THEME.accent3),
+    mainColorReset: raw.mainColorReset !== false,
+    accentColorReset: raw.accentColorReset !== false,
+    gradient: Boolean(raw.gradient),
+    mode: raw.mode === "light" ? "light" : "dark",
+    disableGlow: Boolean(raw.disableGlow),
+    accentFont: FONT_OPTIONS.some((font) => font.value === raw.accentFont) ? raw.accentFont : "",
+    backgroundImage: safeImage(raw.backgroundImage),
+    gamelistIcon: safeImage(raw.gamelistIcon),
+    shelfIcon: safeImage(raw.shelfIcon),
+    appIcon: safeImage(raw.appIcon),
+    ownerColors: ownerColors
+      .map((item) => ({ name: cleanOwnerName(item?.name), color: hexColor(item?.color, "") }))
+      .filter((item) => item.name && item.color)
+      .slice(0, 24),
+  };
+}
+
+export function resolveSiteTheme(settings = {}, page = "gamelist") {
+  const theme = normalizeThemeSettings(settings);
+  const owner = cleanOwnerName(settings.defaultOwner) || "Owner";
+  const isShelf = page === "shelf";
+  const mainColor = theme.mainColorReset ? DEFAULT_THEME.mainColor : theme.mainColor;
+  const accentColor = theme.accentColorReset ? DEFAULT_THEME.accentColor : theme.accentColor;
+  const accent3 = theme.accent3 || DEFAULT_THEME.accent3;
+  return {
+    ...theme,
+    owner,
+    title: `${owner}'s ${isShelf ? "Shelf" : "Gamelist"}`,
+    shortName: isShelf ? "Shelf" : "Gamelist",
+    mainColor,
+    accentColor,
+    accent3,
+    icon: theme[isShelf ? "shelfIcon" : "gamelistIcon"] || (isShelf ? "assets/Icon_shelf.png" : "assets/Icon.png"),
+    appIcon: theme.appIcon || "assets/app-Icon.png",
+  };
+}
+
+export function applySiteTheme(settings = {}, options = {}) {
+  const page = options.page || "gamelist";
+  const theme = resolveSiteTheme(settings, page);
+  const root = document.documentElement;
+  const body = document.body;
+  root.dataset.initialTheme = settings.theme === "kash" ? "kash" : "custom";
+  root.classList.toggle("theme-kash", settings.theme === "kash");
+  root.classList.toggle("theme-light", theme.mode === "light");
+  root.classList.toggle("theme-no-glow", theme.disableGlow);
+  body?.classList.toggle("theme-kash", settings.theme === "kash");
+  body?.classList.toggle("theme-light", theme.mode === "light");
+  body?.classList.toggle("theme-no-glow", theme.disableGlow);
+  root.style.setProperty("--accent", theme.mainColor);
+  root.style.setProperty("--accent-2", theme.accentColor);
+  root.style.setProperty("--accent-3", theme.accent3);
+  root.style.setProperty("--title-gradient-start", theme.accent3);
+  root.style.setProperty("--title-gradient-end", theme.gradient ? theme.gradientColor : theme.mainColor);
+  root.style.setProperty("--glow-primary", colorMix(theme.mainColor, 0.22));
+  root.style.setProperty("--glow-secondary", colorMix(theme.accentColor, 0.14));
+  root.style.setProperty("--custom-backdrop-image", theme.backgroundImage ? `url("${cssEscape(theme.backgroundImage)}")` : "url(\"assets/backdrop.png\")");
+  root.style.setProperty("--display-title-font", fontFamily(theme.accentFont));
+  document.title = theme.title;
+  document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme.mainColor);
+  document.querySelector("meta[name='apple-mobile-web-app-title']")?.setAttribute("content", theme.shortName);
+  document.querySelector("link[rel='icon']")?.setAttribute("href", theme.icon);
+  document.querySelector("link[rel='apple-touch-icon']")?.setAttribute("href", theme.appIcon);
+  const manifest = document.querySelector("link[rel='manifest']");
+  if (manifest) manifest.setAttribute("href", themedManifestUrl(theme));
+  const brandMark = document.querySelector(".brand-mark");
+  const brandText = document.querySelector(".brand span:last-child");
+  if (brandMark) brandMark.src = theme.icon;
+  if (brandText) brandText.textContent = theme.title;
+  applyOwnerStyle(theme.ownerColors);
+  return theme;
+}
+
+export function themedManifestUrl(theme) {
+  const manifest = {
+    name: theme.title,
+    short_name: theme.shortName,
+    description: `${theme.title} tracker.`,
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    background_color: theme.mode === "light" ? "#f3f4f8" : "#0a0b0f",
+    theme_color: theme.mainColor,
+    icons: [{ src: absoluteAsset(theme.appIcon), sizes: "400x400", type: "image/png", purpose: "any maskable" }],
+  };
+  return `data:application/manifest+json,${encodeURIComponent(JSON.stringify(manifest))}`;
+}
+
+export function themeSettingsButton(settings, escapeHtml = htmlEscape) {
+  const theme = resolveSiteTheme(settings);
+  return `
+    <article class="settings-layout-card settings-theme-card" data-layout-key="theme">
+      <div class="settings-theme-select">
+        <span>Theme</span>
+        <button class="settings-theme-edit-button" type="button" data-theme-editor>
+          <span>Edit theme</span>
+          <i style="--swatch:${escapeHtml(theme.mainColor)}"></i>
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+export function openThemeEditor({ settings = {}, onSave, page = "gamelist" }) {
+  const dialog = ensureThemeDialog();
+  const draft = structuredCloneSafe(normalizeThemeSettings(settings));
+  renderThemeDialog(dialog, draft, settings, page, onSave);
+  try {
+    dialog.showModal();
+  } catch {
+    dialog.show();
+  }
+}
+
+function ensureThemeDialog() {
+  let dialog = document.querySelector("#themeEditorDialog");
+  if (dialog) return dialog;
+  dialog = document.createElement("dialog");
+  dialog.id = "themeEditorDialog";
+  dialog.className = "settings-dialog theme-editor-dialog";
+  document.body.appendChild(dialog);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  return dialog;
+}
+
+function renderThemeDialog(dialog, draft, settings, page, onSave) {
+  const ownerRows = draft.ownerColors.length ? draft.ownerColors : [{ name: "", color: "#ff9ed2" }];
+  dialog.innerHTML = `
+    <form class="settings-modal theme-editor-modal glass" method="dialog">
+      <div class="modal-head">
+        <div><p class="eyebrow">Theme</p><h2>Edit theme</h2></div>
+        <div class="modal-head-actions">
+          <button class="primary-button modal-head-save" type="submit">Save</button>
+          <button class="icon-button" type="button" data-theme-close title="Close" aria-label="Close">×</button>
+        </div>
+      </div>
+      <section class="theme-editor-grid">
+        ${colorField("mainColor", "Main color", draft.mainColor, draft.mainColorReset, true)}
+        ${draft.gradient ? colorField("gradientColor", "Gradient color", draft.gradientColor, false, false) : ""}
+        ${colorField("accentColor", "Accent color", draft.accentColor, draft.accentColorReset, true)}
+        <label class="settings-detail-compact"><span>Light or dark</span><select name="mode"><option value="dark" ${draft.mode === "dark" ? "selected" : ""}>Dark</option><option value="light" ${draft.mode === "light" ? "selected" : ""}>Light</option></select></label>
+        <label class="check-filter toggle-check theme-check"><input name="gradient" type="checkbox" ${draft.gradient ? "checked" : ""}><span>Gradient titles</span></label>
+        <label class="check-filter toggle-check theme-check"><input name="disableGlow" type="checkbox" ${draft.disableGlow ? "checked" : ""}><span>Disable background glow</span></label>
+        <label class="settings-detail-compact theme-font-field"><span>Accent font</span><select name="accentFont">${FONT_OPTIONS.map((font) => `<option value="${htmlEscape(font.value)}" style="font-family:${htmlEscape(font.family)}" ${draft.accentFont === font.value ? "selected" : ""}>${htmlEscape(font.label)}</option>`).join("")}</select></label>
+        ${imageField("backgroundImage", "Background", draft.backgroundImage)}
+        ${imageField("gamelistIcon", "Gamelist icon", draft.gamelistIcon)}
+        ${imageField("shelfIcon", "Shelf icon", draft.shelfIcon)}
+        ${imageField("appIcon", "Game app icon", draft.appIcon)}
+      </section>
+      <section class="settings-section">
+        <h3>Custom Owner Colors</h3>
+        <div class="theme-owner-table">
+          <div class="theme-owner-head"><span>Owner</span><span>Main color</span><span></span></div>
+          <div data-owner-rows>${ownerRows.map(ownerRow).join("")}</div>
+          <button class="ghost-button" type="button" data-owner-add>Add owner color</button>
+        </div>
+      </section>
+      <div class="modal-actions"><button class="primary-button" type="submit">Save</button></div>
+    </form>
+  `;
+  const form = dialog.querySelector("form");
+  dialog.querySelector("[data-theme-close]")?.addEventListener("click", () => dialog.close());
+  form.querySelector("[name='gradient']")?.addEventListener("change", () => {
+    draft.gradient = form.querySelector("[name='gradient']").checked;
+    renderThemeDialog(dialog, readThemeForm(form, draft), settings, page, onSave);
+  });
+  form.querySelector("[data-owner-add]")?.addEventListener("click", () => {
+    const rows = form.querySelector("[data-owner-rows]");
+    rows.insertAdjacentHTML("beforeend", ownerRow({ name: "", color: "#79f2ce" }));
+  });
+  form.addEventListener("click", (event) => {
+    const remove = event.target.closest("[data-owner-remove]");
+    if (remove) remove.closest(".theme-owner-row")?.remove();
+  });
+  form.querySelectorAll("[data-image-input]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const compressed = await compressImageFile(file, input.dataset.imageInput === "backgroundImage" ? 1800 : 512);
+      const text = form.querySelector(`[name="${input.dataset.imageInput}"]`);
+      if (text) text.value = compressed;
+    });
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const nextTheme = normalizeThemeSettings({ ...settings, customTheme: readThemeForm(form, draft) });
+    await onSave?.({ ...settings, theme: "custom", customTheme: nextTheme });
+    dialog.close();
+  });
+}
+
+function colorField(name, label, value, reset, hasReset) {
+  return `
+    <div class="theme-color-field">
+      <label><span>${htmlEscape(label)}</span><input name="${name}" value="${htmlEscape(value)}" pattern="#?[0-9a-fA-F]{6}" inputmode="text"></label>
+      <input class="theme-color-picker" type="color" data-color-for="${name}" value="${htmlEscape(value)}" onchange="this.form.elements['${name}'].value=this.value">
+      ${hasReset ? `<label class="check-filter toggle-check theme-check compact"><input name="${name}Reset" type="checkbox" ${reset ? "checked" : ""}><span>Reset</span></label>` : ""}
+    </div>
+  `;
+}
+
+function imageField(name, label, value) {
+  return `
+    <label class="settings-detail-compact theme-image-field">
+      <span>${htmlEscape(label)}</span>
+      <input name="${name}" value="${htmlEscape(value || "")}" placeholder="Upload or paste URL">
+      <input type="file" accept="image/*" data-image-input="${name}">
+    </label>
+  `;
+}
+
+function ownerRow(owner) {
+  return `
+    <div class="theme-owner-row">
+      <input name="ownerName" value="${htmlEscape(owner.name || "")}" placeholder="Owner">
+      <input name="ownerColor" value="${htmlEscape(owner.color || "#79f2ce")}" pattern="#?[0-9a-fA-F]{6}">
+      <button class="icon-button" type="button" data-owner-remove title="Remove" aria-label="Remove">×</button>
+    </div>
+  `;
+}
+
+function readThemeForm(form, draft) {
+  const value = (name) => form.elements[name]?.value || "";
+  const ownerNames = [...form.querySelectorAll("[name='ownerName']")];
+  const ownerColors = [...form.querySelectorAll("[name='ownerColor']")];
+  return normalizeThemeSettings({
+    customTheme: {
+      ...draft,
+      mainColor: normalizeHex(value("mainColor")) || draft.mainColor,
+      mainColorReset: Boolean(form.elements.mainColorReset?.checked),
+      gradient: Boolean(form.elements.gradient?.checked),
+      gradientColor: normalizeHex(value("gradientColor")) || draft.gradientColor,
+      accentColor: normalizeHex(value("accentColor")) || draft.accentColor,
+      accentColorReset: Boolean(form.elements.accentColorReset?.checked),
+      mode: value("mode") === "light" ? "light" : "dark",
+      disableGlow: Boolean(form.elements.disableGlow?.checked),
+      accentFont: value("accentFont"),
+      backgroundImage: value("backgroundImage"),
+      gamelistIcon: value("gamelistIcon"),
+      shelfIcon: value("shelfIcon"),
+      appIcon: value("appIcon"),
+      ownerColors: ownerNames.map((input, index) => ({ name: input.value, color: ownerColors[index]?.value || "" })),
+    },
+  });
+}
+
+async function compressImageFile(file, maxSize) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+    const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/webp", maxSize > 600 ? 0.76 : 0.82);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function applyOwnerStyle(ownerColors) {
+  let style = document.querySelector("#customOwnerColorStyles");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "customOwnerColorStyles";
+    document.head.appendChild(style);
+  }
+  style.textContent = ownerColors.map(({ name, color }) => {
+    const slug = normalizeOwnerSlug(name);
+    const glow = colorMix(color, 0.12);
+    const fill = colorMix(color, 0.18);
+    const faint = colorMix(color, 0.04);
+    const border = colorMix(color, 0.36);
+    return `
+      .owner-color-${slug}, .owner-pill.owner-color-${slug} { color: ${color} !important; }
+      .owner-color-card-${slug}, .owner-color-card-${slug}:hover {
+        background: linear-gradient(135deg, ${fill}, ${faint} 42%, rgba(20, 22, 28, 0.58)), var(--panel) !important;
+        border-color: ${border} !important;
+        box-shadow: 0 0 20px ${glow} !important;
+      }
+      .playing-finished-game.owner-color-card-${slug} strong,
+      .completed-row.owner-color-card-${slug} strong { color: ${color} !important; }
+    `;
+  }).join("\n");
+}
+
+export function ownerColorClass(owner) {
+  return `owner-color-${normalizeOwnerSlug(owner)}`;
+}
+
+export function ownerCardColorClass(owner) {
+  return `owner-color-card-${normalizeOwnerSlug(owner)}`;
+}
+
+export function normalizeOwnerSlug(value) {
+  return cleanOwnerName(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "owner";
+}
+
+function fontFamily(value) {
+  const font = FONT_OPTIONS.find((item) => item.value === value);
+  if (!font || !font.value) return "\"Cascadia Code\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+  return `"${font.family}", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+}
+
+function normalizeHex(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^#?([0-9a-fA-F]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : "";
+}
+
+function hexColor(value, fallback) {
+  return normalizeHex(value) || fallback;
+}
+
+function colorMix(hex, alpha) {
+  const color = normalizeHex(hex) || "#ffffff";
+  const int = Number.parseInt(color.slice(1), 16);
+  const r = (int >> 16) & 255;
+  const g = (int >> 8) & 255;
+  const b = int & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function safeImage(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(raw)) return raw;
+  if (/^(?:https?:\/\/|assets\/|\/assets\/)/i.test(raw)) return raw;
+  return "";
+}
+
+function absoluteAsset(value) {
+  if (/^data:image\//.test(value)) return value;
+  return value.startsWith("/") ? value : `/${value}`;
+}
+
+function cleanOwnerName(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 40);
+}
+
+function structuredCloneSafe(value) {
+  try {
+    return structuredClone(value);
+  } catch {
+    return JSON.parse(JSON.stringify(value));
+  }
+}
+
+function cssEscape(value) {
+  return String(value).replace(/["\\]/g, "\\$&");
+}
+
+function htmlEscape(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
+}

@@ -1,12 +1,13 @@
 import { normalizeSearchText, createGameCardShell, bindActivityCardParallax, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, syncFocusedActivityTrailer, activityReleaseStatus, activityCoverOverride, activityLocalGameForTitle, activityTitleMatchScore, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime, confirmGameDelete } from "./activity-ui.js";
+import { applySiteTheme, normalizeThemeSettings, openThemeEditor, ownerCardColorClass, ownerColorClass, themeSettingsButton } from "./theme-system.js";
 
 mountActivitySlider(document.querySelector("[data-module='playing']"), { count: "shelfPlayingCount", previous: "shelfPlayingPrev", next: "shelfPlayingNext", list: "playingCarousel", finished: "shelfPlayingFinished", finishedList: "finishedCarousel" });
 splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v240";
-const SITE_UPDATED_AT = "2026-06-28T22:24:34+02:00";
+const SITE_VERSION = "v241";
+const SITE_UPDATED_AT = "2026-06-28T22:35:01+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -471,21 +472,12 @@ async function fetchCollectionPriceData(game, settings) {
 }
 
 function applyTheme() {
-  const key = THEMES[state.gamelistSettings.theme] ? state.gamelistSettings.theme : "shabii";
-  const theme = THEMES[key];
-  document.documentElement.classList.toggle("theme-kash", key === "kash");
-  document.body.classList.toggle("theme-kash", key === "kash");
-  document.title = theme.title;
-  document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme.color);
-  document.querySelector("link[rel='icon']")?.setAttribute("href", theme.icon);
-  const brandMark = document.querySelector(".brand-mark");
-  const brandText = document.querySelector(".brand span:last-child");
-  if (brandMark) brandMark.src = theme.icon;
-  if (brandText) brandText.textContent = theme.title;
+  state.gamelistSettings.customTheme = normalizeThemeSettings(state.gamelistSettings);
+  const theme = applySiteTheme(state.gamelistSettings, { page: "shelf" });
   el.brandLink?.setAttribute("aria-label", theme.title);
-  el.brandLink?.setAttribute("href", key === "kash" ? KASH_TWITCH_URL : "#gameShelf");
-  el.brandLink?.toggleAttribute("target", key === "kash");
-  if (key === "kash") el.brandLink?.setAttribute("rel", "noreferrer");
+  el.brandLink?.setAttribute("href", state.gamelistSettings.theme === "kash" ? KASH_TWITCH_URL : "#gameShelf");
+  el.brandLink?.toggleAttribute("target", state.gamelistSettings.theme === "kash");
+  if (state.gamelistSettings.theme === "kash") el.brandLink?.setAttribute("rel", "noreferrer");
   else el.brandLink?.removeAttribute("rel");
 }
 
@@ -618,7 +610,7 @@ function gameCard(game, options = {}) {
   const studio = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
   const owners = game.owners || [];
   const visibleOwners = visibleShelfCardOwners(owners);
-  const ownerClasses = `${visibleOwners.includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(visibleOwners) ? " owner-card-jordi" : ""}`;
+  const ownerClasses = visibleOwners.map((owner) => ` ${ownerCardColorClass(owner)}`).join("");
   const tags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((tag) => String(tag).trim()).filter((tag, index, list) => tag && normalize(tag) !== "game" && list.indexOf(tag) === index);
   const condition = conditionLabel(game);
   const card = createGameCardShell(document);
@@ -632,7 +624,7 @@ function gameCard(game, options = {}) {
   card.querySelector(".card-trailer")?.remove(); card.querySelector(".trailer-toggle")?.remove();
   const image = card.querySelector(".cover-button img"); image.src = cover; image.dataset.coverFallback = fallbackCover; image.alt = `${game.title} cover`; image.loading = options.imagePriority || "lazy"; image.fetchPriority = options.imagePriority === "eager" ? "high" : "low"; image.decoding = "async"; bindCoverFrame(image);
   card.querySelector(".cover-button").dataset.action = "details";
-  const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", visibleOwners.includes("Judy")); title.classList.toggle("owner-jordi", hasJordiToneOwner(visibleOwners));
+  const title = card.querySelector("h3"); title.textContent = game.title; title.className = `${title.className.replace(/\bowner-[\w-]+/g, "").trim()} ${visibleOwners.map(ownerColorClass).join(" ")}`.trim();
   const titleOwners = card.querySelector(".title-owners");
   titleOwners.innerHTML = visibleOwners.map(ownerBadge).join("");
   titleOwners.hidden = !titleOwners.innerHTML;
@@ -654,11 +646,11 @@ function gameRow(game) {
   const studio = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
   const owners = game.owners || [];
   const visibleOwners = visibleShelfCardOwners(owners);
-  const ownerClasses = `${visibleOwners.includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(visibleOwners) ? " owner-card-jordi" : ""}`;
+  const ownerClasses = visibleOwners.map((owner) => ` ${ownerCardColorClass(owner)}`).join("");
   const tags = [...(game.tags || []), game.category && game.category !== "Game" ? game.category : "", ...String(game.genre || "").split(",")].map((tag) => String(tag).trim()).filter((tag, index, list) => tag && normalize(tag) !== "game" && list.indexOf(tag) === index);
   const description = game.description || "";
   const actions = isPendingCollectionGame(game) ? `<div class="game-row-actions-top"><button class="primary-button add-collection-action" data-action="add-collection" type="button">Add to Collection</button></div><div class="game-row-actions-bottom"><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button></div>` : `<div class="game-row-actions-top"><button class="icon-button row-edit-action" data-action="edit" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button><button class="icon-button danger-button row-delete-action" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button></div><div class="game-row-actions-bottom"><button class="ghost-button shelf-add-backlog-action" data-action="add-backlog" type="button">Add to Backlog</button></div>`;
-  return `<article class="game-row${ownerClasses}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}"><span class="game-row-cover-wrap"><img class="game-row-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"><img class="game-row-cover-preview" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" aria-hidden="true"></span><div class="game-row-identity"><strong class="${visibleOwners.includes("Judy") ? "owner-judy" : ""} ${hasJordiToneOwner(visibleOwners) ? "owner-jordi" : ""}">${escapeHtml(game.title)}</strong><span class="game-row-owner-line">${visibleOwners.map(ownerBadge).join("")}</span>${studio ? `<span>${escapeHtml(studio)}</span>` : ""}</div><div class="game-row-core"><span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(conditionLabel(game))}${shelfProgressPill(game)}</div><div class="game-row-tags">${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</div>${description ? `<div class="game-row-description shelf-row-description">${escapeHtml(description)}</div>` : ""}<div class="game-row-actions">${actions}</div></article>`;
+  return `<article class="game-row${ownerClasses}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}"><span class="game-row-cover-wrap"><img class="game-row-cover" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"><img class="game-row-cover-preview" src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async" aria-hidden="true"></span><div class="game-row-identity"><strong class="${visibleOwners.map(ownerColorClass).join(" ")}">${escapeHtml(game.title)}</strong><span class="game-row-owner-line">${visibleOwners.map(ownerBadge).join("")}</span>${studio ? `<span>${escapeHtml(studio)}</span>` : ""}</div><div class="game-row-core"><span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>${platformBadge(game.platform)}${conditionBadge(conditionLabel(game))}${shelfProgressPill(game)}</div><div class="game-row-tags">${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</div>${description ? `<div class="game-row-description shelf-row-description">${escapeHtml(description)}</div>` : ""}<div class="game-row-actions">${actions}</div></article>`;
 }
 
 function visibleShelfCardOwners(owners = []) {
@@ -677,7 +669,7 @@ function visibleProjectionOwners(game) {
 
 function projectionOwnerCardClass(game) {
   const owners = visibleProjectionOwners(game);
-  return `${owners.includes("Judy") ? "owner-card-judy" : ""} ${hasJordiToneOwner(owners) ? "owner-card-jordi" : ""}`.trim();
+  return owners.map(ownerCardColorClass).join(" ");
 }
 
 function conditionBadge(condition) { const tone = condition === "Complete +" ? "complete-plus" : normalize(condition).replace(/ /g, "-"); return `<span class="condition-pill condition-${tone}"><img src="assets/platforms/disk.png" alt="" width="18" height="18"><span>${escapeHtml(condition)}</span></span>`; }
@@ -699,8 +691,7 @@ function openDetails(game) {
   el.detailDialog.dataset.id = game.id;
   el.detailDialog.dataset.projection = game._gamelistProjection ? "true" : "false";
   el.detailTitle.textContent = game.title;
-  el.detailTitle.classList.toggle("owner-judy", (game.owners || []).includes("Judy"));
-  el.detailTitle.classList.toggle("owner-jordi", hasJordiToneOwner(game.owners));
+  el.detailTitle.className = `${el.detailTitle.className.replace(/\bowner-[\w-]+/g, "").trim()} ${(game.owners || []).map(ownerColorClass).join(" ")}`.trim();
   el.detailStudio.textContent = [game.developer, game.publisher && game.publisher !== game.developer ? game.publisher : ""].filter(Boolean).join(" · ");
   el.detailMeta.innerHTML = `${game.country ? `<span class="region-flag" title="${escapeHtml(game.country)}">${flagIcon(game.country)}</span>` : ""}${platformBadge(game.platform)}`;
   const fallbackCover = coverUrl(game.cover || "") || platformFallback(game.platform);
@@ -1202,12 +1193,10 @@ function renderLayoutEditor() {
   el.layoutList.className = "settings-layout";
   el.layoutList.innerHTML = [
     ...state.layout.order.map((key, index) => settingsLayoutCard(key, index)),
-    `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${settingsSelectCard("theme", "Theme", "shelfSettingsTheme", [{ value: "shabii", label: "Shabii" }, { value: "kash", label: "Kash" }])}${settingsSelectCard("order", "Default order", "shelfSettingsDefaultOrder", [{ value: "added", label: "Last added" }, { value: "title", label: "Name" }, { value: "platform", label: "Platform" }, { value: "region", label: "Region" }, { value: "value", label: "Value" }])}${settingsShelfSyncCard()}${settingsShelfPricesCard()}</div>`,
+    `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${themeSettingsButton(state.gamelistSettings, escapeHtml)}${settingsSelectCard("order", "Default order", "shelfSettingsDefaultOrder", [{ value: "added", label: "Last added" }, { value: "title", label: "Name" }, { value: "platform", label: "Platform" }, { value: "region", label: "Region" }, { value: "value", label: "Value" }])}${settingsShelfSyncCard()}${settingsShelfPricesCard()}</div>`,
   ].join("");
-  el.settingsTheme = document.querySelector("#shelfSettingsTheme");
   el.settingsDefaultOrder = document.querySelector("#shelfSettingsDefaultOrder");
   const settings = normalizePriceSettings(state.gamelistSettings);
-  el.settingsTheme.value = THEMES[state.gamelistSettings.theme] ? state.gamelistSettings.theme : "shabii";
   el.settingsDefaultOrder.value = shelfSortForDefault(state.gamelistSettings.shelfDefaultOrder ?? state.gamelistSettings.defaultOrder);
   el.settingsCurrency.value = settings.currency;
   el.settingsRegion.value = settings.region;
@@ -1220,7 +1209,18 @@ function renderLayoutEditor() {
     const checked = [...el.settingsStores.querySelectorAll("input:checked")];
     if (checked.length > MAX_PRICE_STORES) input.checked = false;
   }));
-  el.settingsTheme.onchange = () => { state.gamelistSettings.theme = el.settingsTheme.value; applyTheme(); };
+  el.layoutList.querySelector("[data-theme-editor]")?.addEventListener("click", () => openThemeEditor({
+    settings: state.gamelistSettings,
+    page: "shelf",
+    onSave: async (settings) => {
+      state.gamelistSettings = { ...state.gamelistSettings, ...settings, customTheme: normalizeThemeSettings(settings) };
+      localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));
+      await persistGamelistSettings();
+      applyTheme();
+      renderLayoutEditor();
+      renderAll();
+    },
+  }));
 }
 
 function settingsLayoutCard(key, index) {
@@ -1257,7 +1257,7 @@ async function saveLayout(event) {
   state.layout.hidden = LAYOUT_KEYS.filter((key) => !el.layoutList.querySelector(`[data-layout-visible][value="${key}"]`)?.checked);
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout));
   const stores = [...el.settingsStores.querySelectorAll("input:checked")].map((input) => input.value).filter((store) => STORE_OPTIONS.includes(store)).slice(0, MAX_PRICE_STORES);
-  state.gamelistSettings = { ...state.gamelistSettings, theme: el.settingsTheme.value, shelfDefaultOrder: el.settingsDefaultOrder.value, currency: el.settingsCurrency.value, region: el.settingsRegion.value, psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false };
+  state.gamelistSettings = { ...state.gamelistSettings, shelfDefaultOrder: el.settingsDefaultOrder.value, currency: el.settingsCurrency.value, region: el.settingsRegion.value, psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false };
   localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));
   applyShelfDefaultOrder(state.gamelistSettings.shelfDefaultOrder);
   await Promise.all([persistShelf(), persistGamelistSettings()]);
@@ -1382,8 +1382,7 @@ function openGamelistDetails(sourceGame) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
   const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
   el.detailTitle.textContent = game.title;
-  el.detailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
-  el.detailTitle.classList.toggle("owner-jordi", hasJordiToneOwner(owners));
+  el.detailTitle.className = `${el.detailTitle.className.replace(/\bowner-[\w-]+/g, "").trim()} ${owners.map(ownerColorClass).join(" ")}`.trim();
   el.detailStudio.textContent = [game.developer, game.publisher].filter(Boolean).join(" / ");
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = projectionMeta(game, { includePast: true });
@@ -1433,7 +1432,7 @@ function gamelistProjectionCard(game) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
   const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
   const visibleOwners = visibleShelfCardOwners(owners);
-  const ownerClasses = `${visibleOwners.includes("Judy") ? " owner-card-judy" : ""}${hasJordiToneOwner(visibleOwners) ? " owner-card-jordi" : ""}`;
+  const ownerClasses = visibleOwners.map((owner) => ` ${ownerCardColorClass(owner)}`).join("");
   const studio = [game.developer, game.publisher].filter(Boolean).join(" / ");
   const card = createGameCardShell(document);
   card.dataset.gamelistId = game.id; card.setAttribute("role", "button"); card.tabIndex = 0;
@@ -1441,7 +1440,7 @@ function gamelistProjectionCard(game) {
   card.style.setProperty("--card-art", `url('${escapeCss(cover)}')`);
   const trailer = card.querySelector(".card-trailer"); const trailerUrl = window.matchMedia("(min-width: 900px)").matches ? activityTrailerUrl(game.trailerUrl, window.location.origin) : ""; if (trailerUrl) { card.classList.add("has-trailer"); trailer.dataset.src = trailerUrl; const toggle = card.querySelector(".trailer-toggle"); toggle.hidden = false; toggle.innerHTML = pauseTrailerIcon(); } else { trailer.remove(); card.querySelector(".trailer-toggle")?.remove(); }
   const image = card.querySelector(".cover-button img"); image.src = cover; image.alt = `${game.title} cover`; image.loading = "eager"; image.fetchPriority = "high"; image.decoding = "async"; bindCoverFrame(image);
-  const title = card.querySelector("h3"); title.textContent = game.title; title.classList.toggle("owner-judy", visibleOwners.includes("Judy")); title.classList.toggle("owner-jordi", hasJordiToneOwner(visibleOwners)); title.classList.toggle("completed-achievements-title", Boolean(game.platinum));
+  const title = card.querySelector("h3"); title.textContent = game.title; title.className = `${title.className.replace(/\bowner-[\w-]+/g, "").trim()} ${visibleOwners.map(ownerColorClass).join(" ")}`.trim(); title.classList.toggle("completed-achievements-title", Boolean(game.platinum));
   const titleOwners = card.querySelector(".title-owners");
   titleOwners.innerHTML = visibleOwners.map(ownerBadge).join("");
   titleOwners.hidden = !titleOwners.innerHTML;
@@ -2039,7 +2038,7 @@ function trophyIcon() { return `<svg class="trophy-icon" viewBox="0 0 24 24" ari
 function sortArrowIcon(desc = false) { return `<svg class="sort-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${desc ? "M12 3.5v17" : "M12 20.5v-17"}"></path><path d="${desc ? "M6.5 15l5.5 5.5 5.5-5.5" : "M6.5 9l5.5-5.5L17.5 9"}"></path></svg>`; }
 function linesIcon() { return `<svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"></path></svg>`; }
 function gridIcon() { return `<svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="4.5" width="5.5" height="5.5"></rect><rect x="14" y="4.5" width="5.5" height="5.5"></rect><rect x="4.5" y="14" width="5.5" height="5.5"></rect><rect x="14" y="14" width="5.5" height="5.5"></rect></svg>`; }
-function ownerBadge(owner) { return `<span class="owner-pill owner-${normalize(owner)}">${escapeHtml(owner)}</span>`; }
+function ownerBadge(owner) { return `<span class="owner-pill ${escapeHtml(ownerColorClass(owner))}">${escapeHtml(owner)}</span>`; }
 function canonicalOwner(owner) {
   const value = String(owner || "").trim();
   const normalized = normalize(value);

@@ -1,4 +1,5 @@
 import { normalizeSearchText, createGameCardShell, bindActivityCardParallax, mountActivitySlider, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, activityTrailerFrameMarkup, activityReleaseStatus, activityCoverOverride, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime, confirmGameDelete } from "./activity-ui.js";
+import { applySiteTheme, normalizeThemeSettings, openThemeEditor, ownerCardColorClass, ownerColorClass, themeSettingsButton } from "./theme-system.js";
 
 mountActivitySlider(document.querySelector("#playingSection"), { count: "playingCount", previous: "playingPrevButton", next: "playingNextButton", list: "playingList", dataSection: "playing", finished: "playingFinished", finishedList: "playingFinishedList" });
 
@@ -13,8 +14,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v240";
-const SITE_UPDATED_AT = "2026-06-28T22:24:34+02:00";
+const SITE_VERSION = "v241";
+const SITE_UPDATED_AT = "2026-06-28T22:35:01+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -41,6 +42,7 @@ const DEFAULT_SETTINGS = {
   pageOrder: DEFAULT_PAGE_ORDER,
   hiddenSections: [],
   theme: "shabii",
+  customTheme: {},
   defaultOrder: "custom",
   psnUser: "ShabiiEXE",
   microsoftUser: "",
@@ -847,7 +849,8 @@ function normalizeSettings(settings = {}) {
     ...settings,
     pageOrder: [...pageOrder, ...DEFAULT_PAGE_ORDER.filter((item) => !pageOrder.includes(item))],
     hiddenSections,
-    theme: THEMES[settings.theme] ? settings.theme : DEFAULT_SETTINGS.theme,
+    theme: THEMES[settings.theme] || settings.theme === "custom" ? settings.theme : DEFAULT_SETTINGS.theme,
+    customTheme: normalizeThemeSettings(settings),
     defaultOrder: ["custom", "time", "name"].includes(settings.defaultOrder) ? settings.defaultOrder : DEFAULT_SETTINGS.defaultOrder,
     psnUser: cleanPsnUser(settings.psnUser) || DEFAULT_SETTINGS.psnUser,
     microsoftUser: cleanMicrosoftUser(settings.microsoftUser),
@@ -919,50 +922,16 @@ function render() {
 }
 
 function applyTheme() {
-  const themeKey = normalizeSettings(state.settings).theme;
-  const theme = THEMES[themeKey] || THEMES.shabii;
-  document.documentElement.dataset.initialTheme = themeKey;
-  document.documentElement.classList.toggle("theme-kash", themeKey === "kash");
-  document.body.classList.toggle("theme-kash", themeKey === "kash");
-  document.title = theme.title;
-  document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme.themeColor);
-  document.querySelector("meta[name='apple-mobile-web-app-title']")?.setAttribute("content", theme.shortName);
-  document.querySelector("link[rel='icon']")?.setAttribute("href", theme.icon);
-  document.querySelector("link[rel='apple-touch-icon']")?.setAttribute("href", theme.appIcon);
-  const manifest = document.querySelector("link[rel='manifest']");
-  if (manifest) manifest.setAttribute("href", themedManifestUrl(theme));
-  const brandMark = document.querySelector(".brand-mark");
-  const brandText = document.querySelector(".brand span:last-child");
-  if (brandMark) brandMark.src = theme.icon;
-  if (brandText) brandText.textContent = theme.title;
+  const settings = normalizeSettings(state.settings);
+  const theme = applySiteTheme(settings, { page: "gamelist" });
   el.brandLink?.setAttribute("aria-label", theme.title);
-  el.brandLink?.setAttribute("href", themeKey === "kash" ? KASH_TWITCH_URL : "#backlog");
-  el.brandLink?.toggleAttribute("target", themeKey === "kash");
-  if (themeKey === "kash") {
+  el.brandLink?.setAttribute("href", settings.theme === "kash" ? KASH_TWITCH_URL : "#backlog");
+  el.brandLink?.toggleAttribute("target", settings.theme === "kash");
+  if (settings.theme === "kash") {
     el.brandLink?.setAttribute("rel", "noreferrer");
   } else {
     el.brandLink?.removeAttribute("rel");
   }
-}
-
-function themedManifestUrl(theme) {
-  const manifest = {
-    name: theme.title,
-    short_name: theme.shortName,
-    description: `${theme.title} backlog and preorder tracker.`,
-    start_url: "/",
-    scope: "/",
-    display: "standalone",
-    background_color: "#0a0b0f",
-    theme_color: theme.themeColor,
-    icons: [{
-      src: `/${theme.appIcon}`,
-      sizes: "400x400",
-      type: "image/png",
-      purpose: "any maskable",
-    }],
-  };
-  return `data:application/manifest+json,${encodeURIComponent(JSON.stringify(manifest))}`;
 }
 
 function renderViewToggle() {
@@ -1043,10 +1012,17 @@ function renderSettingsDialog() {
       renderSettingsDialog();
     });
   });
-  el.settingsLayoutList.querySelector("[data-theme-select]")?.addEventListener("change", (event) => {
-    state.settings.theme = event.target.value;
-    applyTheme();
-  });
+  el.settingsLayoutList.querySelector("[data-theme-editor]")?.addEventListener("click", () => openThemeEditor({
+    settings: state.settings,
+    page: "gamelist",
+    onSave: async (settings) => {
+      state.settings = normalizeSettings(settings);
+      persistLocalSettings();
+      await persistCloud();
+      renderSettingsDialog();
+      render();
+    },
+  }));
   el.settingsLayoutList.querySelector("[data-default-order]")?.addEventListener("change", (event) => {
     state.settings.defaultOrder = event.target.value;
   });
@@ -1105,17 +1081,7 @@ function moveSettingsLayoutItem(key, delta) {
 }
 
 function settingsThemeItem() {
-  return `
-    <article class="settings-layout-card settings-theme-card" data-layout-key="theme">
-      <div class="settings-wire wire-theme" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-      <label class="settings-theme-select">
-        <span>Theme</span>
-        <select data-theme-select aria-label="Theme">
-          ${Object.entries(THEMES).map(([key, theme]) => `<option value="${escapeHtml(key)}" ${state.settings.theme === key ? "selected" : ""}>${escapeHtml(theme.name)}</option>`).join("")}
-        </select>
-      </label>
-    </article>
-  `;
+  return themeSettingsButton(state.settings, escapeHtml);
 }
 
 function settingsDefaultOrderItem() {
@@ -1163,7 +1129,8 @@ async function saveSettingsFromForm(event) {
   state.settings = normalizeSettings({
     ...state.settings,
     hiddenSections: LAYOUT_SECTION_KEYS.filter((key) => !visibleSections.has(key)),
-    theme: el.settingsLayoutList.querySelector("[data-theme-select]")?.value || state.settings.theme,
+    theme: state.settings.theme,
+    customTheme: state.settings.customTheme,
     defaultOrder: el.settingsLayoutList.querySelector("[data-default-order]")?.value || state.settings.defaultOrder,
     psnUser: el.settingsPsnUser.value,
     microsoftUser: el.settingsMicrosoftUser.value,
@@ -2424,8 +2391,7 @@ function rowFor(game, section, options = {}) {
   row.setAttribute("role", "button");
   row.tabIndex = 0;
   row.setAttribute("aria-label", `Open ${game.title}`);
-  row.classList.toggle("owner-card-judy", owners.includes("Judy"));
-  row.classList.toggle("owner-card-jordi", hasJordiToneOwner(owners));
+  applyOwnerCardClasses(row, owners);
   row.classList.toggle("digital-card", Boolean(game.digital));
   row.classList.toggle("stream-card", Boolean(game.stream));
   row.innerHTML = `
@@ -2434,7 +2400,7 @@ function rowFor(game, section, options = {}) {
       <img class="game-row-cover-preview" src="${escapeHtml(game.cover ? coverDisplayUrl(game.cover, "card") : "")}" alt="" loading="lazy" decoding="async" aria-hidden="true">
     </span>
     <div class="game-row-identity">
-      <strong class="${game.platinum ? "completed-achievements-title" : ""} ${owners.includes("Judy") ? "owner-judy" : ""} ${hasJordiToneOwner(owners) ? "owner-jordi" : ""}" tabindex="0">${escapeHtml(game.title)}</strong>
+      <strong class="${game.platinum ? "completed-achievements-title" : ""} ${ownerTitleClasses(owners)}" tabindex="0">${escapeHtml(game.title)}</strong>
       <span class="game-row-owner-line">${visibleOwnerTags(game).map(ownerBadge).join("")}</span>
       ${studioText(game) ? `<span>${escapeHtml(studioText(game))}</span>` : ""}
     </div>
@@ -2830,8 +2796,7 @@ function cardFor(game, options = {}) {
   card.dataset.id = game.id;
   card.dataset.owner = statuses.join(" ");
   card.draggable = !options.staticCard && manualDragEnabled() && ["backlog", "upcoming", "wanted"].includes(game.section);
-  card.classList.toggle("owner-card-judy", owners.includes("Judy"));
-  card.classList.toggle("owner-card-jordi", hasJordiToneOwner(owners));
+  applyOwnerCardClasses(card, owners);
   card.classList.toggle("digital-card", Boolean(game.digital));
   card.classList.toggle("playing-card", Boolean(game.playing));
   card.classList.toggle("stream-card", Boolean(game.stream));
@@ -2860,8 +2825,7 @@ function cardFor(game, options = {}) {
     bindActivityCardParallax(card);
   }
   card.querySelector("h3").textContent = game.title;
-  card.querySelector("h3").classList.toggle("owner-judy", owners.includes("Judy"));
-  card.querySelector("h3").classList.toggle("owner-jordi", hasJordiToneOwner(owners));
+  card.querySelector("h3").className = `${card.querySelector("h3").className.replace(/\bowner-[\w-]+/g, "").trim()} ${ownerTitleClasses(owners)}`.trim();
   card.querySelector("h3").classList.toggle("completed-achievements-title", Boolean(game.platinum));
   const titleOwners = card.querySelector(".title-owners");
   titleOwners.innerHTML = visibleOwnerTags(game).map(ownerBadge).join("");
@@ -3108,8 +3072,7 @@ function openDetail(id, options = {}) {
   state.detailReturnToHistory = Boolean(options.returnToHistory);
   const owners = ownerTags(game);
   el.detailTitle.textContent = game.title;
-  el.detailTitle.classList.toggle("owner-judy", owners.includes("Judy"));
-  el.detailTitle.classList.toggle("owner-jordi", hasJordiToneOwner(owners));
+  el.detailTitle.className = `${el.detailTitle.className.replace(/\bowner-[\w-]+/g, "").trim()} ${ownerTitleClasses(owners)}`.trim();
   el.detailStudio.textContent = studioText(game);
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = metaFor(game, { includePsn: false, includeOwners: false }).join("");
@@ -4025,7 +3988,7 @@ function platformBadge(platform, count = null) {
 }
 
 function ownerBadge(owner) {
-  return `<span class="owner-pill owner-${escapeHtml(normalizeTag(owner))}">${escapeHtml(owner)}</span>`;
+  return `<span class="owner-pill ${escapeHtml(ownerColorClass(owner))}">${escapeHtml(owner)}</span>`;
 }
 
 function statusBadge(status) {
@@ -4266,7 +4229,16 @@ function completedOwnerBadges(game) {
 
 function ownerCardClass(game) {
   const owners = ownerTags(game);
-  return `${owners.includes("Judy") ? "owner-card-judy" : ""} ${hasJordiToneOwner(owners) ? "owner-card-jordi" : ""}`.trim();
+  return owners.map(ownerCardColorClass).join(" ");
+}
+
+function ownerTitleClasses(owners = []) {
+  return owners.map(ownerColorClass).join(" ");
+}
+
+function applyOwnerCardClasses(element, owners = []) {
+  [...element.classList].filter((name) => name.startsWith("owner-card-") || name.startsWith("owner-color-card-")).forEach((name) => element.classList.remove(name));
+  owners.map(ownerCardColorClass).forEach((name) => element.classList.add(name));
 }
 
 function canonicalStatus(status) {

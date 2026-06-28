@@ -18,6 +18,38 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Georgia Bold";
+  src: url("assets/fonts/Georgia-Bold.ttf") format("truetype");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pokemon GBA";
+  src: url("assets/fonts/Pokemon-GBA.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "04B 30";
+  src: url("assets/fonts/04B_30.TTF") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Michroma";
+  src: url("assets/fonts/Michroma.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #161619;
   --panel: rgba(20, 22, 28, 0.58);
@@ -29,9 +61,13 @@
   --dim: #6f7789;
   --accent: #ff0039;
   --accent-2: #79f2ce;
+  --accent-3: #ee32b3;
+  --title-gradient-start: var(--accent-3);
+  --title-gradient-end: var(--accent);
+  --glow-primary: rgba(255, 0, 81, 0.22);
+  --glow-secondary: rgba(0, 0, 255, 0.14);
+  --custom-backdrop-image: url("assets/backdrop.png");
   --danger: #ff6f85;
-  --jordi: #ffad5f;
-  --judy: #ff9ed2;
   --switch: #ff0002;
   --playstation: #0043ff;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
@@ -58,6 +94,18 @@ body.theme-kash {
   --display-title-font:
     "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     monospace;
+}
+
+html.theme-light {
+  --bg: #f3f4f8;
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-dark: rgb(255 255 255 / 82%);
+  --panel-strong: rgba(255, 255, 255, 0.92);
+  --line: rgba(20, 24, 34, 0.14);
+  --text: #171a22;
+  --muted: #555f70;
+  --dim: #788294;
+  color-scheme: light;
 }
 
 * {
@@ -156,10 +204,10 @@ button:disabled {
   inset: -26px;
   z-index: -1;
   background:
-    radial-gradient(circle at 78% 9%, rgba(255, 0, 81, 0.22), transparent 30%),
-    radial-gradient(circle at 11% 84%, rgba(0, 0, 255, 0.14), transparent 34%),
+    radial-gradient(circle at 78% 9%, var(--glow-primary), transparent 30%),
+    radial-gradient(circle at 11% 84%, var(--glow-secondary), transparent 34%),
     linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 38%),
-    url("assets/backdrop.png") top left / auto repeat,
+    var(--custom-backdrop-image) top left / cover repeat,
     #161619;
   background-position:
     calc(78% + var(--backdrop-x)) calc(9% + var(--backdrop-y)),
@@ -177,6 +225,23 @@ button:disabled {
     transform 80ms linear,
     background-position 80ms linear;
   will-change: transform, background-position;
+}
+
+html.theme-no-glow .backdrop {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 38%),
+    var(--custom-backdrop-image) top left / cover repeat,
+    var(--bg);
+}
+
+html.theme-light .backdrop {
+  background:
+    radial-gradient(circle at 78% 9%, var(--glow-primary), transparent 30%),
+    radial-gradient(circle at 11% 84%, var(--glow-secondary), transparent 34%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.55), transparent 38%),
+    var(--custom-backdrop-image) top left / cover repeat,
+    url("assets/backdrop_light.png") top left / auto repeat,
+    #f3f4f8;
 }
 
 body.theme-kash .backdrop {
@@ -1114,7 +1179,7 @@ h2 {
   align-items: center;
   padding: 4px 0;
   color: transparent;
-  background: linear-gradient(135deg, #ee32b3 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, var(--title-gradient-start, var(--accent-3)) 0%, var(--title-gradient-end, var(--accent)) 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -5310,6 +5375,118 @@ body.dialog-open .mobile-section-tabs {
   border-radius: 7px;
 }
 
+.settings-theme-edit-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--settings-control-height, 42px);
+  padding: 10px 12px;
+  color: var(--text);
+  text-align: left;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+}
+
+.settings-theme-edit-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, rgba(255, 255, 255, 0.2));
+  color: var(--accent);
+}
+
+.settings-theme-edit-button i {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--swatch, var(--accent));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--swatch, var(--accent)) 50%, transparent);
+}
+
+.theme-editor-dialog {
+  width: min(920px, calc(100vw - 24px));
+}
+
+.theme-editor-modal {
+  width: min(920px, calc(100vw - 28px));
+}
+
+.theme-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.theme-color-field,
+.theme-image-field,
+.theme-font-field,
+.theme-check {
+  grid-column: span 2;
+}
+
+.theme-color-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.theme-color-field label:first-child {
+  min-width: 0;
+}
+
+.theme-color-picker {
+  width: 44px;
+  height: 42px;
+  padding: 4px;
+  border-radius: 7px;
+}
+
+.theme-check {
+  align-self: end;
+  min-height: 42px;
+}
+
+.theme-check.compact {
+  grid-column: auto;
+  min-width: 92px;
+}
+
+.theme-image-field input[type="file"] {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.theme-owner-table {
+  display: grid;
+  gap: 8px;
+}
+
+.theme-owner-head,
+.theme-owner-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 36px;
+  gap: 8px;
+  align-items: center;
+}
+
+.theme-owner-head {
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.theme-owner-row + .theme-owner-row {
+  margin-top: 8px;
+}
+
+.theme-owner-row .icon-button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -6552,6 +6729,30 @@ body.theme-kash .guide-button:hover {
 
   .settings-preference-row {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .theme-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-color-field,
+  .theme-image-field,
+  .theme-font-field,
+  .theme-check {
+    grid-column: 1;
+  }
+
+  .theme-color-field {
+    grid-template-columns: minmax(0, 1fr) 42px;
+  }
+
+  .theme-color-field .theme-check.compact {
+    grid-column: 1 / -1;
+  }
+
+  .theme-owner-head,
+  .theme-owner-row {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 126px) 36px;
   }
 
   .topbar {

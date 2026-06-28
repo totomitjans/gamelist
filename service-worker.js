@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gamelist-cache-v240";
+const CACHE_VERSION = "gamelist-cache-v241";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const MEDIA_CACHE = `${CACHE_VERSION}:media`;
 const STATIC_ASSETS = [
@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   "/styles.css",
   "/app.js",
   "/activity-ui.js",
+  "/theme-system.js",
   "/shelf.html",
   "/shelf.css",
   "/shelf.js",
@@ -18,6 +19,10 @@ const STATIC_ASSETS = [
   "/assets/kh_icon.png",
   "/assets/kh_app-icon.png",
   "/assets/fonts/CascadiaCode.woff2",
+  "/assets/fonts/Georgia-Bold.ttf",
+  "/assets/fonts/Pokemon-GBA.otf",
+  "/assets/fonts/04B_30.TTF",
+  "/assets/fonts/Michroma.ttf",
   "/assets/platforms/playstation.png",
   "/assets/platforms/steam.png",
   "/assets/platforms/switch.png",
