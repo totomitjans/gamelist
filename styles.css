@@ -5396,7 +5396,7 @@ body.theme-kash .year-tab.active {
   left: 50%;
   width: 280px;
   height: 35px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--accent);
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
   opacity: 1;
