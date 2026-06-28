@@ -5,8 +5,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v225";
-const SITE_UPDATED_AT = "2026-06-28T10:55:33+02:00";
+const SITE_VERSION = "v226";
+const SITE_UPDATED_AT = "2026-06-28T10:59:25+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -391,11 +391,12 @@ function scrollToShelfLibrary() {
 
 function renderStats() {
   const visibleGames = visibleShelfGames();
-  const value = visibleGames.reduce((sum, game) => sum + (collectionValueFor(game) || 0), 0);
+  const collectionGames = visibleGames.filter((game) => !isPendingCollectionGame(game));
+  const value = collectionGames.reduce((sum, game) => sum + (collectionValueFor(game) || 0), 0);
   const valueText = normalizePriceSettings(state.gamelistSettings).currency === "USD" ? `$${Math.round(value).toLocaleString("en")}` : `${Math.round(value).toLocaleString("en")}€`;
   const rows = [
-    [visibleGames.length, "Physical games", "stat-backlog"],
-    [new Set(visibleGames.map((game) => game.platform)).size, "Platforms", "stat-available"],
+    [collectionGames.length, "Physical games", "stat-backlog"],
+    [new Set(collectionGames.map((game) => game.platform)).size, "Platforms", "stat-available"],
     ...(shelfPricesVisible() ? [[valueText, "Estimated value", "stat-done"]] : []),
   ];
   el.stats.innerHTML = rows.map(([valueText, label, className]) => `<div class="stat glass ${className}"><strong>${escapeHtml(valueText)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
