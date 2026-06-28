@@ -5372,8 +5372,8 @@ body.theme-kash .year-tab.active {
   top: 0;
   left: 50%;
   z-index: 1200;
-  width: min(360px, calc(100vw - 32px));
-  height: 58px;
+  width: min(240px, calc(100vw - 32px));
+  height: 52px;
   padding: 0;
   color: var(--text);
   background: transparent;
@@ -5393,37 +5393,43 @@ body.theme-kash .year-tab.active {
   background: color-mix(in srgb, var(--accent) 60%, rgba(255, 255, 255, 0.5));
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
   transform: translateX(-50%);
+  transition: width 180ms ease, height 180ms ease, top 180ms ease, background 180ms ease, border-color 180ms ease;
 }
 
 .page-pull-switch span {
   position: absolute;
-  top: 20px;
+  top: 8px;
   left: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 26px;
-  padding: 0 11px;
-  color: var(--text);
+  min-height: 34px;
+  padding: 0 18px;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 860;
   text-transform: uppercase;
-  background: rgba(20, 22, 28, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  border: 0;
   border-radius: 999px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
   opacity: 0;
-  transform: translate(-50%, -8px);
-  transition: opacity 160ms ease, transform 160ms ease, color 160ms ease;
+  transform: translate(-50%, 0);
+  transition: opacity 160ms ease;
   pointer-events: none;
 }
 
+.page-pull-switch:hover::before,
+.page-pull-switch.is-dragging::before {
+  top: 5px;
+  width: 156px;
+  height: 36px;
+  background: color-mix(in srgb, var(--accent) 76%, rgba(20, 22, 28, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 .page-pull-switch:hover span,
-.page-pull-switch.is-dragging span,
-.page-pull-switch.is-switching span {
-  color: var(--accent);
+.page-pull-switch.is-dragging span {
   opacity: 1;
-  transform: translate(-50%, 0);
 }
 
 .page-pull-curtain {
@@ -5431,10 +5437,10 @@ body.theme-kash .year-tab.active {
   inset: 0;
   z-index: 1190;
   display: grid;
-  place-items: start center;
-  padding-top: max(64px, env(safe-area-inset-top));
+  place-items: center;
+  padding: max(62px, env(safe-area-inset-top)) clamp(14px, 4vw, 54px) clamp(22px, 5vw, 54px);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, rgba(18, 18, 22, 0.96)), rgba(18, 18, 22, 0.92)),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, rgba(18, 18, 22, 0.97)), rgba(18, 18, 22, 0.94)),
     var(--grid-texture);
   opacity: 0;
   transform: translateY(calc(-102% + var(--pull-distance, 0px)));
@@ -5442,14 +5448,77 @@ body.theme-kash .year-tab.active {
   pointer-events: none;
 }
 
-.page-pull-curtain strong {
-  color: var(--text);
-  font-family: var(--display-title-font);
-  font-size: clamp(36px, 11vw, 120px);
-  font-weight: 950;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  text-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+.page-pull-preview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(14px, 2.5vw, 26px);
+  width: min(1120px, 100%);
+  min-height: min(620px, calc(100vh - 112px));
+  padding: clamp(18px, 3vw, 34px);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 36px 120px rgba(0, 0, 0, 0.45);
+  filter: blur(var(--pull-blur, 18px));
+  opacity: var(--pull-preview-opacity, 0.48);
+  transform: scale(var(--pull-preview-scale, 0.96));
+  transition: filter 220ms ease, opacity 220ms ease, transform 420ms cubic-bezier(.2, .86, .2, 1);
+}
+
+.page-pull-preview-top {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+}
+
+.page-pull-preview-top span {
+  min-height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.page-pull-preview-top span:first-child {
+  width: min(360px, 56vw);
+}
+
+.page-pull-preview-top span:not(:first-child) {
+  width: 42px;
+}
+
+.page-pull-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(10px, 1.8vw, 18px);
+  align-items: stretch;
+}
+
+.page-pull-preview-grid span {
+  min-height: clamp(190px, 32vw, 390px);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.12)), rgba(255, 255, 255, 0.055)),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+}
+
+.page-pull-preview.is-shelf .page-pull-preview-grid span {
+  min-height: clamp(220px, 36vw, 420px);
+}
+
+.page-pull-preview.is-gamelist .page-pull-preview-grid span {
+  display: grid;
+  align-content: end;
+  min-height: clamp(160px, 25vw, 300px);
+}
+
+.page-pull-preview.is-gamelist .page-pull-preview-grid span::after {
+  content: "";
+  display: block;
+  height: 44%;
+  margin: 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 body.page-pulling .page-pull-curtain,
@@ -5459,6 +5528,12 @@ body.page-switching .page-pull-curtain {
 
 body.page-switching .page-pull-curtain {
   transform: translateY(0);
+}
+
+body.page-switching .page-pull-preview {
+  filter: blur(0);
+  opacity: 1;
+  transform: scale(1);
 }
 
 body.page-switching > :not(.page-pull-switch):not(.page-pull-curtain):not(script):not(style) {
@@ -6469,6 +6544,32 @@ body.theme-kash .guide-button:hover {
 }
 
 @media (max-width: 760px) {
+  .page-pull-switch {
+    height: 62px;
+  }
+
+  .page-pull-switch::before {
+    top: 10px;
+  }
+
+  .page-pull-switch:hover::before,
+  .page-pull-switch.is-dragging::before {
+    top: 8px;
+  }
+
+  .page-pull-curtain {
+    padding-top: 76px;
+  }
+
+  .page-pull-preview {
+    min-height: min(560px, calc(100vh - 104px));
+    border-radius: 14px;
+  }
+
+  .page-pull-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .settings-preference-row {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
@@ -6477,8 +6578,14 @@ body.theme-kash .guide-button:hover {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
-    padding: 18px 14px 12px;
+    padding: 28px 14px 12px;
     background: linear-gradient(179deg, #00000075, transparent);
+    transition: transform 180ms ease, padding-top 180ms ease;
+  }
+
+  body.page-pull-hover .topbar,
+  body.page-pulling .topbar {
+    transform: translateY(12px);
   }
 
   .playing-section .column-head span {

@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v232";
-const SITE_UPDATED_AT = "2026-06-28T15:50:54+02:00";
+const SITE_VERSION = "v233";
+const SITE_UPDATED_AT = "2026-06-28T15:59:49+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -611,14 +611,18 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   const curtain = document.createElement("div");
   curtain.className = "page-pull-curtain";
   curtain.setAttribute("aria-hidden", "true");
-  curtain.innerHTML = `<strong>${escapeHtml(targetLabel)}</strong>`;
+  curtain.innerHTML = pagePullPreviewMarkup(targetLabel);
   document.body.append(button, curtain);
   let startY = 0;
   let dragging = false;
   let moved = false;
   const setPull = (distance) => {
     const pull = Math.max(0, Math.min(window.innerHeight, distance));
+    const progress = Math.min(1, pull / Math.max(160, window.innerHeight * 0.36));
     document.body.style.setProperty("--pull-distance", `${pull}px`);
+    document.body.style.setProperty("--pull-blur", `${Math.round((1 - progress) * 18)}px`);
+    document.body.style.setProperty("--pull-preview-opacity", `${0.48 + progress * 0.52}`);
+    document.body.style.setProperty("--pull-preview-scale", `${0.96 + progress * 0.04}`);
     document.body.classList.toggle("page-pulling", pull > 6);
     return pull;
   };
@@ -627,13 +631,19 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
     document.body.classList.add("page-switching");
     document.body.classList.remove("page-pulling");
     document.body.style.setProperty("--pull-distance", `${window.innerHeight}px`);
+    document.body.style.setProperty("--pull-blur", "0px");
+    document.body.style.setProperty("--pull-preview-opacity", "1");
+    document.body.style.setProperty("--pull-preview-scale", "1");
     window.setTimeout(() => { window.location.href = targetUrl; }, 430);
   };
   button.addEventListener("click", () => { if (!moved) switchPage(); moved = false; });
+  button.addEventListener("pointerenter", () => document.body.classList.add("page-pull-hover"));
+  button.addEventListener("pointerleave", () => { if (!dragging) document.body.classList.remove("page-pull-hover"); });
   button.addEventListener("pointerdown", (event) => {
     dragging = true;
     moved = false;
     startY = event.clientY;
+    document.body.classList.add("page-pull-hover");
     button.classList.add("is-dragging");
     button.setPointerCapture?.(event.pointerId);
   });
@@ -646,6 +656,7 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
     if (!dragging) return;
     dragging = false;
     button.classList.remove("is-dragging");
+    document.body.classList.remove("page-pull-hover");
     button.releasePointerCapture?.(event.pointerId);
     const pull = Number.parseFloat(document.body.style.getPropertyValue("--pull-distance")) || 0;
     if (pull > 90) switchPage();
@@ -657,6 +668,14 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   };
   button.addEventListener("pointerup", endDrag);
   button.addEventListener("pointercancel", endDrag);
+}
+
+function pagePullPreviewMarkup(targetLabel) {
+  const shelf = targetLabel.toLowerCase().includes("shelf");
+  const cards = shelf
+    ? ["cover", "cover wide", "cover", "cover tall", "cover"]
+    : ["play", "soon", "backlog", "done", "play"];
+  return `<div class="page-pull-preview ${shelf ? "is-shelf" : "is-gamelist"}"><div class="page-pull-preview-top"><span></span><span></span><span></span></div><div class="page-pull-preview-grid">${cards.map((item) => `<span class="${item}"></span>`).join("")}</div></div>`;
 }
 
 function warmUiIcons() {
