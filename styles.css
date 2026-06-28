@@ -1381,12 +1381,6 @@ body.dialog-open .scroll-top-button {
   transform: translateY(0);
 }
 
-.toast-notification.is-error {
-  background: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 72%, #ffffff);
-  box-shadow: 0 18px 44px color-mix(in srgb, var(--danger) 26%, rgba(0, 0, 0, 0.5));
-}
-
 .release-calendar-actions .icon-button:hover,
 #closeDialogButton:hover,
 #detailCloseButton:hover,

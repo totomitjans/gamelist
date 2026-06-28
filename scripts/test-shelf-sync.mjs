@@ -21,6 +21,7 @@ for (const source of [appSource, shelfSource]) {
   assert.match(source, /function showToast\(message, tone = "info"\)/, "Main and Shelf must expose the shared toast-style notification helper");
 }
 assert.match(sharedCss, /\.toast-notification\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?left: max\(16px, env\(safe-area-inset-left\)\);[\s\S]*?bottom: max\(18px, env\(safe-area-inset-bottom\)\);[\s\S]*?background:\s*var\(--accent\);/, "Toast notifications must float bottom-left with accent styling");
+assert.doesNotMatch(sharedCss, /\.toast-notification\.is-error\s*\{[\s\S]*?background:\s*var\(--danger\)/, "Toast notifications must keep the accent background for every tone");
 assert.match(shelfSource, /function gameCard\(game, options = \{\}\)[\s\S]*?querySelector\("\.card-trophies"\)\.remove\(\)/, "physical Shelf cards must not render outside trophy strips");
 assert.match(shelfSource, /function gamelistProjectionCard\(game\)[\s\S]*?shelfCardTrophies\(game\)/, "Currently Playing cards must retain outside trophy strips");
 assert.equal(activityCoverOverride("Mandagon"), "https://cdn2.steamgriddb.com/grid/a0ac3f221e625a1f87857b7d19c4c7d5.png");
@@ -170,6 +171,8 @@ assert.match(collectionPriceSource, /cleanPriceChartingUrl/, "PriceCharting look
 assert.match(collectionPriceSource, /const requestedIdUrl = cleanPriceChartingUrl\(rawRequestedId\)/, "PriceCharting lookup must recover if a saved page URL is passed as id");
 assert.match(collectionPriceSource, /fetchApiProduct\(token, \{ id: requestedId, upc: requestedUpc, query \}\)/, "PriceCharting must still use saved product IDs for API lookups");
 assert.match(collectionPriceSource, /encodeURIComponent\(requestedUpc \|\| query \|\| title \|\| requestedId\)/, "PriceCharting public search must prefer title, region, and platform text over numeric IDs");
+assert.match(collectionPriceSource, /const idSearchUrl = requestedId \?[\s\S]*?encodeURIComponent\(requestedId\)/, "PriceCharting public fallback must build an exact product ID search URL");
+assert.match(collectionPriceSource, /const idCandidate = idCandidates\.find\(\(item\) => requestedId && item\.productId === requestedId\)[\s\S]*?const candidate = requestedUrl \? \{ url: requestedUrl, productId: requestedId \} : idCandidate \|\|/, "PriceCharting public fallback must prefer the exact saved product ID before title matching");
 assert.match(collectionPriceSource, /filterVideoGameCandidates/, "PriceCharting search must reject cards, comics, and other non-video-game categories");
 assert.match(collectionPriceSource, /rankCandidates\(filterVideoGameCandidates\(await fetchPublicCandidates\(searchUrl\), query\), query\)/, "PriceCharting results must rank PAL, Japan, and platform matches locally after filtering non-games");
 assert.doesNotMatch(collectionPriceSource, /hydrateSearchCandidateImages/, "PriceCharting search results must not hydrate images from possible non-game matches");

@@ -18,6 +18,7 @@ export async function onRequestGet({ request, env = {} }) {
   const priceChartingTitle = priceChartingSearchTitle(title);
   const query = [priceChartingTitle || title, physicalRegionTerm(region), priceChartingPlatformTerm(platform)].filter(Boolean).join(" ");
   const searchUrl = `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedUpc || query || title || requestedId)}`;
+  const idSearchUrl = requestedId ? `${SITE_URL}/search-products?type=prices&region-name=all&exclude-variants=false&q=${encodeURIComponent(requestedId)}` : "";
   const fallbackUrls = directProductUrls(priceChartingTitle || title, platform, region);
   const token = env.PRICECHARTING_TOKEN || globalThis.process?.env?.PRICECHARTING_TOKEN || "";
   try {
@@ -28,7 +29,7 @@ export async function onRequestGet({ request, env = {} }) {
     }
     const apiProduct = token ? await fetchApiProduct(token, { id: requestedId, upc: requestedUpc, query }) : null;
     const [publicProduct, retailProduct] = await Promise.all([
-      fetchPublicProduct({ query, searchUrl, requestedId: requestedId || apiProduct?.id || "", requestedUrl, fallbackUrls }),
+      fetchPublicProduct({ query, searchUrl, idSearchUrl, requestedId: requestedId || apiProduct?.id || "", requestedUrl, fallbackUrls }),
       fetchXtralifeProduct({ title, platform, region }).catch(() => null),
     ]);
     const product = convertCurrency(mergeProduct(apiProduct, publicProduct, retailProduct, { title, platform, searchUrl }), currency, publicProduct?.forexRates);
@@ -115,9 +116,11 @@ async function fetchPublicCandidates(searchUrl) {
   return parseSearchCandidates(await response.text());
 }
 
-async function fetchPublicProduct({ query, searchUrl, requestedId, requestedUrl, fallbackUrls = [] }) {
-  const candidates = requestedUrl ? [] : await fetchPublicCandidates(searchUrl).then((items) => filterVideoGameCandidates(items, query));
-  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : candidates.find((item) => requestedId && item.productId === requestedId) || bestCandidate(candidates, query);
+async function fetchPublicProduct({ query, searchUrl, idSearchUrl = "", requestedId, requestedUrl, fallbackUrls = [] }) {
+  const idCandidates = requestedUrl || !idSearchUrl ? [] : await fetchPublicCandidates(idSearchUrl).then((items) => filterVideoGameCandidates(items, query));
+  const idCandidate = idCandidates.find((item) => requestedId && item.productId === requestedId);
+  const candidates = requestedUrl || idCandidate ? [] : await fetchPublicCandidates(searchUrl).then((items) => filterVideoGameCandidates(items, query));
+  const candidate = requestedUrl ? { url: requestedUrl, productId: requestedId } : idCandidate || candidates.find((item) => requestedId && item.productId === requestedId) || bestCandidate(candidates, query);
   if (!candidate?.url && fallbackUrls.length) return (await fetchDirectCandidates(fallbackUrls, query, searchUrl))[0] || null;
   if (!candidate?.url) return candidate || null;
   if (!isVideoGameConsole(consoleNameFromProductUrl(candidate.url))) return null;
