@@ -5400,7 +5400,7 @@ body.theme-kash .year-tab.active {
   background: var(--accent);
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
   opacity: 1;
-  transform: translateX(-50%) scaleX(0.42) scaleY(0.29);
+  transform: translateX(-50%) scaleX(0.42) scaleY(0.17);
   transition:
     transform 260ms cubic-bezier(0.2, 0.86, 0.2, 1),
     opacity 180ms ease,
@@ -6529,16 +6529,16 @@ body.theme-kash .guide-button:hover {
 @media (max-width: 760px) {
   .page-pull-switch {
     width: min(340px, calc(100vw - 20px));
-    height: 76px;
+    height: 25px;
   }
 
   .page-pull-switch::before {
-    top: 12px;
+    top: 8px;
   }
 
   .page-pull-switch:hover::before,
   .page-pull-switch.is-dragging::before {
-    top: 10px;
+    top: 7px;
   }
 
   .page-pull-curtain {
