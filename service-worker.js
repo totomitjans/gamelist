@@ -21,7 +21,7 @@ const STATIC_ASSETS = [
   "/assets/kh_app-icon.png",
   "/assets/fonts/CascadiaCode.woff2",
   "/assets/fonts/Georgia-Bold.ttf",
-  "/assets/fonts/Pokemon-GBA.otf",
+  "/assets/fonts/pokemon-emerald.ttf",
   "/assets/fonts/04B_30.TTF",
   "/assets/fonts/Michroma.ttf",
   "/assets/platforms/playstation.png",
