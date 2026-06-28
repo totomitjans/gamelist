@@ -28,7 +28,7 @@
 
 @font-face {
   font-family: "Pokemon GBA";
-  src: url("assets/fonts/Pokemon-GBA.otf") format("opentype");
+  src: url("assets/fonts/Pokemon-GBA.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -310,7 +310,9 @@ body.theme-kash .brand span:last-child {
   width: 34px;
   height: 34px;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 44%, transparent))
+  filter: drop-shadow(
+      0 0 10px color-mix(in srgb, var(--accent) 44%, transparent)
+    )
     drop-shadow(0 7px 18px rgba(0, 0, 0, 0.32));
 }
 
@@ -1184,7 +1186,11 @@ h2 {
 }
 
 html.theme-gradient .column-head h2 {
-  background: linear-gradient(135deg, var(--title-gradient-start, var(--accent)) 0%, var(--title-gradient-end, var(--accent)) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--title-gradient-start, var(--accent)) 0%,
+    var(--title-gradient-end, var(--accent)) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -2169,7 +2175,8 @@ body.dialog-open .floating-edit-actions {
   width: var(--mobile-tab-width);
   border-radius: 7px;
   background: var(--accent);
-  box-shadow: 0px 3px 24px 3px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0px 3px 24px 3px
+    color-mix(in srgb, var(--accent) 40%, transparent);
   transition:
     inset 180ms ease,
     width 180ms ease;
@@ -2285,7 +2292,11 @@ select.is-active {
   background-color: rgba(255, 255, 255, 0.08);
   background-image:
     url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23ffffff' stroke-opacity='.92' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent-2) 11%, transparent));
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 22%, transparent),
+      color-mix(in srgb, var(--accent-2) 11%, transparent)
+    );
   background-position:
     right 15px center,
     center;
@@ -2966,7 +2977,11 @@ body.theme-kash
     left: -300px !important;
     pointer-events: none;
     background:
-      linear-gradient(180deg, transparent 62%, color-mix(in srgb, var(--accent) 38%, transparent) 100%),
+      linear-gradient(
+        180deg,
+        transparent 62%,
+        color-mix(in srgb, var(--accent) 38%, transparent) 100%
+      ),
       linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.08),
@@ -5217,7 +5232,8 @@ body.dialog-open .mobile-section-tabs {
   height: 22px;
   border-radius: 999px;
   background: var(--swatch, var(--accent));
-  box-shadow: 0 0 14px color-mix(in srgb, var(--swatch, var(--accent)) 50%, transparent);
+  box-shadow: 0 0 14px
+    color-mix(in srgb, var(--swatch, var(--accent)) 50%, transparent);
 }
 
 html.theme-light .glass,
@@ -5229,9 +5245,12 @@ html.theme-light .platinum-modal,
 html.theme-light .auth-modal,
 html.theme-light .theme-editor-modal {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(246, 248, 252, 0.88)),
-    var(--grid-texture),
-    var(--panel-dark);
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.94),
+      rgba(246, 248, 252, 0.88)
+    ),
+    var(--grid-texture), var(--panel-dark);
   border-color: rgba(17, 24, 39, 0.16);
   box-shadow: 0 20px 60px rgba(30, 41, 59, 0.18);
 }
