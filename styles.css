@@ -5379,9 +5379,9 @@ body.theme-kash .year-tab.active {
   position: absolute;
   top: 8px;
   left: 50%;
-  width: 164px;
-  height: 38px;
-  border-radius: 999px;
+  width: 280px;
+  height: 20px;
+  border-radius: 12px;
   background: var(--accent);
   box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
   opacity: 1;
@@ -5422,7 +5422,9 @@ body.theme-kash .year-tab.active {
   top: 7px;
   opacity: 1;
   background: var(--accent);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28), 0 0 26px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.28),
+    0 0 26px color-mix(in srgb, var(--accent) 40%, transparent);
   transform: translateX(-50%) scaleX(1) scaleY(1);
 }
 
