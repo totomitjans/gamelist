@@ -13,8 +13,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v219";
-const SITE_UPDATED_AT = "2026-06-28T10:35:27+02:00";
+const SITE_VERSION = "v220";
+const SITE_UPDATED_AT = "2026-06-28T10:38:54+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -2203,6 +2203,24 @@ function hideSelectOverflowPopover() {
   if (!selectOverflowPopover) return;
   selectOverflowPopover.classList.remove("visible");
   selectOverflowPopover.dataset.owner = "";
+}
+
+function showToast(message, tone = "info") {
+  if (!message) return;
+  let toast = document.querySelector(".toast-notification");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "toast-notification";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    document.body.appendChild(toast);
+  }
+  window.clearTimeout(showToast.timer);
+  toast.textContent = message;
+  toast.classList.toggle("is-error", tone === "error");
+  toast.classList.remove("visible");
+  requestAnimationFrame(() => toast.classList.add("visible"));
+  showToast.timer = window.setTimeout(() => toast.classList.remove("visible"), tone === "error" ? 4200 : 2800);
 }
 
 function renderSection(section) {
@@ -5119,14 +5137,17 @@ async function verifyPassword(password) {
 async function lookupGame() {
   const query = el.lookupInput.value.trim() || el.fields.title.value.trim();
   if (!query) return;
+  showToast("Fetching game info...");
   el.lookupResults.classList.remove("loaded");
   el.lookupResults.innerHTML = `<div class="empty">Searching...</div>`;
   el.lookupResults.classList.add("loaded");
   try {
     const results = await fetchSearchResults(query);
     renderLookupResults(results);
+    showToast(results.length ? `Found ${results.length} game matches.` : "No game matches found.");
   } catch {
     renderLookupResults([]);
+    showToast("Game info fetch unavailable.", "error");
   }
 }
 
@@ -5323,12 +5344,13 @@ async function refreshAllGameData() {
   if (!el.fetchDataButton) return;
   const games = state.games.filter((game) => !game.deletedAt && game.title);
   if (!games.length) {
-    alert("No games to refresh.");
+    showToast("No games to refresh.");
     return;
   }
 
   const originalText = el.fetchDataButton.textContent;
   el.fetchDataButton.disabled = true;
+  showToast(`Fetching data for ${games.length} games...`);
   let updated = 0;
   let failed = 0;
 
@@ -5350,7 +5372,7 @@ async function refreshAllGameData() {
   }
   el.fetchDataButton.disabled = false;
   el.fetchDataButton.textContent = originalText;
-  alert(`Updated data for ${updated} games${failed ? `, ${failed} failed` : ""}.`);
+  showToast(`Updated data for ${updated} games${failed ? `, ${failed} failed` : ""}.`, failed ? "error" : "info");
 }
 
 function applyFetchedGameData(game, result, options = {}) {
@@ -5460,6 +5482,7 @@ async function refreshCurrentPrices() {
   const savedGame = await saveCurrentFormGame();
   if (!shouldFetchPricesForGame(savedGame)) return;
   el.pricesButton.textContent = "Refreshing...";
+  showToast("Fetching prices...");
   try {
     const data = await fetchPrices(savedGame.title, savedGame.platform, savedGame.digital);
     const game = getGame(savedGame.id);
@@ -5467,9 +5490,9 @@ async function refreshCurrentPrices() {
       game.prices = mergeFetchedPrices(game, data.prices);
       upsertGame(game);
     }
-    alert(`Found ${game?.prices?.length || data.prices?.length || 0} price links.`);
+    showToast(`Found ${game?.prices?.length || data.prices?.length || 0} price links.`);
   } catch {
-    alert("Price refresh will work once the Cloudflare function is hosted.");
+    showToast("Price refresh is unavailable right now.", "error");
   } finally {
     el.pricesButton.textContent = "Refresh Prices";
   }
@@ -5502,7 +5525,7 @@ async function refreshPricesForGame(id, options = {}) {
     game.updatedAt = new Date().toISOString();
     upsertGame(game);
   } catch {
-    if (!silent) alert("Price refresh needs the Cloudflare function or the local fetch script.");
+    if (!silent) showToast("Price refresh is unavailable right now.", "error");
   }
 }
 
@@ -5510,11 +5533,12 @@ async function refreshAllPrices() {
   if (!state.canEdit) return;
   const games = activeGames().filter((game) => ["upcoming", "wanted"].includes(game.section) && game.title && priceProvidersForGame(game).length);
   if (!games.length) {
-    alert("No Available now or Upcoming games to refresh.");
+    showToast("No Available or Upcoming games to refresh.");
     return;
   }
 
   el.fetchPricesButton.disabled = true;
+  showToast(`Fetching prices for ${games.length} games...`);
   let updated = 0;
   let failed = 0;
 
@@ -5542,7 +5566,7 @@ async function refreshAllPrices() {
   el.fetchPricesButton.innerHTML = `${currencyIcon()}<span class="button-label">Fetch New Prices</span>`;
   el.fetchPricesButton.title = "Fetch New Prices";
   el.fetchPricesButton.setAttribute("aria-label", "Fetch New Prices");
-  alert(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`);
+  showToast(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`, failed ? "error" : "info");
 }
 
 function mergeFetchedPrices(game, fetchedPrices = []) {

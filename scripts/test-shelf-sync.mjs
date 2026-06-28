@@ -18,7 +18,9 @@ for (const source of [appSource, shelfSource]) {
   for (const sharedBehavior of ["createGameCardShell", "bindActivityCardParallax", "finishedGameMarkup", "achievementCardMarkup", "achievementDashboardMarkup", "completedCardMarkup", "comparePlayingGames", "finishedDurationText", "activityTrailerUrl", "activityReleaseStatus"]) {
     assert.match(source, new RegExp(`\\b${sharedBehavior}\\b`), `${sharedBehavior} must remain shared between Gamelist and Shelf`);
   }
+  assert.match(source, /function showToast\(message, tone = "info"\)/, "Main and Shelf must expose the shared toast-style notification helper");
 }
+assert.match(sharedCss, /\.toast-notification\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?bottom: max\(18px, env\(safe-area-inset-bottom\)\);[\s\S]*?background:\s*var\(--accent\);/, "Toast notifications must float bottom-right with accent styling");
 assert.match(shelfSource, /function gameCard\(game, options = \{\}\)[\s\S]*?querySelector\("\.card-trophies"\)\.remove\(\)/, "physical Shelf cards must not render outside trophy strips");
 assert.match(shelfSource, /function gamelistProjectionCard\(game\)[\s\S]*?shelfCardTrophies\(game\)/, "Currently Playing cards must retain outside trophy strips");
 assert.equal(activityCoverOverride("Mandagon"), "https://cdn2.steamgriddb.com/grid/a0ac3f221e625a1f87857b7d19c4c7d5.png");
@@ -99,7 +101,8 @@ assert.match(shelfSource, /const pendingCount = state\.canEdit \? state\.games\.
 assert.match(shelfSource, /isPendingCollectionGame\(game\) \? `<button class="primary-button add-collection-action[\s\S]*?data-action="add-collection"[\s\S]*?data-action="delete"/, "Shelf New additions cards must offer Delete beside Add to Collection");
 assert.match(shelfSource, /isPendingCollectionGame\(game\) \? `<button class="primary-button add-collection-action editor-only" data-action="add-collection"[\s\S]*?<button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete"[\s\S]*?` : `<button class="ghost-button shelf-add-backlog-action editor-only" data-action="add-backlog"/, "Shelf New additions cards must not offer Add to Backlog");
 assert.match(shelfSource, /data-action="add-backlog"/, "Shelf cards must offer Add to Backlog");
-assert.doesNotMatch(shelfSource, /Added to Gamelist New additions\./, "Shelf Add to Backlog must not show a success popup");
+assert.doesNotMatch(shelfSource, /alert\("Added to Gamelist New additions\."\)/, "Shelf Add to Backlog must not show a success popup");
+assert.match(shelfSource, /showToast\("Added to Gamelist New additions\."\)/, "Shelf Add to Backlog must show a floating success toast");
 assert.match(shelfSource, /const existingIndex = games\.findIndex\([\s\S]*?item\.section === "new" && !item\.deletedAt/, "Shelf Add to Backlog must not reuse deleted or accepted Gamelist additions");
 assert.match(shelfSource, /function nextShelfReplayCount\(games\)[\s\S]*?return Math\.max\(0, \.\.\.games\.map\(\(game\) => Number\(game\.replayCount\) \|\| 0\)\) \+ 1;/, "Shelf Add to Backlog must bump replay count for repeat additions");
 assert.match(shelfSource, /function visibleShelfCardOwners\(owners = \[\]\)[\s\S]*?state\.gamelistSettings\.defaultOwner[\s\S]*?owners\.filter\(\(owner\) => owner !== defaultOwner\)/, "Shelf library cards must hide the default owner pill");
@@ -127,6 +130,8 @@ assert.match(shelfSource, /currency: settings\.currency/, "Shelf navbar price fe
 assert.match(shelfSource, /function collectionPriceParams\(game[\s\S]*?priceChartingPageUrl\(priceChartingValue\)[\s\S]*?params\.set\("url", productUrl\)[\s\S]*?params\.set\("id", productId\)/, "Shelf price fetch must send PriceCharting pages as url and product IDs as id");
 assert.match(shelfSource, /function renderSavedStorePrices\(game\)[\s\S]*?placeholderStorePrices\(settings\)/, "Shelf store prices must show selected-store placeholders when no saved store prices exist");
 assert.match(shelfSource, /if \(!response\.ok \|\| data\.error\)[\s\S]*?else applyCollectionPrice\(game, data\)[\s\S]*?Checking store prices/, "Shelf store price fetch must still run when collection value matching fails");
+for (const source of [appSource, shelfSource]) assert.match(source, /showToast\("Fetching game info\.\.\."\)[\s\S]*?showToast\([^)]*(?:Found|matches|game matches)/, "Main and Shelf fetching must show toast feedback");
+for (const source of [appSource, shelfSource]) assert.match(source, /showToast\(`Fetching prices for \$\{games\.length\} games\.\.\.`\)[\s\S]*?showToast\(`Updated prices for \$\{updated\} games/, "Main and Shelf price fetching must show toast feedback");
 assert.match(shelfSource, /visibleGames\.reduce\(\(sum, game\) => sum \+ \(collectionValueFor\(game\) \|\| 0\), 0\)/, "Shelf total collection value must use the latest fetched condition value");
 assert.match(shelfSource, /if \(type === "value"\) return \(a, b\) => direction \* \(collectionValueFor\(a\) - collectionValueFor\(b\)\)/, "Shelf value sorting must use the latest fetched condition value");
 for (const html of [appHtml, shelfHtml]) assert.doesNotMatch(html, /<nav class="nav-tabs"/, "Main and Shelf must not show the temporary cross-site navbar");

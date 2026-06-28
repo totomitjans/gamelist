@@ -5,8 +5,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v219";
-const SITE_UPDATED_AT = "2026-06-28T10:35:27+02:00";
+const SITE_VERSION = "v220";
+const SITE_UPDATED_AT = "2026-06-28T10:38:54+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
@@ -336,6 +336,7 @@ async function refreshAllShelfPrices() {
   const settings = normalizePriceSettings(state.gamelistSettings);
   if (!games.length) return;
   el.fetchPricesButton.disabled = true;
+  showToast(`Fetching prices for ${games.length} games...`);
   let updated = 0;
   let failed = 0;
   try {
@@ -356,7 +357,7 @@ async function refreshAllShelfPrices() {
     }
     await persistShelf();
     renderAll();
-    alert(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`);
+    showToast(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`, failed ? "error" : "info");
   } finally {
     el.fetchPricesButton.disabled = false;
     el.fetchPricesButton.innerHTML = `${currencyIcon()}<span class="button-label">Fetch New Prices</span>`;
@@ -666,6 +667,7 @@ async function deleteCurrentEditedGame() {
 async function lookupGame() {
   const query = el.lookupInput.value.trim() || el.fields.title.value.trim();
   if (!query) return;
+  showToast("Fetching game info...");
   el.lookupButton.disabled = true;
   el.lookupButton.classList.add("is-loading");
   el.lookupButton.title = "Fetching game information";
@@ -697,8 +699,10 @@ async function lookupGame() {
       applyGameMetadata(bestGameMetadata(physicalResults[0].productName || query));
     }
     renderShelfLookupResults();
+    showToast(state.lookupResults.length ? `Found ${state.lookupResults.length} matches.` : "No close match found.");
   } catch {
     el.lookupResults.innerHTML = `<div class="empty">Lookup is unavailable right now. Manual entry still works.</div>`;
+    showToast("Game info fetch unavailable.", "error");
   } finally {
     requestAnimationFrame(() => el.lookupResults.classList.add("loaded"));
     el.lookupButton.disabled = false;
@@ -950,9 +954,10 @@ async function addShelfGameToGamelistNew(game) {
   };
   const nextGames = existingIndex >= 0 ? games.map((entry, index) => index === existingIndex ? item : entry) : [item, ...games];
   const response = await fetch("/api/sync", { method: "PUT", headers: { "Content-Type": "application/json", "x-edit-password": password }, body: JSON.stringify({ games: nextGames, settings: data.settings || state.gamelistSettings }) });
-  if (!response.ok) { alert("Could not add this game to Gamelist New additions."); return; }
+  if (!response.ok) { showToast("Could not add this game to Gamelist.", "error"); return; }
   state.gamelistGames = nextGames;
   renderGamelistModules();
+  showToast("Added to Gamelist New additions.");
 }
 
 function nextShelfBacklogId(shelfId, games) {
@@ -1817,6 +1822,7 @@ async function fetchCollectionValue() {
   if (!shelfPricesVisible()) return;
   const game = state.games.find((item) => item.id === el.detailDialog.dataset.id); if (!game) return;
   el.fetchValue.disabled = true; syncFetchValueButton("Fetching value");
+  showToast("Fetching collection value...");
   try {
     const settings = normalizePriceSettings(state.gamelistSettings);
     const params = collectionPriceParams(game, settings);
@@ -1830,7 +1836,8 @@ async function fetchCollectionValue() {
     if (!data.error && response.ok) renderPriceDetails(game);
     renderSavedStorePrices(game);
     renderStats();
-  } catch (error) { el.detailPriceSummary.innerHTML = `<span class="auth-error">${escapeHtml(error?.message || "Collection value is unavailable.")}</span>`; } finally { el.fetchValue.disabled = false; syncFetchValueButton(); }
+    showToast(response.ok && !data.error ? "Collection value updated." : "Store prices checked.");
+  } catch (error) { el.detailPriceSummary.innerHTML = `<span class="auth-error">${escapeHtml(error?.message || "Collection value is unavailable.")}</span>`; showToast("Collection value is unavailable.", "error"); } finally { el.fetchValue.disabled = false; syncFetchValueButton(); }
 }
 
 function applyCollectionPrice(game, data) {
@@ -1894,6 +1901,7 @@ function handleSelectOverflowLeave(event) { if (event.target.closest?.("select")
 function updateSelectOverflowTitle(select) { const label = select?.selectedOptions?.[0]?.textContent?.trim() || ""; if (!label) return false; selectMeasureContext ||= document.createElement("canvas").getContext("2d"); const style = getComputedStyle(select); selectMeasureContext.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`; const available = select.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0) - 4; const clipped = selectMeasureContext.measureText(label).width > available; select.classList.toggle("is-clipped", clipped); return clipped; }
 function showSelectOverflowPopover(select) { if (!selectOverflowPopover) { selectOverflowPopover = document.createElement("div"); selectOverflowPopover.className = "select-overflow-popover"; document.body.appendChild(selectOverflowPopover); } selectOverflowPopover.textContent = select.selectedOptions?.[0]?.textContent?.trim() || ""; const rect = select.getBoundingClientRect(); selectOverflowPopover.style.left = `${Math.min(Math.max(rect.left, 12), Math.max(12, window.innerWidth - 280))}px`; selectOverflowPopover.style.top = `${Math.min(rect.bottom + 6, window.innerHeight - 48)}px`; selectOverflowPopover.classList.add("visible"); }
 function hideSelectOverflowPopover() { selectOverflowPopover?.classList.remove("visible"); }
+function showToast(message, tone = "info") { if (!message) return; let toast = document.querySelector(".toast-notification"); if (!toast) { toast = document.createElement("div"); toast.className = "toast-notification"; toast.setAttribute("role", "status"); toast.setAttribute("aria-live", "polite"); document.body.appendChild(toast); } window.clearTimeout(showToast.timer); toast.textContent = message; toast.classList.toggle("is-error", tone === "error"); toast.classList.remove("visible"); requestAnimationFrame(() => toast.classList.add("visible")); showToast.timer = window.setTimeout(() => toast.classList.remove("visible"), tone === "error" ? 4200 : 2800); }
 function registerServiceWorker() { if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(() => {})); }
 async function checkSiteVersion() { try { const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" }); if (!response.ok) return false; const remote = await response.json(); const remoteVersion = String(remote.version || "").trim(); if (!remoteVersion) return false; const current = localStorage.getItem(VERSION_STORAGE_KEY); if (!current || current === remoteVersion || remoteVersion === SITE_VERSION) { localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); window.location.reload(); return true; } catch { return false; } }
 async function clearSiteCaches() { if ("caches" in window) { const keys = await caches.keys(); await Promise.all(keys.filter((key) => key.startsWith("gamelist-cache-")).map((key) => caches.delete(key))); } if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.map((registration) => registration.update().catch(() => {}))); } }
