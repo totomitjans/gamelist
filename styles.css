@@ -1357,7 +1357,7 @@ body.dialog-open .scroll-top-button {
 
 .toast-notification {
   position: fixed;
-  right: max(16px, env(safe-area-inset-right));
+  left: max(16px, env(safe-area-inset-left));
   bottom: max(18px, env(safe-area-inset-bottom));
   z-index: 140;
   max-width: min(320px, calc(100vw - 32px));
