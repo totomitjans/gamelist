@@ -6,8 +6,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v262";
-const SITE_UPDATED_AT = "2026-06-29T02:55:00+02:00";
+const SITE_VERSION = "v263";
+const SITE_UPDATED_AT = "2026-06-29T03:05:00+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -1398,9 +1398,9 @@ function renderShowcasePicker() {
   const games = filteredShowcaseGames();
   el.showcaseSelected.innerHTML = Array.from({ length: 5 }, (_, index) => {
     const game = ownedShelfGames().find((item) => item.id === state.showcaseDraftIds[index]);
-    if (!game) return `<button class="showcase-selected-slot is-empty" type="button" data-empty-slot="${index}" aria-label="Empty showcase slot ${index + 1}"></button>`;
+    if (!game) return `<div class="showcase-selected-slot is-empty" data-empty-slot="${index}" aria-label="Empty showcase slot ${index + 1}"></div>`;
     const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
-    return `<button class="showcase-selected-slot" type="button" data-remove-showcase="${escapeHtml(game.id)}" title="Remove ${escapeHtml(game.title)}"><img src="${escapeHtml(cover)}" alt=""><span>${escapeHtml(game.title)}</span></button>`;
+    return `<article class="showcase-selected-slot" data-showcase-slot="${escapeHtml(game.id)}"><img src="${escapeHtml(cover)}" alt=""><span>${escapeHtml(game.title)}</span><div class="showcase-slot-actions"><button class="icon-button" type="button" data-move-showcase="${escapeHtml(game.id)}" data-direction="-1" ${index === 0 ? "disabled" : ""} title="Move left" aria-label="Move ${escapeHtml(game.title)} left">&larr;</button><button class="icon-button" type="button" data-move-showcase="${escapeHtml(game.id)}" data-direction="1" ${index === state.showcaseDraftIds.length - 1 ? "disabled" : ""} title="Move right" aria-label="Move ${escapeHtml(game.title)} right">&rarr;</button><button class="icon-button" type="button" data-remove-showcase="${escapeHtml(game.id)}" title="Remove" aria-label="Remove ${escapeHtml(game.title)}">&times;</button></div></article>`;
   }).join("");
   el.showcaseList.innerHTML = games.map((game) => showcasePickerCard(game, selected.has(game.id))).join("");
   el.showcaseCount.textContent = `${state.showcaseDraftIds.length}/5 selected · ${games.length} ${games.length === 1 ? "game" : "games"}`;
@@ -1434,6 +1434,16 @@ function handleShowcasePick(event) {
 }
 
 function handleShowcaseSelectedClick(event) {
+  const move = event.target.closest("[data-move-showcase]");
+  if (move) {
+    const from = state.showcaseDraftIds.indexOf(move.dataset.moveShowcase);
+    const to = from + Number(move.dataset.direction);
+    if (from >= 0 && to >= 0 && to < state.showcaseDraftIds.length) {
+      [state.showcaseDraftIds[from], state.showcaseDraftIds[to]] = [state.showcaseDraftIds[to], state.showcaseDraftIds[from]];
+      renderShowcasePicker();
+    }
+    return;
+  }
   const remove = event.target.closest("[data-remove-showcase]");
   if (!remove) return;
   state.showcaseDraftIds = state.showcaseDraftIds.filter((id) => id !== remove.dataset.removeShowcase);

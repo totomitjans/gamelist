@@ -4701,6 +4701,10 @@ dialog {
   width: min(1160px, calc(100vw - 24px));
 }
 
+#showcaseDialog {
+  width: min(1280px, calc(100vw - 16px));
+}
+
 .platinum-dialog {
   width: min(920px, calc(100vw - 24px));
 }
