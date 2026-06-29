@@ -108,11 +108,13 @@ export function applySiteTheme(settings = {}, options = {}) {
   root.classList.toggle("theme-no-glow", theme.disableGlow);
   root.classList.toggle("theme-gradient", theme.gradient);
   root.classList.toggle("theme-big-logo", theme.bigLogo);
+  root.classList.toggle("theme-font-pokemon", theme.accentFont === "pokemon");
   body?.classList.toggle("theme-kash", settings.theme === "kash");
   body?.classList.toggle("theme-light", theme.mode === "light");
   body?.classList.toggle("theme-no-glow", theme.disableGlow);
   body?.classList.toggle("theme-gradient", theme.gradient);
   body?.classList.toggle("theme-big-logo", theme.bigLogo);
+  body?.classList.toggle("theme-font-pokemon", theme.accentFont === "pokemon");
   root.style.setProperty("--accent", theme.mainColor);
   root.style.setProperty("--accent-2", theme.accentColor);
   root.style.setProperty("--accent-3", theme.accent3);
@@ -163,7 +165,6 @@ export function themeSettingsButton(settings, escapeHtml = htmlEscape) {
         <span>Theme</span>
         <button class="settings-theme-edit-button" type="button" data-theme-editor>
           <span>Edit theme</span>
-          <i style="--swatch:${escapeHtml(theme.mainColor)}"></i>
         </button>
       </div>
     </article>

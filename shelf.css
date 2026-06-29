@@ -30,6 +30,12 @@
   text-transform: uppercase;
 }
 
+html.theme-font-pokemon .shelf-intro h1 {
+  font-size: clamp(52px, 7vw, 94px);
+  line-height: 0.78;
+  letter-spacing: 0;
+}
+
 .shelf-intro p:last-child {
   max-width: 680px;
   margin: 14px 0 0;
@@ -43,6 +49,11 @@
   font-size: clamp(70px, 11vw, 150px);
   line-height: 0.72;
   user-select: none;
+}
+
+html.theme-font-pokemon .intro-mark {
+  font-size: clamp(86px, 12vw, 176px);
+  letter-spacing: 0;
 }
 
 .shelf-modules {
@@ -119,8 +130,8 @@
 .shelf-library .column-head h2 {
   margin: 0;
   font-family: var(--display-title-font);
-  font-size: clamp(28px, 4vw, 48px);
-  line-height: 0.95;
+  font-size: var(--display-title-size, clamp(28px, 4vw, 48px));
+  line-height: var(--display-title-line-height, 0.95);
   text-transform: uppercase;
 }
 
