@@ -4696,7 +4696,8 @@ dialog {
   width: min(720px, calc(100vw - 24px));
 }
 
-#releaseDialog {
+#releaseDialog,
+#shelfReleaseDialog {
   width: min(1160px, calc(100vw - 24px));
 }
 

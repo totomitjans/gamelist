@@ -6,8 +6,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v257";
-const SITE_UPDATED_AT = "2026-06-29T01:50:00+02:00";
+const SITE_VERSION = "v258";
+const SITE_UPDATED_AT = "2026-06-29T02:05:00+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -1517,20 +1517,18 @@ function gamelistProjectionCard(game, options = {}) {
   const trophies = card.querySelector(".card-trophies"); trophies.innerHTML = isReleaseDialog ? "" : shelfCardTrophies(game, { compactProgress: true }); trophies.hidden = !trophies.innerHTML;
   card.querySelector(".card-actions").remove();
   const prices = card.querySelector(".prices");
-  if (isReleaseDialog) prices.innerHTML = releaseDialogPriceLinks(game);
-  else prices.remove();
+  if (isReleaseDialog) {
+    const providers = priceProvidersForGame(game);
+    if (providers.length) {
+      prices.style.setProperty("--price-columns", providers.length);
+      prices.innerHTML = pricesFor(game);
+    } else {
+      prices.remove();
+    }
+  } else prices.remove();
   if (isReleaseDialog) card.querySelector(".edit-action")?.remove();
   const note = card.querySelector(".notes"); note.textContent = shortDescription(game.description || ""); note.hidden = !note.textContent;
   return card.outerHTML;
-}
-function releaseDialogPriceLinks(game) {
-  const providers = [
-    { label: "Amazon", url: `https://www.amazon.com/s?k=${encodeURIComponent(game.title || "")}`, icon: "assets/sites/amazon.png" },
-    { label: "eBay", url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(game.title || "")}`, icon: "assets/sites/ebay.svg" },
-    { label: "Xtralife", url: `https://www.xtralife.com/buscar/${encodeURIComponent(game.title || "")}`, icon: "assets/sites/xtralife.png" },
-    { label: "GAME.es", url: `https://www.game.es/buscar/${encodeURIComponent(game.title || "")}`, icon: "assets/sites/game-es.png" },
-  ];
-  return providers.map((item) => `<a class="price-link" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"><img class="store-icon" src="${escapeHtml(item.icon)}" alt=""><strong>${escapeHtml(item.label)}</strong></a>`).join("");
 }
 function projectionMeta(game, options = {}) { const release = activityReleaseStatus(game, { includePast: Boolean(options.includePast) }); return `${platformBadge(game.platform)}${game.digital ? `<span class="digital-pill">Digital</span>` : ""}${game.emulator ? `<span class="emulator-pill">Emulator</span>` : ""}${game.lengthHours ? timeBadgeMarkup(game.lengthHours, game.hltbUrl || game.howLongToBeatUrl || `https://howlongtobeat.com/?q=${encodeURIComponent(game.title)}`, escapeHtml) : ""}${game.stream ? `<span class="stream-pill">Stream</span>` : ""}${release ? releaseStatusPill(release) : ""}${game.coop ? `<span class="coop-pill">Coop</span>` : ""}${game.replayCount ? `<span class="replay-pill">Replay ${escapeHtml(game.replayCount)}</span>` : ""}`; }
 function releaseStatusPill(value) {
@@ -1958,6 +1956,70 @@ function platformStoreProvidersForGame(game) {
   if (/xbox|x360|xone|series/.test(platform)) return ["Xbox"];
   return [];
 }
+function priceProvidersForGame(game) {
+  return game.digital || isXboxStoreGame(game) ? pricePlatformStoreProvidersForGame(game) : physicalStoreProviders();
+}
+function isXboxStoreGame(game) {
+  return ["Xbox PC", "Xbox Series", "X360", "XOne", "Xbox"].includes(shortPlatform(game?.platform));
+}
+function pricePlatformStoreProvidersForGame(game) {
+  const platform = shortPlatform(game.platform);
+  if (platform === "Switch" || platform === "Switch 2") return [nintendoStoreName()];
+  if (platform === "PS4" || platform === "PS5") return [playStationStoreName()];
+  if (platform === "Steam") return ["Steam"];
+  if (["Xbox PC", "Xbox Series", "X360", "XOne", "Xbox"].includes(platform)) return ["Xbox"];
+  return [];
+}
+function physicalStoreProviders() {
+  return normalizePriceSettings(state.gamelistSettings).stores.map((store) => store === "Amazon" ? amazonStoreName() : store);
+}
+function normalizedPrices(game) {
+  const existing = new Map([...(game.prices || []), ...(game.storePrices || [])].map((price) => [price.store, price]));
+  return priceProvidersForGame(game).map((store) => existing.get(store) || fallbackPriceLinks(game).find((item) => item.store === store));
+}
+function pricesFor(game) {
+  return storePricesMarkup(normalizedPrices(game), normalizePriceSettings(state.gamelistSettings).currency);
+}
+function fallbackPriceLinks(game) {
+  const q = encodeURIComponent(`${retailTitle(game.title)} ${shortPlatform(game.platform)}`.trim());
+  const settings = normalizePriceSettings(state.gamelistSettings);
+  if (game.digital || isXboxStoreGame(game)) {
+    const providers = priceProvidersForGame(game);
+    return [
+      { store: nintendoStoreName(), url: nintendoSearchUrl(q, settings.region) },
+      { store: playStationStoreName(), url: playStationSearchUrl(q, settings.region) },
+      { store: "Steam", url: `https://store.steampowered.com/search/?term=${q}` },
+      { store: "Xbox", url: xboxSearchUrl(q, settings.region) },
+    ].filter((link) => providers.includes(link.store));
+  }
+  return [
+    { store: amazonStoreName(settings.region), url: amazonSearchUrl(q, settings.region) },
+    { store: "eBay", url: ebaySearchUrl(q, settings.region) },
+    { store: "Xtralife", url: `https://www.xtralife.com/buscar/${q}` },
+    { store: "GAME.es", url: `https://www.game.es/buscar/${q}` },
+    { store: "Retro Island NY", url: `https://retroislandny.com/search?q=${q}&country=${settings.region}&currency=${settings.currency}` },
+    { store: "GameStop", url: `https://www.gamestop.com/search/?q=${q}` },
+    { store: "Walmart", url: `https://www.walmart.com/search?q=${q}` },
+  ];
+}
+function amazonStoreName(region = normalizePriceSettings(state.gamelistSettings).region) {
+  if (region === "US") return "Amazon.com";
+  if (region === "UK") return "Amazon.co.uk";
+  if (region === "IT") return "Amazon.it";
+  return "Amazon.es";
+}
+function nintendoStoreName(region = normalizePriceSettings(state.gamelistSettings).region) {
+  if (region === "US") return "Nintendo US";
+  if (region === "UK") return "Nintendo UK";
+  if (region === "IT") return "Nintendo Italia";
+  return "Nintendo Espana";
+}
+function playStationStoreName(region = normalizePriceSettings(state.gamelistSettings).region) {
+  if (region === "US") return "PlayStation US";
+  if (region === "UK") return "PlayStation UK";
+  if (region === "IT") return "PlayStation Italia";
+  return "PlayStation Espana";
+}
 function retailTitle(title) {
   return String(title || "").replace(/[™®]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
 }
@@ -1968,6 +2030,16 @@ function hltbUrlFor(game) {
   if (/^\d+$/.test(id)) return `https://howlongtobeat.com/game/${encodeURIComponent(id)}`;
   const query = retailTitle(game.title);
   return query ? `https://howlongtobeat.com/?q=${encodeURIComponent(query)}` : "";
+}
+function amazonSearchUrl(query, region = "ES") {
+  if (region === "US") return `https://www.amazon.com/s?k=${query}`;
+  if (region === "UK") return `https://www.amazon.co.uk/s?k=${query}`;
+  if (region === "IT") return `https://www.amazon.it/s?k=${query}`;
+  return `https://www.amazon.es/s?k=${query}`;
+}
+function ebaySearchUrl(query, region = "ES") {
+  const host = region === "US" ? "www.ebay.com" : region === "UK" ? "www.ebay.co.uk" : region === "IT" ? "www.ebay.it" : "www.ebay.es";
+  return `https://${host}/sch/i.html?_nkw=${query}&LH_BIN=1`;
 }
 function nintendoSearchUrl(query, region = "ES") {
   if (region === "US") return `https://www.nintendo.com/us/search/?q=${query}`;
