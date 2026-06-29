@@ -1978,7 +1978,7 @@ function openReleaseDialog(date, games = []) {
   if (!games.length) return;
   el.releaseDialogTitle.textContent = formatLongDate(date);
   el.releaseDialogList.innerHTML = "";
-  games.forEach((game) => el.releaseDialogList.appendChild(cardFor(game, { staticCard: true, includePastRelease: true })));
+  games.forEach((game) => el.releaseDialogList.appendChild(cardFor(game, { staticCard: true, includePastRelease: true, releaseDialog: true })));
   el.releaseDialog.showModal();
   syncScrollLock();
 }
@@ -2694,6 +2694,7 @@ function filteredGames(options = {}) {
 }
 
 function cardFor(game, options = {}) {
+  const releaseDialog = Boolean(options.releaseDialog);
   const card = createGameCardShell(document);
   const statuses = gameStatuses(game);
   const owners = ownerTags(game);
@@ -2702,11 +2703,11 @@ function cardFor(game, options = {}) {
   card.draggable = !options.staticCard && manualDragEnabled() && ["backlog", "upcoming", "wanted"].includes(game.section);
   applyOwnerCardClasses(card, owners);
   card.classList.toggle("digital-card", Boolean(game.digital));
-  card.classList.toggle("playing-card", Boolean(game.playing));
+  card.classList.toggle("playing-card", Boolean(game.playing) && !releaseDialog);
   card.classList.toggle("stream-card", Boolean(game.stream));
   card.classList.toggle("completed-trophy-card", Boolean(game.platinum));
   const trailer = card.querySelector(".card-trailer");
-  const trailerUrl = shouldShowCardTrailer(game) ? trailerEmbedUrl(game.trailerUrl) : "";
+  const trailerUrl = !releaseDialog && shouldShowCardTrailer(game) ? trailerEmbedUrl(game.trailerUrl) : "";
   if (trailerUrl) {
     card.classList.add("has-trailer");
     trailer.dataset.src = trailerUrl;
@@ -2721,8 +2722,8 @@ function cardFor(game, options = {}) {
   img.loading = options.imagePriority || "lazy";
   img.fetchPriority = options.imagePriority === "eager" ? "high" : "low";
   img.decoding = "async";
-  if (game.playing && game.cover) upgradeCoverIfFast(img, game.cover, "playing");
-  if (game.playing && game.cover) img.addEventListener("load", schedulePlayingCardHeightSync, { once: true });
+  if (game.playing && !releaseDialog && game.cover) upgradeCoverIfFast(img, game.cover, "playing");
+  if (game.playing && !releaseDialog && game.cover) img.addEventListener("load", schedulePlayingCardHeightSync, { once: true });
   card.classList.toggle("has-art", Boolean(game.cover));
   if (game.cover) {
     card.style.setProperty("--card-art", `url("${cssUrl(backgroundCoverUrl(game.cover))}")`);
@@ -2737,13 +2738,13 @@ function cardFor(game, options = {}) {
   const studioLine = card.querySelector(".studio-line");
   studioLine.textContent = studioText(game);
   studioLine.hidden = !studioLine.textContent;
-  card.querySelector(".meta").innerHTML = metaFor(game, { includePsn: !game.playing }).join("");
+  card.querySelector(".meta").innerHTML = metaFor(game, { includePsn: releaseDialog || !game.playing }).join("");
   const playDates = card.querySelector(".play-dates");
   playDates.innerHTML = playDatesFor(game, { includePastRelease: Boolean(options.includePastRelease) }).join("");
   playDates.hidden = !playDates.innerHTML;
   card.querySelector(".chips").innerHTML = cardChipsFor(game).join("");
   const trophyStrip = card.querySelector(".card-trophies");
-  trophyStrip.innerHTML = game.playing ? cardTrophiesFor(game) : "";
+  trophyStrip.innerHTML = game.playing && !releaseDialog ? cardTrophiesFor(game) : "";
   trophyStrip.hidden = !trophyStrip.innerHTML;
   trophyStrip.addEventListener("click", (event) => {
     if (event.target.closest("a")) {
@@ -2762,7 +2763,11 @@ function cardFor(game, options = {}) {
   const backlogAction = card.querySelector(".backlog-action");
   const completeAction = card.querySelector(".complete-action");
   const trophyAction = card.querySelector(".trophy-action");
-  if (game.section === "new") {
+  if (releaseDialog) {
+    card.querySelector(".edit-action")?.remove();
+    card.querySelector(".card-actions")?.remove();
+    prices.remove();
+  } else if (game.section === "new") {
     card.querySelector(".edit-action").remove();
     prices.remove();
     priceRefreshAction.remove();
@@ -2816,7 +2821,7 @@ function cardFor(game, options = {}) {
     trailerToggle.remove();
   }
   card.querySelector(".cover-button").addEventListener("click", () => openDetail(game.id));
-  card.querySelector(".delete-action").addEventListener("click", () => deleteGame(game.id));
+  card.querySelector(".delete-action")?.addEventListener("click", () => deleteGame(game.id));
   card.querySelectorAll(".psn-progress-pill").forEach((node) => {
     node.addEventListener("click", (event) => {
       event.stopPropagation();
