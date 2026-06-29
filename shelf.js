@@ -1424,7 +1424,7 @@ function filteredShowcaseGames() {
 
 function showcasePickerCard(game, selected) {
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
-  return `<button class="showcase-picker-card ${selected ? "is-selected" : ""}" type="button" data-showcase-id="${escapeHtml(game.id)}" title="${escapeHtml(game.title)}"><span class="showcase-picker-cover"><img src="${escapeHtml(cover)}" alt=""></span><span class="showcase-picker-title"><strong>${escapeHtml(game.title)}</strong>${platformBadge(game.platform)}</span></button>`;
+  return `<button class="showcase-picker-card ${selected ? "is-selected" : ""}" type="button" data-showcase-id="${escapeHtml(game.id)}" title="${escapeHtml(game.title)}"><span class="showcase-picker-cover"><img src="${escapeHtml(cover)}" alt=""></span><span class="showcase-picker-title"><strong>${showcaseTitleMarkup(game.title)}</strong>${platformBadge(game.platform)}</span></button>`;
 }
 
 function showcaseHoverInfo(game, className) {
@@ -1433,7 +1433,11 @@ function showcaseHoverInfo(game, className) {
     game.developer || "",
     game.publisher || "",
   ].filter(Boolean);
-  return `<span class="${className} showcase-hover-info"><strong>${escapeHtml(game.title)}</strong>${studio.length ? `<small>${escapeHtml(studio.join(" · "))}</small>` : ""}<span class="showcase-hover-meta"><span class="showcase-hover-main-pills">${platformBadge(game.platform)}${shelfProgressPill(game)}</span>${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</span></span>`;
+  return `<span class="${className} showcase-hover-info"><strong>${showcaseTitleMarkup(game.title)}</strong>${studio.length ? `<small>${escapeHtml(studio.join(" · "))}</small>` : ""}<span class="showcase-hover-meta"><span class="showcase-hover-main-pills">${platformBadge(game.platform)}${shelfProgressPill(game)}</span>${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}</span></span>`;
+}
+
+function showcaseTitleMarkup(title) {
+  return escapeHtml(title).replace(/\s+(\([^)]*\)|\[[^\]]*\])/g, "<br>$1");
 }
 
 function showcaseGameTags(game) {
