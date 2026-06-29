@@ -6,14 +6,14 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v258";
-const SITE_UPDATED_AT = "2026-06-29T02:05:00+02:00";
+const SITE_VERSION = "v259";
+const SITE_UPDATED_AT = "2026-06-29T02:25:00+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
 const LOCAL_DRAFT_KEY = "shelf:draft-data:v2";
-const DEFAULT_LAYOUT = ["playing", "latestFinished", "trophies", "calendar", "kpis", "filters", "library"];
+const DEFAULT_LAYOUT = ["playing", "latestFinished", "favorites", "trophies", "calendar", "kpis", "filters", "library"];
 const LAYOUT_KEYS = [...DEFAULT_LAYOUT];
 const DEFAULT_HIDDEN_MODULES = ["playing", "trophies"];
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -23,7 +23,7 @@ const THEMES = {
   shabii: { title: "Shabii's Shelf", icon: "assets/Icon_shelf.png", color: "#ff0039" },
   kash: { title: "Kash's Shelf", icon: "assets/kh_icon.png", color: "#005cff" },
 };
-const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", trophies: "Achievements", calendar: "Calendar", kpis: "Highlights", filters: "Search", library: "Shelf" };
+const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", favorites: "Top 5 Favorite Games", trophies: "Achievements", calendar: "Calendar", kpis: "Highlights", filters: "Search", library: "Shelf" };
 const PLATFORM_OPTIONS = [
   "Nintendo Switch", "Nintendo Switch 2", "Sony PlayStation 5", "Sony PlayStation 4",
   "Sony PlayStation 2", "Sony PlayStation", "Nintendo 3DS", "Nintendo DS", "Nintendo 64",
@@ -64,6 +64,7 @@ const state = {
   playingTrailerFrame: 0,
   playingHeightFrame: 0,
   shelfSwipeStart: null,
+  favoriteGameIds: [],
   layout: loadLayout(),
 };
 
@@ -88,6 +89,7 @@ const el = {
   syncButton: document.querySelector("#syncButton"),
   fetchPricesButton: document.querySelector("#fetchPricesButton"),
   modules: document.querySelector("#shelfModules"),
+  favorites: document.querySelector("#favoriteGames"),
   tabs: document.querySelector("#shelfTabs"),
   playingCarousel: document.querySelector("#playingCarousel"),
   playingCurrent: document.querySelector("[data-module='playing'] .playing-current"),
@@ -148,6 +150,7 @@ const el = {
   settingsTheme: document.querySelector("#shelfSettingsTheme"), settingsDefaultOrder: document.querySelector("#shelfSettingsDefaultOrder"),
   settingsCurrency: document.querySelector("#shelfSettingsCurrency"), settingsRegion: document.querySelector("#shelfSettingsRegion"),
   settingsStores: document.querySelector("#shelfSettingsStores"),
+  favoritePickers: document.querySelector("#shelfFavoritePickers"),
   settingsPsnUser: document.querySelector("#shelfSettingsPsnUser"), settingsMicrosoftUser: document.querySelector("#shelfSettingsMicrosoftUser"),
   settingsSteamUser: document.querySelector("#shelfSettingsSteamUser"), settingsDefaultOwner: document.querySelector("#shelfSettingsDefaultOwner"),
   completedDialog: document.querySelector("#shelfCompletedDialog"), completedClose: document.querySelector("#shelfCompletedClose"), completedTitle: document.querySelector("#shelfCompletedTitle"), completedCount: document.querySelector("#shelfCompletedCount"), completedYear: document.querySelector("#shelfCompletedYear"), completedPlatform: document.querySelector("#shelfCompletedPlatform"), completedSort: document.querySelector("#shelfCompletedSort"), completedDirection: document.querySelector("#shelfCompletedDirection"), completedView: document.querySelector("#shelfCompletedView"), completedList: document.querySelector("#shelfCompletedList"),
@@ -183,6 +186,7 @@ async function init() {
   state.additions = draft.games || shelfData?.games || [];
   state.overrides = draft.overrides || shelfData?.overrides || {};
   state.layout = normalizeLayout(shelfData?.layout || state.layout);
+  state.favoriteGameIds = Array.isArray(draft.favoriteGameIds || shelfData?.favoriteGameIds) ? (draft.favoriteGameIds || shelfData?.favoriteGameIds).slice(0, 5) : [];
   state.canEdit = state.canEdit || auth;
   state.updatedAt = shelfData?.updatedAt || "";
   state.gamelistGames = gamelistData?.games || [];
@@ -236,6 +240,8 @@ function bindEvents() {
 
   el.shelf.addEventListener("click", handleShelfClick);
   el.shelf.addEventListener("keydown", (event) => { if (event.key !== "Enter" && event.key !== " ") return; const card = event.target.closest("[data-id]"); if (!card || event.target.closest("button, a, input")) return; event.preventDefault(); const game = state.games.find((item) => item.id === card.dataset.id); if (game) openDetails(game); });
+  el.favorites.addEventListener("click", handleFavoriteClick);
+  el.favorites.addEventListener("keydown", handleFavoriteKeydown);
   el.fetchValue.addEventListener("click", fetchCollectionValue);
   el.detailPriceToggle.addEventListener("click", toggleCollectionValuePanel);
   el.tabs.addEventListener("click", (event) => { const tab = event.target.closest("[data-shelf-tab]"); if (!tab) return; setShelfTab(tab.dataset.shelfTab); });
@@ -283,9 +289,44 @@ function renderAll() {
   renderChrome();
   renderFilters();
   renderStats();
+  renderFavorites();
   renderReleaseCalendar();
   renderGamelistModules();
   renderLibrary();
+}
+
+function renderFavorites() {
+  state.favoriteGameIds = normalizeFavoriteGameIds(state.favoriteGameIds);
+  const games = favoriteGames();
+  el.favorites.innerHTML = games.map(favoriteCoverCard).join("");
+  el.favorites.closest("[data-module='favorites']").hidden = state.layout.hidden.includes("favorites") || !games.length;
+  el.favorites.querySelectorAll("img").forEach(bindCoverFrame);
+}
+
+function favoriteGames() {
+  const byId = new Map(ownedShelfGames().map((game) => [game.id, game]));
+  return normalizeFavoriteGameIds(state.favoriteGameIds).map((id) => byId.get(id)).filter(Boolean);
+}
+
+function favoriteCoverCard(game) {
+  const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
+  return `<button class="favorite-cover-card" type="button" data-id="${escapeHtml(game.id)}" title="${escapeHtml(game.title)}" aria-label="${escapeHtml(game.title)}"><img src="${escapeHtml(cover)}" alt="${escapeHtml(game.title)} cover" loading="lazy" decoding="async"><span>${escapeHtml(game.title)}</span></button>`;
+}
+
+function handleFavoriteClick(event) {
+  const card = event.target.closest(".favorite-cover-card[data-id]");
+  if (!card) return;
+  const game = state.games.find((item) => item.id === card.dataset.id);
+  if (game) openDetails(game);
+}
+
+function handleFavoriteKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest(".favorite-cover-card[data-id]");
+  if (!card) return;
+  event.preventDefault();
+  const game = state.games.find((item) => item.id === card.dataset.id);
+  if (game) openDetails(game);
 }
 
 function renderReleaseCalendar() {
@@ -366,6 +407,7 @@ async function syncShelfNow() {
       state.additions = shelfData.games || [];
       state.overrides = shelfData.overrides || {};
       state.layout = normalizeLayout(shelfData.layout || state.layout);
+      state.favoriteGameIds = Array.isArray(shelfData.favoriteGameIds) ? shelfData.favoriteGameIds.slice(0, 5) : [];
       state.updatedAt = shelfData.updatedAt || state.updatedAt;
     }
     if (gamelistData) {
@@ -664,6 +706,12 @@ function filteredGames() {
 }
 function isPendingCollectionGame(game) { return Boolean(game?.pendingCollection); }
 function visibleShelfGames() { return state.canEdit ? state.games : state.games.filter((game) => !isPendingCollectionGame(game)); }
+function ownedShelfGames() { return state.games.filter((game) => !isPendingCollectionGame(game)); }
+function normalizeFavoriteGameIds(ids) {
+  const owned = new Set(ownedShelfGames().map((game) => game.id));
+  const seen = new Set();
+  return (Array.isArray(ids) ? ids : []).map((id) => String(id || "").trim()).filter((id) => id && owned.has(id) && !seen.has(id) && seen.add(id)).slice(0, 5);
+}
 
 function gameCard(game, options = {}) {
   const fallbackCover = coverUrl(game.cover || "") || platformFallback(game.platform);
@@ -1191,7 +1239,7 @@ async function deleteGame(game) {
 }
 
 async function persistShelf() {
-  const payload = { games: state.additions, overrides: state.overrides, layout: state.layout };
+  const payload = { games: state.additions, overrides: state.overrides, layout: state.layout, favoriteGameIds: normalizeFavoriteGameIds(state.favoriteGameIds) };
   localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(payload));
   try {
     const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
@@ -1256,6 +1304,7 @@ function renderLayoutEditor() {
     ...state.layout.order.map((key, index) => settingsLayoutCard(key, index)),
     `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${themeSettingsButton(state.gamelistSettings, escapeHtml)}${settingsSelectCard("order", "Default order", "shelfSettingsDefaultOrder", [{ value: "added", label: "Last added" }, { value: "title", label: "Name" }, { value: "platform", label: "Platform" }, { value: "region", label: "Region" }, { value: "value", label: "Value" }])}${settingsShelfSyncCard()}${settingsShelfPricesCard()}</div>`,
   ].join("");
+  renderFavoritePickers();
   el.settingsDefaultOrder = document.querySelector("#shelfSettingsDefaultOrder");
   const settings = normalizePriceSettings(state.gamelistSettings);
   el.settingsDefaultOrder.value = shelfSortForDefault(state.gamelistSettings.shelfDefaultOrder ?? state.gamelistSettings.defaultOrder);
@@ -1302,6 +1351,13 @@ function settingsShelfPricesCard() {
   return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>Prices</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="Show prices"><input type="checkbox" id="shelfSettingsShowPrices" ${state.gamelistSettings.shelfHidePrices ? "" : "checked"}><span>Show prices</span></label></div></div></article>`;
 }
 
+function renderFavoritePickers() {
+  const games = ownedShelfGames().sort((a, b) => a.title.localeCompare(b.title));
+  const selected = normalizeFavoriteGameIds(state.favoriteGameIds);
+  const optionsFor = (value) => `<option value="">None</option>${games.map((game) => `<option value="${escapeHtml(game.id)}" ${game.id === value ? "selected" : ""}>${escapeHtml(game.title)}</option>`).join("")}`;
+  el.favoritePickers.innerHTML = Array.from({ length: 5 }, (_, index) => `<label class="settings-detail-compact favorite-picker"><span>#${index + 1}</span><select data-favorite-picker="${index}">${optionsFor(selected[index] || "")}</select></label>`).join("");
+}
+
 function handleLayoutMove(event) {
   const button = event.target.closest("[data-layout-move]");
   const row = button?.closest("[data-layout-key]");
@@ -1317,6 +1373,7 @@ async function saveLayout(event) {
   event.preventDefault();
   state.layout.hidden = LAYOUT_KEYS.filter((key) => !el.layoutList.querySelector(`[data-layout-visible][value="${key}"]`)?.checked);
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout));
+  state.favoriteGameIds = normalizeFavoriteGameIds([...el.favoritePickers.querySelectorAll("[data-favorite-picker]")].map((input) => input.value));
   const stores = [...el.settingsStores.querySelectorAll("input:checked")].map((input) => input.value).filter((store) => STORE_OPTIONS.includes(store)).slice(0, MAX_PRICE_STORES);
   state.gamelistSettings = { ...state.gamelistSettings, shelfDefaultOrder: el.settingsDefaultOrder.value, currency: el.settingsCurrency.value, region: el.settingsRegion.value, psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false };
   localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));

@@ -3,9 +3,9 @@ import { isEditorRequest } from "./editor-auth.js";
 const KV_KEY = "shelf-data";
 
 export async function onRequestGet({ env }) {
-  if (!env.GAMELIST) return json({ sourceGames: [], games: [], overrides: {}, layout: null });
+  if (!env.GAMELIST) return json({ sourceGames: [], games: [], overrides: {}, layout: null, favoriteGameIds: [] });
   const data = await env.GAMELIST.get(KV_KEY, "json");
-  return json(data || { sourceGames: [], games: [], overrides: {}, layout: null });
+  return json(data || { sourceGames: [], games: [], overrides: {}, layout: null, favoriteGameIds: [] });
 }
 
 export async function onRequestPut({ request, env }) {
@@ -24,6 +24,7 @@ export async function onRequestPut({ request, env }) {
     games: body.games.slice(0, 1000),
     overrides: body.overrides,
     layout: validLayout(body.layout) ? body.layout : (validLayout(existing.layout) ? existing.layout : null),
+    favoriteGameIds: validFavoriteGameIds(body.favoriteGameIds) ? body.favoriteGameIds.slice(0, 5) : (validFavoriteGameIds(existing.favoriteGameIds) ? existing.favoriteGameIds.slice(0, 5) : []),
     updatedAt: new Date().toISOString(),
   };
   await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
@@ -36,7 +37,7 @@ export async function onRequestDelete({ request, env }) {
   if (!env.EDIT_PASSWORD) return json({ error: "Missing EDIT_PASSWORD secret" }, 503);
   if (!await isEditorRequest(request, env)) return json({ error: "Unauthorized" }, 401);
   const existing = await env.GAMELIST.get(KV_KEY, "json") || {};
-  const data = { sourceGames: [], games: [], overrides: {}, layout: validLayout(existing.layout) ? existing.layout : null, updatedAt: new Date().toISOString() };
+  const data = { sourceGames: [], games: [], overrides: {}, layout: validLayout(existing.layout) ? existing.layout : null, favoriteGameIds: [], updatedAt: new Date().toISOString() };
   await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
   return json({ ok: true, updatedAt: data.updatedAt });
 }
@@ -104,6 +105,10 @@ function shortPlatform(value) {
 
 function validLayout(value) {
   return Boolean(value && Array.isArray(value.order) && Array.isArray(value.hidden));
+}
+
+function validFavoriteGameIds(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 function json(data, status = 200) {

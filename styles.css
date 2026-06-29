@@ -4895,6 +4895,7 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-wire.wire-playing span:nth-child(-n + 4),
 .settings-wire.wire-trophies span:nth-child(-n + 4),
+.settings-wire.wire-favorites span:nth-child(-n + 5),
 .settings-wire.wire-calendar span:nth-child(-n + 5),
 .settings-wire.wire-highlights span:nth-child(-n + 4),
 .settings-wire.wire-search span:nth-child(-n + 2),
@@ -5056,6 +5057,32 @@ body.dialog-open .mobile-section-tabs {
   top: 24px;
   width: 18%;
   height: 22px;
+}
+
+.settings-wire.wire-favorites span:nth-child(-n + 5) {
+  top: 14px;
+  width: 17%;
+  height: 42px;
+}
+
+.settings-wire.wire-favorites span:nth-child(1) {
+  left: 0;
+}
+
+.settings-wire.wire-favorites span:nth-child(2) {
+  left: 20.75%;
+}
+
+.settings-wire.wire-favorites span:nth-child(3) {
+  left: 41.5%;
+}
+
+.settings-wire.wire-favorites span:nth-child(4) {
+  left: 62.25%;
+}
+
+.settings-wire.wire-favorites span:nth-child(5) {
+  right: 0;
 }
 
 .settings-wire.wire-latest-finished span:nth-child(1) {

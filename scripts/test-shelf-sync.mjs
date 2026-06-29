@@ -82,7 +82,7 @@ assert.match(shelfHtml, /id="fetchPricesButton"/, "Shelf must keep the Fetch New
 assert.match(shelfHtml, /<html lang="en" class="theme-booting">[\s\S]*?window\.__initialThemeReady/, "Shelf must resolve the saved shared theme before first paint");
 assert.match(shelfSource, /await window\.__initialThemeReady\?\.catch/, "Shelf must wait for the initial theme before rendering");
 assert.doesNotMatch(shelfSource, /const FIXED_LAYOUT/, "Shelf settings must allow Currently Playing and Last Finished to move");
-assert.match(shelfSource, /const DEFAULT_LAYOUT = \["playing", "latestFinished", "trophies", "calendar", "kpis", "filters", "library"\]/, "Shelf settings must include playing and calendar sections in the movable layout");
+assert.match(shelfSource, /const DEFAULT_LAYOUT = \["playing", "latestFinished", "favorites", "trophies", "calendar", "kpis", "filters", "library"\]/, "Shelf settings must include playing, favorites, and calendar sections in the movable layout");
 assert.match(appSource, /mountReleaseCalendar\(el\.releaseCalendar/, "Main must render the release calendar through the shared module");
 assert.match(shelfSource, /mountReleaseCalendar\(el\.releaseCalendar/, "Shelf must render the release calendar through the shared module");
 assert.match(appSource + shelfSource, /mountReleaseCalendar[\s\S]*?releaseCalendarOffset/, "Calendar navigation must keep page-specific offsets while sharing renderer code");
@@ -271,8 +271,10 @@ assert.deepEqual(shelf.games[0].owners, ["Judy"]);
 assert.deepEqual(shelf.games[0].tags, []);
 assert.equal(shelf.games[0].pendingCollection, true);
 
-const layout = { order: ["playing", "trophies", "kpis", "filters", "library"], hidden: ["trophies"] };
-await putShelf({ request: request("https://example.test/api/shelf", { games: [...shelf.games, { id: "s2", title: "Shelf Add", platform: "Nintendo Switch", country: "Spain", owners: ["Jordi"], genre: "RPG" }], overrides: {}, layout }), env });
+const layout = { order: ["playing", "favorites", "trophies", "kpis", "filters", "library"], hidden: ["trophies"] };
+await putShelf({ request: request("https://example.test/api/shelf", { games: [...shelf.games, { id: "s2", title: "Shelf Add", platform: "Nintendo Switch", country: "Spain", owners: ["Jordi"], genre: "RPG" }], overrides: {}, layout, favoriteGameIds: ["s2"] }), env });
+shelf = await kv.get("shelf-data", "json");
+assert.deepEqual(shelf.favoriteGameIds, ["s2"]);
 let list = await kv.get("gamelist-data", "json");
 assert.equal(list.games.some((game) => game.shelfId === "s2" && game.section === "new"), true);
 assert.deepEqual(list.games.find((game) => game.shelfId === "s2").owners, ["Jordi"]);
@@ -300,7 +302,7 @@ let denied = await deleteShelf({ request: new Request("https://example.test/api/
 assert.equal(denied.status, 401);
 await deleteShelf({ request: new Request("https://example.test/api/shelf", { method: "DELETE", headers: { "x-edit-password": "test" } }), env });
 shelf = await kv.get("shelf-data", "json");
-assert.deepEqual(shelf, { sourceGames: [], games: [], overrides: {}, layout, updatedAt: shelf.updatedAt });
+assert.deepEqual(shelf, { sourceGames: [], games: [], overrides: {}, layout, favoriteGameIds: [], updatedAt: shelf.updatedAt });
 list = await kv.get("gamelist-data", "json");
 assert.equal(list.games.some((game) => game.shelfId === "s2"), true);
 

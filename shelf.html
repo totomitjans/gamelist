@@ -157,6 +157,10 @@
     <main class="shell shelf-shell">
       <div class="shelf-modules" id="shelfModules">
         <section class="playing-section shelf-carousel-module" data-module="playing" hidden></section>
+        <section class="shelf-favorites-section" data-module="favorites" hidden>
+          <div class="column-head"><div><h2>Top 5 Favorite Games</h2></div></div>
+          <div class="favorite-cover-row" id="favoriteGames"></div>
+        </section>
         <section class="achievement-section shelf-trophy-module" data-module="trophies" hidden>
           <div class="column-head"><div><h2>Achievements</h2></div></div>
           <div id="shelfTrophyCard" class="achievement-panel glass"></div>
@@ -351,6 +355,10 @@
           <label class="settings-detail-compact"><span>Currency</span><select id="shelfSettingsCurrency"><option value="EUR">EUR</option><option value="USD">USD</option></select></label>
           <label class="settings-detail-compact"><span>Region</span><select id="shelfSettingsRegion"><option value="ES">Spain</option><option value="IT">Italy</option><option value="US">US</option><option value="UK">UK</option></select></label>
           <label class="settings-detail-compact"><span>Default owner</span><input id="shelfSettingsDefaultOwner" autocomplete="off"></label>
+        </section>
+        <section class="settings-section">
+          <h3>Top 5 Favorite Games</h3>
+          <div class="favorite-settings-grid" id="shelfFavoritePickers"></div>
         </section>
         <section class="settings-section">
           <h3>Stores</h3>
