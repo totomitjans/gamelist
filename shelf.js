@@ -6,8 +6,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v271";
-const SITE_UPDATED_AT = "2026-06-30T12:44:10+02:00";
+const SITE_VERSION = "v272";
+const SITE_UPDATED_AT = "2026-06-30T21:00:19+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -1926,6 +1926,7 @@ function releaseStatusPill(value) {
   return `<span class="release-pill history-date-pill"><small>${label}</small><strong>${escapeHtml(date)}</strong></span>`;
 }
 function activityGameFor(game) {
+  if (!shelfAllowsTrophyActivity(game.platform)) return null;
   if (!/(^|\s)ps[1-5](\s|$)|playstation/i.test(shortPlatform(game.platform || ""))) return null;
   return (state.trophyActivity?.games || []).map((item) => ({ item, score: activityTitleMatchScore(game.trophyName || game.title, item.title || item.game || "") })).filter(({ score }) => score >= 75).sort((a, b) => b.score - a.score)[0]?.item || null;
 }
@@ -1933,6 +1934,7 @@ function activityProgressFor(game) {
   return activityProgressSummary(game)?.progress ?? null;
 }
 function activityProgressSummary(game) {
+  if (!shelfAllowsTrophyActivity(game.platform)) return null;
   const external = externalActivityFor(game);
   if (external && Number.isFinite(Number(external.earned)) && Number.isFinite(Number(external.total))) {
     const earned = Math.max(0, Number(external.earned) || 0);
@@ -1966,11 +1968,12 @@ function shelfProgressBadge(summary, options = {}) {
   return `<span class="${className}">${options.includeIcon === false ? "" : trophyIcon()}<em style="--progress:${summary.progress}%"></em><strong>${summary.progress}%</strong>${label ? `<span>${options.separator ? "<b>·</b>" : ""}${escapeHtml(label)}</span>` : ""}</span>`;
 }
 function shelfProgressPill(game) {
+  if (!shelfAllowsTrophyActivity(game.platform)) return "";
   const progress = activityProgressFor(game);
   return progress != null ? `<span class="psn-progress-pill shelf-progress-pill">${trophyIcon()}<em style="--progress:${progress}%"></em><strong>${progress}%</strong></span>` : "";
 }
 function shelfCardTrophies(game, options = {}) {
-  if (!activityAllowsPsnCardTrophies(game.platform)) return "";
+  if (!shelfAllowsTrophyActivity(game.platform)) return "";
   const external = externalActivityFor(game);
   if (external) {
     const label = achievementKindForPlatform(game.platform);
@@ -2001,9 +2004,14 @@ function achievementKindForPlatform(platform) {
     : { single: "Achievement", plural: "achievements" };
 }
 
+function shelfAllowsTrophyActivity(platform) {
+  return activityAllowsPsnCardTrophies(platform);
+}
+
 async function loadGamelistDetailTrophies(game) {
   el.detailTrophies.hidden = true;
   el.detailTrophyList.innerHTML = "";
+  if (!shelfAllowsTrophyActivity(game.platform)) return;
   const external = externalActivityFor(game);
   if (external) {
     if (external.loading) { el.detailTrophies.hidden = false; el.detailTrophyTitle.textContent = "ACHIEVEMENTS"; el.detailTrophyPercent.innerHTML = ""; el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned achievements...</div>`; return; }
@@ -2593,6 +2601,7 @@ function syncShelfGameRecord(game) {
   else if (index >= 0) state.additions[index] = clean;
 }
 async function loadShelfTrophies(game) {
+  if (!shelfAllowsTrophyActivity(game.platform)) { el.detailTrophies.hidden = true; el.detailTrophyPercent.innerHTML = ""; return; }
   const external = externalActivityFor(game);
   if (external) {
     el.detailTrophies.hidden = false;
