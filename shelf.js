@@ -6,8 +6,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v275";
-const SITE_UPDATED_AT = "2026-06-30T21:40:16+02:00";
+const SITE_VERSION = "v276";
+const SITE_UPDATED_AT = "2026-06-30T22:10:31+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -552,7 +552,9 @@ async function refreshAllShelfPrices() {
   showToast(`Fetching prices for ${games.length} games...`);
   let updated = 0;
   let failed = 0;
+  let searched = 0;
   const emptyPriceGames = [];
+  const currencyMismatchGames = [];
   try {
     for (const [index, game] of games.entries()) {
       el.fetchPricesButton.innerHTML = `${currencyIcon()}<span class="button-label">Prices ${index + 1}/${games.length}</span>`;
@@ -560,11 +562,13 @@ async function refreshAllShelfPrices() {
       updateFetchPricesButtonStatus();
       try {
         if (index) await delay(450);
-        const data = await fetchCollectionPriceWithRetry(game, settings);
-        applyCollectionPrice(game, data);
-        updated += 1;
+        const result = await fetchCollectionPriceForBulk(game, settings);
+        if (result.pricechartingId && !String(game.pricechartingId || "").trim()) game.pricechartingId = result.pricechartingId;
+        if (applyCollectionPrice(game, result.data)) updated += 1;
+        if (result.searched) searched += 1;
       } catch (error) {
         if (error?.emptyPrice) emptyPriceGames.push(game);
+        if (error?.currencyMismatch) currencyMismatchGames.push(game);
         failed += 1;
       }
     }
@@ -575,12 +579,67 @@ async function refreshAllShelfPrices() {
       emptyPriceGames.forEach((game) => console.log(`${game.title}${game.platform ? ` [${shortPlatform(game.platform)}]` : ""}`));
       console.groupEnd();
     }
-    state.priceFetchStatus = `Last fetch: ${updated}/${games.length} updated${failed ? `, ${failed} failed` : ""}${emptyPriceGames.length ? `, ${emptyPriceGames.length} empty prices` : ""}.`;
+    if (currencyMismatchGames.length) {
+      console.group(`Shelf games returned the wrong currency (${currencyMismatchGames.length})`);
+      currencyMismatchGames.forEach((game) => console.log(`${game.title}${game.platform ? ` [${shortPlatform(game.platform)}]` : ""}`));
+      console.groupEnd();
+    }
+    state.priceFetchStatus = `Last fetch: ${updated}/${games.length} updated${searched ? `, ${searched} via search` : ""}${failed ? `, ${failed} failed` : ""}${emptyPriceGames.length ? `, ${emptyPriceGames.length} empty prices` : ""}${currencyMismatchGames.length ? `, ${currencyMismatchGames.length} wrong currency` : ""}.`;
     showToast(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`, failed ? "error" : "info");
   } finally {
     el.fetchPricesButton.disabled = false;
     el.fetchPricesButton.innerHTML = `${currencyIcon()}<span class="button-label">Fetch New Prices</span>`;
     updateFetchPricesButtonStatus();
+  }
+}
+
+async function fetchCollectionPriceForBulk(game, settings) {
+  let directError = null;
+  try {
+    const data = await fetchCollectionPriceWithRetry(game, settings);
+    ensureCollectionPriceCurrency(data, settings);
+    return { data, searched: false, pricechartingId: "" };
+  } catch (error) {
+    directError = error;
+  }
+
+  const result = await findBulkPhysicalResult(game, settings);
+  if (!result) throw directError;
+  const lookupGame = { ...game, pricechartingId: result.url || result.productId || "" };
+  const data = await fetchCollectionPriceWithRetry(lookupGame, settings);
+  ensureCollectionPriceCurrency(data, settings);
+  return { data, searched: true, pricechartingId: result.url || result.productId || "" };
+}
+
+async function findBulkPhysicalResult(game, settings) {
+  const selectedPlatform = shortPlatform(game.platform);
+  const searches = [];
+  for (const title of physicalLookupQueries(game.title || "")) {
+    searches.push({ title, platform: selectedPlatform });
+    searches.push({ title, platform: "" });
+  }
+  const results = [];
+  for (const search of searches) {
+    const params = new URLSearchParams({ mode: "search", title: search.title, region: game.country || game.region || settings.region, currency: settings.currency });
+    if (search.platform) params.set("platform", search.platform);
+    const response = await fetch(`/api/collection-price?${params}`, { cache: "no-store" });
+    const data = response.ok ? await response.json() : { results: [] };
+    results.push(...(data.results || []));
+  }
+  return uniquePhysicalResults(results)
+    .map((result) => ({ result, score: bestPhysicalSearchScore(game.title || "", result, selectedPlatform) }))
+    .filter(({ score }) => score >= 1)
+    .sort((a, b) => b.score - a.score)[0]?.result || null;
+}
+
+function ensureCollectionPriceCurrency(data, settings) {
+  const expected = String(settings.currency || "").toUpperCase();
+  const actual = String(data?.currency || "").toUpperCase();
+  if (expected && actual && expected !== actual) {
+    const error = new Error(`Expected ${expected}, got ${actual}`);
+    error.nonRetryable = true;
+    error.currencyMismatch = true;
+    throw error;
   }
 }
 
