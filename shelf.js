@@ -6,8 +6,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v272";
-const SITE_UPDATED_AT = "2026-06-30T21:00:19+02:00";
+const SITE_VERSION = "v273";
+const SITE_UPDATED_AT = "2026-06-30T21:21:29+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -2005,7 +2005,8 @@ function achievementKindForPlatform(platform) {
 }
 
 function shelfAllowsTrophyActivity(platform) {
-  return activityAllowsPsnCardTrophies(platform);
+  const value = normalize(shortPlatform(platform));
+  return !/^(ps1|ps2|playstation|playstation 1|playstation 2|sony playstation|sony playstation 1|sony playstation 2)$/.test(value);
 }
 
 async function loadGamelistDetailTrophies(game) {
