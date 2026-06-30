@@ -6,6 +6,7 @@ import * as cover from "./functions/api/cover.js";
 import * as prices from "./functions/api/prices.js";
 import * as search from "./functions/api/search.js";
 import * as shelf from "./functions/api/shelf.js";
+import * as shelfCovers from "./functions/api/shelf-covers.js";
 import * as sync from "./functions/api/sync.js";
 import * as steamAchievements from "./functions/api/steam-achievements.js";
 import * as trophies from "./functions/api/trophies.js";
@@ -20,6 +21,7 @@ const routes = {
   "/api/prices": prices,
   "/api/search": search,
   "/api/shelf": shelf,
+  "/api/shelf-covers": shelfCovers,
   "/api/steam-achievements": steamAchievements,
   "/api/sync": sync,
   "/api/trophies": trophies,
@@ -35,6 +37,7 @@ const shelfOnlyPaths = new Set([
   "/api/collection-price",
   "/api/cover",
   "/api/shelf",
+  "/api/shelf-covers",
 ]);
 
 export default {
