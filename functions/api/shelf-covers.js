@@ -34,9 +34,8 @@ export async function onRequestGet({ request, env }) {
   let updated = 0;
 
   for (const game of batch) {
-    const lookup = game.igdbUrl || [game.title, game.platform].filter(Boolean).join(" ");
-    const found = await igdbLookup(lookup, igdb).catch(() => []);
-    const match = found.find((item) => /^https:\/\/images\.igdb\.com\/igdb\/image\/upload\//i.test(item.cover || ""));
+    const found = await findIgdbCoverMatch(game, igdb);
+    const match = found.match;
     const cover = match?.cover || "";
     const changed = Boolean(cover && (force || cover !== game.cover));
 
@@ -62,6 +61,7 @@ export async function onRequestGet({ request, env }) {
       previousCover: game.cover || "",
       cover,
       igdbUrl: match?.igdbUrl || "",
+      lookup: found.lookup || "",
       updated: changed,
       reason: cover ? (changed ? "updated" : "same cover") : "no IGDB cover found",
     });
@@ -93,6 +93,35 @@ export async function onRequestGet({ request, env }) {
     done: nextCursor >= allGames.length,
     results,
   });
+}
+
+async function findIgdbCoverMatch(game, igdb) {
+  for (const lookup of coverLookupQueries(game)) {
+    const found = await igdbLookup(lookup, igdb).catch(() => []);
+    const match = found.find((item) => /^https:\/\/images\.igdb\.com\/igdb\/image\/upload\//i.test(item.cover || ""));
+    if (match) return { match, lookup };
+  }
+  return { match: null, lookup: "" };
+}
+
+function coverLookupQueries(game) {
+  const title = String(game.title || "").trim();
+  const queries = [];
+  if (game.igdbUrl) queries.push(game.igdbUrl);
+  queries.push(title);
+  queries.push(stripShelfEdition(title));
+  queries.push(stripShelfEdition(title.replace(/[:\-]\s*(deluxe|collector'?s?|limited|launch|special|fan|reserve|steelbook|big box|pokewalker)\b.*$/i, "")));
+  return [...new Set(queries.map((item) => item.replace(/\s+/g, " ").trim()).filter(Boolean))];
+}
+
+function stripShelfEdition(title) {
+  return String(title || "")
+    .replace(/\s*[\[(][^\])]*(edition|version|collection|set|pack|disc|steelbook|big box|pokewalker|limited run|smile price)[^\])]*[\])]/gi, "")
+    .replace(/\s*[\[(][^\])]*[\])]\s*$/g, "")
+    .replace(/\b(deluxe|collector'?s?|limited|launch|special|fan|reserve|steelbook)\s+edition\b/gi, "")
+    .replace(/\b(definitive|complete|gold|ultimate)\s+edition\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function runnerHtml(apply, autorun) {
