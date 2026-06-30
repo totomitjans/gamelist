@@ -179,9 +179,11 @@ function runnerHtml(apply, autorun) {
       let cursor = 0;
       let total = 0;
       let updated = 0;
+      const missing = [];
       foundLog.textContent = "";
       missingLog.textContent = "";
       line(foundLog, "Starting IGDB cover refresh...");
+      console.log("Starting IGDB cover refresh...");
       while (cursor !== null) {
         const url = new URL("/api/shelf-covers", location.origin);
         url.searchParams.set("format", "json");
@@ -195,12 +197,24 @@ function runnerHtml(apply, autorun) {
         updated += data.updated;
         data.results.forEach((item) => {
           const text = (item.updated ? "UPDATED " : "checked ") + item.title + " - " + item.reason;
-          line(item.cover ? foundLog : missingLog, text);
+          if (item.cover) line(foundLog, text);
+          else {
+            missing.push(item);
+            line(missingLog, text);
+            console.warn("Missing IGDB cover:", item.title, item.platform || "");
+          }
         });
         cursor = data.nextCursor;
         bar.style.width = total ? Math.round(((cursor || total) / total) * 100) + "%" : "100%";
       }
       line(foundLog, "Done. " + updated + " cover" + (updated === 1 ? "" : "s") + (apply ? " saved." : " would be updated."));
+      if (missing.length) {
+        console.group("Shelf games still missing IGDB covers (" + missing.length + ")");
+        missing.forEach((item) => console.log(item.title + (item.platform ? " [" + item.platform + "]" : "")));
+        console.groupEnd();
+      } else {
+        console.log("No missing IGDB covers.");
+      }
       start.disabled = false;
       running = false;
     });
