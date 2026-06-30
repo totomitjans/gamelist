@@ -38,7 +38,7 @@ export async function onRequestGet({ request, env = {} }) {
       fetchXtralifeProduct({ title, platform, region }).catch(() => null),
     ]);
     const product = convertCurrency(mergeProduct(apiProduct, publicProduct, retailProduct, { title, platform, searchUrl }), currency, publicProduct?.forexRates);
-    if (!product.productId && !Object.values(product.prices).some((value) => value != null)) {
+    if (!hasPriceValue(product.prices)) {
       return json({ error: "No matching physical edition found", notFound: true, searchUrl, prices: {}, history: {} });
     }
     return json({ ...product, checkedAt: new Date().toISOString(), source: "PriceCharting", currency: product.currency || currency });
@@ -328,6 +328,7 @@ function parseForexRates(html) { try { return JSON.parse(String(html).match(/VGP
 function moneyCell(row, className) { const cell = row.match(new RegExp(`<td[^>]+class="[^"]*${className}[^"]*"[^>]*>([\\s\\S]*?)<\\/td>`, "i"))?.[1] || ""; const value = text(cell).replace(/[^0-9.]/g, ""); const number = Number(value); return Number.isFinite(number) && number > 0 ? number : null; }
 function cents(value) { const number = Number(value); return Number.isFinite(number) && number > 0 ? number / 100 : null; }
 function withoutNulls(value) { return Object.fromEntries(Object.entries(value).filter(([, item]) => item != null)); }
+function hasPriceValue(prices) { return Object.values(prices || {}).some((value) => Number.isFinite(Number(value)) && Number(value) > 0); }
 function uniqueValues(values) { return [...new Set(values)]; }
 function physicalRegionTerm(region) { const value = normalize(region); if (/japan|jp/.test(value)) return "JP"; if (/spain|europe|france|germany|united kingdom|uk|australia/.test(value)) return "PAL"; if (/united states|usa|ntsc/.test(value)) return "NTSC"; if (/taiwan|asia/.test(value)) return "Asian English"; return ""; }
 function priceChartingSearchTitle(title) { return String(title || "").replace(/\bversion\b/gi, " ").replace(/\s+/g, " ").trim(); }

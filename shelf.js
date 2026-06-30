@@ -587,9 +587,9 @@ async function fetchCollectionPriceData(game, settings) {
   const params = collectionPriceParams(game, settings);
   const response = await fetch(`/api/collection-price?${params}`);
   const data = await response.json();
-  if (!response.ok || data.error) {
+  if (!response.ok || data.error || !hasCollectionPriceValue(data)) {
     const error = new Error(data.error || "Price unavailable");
-    error.nonRetryable = Boolean(data.notFound);
+    error.nonRetryable = Boolean(data.notFound) || response.ok;
     throw error;
   }
   return data;
@@ -2549,15 +2549,23 @@ async function fetchCollectionValue() {
 }
 
 function applyCollectionPrice(game, data) {
-  game.collectionPrices = data.prices;
   const historyKey = collectionPriceKey(game);
-  game.price = data.prices?.[historyKey] ?? data.mainValue;
+  const nextPrice = data.prices?.[historyKey] ?? data.mainValue;
+  if (!Number.isFinite(Number(nextPrice)) || Number(nextPrice) <= 0) return false;
+  game.collectionPrices = { ...(game.collectionPrices || {}), ...(data.prices || {}) };
+  game.price = nextPrice;
   game.priceCurrency = data.currency || "USD";
   game.collectionProductUrl = data.productUrl || game.collectionProductUrl || priceChartingPageUrl(game.pricechartingId);
   game.priceFetchedAt = data.checkedAt || new Date().toISOString();
   game.priceHistory = (data.history?.[historyKey]?.length ? data.history[historyKey] : [...(game.priceHistory || []), { date: String(data.checkedAt || "").slice(0, 10), value: game.price }]).filter((item) => item.value != null).slice(-60);
   game.updatedAt = new Date().toISOString();
   syncShelfGameRecord(game);
+  return true;
+}
+
+function hasCollectionPriceValue(data) {
+  return Object.values(data?.prices || {}).some((value) => Number.isFinite(Number(value)) && Number(value) > 0)
+    || (Number.isFinite(Number(data?.mainValue)) && Number(data.mainValue) > 0);
 }
 function syncShelfGameRecord(game) {
   const clean = stripRuntimeFields(game);
