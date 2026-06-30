@@ -14,8 +14,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v278";
-const SITE_UPDATED_AT = "2026-06-30T22:58:05+02:00";
+const SITE_VERSION = "v279";
+const SITE_UPDATED_AT = "2026-06-30T23:03:05+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -424,19 +424,22 @@ async function checkSiteVersion() {
 
 function consumeRecentPullNavigation() {
   try {
+    if (window.self !== window.top) return false;
     const url = new URL(window.location.href);
     const fromPullUrl = url.searchParams.get("pull") === "1";
-    if (fromPullUrl) {
-      url.searchParams.delete("pull");
-      url.searchParams.delete("v");
-      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-    }
+    if (fromPullUrl) stripPullNavigationParams(url);
     const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}");
     sessionStorage.removeItem(PULL_NAVIGATION_KEY);
-    return fromPullUrl || Date.now() - Number(value.at || 0) < 8000;
+    return Date.now() - Number(value.at || 0) < 8000 && Boolean(value.fromUrl);
   } catch {
     return false;
   }
+}
+
+function stripPullNavigationParams(url = new URL(window.location.href)) {
+  url.searchParams.delete("pull");
+  url.searchParams.delete("v");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 async function clearSiteCaches() {
@@ -740,7 +743,8 @@ function initPullArrivalCover() {
     const fromPullUrl = url.searchParams.get("pull") === "1";
     const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}");
     const recent = Date.now() - Number(value.at || 0) < 8000;
-    if (!fromPullUrl && !recent) return;
+    if (fromPullUrl) stripPullNavigationParams(url);
+    if (!recent || !value.fromUrl) return;
     const fromUrl = new URL(value.fromUrl || "", window.location.href);
     if (fromUrl.origin !== window.location.origin || fromUrl.href === window.location.href) return;
     fromUrl.searchParams.delete("pull");
