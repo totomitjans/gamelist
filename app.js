@@ -14,8 +14,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v266";
-const SITE_UPDATED_AT = "2026-06-29T23:12:00+02:00";
+const SITE_VERSION = "v267";
+const SITE_UPDATED_AT = "2026-06-30T00:20:00+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -1000,8 +1000,8 @@ function renderSettingsDialog() {
     settingsLayoutItem("latestFinished", -1, { fixed: true }),
     ...state.settings.pageOrder.map((key) => settingsLayoutItem(key, pageIndex.get(key) ?? 0)),
     `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${settingsThemeItem()}${settingsDefaultOrderItem()}${settingsShelfSyncItem()}</div>`,
-    `<div class="settings-preference-separator" role="presentation"></div><div class="settings-data-row">${settingsCsvDataItem("gamelist")}</div>`,
   ].join("");
+  document.querySelector("#settingsCsvData").innerHTML = settingsCsvDataItem("gamelist");
   el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `
     <label class="check-filter toggle-check settings-store-check">
       <input type="checkbox" value="${escapeHtml(store)}" ${state.settings.stores.includes(store) ? "checked" : ""}>
@@ -1041,8 +1041,8 @@ function renderSettingsDialog() {
   el.settingsLayoutList.querySelector("[data-default-order]")?.addEventListener("change", (event) => {
     state.settings.defaultOrder = event.target.value;
   });
-  el.settingsLayoutList.querySelector("[data-export-csv='gamelist']")?.addEventListener("click", exportGamelistCsv);
-  el.settingsLayoutList.querySelector("[data-import-csv='gamelist']")?.addEventListener("click", importGamelistCsv);
+  document.querySelector("[data-export-csv='gamelist']")?.addEventListener("click", exportGamelistCsv);
+  document.querySelector("[data-import-csv='gamelist']")?.addEventListener("click", importGamelistCsv);
 }
 
 function settingsLayoutItem(key, index, options = {}) {
@@ -1136,9 +1136,8 @@ function settingsShelfSyncItem() {
 
 function settingsCsvDataItem(kind) {
   return `
-    <article class="settings-layout-card settings-data-card" data-layout-key="${escapeHtml(kind)}-csv">
+    <article class="settings-layout-card settings-data-card">
       <div class="settings-theme-select">
-        <span>CSV data</span>
         <div class="settings-data-actions">
           <button class="ghost-button" type="button" data-export-csv="${escapeHtml(kind)}">Export</button>
           <button class="ghost-button" type="button" data-import-csv="${escapeHtml(kind)}">Import</button>

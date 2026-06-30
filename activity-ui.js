@@ -45,7 +45,11 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophy
   const psnAchievements = Array.isArray(psn.achievements) ? psn.achievements : [];
   const steamAchievements = Array.isArray(steam.achievements) ? steam.achievements : [];
   const xboxAchievements = Array.isArray(xbox.achievements) ? xbox.achievements : [];
-  const achievements = [...psnAchievements, ...steamAchievements, ...xboxAchievements]
+  const achievements = [
+    ...psnAchievements.map((item) => ({ ...item, source: item.source || "psn" })),
+    ...steamAchievements.map((item) => ({ ...item, source: item.source || "steam" })),
+    ...xboxAchievements.map((item) => ({ ...item, source: item.source || "xbox" })),
+  ]
     .sort((a, b) => earnedTime(b) - earnedTime(a) || String(a.title || "").localeCompare(String(b.title || "")))
     .slice(0, 6);
   if (!achievements.length) {
@@ -85,7 +89,9 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophy
     const platform = item.source === "steam" ? "Steam" : String(item.platform || (item.source === "xbox" ? "Xbox" : "PlayStation")).trim() || "PlayStation";
     return achievementCardMarkup({ index, tone: item.source === "steam" ? "steam" : trophyTone(item.rarity), href: item.url || sourceUrl, game: item.game || "", title: item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"), icon: item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"), meta: `${platformBadge(platform)}${item.earnedAt ? `<span class="achievement-earned-date">${escape(item.earnedAt)}</span>` : ""}`, escape });
   }).join("");
-  return { sourceUrl, html: `${dashboard}<span class="achievement-subtitle trophy-subtitle">Latest Achievements</span>${cards}` };
+  const sources = new Set(achievements.map((item) => item.source === "psn" ? "trophies" : "achievements"));
+  const subtitle = sources.size > 1 ? "Latest Trophies & Achievements" : sources.has("trophies") ? "Latest Trophies" : "Latest Achievements";
+  return { sourceUrl, html: `${dashboard}<span class="achievement-subtitle trophy-subtitle">${escape(subtitle)}</span>${cards}` };
 }
 
 export function mountReleaseCalendar(container, options = {}) {

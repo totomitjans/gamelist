@@ -1088,6 +1088,7 @@ button.achievement-kpi {
 .trophy-subtitle {
   grid-column: 1 / -1;
   margin: 2px 0 -2px;
+  color: #ffe985;
   font-size: 11px;
 }
 
@@ -3165,6 +3166,10 @@ body.theme-kash
   color: #ffe985;
 }
 
+.card-trophy-head.trophy-gold {
+  color: #ffe985;
+}
+
 .card-trophy-head .trophy-icon {
   width: 15px;
   height: 15px;
@@ -5208,12 +5213,6 @@ body.dialog-open .mobile-section-tabs {
   gap: 10px;
 }
 
-.settings-data-row {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .settings-preference-separator {
   grid-column: 1 / -1;
   height: 1px;
@@ -5231,11 +5230,6 @@ body.dialog-open .mobile-section-tabs {
   background: transparent;
   border: 0;
   border-radius: 0;
-}
-
-.settings-data-row .settings-data-card {
-  grid-column: 1 / -1;
-  min-height: 0;
 }
 
 .settings-theme-select {
@@ -5265,6 +5259,18 @@ body.dialog-open .mobile-section-tabs {
   width: 100%;
   min-height: var(--settings-control-height, 42px);
   padding-inline: 10px;
+}
+
+.settings-csv-data {
+  display: inline-grid;
+  width: min(260px, 100%);
+}
+
+.settings-csv-data .settings-data-card {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
 .settings-sync-card .settings-visible-check {
