@@ -548,6 +548,7 @@ async function refreshAllShelfPrices() {
   showToast(`Fetching prices for ${games.length} games...`);
   let updated = 0;
   let failed = 0;
+  const emptyPriceGames = [];
   try {
     for (const [index, game] of games.entries()) {
       el.fetchPricesButton.innerHTML = `${currencyIcon()}<span class="button-label">Prices ${index + 1}/${games.length}</span>`;
@@ -558,12 +559,18 @@ async function refreshAllShelfPrices() {
         const data = await fetchCollectionPriceWithRetry(game, settings);
         applyCollectionPrice(game, data);
         updated += 1;
-      } catch {
+      } catch (error) {
+        if (error?.emptyPrice) emptyPriceGames.push(game);
         failed += 1;
       }
     }
     await persistShelf();
     renderAll();
+    if (emptyPriceGames.length) {
+      console.group(`Shelf games with empty collection prices (${emptyPriceGames.length})`);
+      emptyPriceGames.forEach((game) => console.log(`${game.title}${game.platform ? ` [${shortPlatform(game.platform)}]` : ""}`));
+      console.groupEnd();
+    }
     showToast(`Updated prices for ${updated} games${failed ? `, ${failed} failed` : ""}.`, failed ? "error" : "info");
   } finally {
     el.fetchPricesButton.disabled = false;
@@ -590,6 +597,7 @@ async function fetchCollectionPriceData(game, settings) {
   if (!response.ok || data.error || !hasCollectionPriceValue(data)) {
     const error = new Error(data.error || "Price unavailable");
     error.nonRetryable = Boolean(data.notFound) || response.ok;
+    error.emptyPrice = response.ok && !hasCollectionPriceValue(data);
     throw error;
   }
   return data;
