@@ -6,8 +6,8 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v279";
-const SITE_UPDATED_AT = "2026-06-30T23:03:05+02:00";
+const SITE_VERSION = "v280";
+const SITE_UPDATED_AT = "2026-06-30T23:08:34+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -179,7 +179,7 @@ async function init() {
   bindTextureParallax();
   populateEditorOptions();
   bindEvents();
-  initPagePullTransition({ targetLabel: "Gamelist", targetUrl: "./" });
+  if (window.self === window.top) initPagePullTransition({ targetLabel: "Gamelist", targetUrl: "./" });
   const [shelfData, auth, gamelistData] = await Promise.all([
     fetch("/api/shelf", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).catch(() => null),
     fetch("/api/auth", { cache: "no-store" }).then((response) => response.ok).catch(() => false),
@@ -470,7 +470,6 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   };
   const switchPage = () => {
     if (document.body.classList.contains("page-switching") || document.body.classList.contains("page-switching-pending")) return;
-    const frame = curtain.querySelector(".page-pull-frame");
     let committed = false;
     const commit = () => {
       if (committed) return;
@@ -489,13 +488,7 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
       } catch {}
       window.setTimeout(() => { window.location.href = pullNavigationUrl(targetUrl); }, 430);
     };
-    if (frame?.dataset.loaded === "true") commit();
-    else {
-      document.body.classList.add("page-switching-pending");
-      document.body.classList.add("page-pulling");
-      frame?.addEventListener("load", commit, { once: true });
-      window.setTimeout(commit, 1800);
-    }
+    commit();
   };
   button.addEventListener("click", () => { if (!moved) switchPage(); moved = false; });
   button.addEventListener("pointerenter", () => document.body.classList.add("page-pull-hover"));

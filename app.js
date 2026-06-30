@@ -14,8 +14,8 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v279";
-const SITE_UPDATED_AT = "2026-06-30T23:03:05+02:00";
+const SITE_VERSION = "v280";
+const SITE_UPDATED_AT = "2026-06-30T23:08:34+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -344,7 +344,7 @@ async function init() {
   if (!state.canEdit) state.canEdit = await hasSharedEditorSession();
   document.body.classList.toggle("can-edit", state.canEdit);
   bindEvents();
-  initPagePullTransition({ targetLabel: "Shelf", targetUrl: "shelf" });
+  if (window.self === window.top) initPagePullTransition({ targetLabel: "Shelf", targetUrl: "shelf" });
   warmUiIcons();
   bindTextureParallax();
   await loadData();
@@ -660,7 +660,6 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   };
   const switchPage = () => {
     if (document.body.classList.contains("page-switching") || document.body.classList.contains("page-switching-pending")) return;
-    const frame = curtain.querySelector(".page-pull-frame");
     let committed = false;
     const commit = () => {
       if (committed) return;
@@ -679,13 +678,7 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
       } catch {}
       window.setTimeout(() => { window.location.href = pullNavigationUrl(targetUrl); }, 430);
     };
-    if (frame?.dataset.loaded === "true") commit();
-    else {
-      document.body.classList.add("page-switching-pending");
-      document.body.classList.add("page-pulling");
-      frame?.addEventListener("load", commit, { once: true });
-      window.setTimeout(commit, 1800);
-    }
+    commit();
   };
   button.addEventListener("click", () => { if (!moved) switchPage(); moved = false; });
   button.addEventListener("pointerenter", () => document.body.classList.add("page-pull-hover"));
