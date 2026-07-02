@@ -168,7 +168,7 @@ body.dialog-open {
 
 body.page-pull-hover,
 body.page-pulling {
-  --pull-ui-offset: 24px;
+  --pull-ui-offset: 36px;
 }
 
 button,
