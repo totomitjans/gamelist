@@ -14,8 +14,6 @@ const SETTINGS_KEY = "gamelist:settings:v1";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
-const SITE_VERSION = "v281";
-const SITE_UPDATED_AT = "2026-06-30T23:12:43+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -38,6 +36,7 @@ const THEMES = {
     themeColor: "#005cff",
   },
 };
+const siteVersion = { version: "", updatedAt: "" };
 const DEFAULT_SETTINGS = {
   pageOrder: DEFAULT_PAGE_ORDER,
   hiddenSections: [],
@@ -395,14 +394,15 @@ async function checkSiteVersion() {
     const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) return false;
     const remote = await response.json();
-    const remoteVersion = String(remote.version || "").trim();
+    applySiteVersion(remote);
+    const remoteVersion = siteVersion.version;
     if (!remoteVersion) return false;
     const current = localStorage.getItem(VERSION_STORAGE_KEY);
     if (!current) {
       localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
       return false;
     }
-    if (current === remoteVersion || remoteVersion === SITE_VERSION) {
+    if (current === remoteVersion) {
       localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion);
       return false;
     }
@@ -418,6 +418,11 @@ async function checkSiteVersion() {
   } catch {
     return false;
   }
+}
+
+function applySiteVersion(value = {}) {
+  siteVersion.version = String(value.version || "").trim();
+  siteVersion.updatedAt = String(value.updatedAt || "").trim();
 }
 
 function consumeRecentPullNavigation() {
@@ -452,7 +457,7 @@ async function clearSiteCaches() {
 
 async function clearSiteCachesAndReload() {
   await clearSiteCaches();
-  localStorage.setItem(VERSION_STORAGE_KEY, SITE_VERSION);
+  if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version);
   window.location.reload();
 }
 
@@ -669,8 +674,8 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
       document.body.style.setProperty("--pull-preview-opacity", "1");
       document.body.style.setProperty("--pull-preview-scale", "1");
       try {
-        sessionStorage.setItem(PULL_NAVIGATION_KEY, JSON.stringify({ version: SITE_VERSION, at: Date.now() }));
-        localStorage.setItem(VERSION_STORAGE_KEY, SITE_VERSION);
+        sessionStorage.setItem(PULL_NAVIGATION_KEY, JSON.stringify({ version: siteVersion.version, at: Date.now() }));
+        if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version);
       } catch {}
       window.setTimeout(() => { window.location.href = pullNavigationUrl(targetUrl); }, 430);
     };
@@ -724,7 +729,7 @@ function pagePullPreviewMarkup(targetUrl) {
 function pullNavigationUrl(targetUrl) {
   const url = new URL(targetUrl, window.location.href);
   url.searchParams.set("pull", "1");
-  url.searchParams.set("v", SITE_VERSION);
+  if (siteVersion.version) url.searchParams.set("v", siteVersion.version);
   return url.href;
 }
 
@@ -1372,13 +1377,23 @@ function renderPlayingFinished() {
     return finishedGameMarkup({ id: game.id, title: game.title, cover: game.cover || platformLogo(game.platform || "PS5"), completedClass: game.platinum ? "completed-trophy-card" : "", itemClass: ownerCardClass(game), badges, dateText: [formatLongDate(game.completedAt), finishedDurationText(game.startedAt, game.completedAt)].filter(Boolean).join(" · "), progress: achievementProgress ? progress : null, escape: escapeHtml });
   }).join("");
   el.playingFinishedList.querySelectorAll(".playing-finished-game").forEach((button) => {
-    button.addEventListener("click", () => openDetail(button.dataset.id));
+    button.addEventListener("click", (event) => {
+      if (event.target.closest("strong")) {
+        scrollToFinishedSection();
+        return;
+      }
+      openDetail(button.dataset.id);
+    });
   });
   requestAnimationFrame(updatePlayingFinishedEdges);
 }
 
 function scrollToSearchArea() {
   document.querySelector(".toolbar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function scrollToFinishedSection() {
+  document.querySelector("#completed")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function updatePlayingFinishedEdges() {
@@ -2613,7 +2628,9 @@ function renderFooter() {
     el.footerDataUpdate.textContent = latest ? `Last edit ${formatFooterDate(latest)}` : "Last edit -";
   }
   if (el.footerVersion) {
-    el.footerVersion.textContent = `${SITE_VERSION} · Updated ${formatFooterDateTime(SITE_UPDATED_AT)}`;
+    el.footerVersion.textContent = siteVersion.version
+      ? `${siteVersion.version} · Updated ${formatFooterDateTime(siteVersion.updatedAt)}`
+      : "Version -";
   }
 }
 

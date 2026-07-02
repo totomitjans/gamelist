@@ -6,8 +6,6 @@ splitShelfPlayingModules();
 
 const SESSION_KEY = "gamelist-editor";
 const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
-const SITE_VERSION = "v281";
-const SITE_UPDATED_AT = "2026-06-30T23:12:43+02:00";
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
@@ -23,6 +21,7 @@ const THEMES = {
   shabii: { title: "Shabii's Shelf", icon: "assets/Icon_shelf.png", color: "#ff0039" },
   kash: { title: "Kash's Shelf", icon: "assets/kh_icon.png", color: "#005cff" },
 };
+const siteVersion = { version: "", updatedAt: "" };
 const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", favorites: "Showcase", trophies: "Achievements", calendar: "Calendar", kpis: "Highlights", filters: "Search", library: "Shelf" };
 const PLATFORM_OPTIONS = [
   "Nintendo Switch", "Nintendo Switch 2", "Sony PlayStation 5", "Sony PlayStation 4",
@@ -403,7 +402,9 @@ function renderChrome() {
   el.sortDirection.classList.toggle("desc", state.filters.direction === "desc");
   el.sortDirection.title = `Sort ${state.filters.direction === "desc" ? "descending" : "ascending"}`;
   el.footerUpdate.textContent = state.updatedAt ? `Last edit ${formatFooterDate(state.updatedAt)}` : "Last edit -";
-  el.footerVersion.textContent = `${SITE_VERSION} · Updated ${formatFooterDateTime(SITE_UPDATED_AT)}`;
+  el.footerVersion.textContent = siteVersion.version
+    ? `${siteVersion.version} · Updated ${formatFooterDateTime(siteVersion.updatedAt)}`
+    : "Version -";
   updateFloatingActions();
 }
 
@@ -482,8 +483,8 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
       document.body.style.setProperty("--pull-preview-opacity", "1");
       document.body.style.setProperty("--pull-preview-scale", "1");
       try {
-        sessionStorage.setItem(PULL_NAVIGATION_KEY, JSON.stringify({ version: SITE_VERSION, at: Date.now() }));
-        localStorage.setItem(VERSION_STORAGE_KEY, SITE_VERSION);
+        sessionStorage.setItem(PULL_NAVIGATION_KEY, JSON.stringify({ version: siteVersion.version, at: Date.now() }));
+        if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version);
       } catch {}
       window.setTimeout(() => { window.location.href = pullNavigationUrl(targetUrl); }, 430);
     };
@@ -537,7 +538,7 @@ function pagePullPreviewMarkup(targetUrl) {
 function pullNavigationUrl(targetUrl) {
   const url = new URL(targetUrl, window.location.href);
   url.searchParams.set("pull", "1");
-  url.searchParams.set("v", SITE_VERSION);
+  if (siteVersion.version) url.searchParams.set("v", siteVersion.version);
   return url.href;
 }
 
@@ -2731,10 +2732,11 @@ function showSelectOverflowPopover(select) { if (!selectOverflowPopover) { selec
 function hideSelectOverflowPopover() { selectOverflowPopover?.classList.remove("visible"); }
 function showToast(message, tone = "info") { if (!message) return; const host = [...document.querySelectorAll("dialog[open]")].at(-1) || document.body; let toast = document.querySelector(".toast-notification"); if (!toast) { toast = document.createElement("div"); toast.className = "toast-notification"; toast.setAttribute("role", "status"); toast.setAttribute("aria-live", "polite"); } if (toast.parentElement !== host) host.appendChild(toast); window.clearTimeout(showToast.timer); toast.textContent = message; toast.classList.toggle("is-error", tone === "error"); toast.classList.remove("visible"); requestAnimationFrame(() => toast.classList.add("visible")); showToast.timer = window.setTimeout(() => toast.classList.remove("visible"), tone === "error" ? 4200 : 2800); }
 function registerServiceWorker() { if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(() => {})); }
-async function checkSiteVersion() { try { const fromPullNavigation = consumeRecentPullNavigation(); const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" }); if (!response.ok) return false; const remote = await response.json(); const remoteVersion = String(remote.version || "").trim(); if (!remoteVersion) return false; const current = localStorage.getItem(VERSION_STORAGE_KEY); if (!current || current === remoteVersion || remoteVersion === SITE_VERSION) { localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } if (fromPullNavigation) { clearSiteCaches().catch(() => {}); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); window.location.reload(); return true; } catch { return false; } }
+async function checkSiteVersion() { try { const fromPullNavigation = consumeRecentPullNavigation(); const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" }); if (!response.ok) return false; const remote = await response.json(); applySiteVersion(remote); const remoteVersion = siteVersion.version; if (!remoteVersion) return false; const current = localStorage.getItem(VERSION_STORAGE_KEY); if (!current || current === remoteVersion) { localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } if (fromPullNavigation) { clearSiteCaches().catch(() => {}); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); return false; } await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, remoteVersion); window.location.reload(); return true; } catch { return false; } }
+function applySiteVersion(value = {}) { siteVersion.version = String(value.version || "").trim(); siteVersion.updatedAt = String(value.updatedAt || "").trim(); }
 function consumeRecentPullNavigation() { try { const url = new URL(window.location.href); const fromPullUrl = url.searchParams.get("pull") === "1"; if (fromPullUrl) { url.searchParams.delete("pull"); url.searchParams.delete("v"); window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`); } const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}"); sessionStorage.removeItem(PULL_NAVIGATION_KEY); return fromPullUrl || Date.now() - Number(value.at || 0) < 8000; } catch { return false; } }
 async function clearSiteCaches() { if ("caches" in window) { const keys = await caches.keys(); await Promise.all(keys.filter((key) => key.startsWith("gamelist-cache-")).map((key) => caches.delete(key))); } if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.map((registration) => registration.update().catch(() => {}))); } }
-async function clearSiteCachesAndReload() { await clearSiteCaches(); localStorage.setItem(VERSION_STORAGE_KEY, SITE_VERSION); window.location.reload(); }
+async function clearSiteCachesAndReload() { await clearSiteCaches(); if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version); window.location.reload(); }
 function stripRuntimeFields(game) { const { sourceRecord, ...clean } = game; return clean; }
 function numberOrNull(value) { const number = Number(value); return Number.isFinite(number) && value !== "" ? number : null; }
 function firstGenre(value) { return String(value).split(",")[0].trim(); }
