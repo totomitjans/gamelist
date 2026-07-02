@@ -486,6 +486,7 @@ function bindEvents() {
     scheduleFocusedPlayingTrailerUpdate();
   }, { passive: true });
   el.playingFinishedList.addEventListener("scroll", updatePlayingFinishedEdges, { passive: true });
+  bindLatestFinishedHeading();
   el.detailTrophyList.addEventListener("scroll", updateDetailTrophyEdges, { passive: true });
   el.platinumCloseButton.addEventListener("click", () => el.platinumDialog.close());
   el.platinumDialog.addEventListener("click", (event) => {
@@ -1394,6 +1395,20 @@ function scrollToSearchArea() {
 
 function scrollToFinishedSection() {
   document.querySelector("#completed")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function bindLatestFinishedHeading() {
+  const heading = el.playingFinished?.querySelector(".achievement-subtitle");
+  if (!heading) return;
+  heading.setAttribute("role", "button");
+  heading.tabIndex = 0;
+  heading.title = "Go to Finished games";
+  heading.addEventListener("click", scrollToFinishedSection);
+  heading.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    scrollToFinishedSection();
+  });
 }
 
 function updatePlayingFinishedEdges() {
