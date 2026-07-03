@@ -38,10 +38,11 @@ export function achievementCardMarkup({ index, tone, href, game, title, icon, me
 
 export function achievementDashboardMarkup({ completedCount, completedBreakdown = "", trophyTotal, trophyBreakdown = "", level, levelLabel, counts, sourceUrl, trophyIconHtml, barHeight, escape }) {
   const levelCard = levelLabel ? `<a class="achievement-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(level))}</strong><span>${levelLabel}</span></a>` : "";
-  const rarityGraph = counts.some(([, count]) => Number(count) > 0)
-    ? `<div class="rarity-graph" aria-label="Trophy rarity graph">${counts.map(([type, count]) => `<span class="rarity-bar rarity-${escape(type.toLowerCase())}" title="${escape(`${type}: ${count}`)}"><em style="--bar:${barHeight(count, counts)}%"></em><small>${escape(type)}</small><strong>${escape(String(count))}</strong></span>`).join("")}</div>`
-    : "";
-  return `<div class="achievement-summary"><button class="achievement-kpi platinum-highlight ${completedCount ? "has-platinum" : ""}" type="button" data-action="platinums"><strong class="kpi-with-icon">${trophyIconHtml}${escape(String(completedCount))}</strong><span>COMPLETED</span>${completedBreakdown}</button><a class="achievement-kpi trophy-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(trophyTotal))}</strong><span>TROPHIES</span>${trophyBreakdown}</a>${levelCard}${rarityGraph}</div>`;
+  const rarityGraph = `<div class="rarity-graph" aria-label="Trophy rarity graph">${counts.map(([type, count]) => {
+    const value = Number(count) || 0;
+    return `<span class="rarity-bar rarity-${escape(type.toLowerCase())} ${value ? "" : "rarity-zero"}" title="${escape(`${type}: ${value}`)}"><em style="--bar:${barHeight(value, counts)}%"></em><small>${escape(type)}</small>${value ? `<strong>${escape(String(value))}</strong>` : ""}</span>`;
+  }).join("")}</div>`;
+  return `<div class="achievement-summary ${levelLabel ? "" : "achievement-summary-no-level"}"><button class="achievement-kpi platinum-highlight ${completedCount ? "has-platinum" : ""}" type="button" data-action="platinums"><strong class="kpi-with-icon">${trophyIconHtml}${escape(String(completedCount))}</strong><span>COMPLETED</span>${completedBreakdown}</button><a class="achievement-kpi trophy-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(trophyTotal))}</strong><span>TROPHIES</span>${trophyBreakdown}</a>${levelCard}${rarityGraph}</div>`;
 }
 
 export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophyIconHtml, platformBadge, platformLogo, trophyTone, escape }) {

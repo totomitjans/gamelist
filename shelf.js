@@ -2843,6 +2843,7 @@ function bestCollectionPlatform(platforms, fallback) {
   if (value.includes("nintendo switch")) return "Nintendo Switch";
   if (value.includes("playstation 5")) return "Sony PlayStation 5";
   if (value.includes("playstation 4")) return "Sony PlayStation 4";
+  if (value.includes("playstation 3")) return "Sony PlayStation 3";
   if (value.includes("playstation 2")) return "Sony PlayStation 2";
   if (value.includes("playstation")) return "Sony PlayStation";
   if (value.includes("nintendo 3ds")) return "Nintendo 3DS";

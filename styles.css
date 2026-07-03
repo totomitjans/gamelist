@@ -727,6 +727,10 @@ html.theme-font-pokemon {
   gap: 10px;
 }
 
+.achievement-summary-no-level {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .achievement-kpi,
 .rarity-graph {
   position: relative;
@@ -946,6 +950,10 @@ button.achievement-kpi {
 .rarity-bar:hover strong {
   opacity: 1;
   transform: translateY(0);
+}
+
+.rarity-bar.rarity-zero strong {
+  display: none;
 }
 
 .rarity-platinum em,
