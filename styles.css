@@ -2047,6 +2047,131 @@ body.dialog-open .floating-edit-actions {
   padding-right: 24px;
 }
 
+.native-platform-filter {
+  display: none;
+}
+
+.platform-logo-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.platform-logo-button,
+.platform-logo-option {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  border: 0;
+}
+
+.platform-logo-button {
+  display: flex;
+  align-items: center;
+  height: var(--toolbar-control-height);
+  min-height: var(--toolbar-control-height);
+  padding: 0 34px 0 11px;
+  background-color: rgba(255, 255, 255, 0.07);
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 15px center;
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.platform-logo-select.is-active .platform-logo-button,
+.platform-logo-select.is-open .platform-logo-button {
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--accent) 68%, transparent);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.platform-logo-menu {
+  position: absolute;
+  left: 0;
+  right: auto;
+  top: calc(100% + 6px);
+  z-index: 70;
+  display: none;
+  width: max(100%, 236px);
+  max-height: 380px;
+  padding: 4px;
+  overflow: auto;
+  background: #080912;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+.platform-logo-select.is-open .platform-logo-menu {
+  display: grid;
+  gap: 2px;
+}
+
+.platform-logo-option {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 28px 6px 10px;
+  background: transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.platform-logo-option:hover,
+.platform-logo-option:focus-visible,
+.platform-logo-option.is-selected {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.platform-logo-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.platform-logo-choice span {
+  margin-bottom: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-transform: none;
+}
+
+.platform-logo-choice-icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.platform-logo-choice-icon img {
+  display: block;
+  max-width: 18px;
+  max-height: 18px;
+  object-fit: contain;
+}
+
+.platform-logo-choice.platform-ps3 .platform-logo-choice-icon img,
+.platform-logo-choice.platform-psp .platform-logo-choice-icon img {
+  filter: brightness(0) invert(1);
+}
+
+.platform-logo-choice-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .check-filter {
   display: flex;
   align-items: center;

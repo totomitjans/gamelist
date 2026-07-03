@@ -223,6 +223,7 @@ function bindEvents() {
   el.playingCarousel.addEventListener("scroll", () => { updatePlayingControls(); scheduleShelfTrailerUpdate(); }, { passive: true });
   el.finishedCarousel.addEventListener("scroll", updateFinishedControls, { passive: true });
   el.clear.addEventListener("click", clearFilters);
+  document.addEventListener("click", closePlatformLogoSelects);
   el.login.addEventListener("click", toggleEditMode);
   el.addButton.addEventListener("click", () => openEditor());
   el.floatingAdd.addEventListener("click", () => state.canEdit ? openEditor() : openAuth());
@@ -718,6 +719,7 @@ function renderFilters() {
   el.region.innerHTML = `<option value="all">All regions</option>${countries.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(regionName(value))}</option>`).join("")}`;
   el.category.innerHTML = `<option value="all">All categories</option>${categories.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
   el.platform.value = state.filters.platform;
+  syncPlatformLogoSelect(el.platform);
   el.region.value = state.filters.region;
   el.category.value = state.filters.category;
   const valueOption = el.sort.querySelector("option[value='value']");
@@ -727,6 +729,76 @@ function renderFilters() {
   }
   el.sort.value = state.filters.sort;
   [el.platform, el.region, el.condition, el.category, el.sort].forEach(updateSelectOverflowTitle);
+}
+
+function syncPlatformLogoSelect(select) {
+  if (!select) return;
+  select.classList.add("native-platform-filter");
+  let control = select.nextElementSibling;
+  if (!control?.classList?.contains("platform-logo-select")) {
+    control = document.createElement("div");
+    control.className = "platform-logo-select";
+    select.insertAdjacentElement("afterend", control);
+  }
+  const options = [...select.options].map((option) => ({
+    value: option.value,
+    label: option.textContent.trim(),
+    selected: option.selected,
+  }));
+  const selected = options.find((option) => option.selected) || options[0] || { value: "all", label: "All platforms" };
+  control.classList.toggle("is-active", selected.value !== "all");
+  control.innerHTML = `
+    <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false">
+      ${platformLogoChoiceMarkup(selected.value, selected.label)}
+    </button>
+    <div class="platform-logo-menu" role="listbox">
+      ${options.map((option) => `
+        <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}">
+          ${platformLogoChoiceMarkup(option.value, option.label)}
+        </button>
+      `).join("")}
+    </div>
+  `;
+  const button = control.querySelector(".platform-logo-button");
+  button?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = control.classList.toggle("is-open");
+    button.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  control.querySelectorAll(".platform-logo-option").forEach((option) => {
+    option.addEventListener("click", (event) => {
+      event.stopPropagation();
+      select.value = option.dataset.value || "all";
+      control.classList.remove("is-open");
+      button?.setAttribute("aria-expanded", "false");
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+  control.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    control.classList.remove("is-open");
+    button?.setAttribute("aria-expanded", "false");
+    button?.focus();
+  });
+}
+
+function closePlatformLogoSelects(event) {
+  document.querySelectorAll(".platform-logo-select.is-open").forEach((control) => {
+    if (event?.target && control.contains(event.target)) return;
+    control.classList.remove("is-open");
+    control.querySelector(".platform-logo-button")?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function platformLogoChoiceMarkup(value, label) {
+  const showLogo = value && value !== "all";
+  const cls = showLogo ? platformClass(value) : "platform-generic";
+  return `
+    <span class="platform-logo-choice ${escapeHtml(cls)}">
+      ${showLogo ? `<span class="platform-logo-choice-icon"><img src="${escapeHtml(platformLogo(value))}" alt="" width="18" height="18" decoding="async"></span>` : ""}
+      <span class="platform-logo-choice-label">${escapeHtml(label)}</span>
+    </span>
+  `;
 }
 
 function renderLibrary() {
