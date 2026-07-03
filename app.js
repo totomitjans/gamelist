@@ -2371,7 +2371,7 @@ function syncStyledSelect(select, options = {}) {
   const selected = selectOptions.find((option) => option.selected) || visibleOptions[0] || { value: "all", label: "All platforms" };
   control.classList.toggle("is-active", options.activeValue != null && selected.value !== options.activeValue);
   control.innerHTML = `
-    <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false">
+    <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false" data-full-label="${escapeHtml(selected.label)}" aria-label="${escapeHtml(selected.label)}">
       ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos })}
     </button>
     <div class="platform-logo-menu" role="listbox">
@@ -2383,6 +2383,12 @@ function syncStyledSelect(select, options = {}) {
     </div>
   `;
   const button = control.querySelector(".platform-logo-button");
+  const buttonLabel = button?.querySelector(".platform-logo-choice-label");
+  button?.classList.toggle("is-ellipsed", Boolean(buttonLabel && buttonLabel.scrollWidth > buttonLabel.clientWidth));
+  button?.addEventListener("pointerenter", () => showPlatformLogoOverlay(button));
+  button?.addEventListener("focus", () => showPlatformLogoOverlay(button));
+  button?.addEventListener("pointerleave", hidePlatformLogoOverlay);
+  button?.addEventListener("blur", hidePlatformLogoOverlay);
   button?.addEventListener("click", (event) => {
     event.stopPropagation();
     const shouldOpen = !control.classList.contains("is-open");
@@ -2410,6 +2416,8 @@ function syncStyledSelect(select, options = {}) {
     });
   });
   requestAnimationFrame(() => {
+    const buttonLabel = button?.querySelector(".platform-logo-choice-label");
+    button?.classList.toggle("is-ellipsed", Boolean(buttonLabel && buttonLabel.scrollWidth > buttonLabel.clientWidth));
     control.querySelectorAll(".platform-logo-option").forEach((option) => {
       const label = option.querySelector(".platform-logo-choice-label");
       option.classList.toggle("is-ellipsed", Boolean(label && label.scrollWidth > label.clientWidth));

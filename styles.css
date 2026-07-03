@@ -2170,6 +2170,11 @@ body.dialog-open .floating-edit-actions {
   box-sizing: border-box;
 }
 
+.platform-logo-button,
+.platform-logo-option {
+  overflow: hidden;
+}
+
 .platform-logo-option::before {
   content: "";
   position: absolute;
@@ -2315,7 +2320,13 @@ body.dialog-open .floating-edit-actions {
 .platform-logo-button .platform-logo-choice-label {
   min-height: 100%;
   align-items: center;
+  font-size: 14px;
   line-height: 1;
+}
+
+.platform-logo-button .platform-logo-choice-label,
+.platform-logo-option .platform-logo-choice-label {
+  font-size: 14px !important;
 }
 
 .check-filter {
@@ -7217,7 +7228,7 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 }
 
 .detail-trophy-tools .platform-logo-button {
-  font-size: 12px;
+  font-size: 14px;
   padding-left: 9px;
 }
 
@@ -7476,7 +7487,7 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 .platinum-year-select .platform-logo-button,
 .platinum-platform-select .platform-logo-button,
 .platinum-order-control .platform-logo-button {
-  font-size: 12px;
+  font-size: 14px;
   padding-left: 9px;
 }
 

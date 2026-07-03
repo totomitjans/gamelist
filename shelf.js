@@ -773,7 +773,7 @@ function syncStyledSelect(select, options = {}) {
   const selected = selectOptions.find((option) => option.selected) || visibleOptions[0] || { value: "all", label: "All platforms" };
   control.classList.toggle("is-active", options.activeValue != null && selected.value !== options.activeValue);
   control.innerHTML = `
-    <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false">
+    <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false" data-full-label="${escapeHtml(selected.label)}" aria-label="${escapeHtml(selected.label)}">
       ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos })}
     </button>
     <div class="platform-logo-menu" role="listbox">
@@ -785,6 +785,12 @@ function syncStyledSelect(select, options = {}) {
     </div>
   `;
   const button = control.querySelector(".platform-logo-button");
+  const buttonLabel = button?.querySelector(".platform-logo-choice-label");
+  button?.classList.toggle("is-ellipsed", Boolean(buttonLabel && buttonLabel.scrollWidth > buttonLabel.clientWidth));
+  button?.addEventListener("pointerenter", () => showPlatformLogoOverlay(button));
+  button?.addEventListener("focus", () => showPlatformLogoOverlay(button));
+  button?.addEventListener("pointerleave", hidePlatformLogoOverlay);
+  button?.addEventListener("blur", hidePlatformLogoOverlay);
   button?.addEventListener("click", (event) => {
     event.stopPropagation();
     const shouldOpen = !control.classList.contains("is-open");
@@ -812,6 +818,8 @@ function syncStyledSelect(select, options = {}) {
     });
   });
   requestAnimationFrame(() => {
+    const buttonLabel = button?.querySelector(".platform-logo-choice-label");
+    button?.classList.toggle("is-ellipsed", Boolean(buttonLabel && buttonLabel.scrollWidth > buttonLabel.clientWidth));
     control.querySelectorAll(".platform-logo-option").forEach((option) => {
       const label = option.querySelector(".platform-logo-choice-label");
       option.classList.toggle("is-ellipsed", Boolean(label && label.scrollWidth > label.clientWidth));
@@ -2088,7 +2096,7 @@ function gamelistProjectionCard(game, options = {}) {
   card.className += ` has-art${neutralReleaseCard ? "" : " playing-card"}${ownerClasses}${game.digital ? " digital-card" : ""}${game.stream ? " stream-card" : ""}${shelfShowsCompletedTrophyStyle(game) ? " completed-trophy-card" : ""}`;
   card.classList.toggle("shelf-release-card", isReleaseDialog);
   card.style.setProperty("--card-art", `url('${escapeCss(cover)}')`);
-  const trailer = card.querySelector(".card-trailer"); const trailerUrl = !neutralReleaseCard && window.matchMedia("(min-width: 900px)").matches ? activityTrailerUrl(game.trailerUrl, window.location.origin) : ""; if (trailerUrl) { card.classList.add("has-trailer"); trailer.dataset.src = trailerUrl; const toggle = card.querySelector(".trailer-toggle"); toggle.hidden = false; toggle.innerHTML = pauseTrailerIcon(); } else { trailer.remove(); card.querySelector(".trailer-toggle")?.remove(); }
+  const trailer = card.querySelector(".card-trailer"); const trailerUrl = !isReleaseDialog && !neutralReleaseCard && window.matchMedia("(min-width: 900px)").matches ? activityTrailerUrl(game.trailerUrl, window.location.origin) : ""; if (trailerUrl) { card.classList.add("has-trailer"); trailer.dataset.src = trailerUrl; const toggle = card.querySelector(".trailer-toggle"); toggle.hidden = false; toggle.innerHTML = pauseTrailerIcon(); } else { trailer.remove(); card.querySelector(".trailer-toggle")?.remove(); }
   const image = card.querySelector(".cover-button img"); image.src = cover; image.alt = `${game.title} cover`; image.loading = "eager"; image.fetchPriority = "high"; image.decoding = "async"; bindCoverFrame(image);
   const title = card.querySelector("h3"); title.textContent = game.title; title.className = `${title.className.replace(/\bowner-[\w-]+/g, "").trim()} ${visibleOwners.map(ownerColorClass).join(" ")}`.trim(); title.classList.toggle("completed-achievements-title", shelfShowsCompletedTrophyStyle(game));
   const titleOwners = card.querySelector(".title-owners");
