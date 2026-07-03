@@ -2070,10 +2070,12 @@ body.dialog-open .floating-edit-actions {
 .platform-logo-button {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   height: var(--toolbar-control-height);
   min-height: var(--toolbar-control-height);
-  padding: 0 34px 0 11px;
-  background-color: rgba(255, 255, 255, 0.07);
+  padding: 0 30px 0 11px;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.065);
   background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-position: right 15px center;
   background-repeat: no-repeat;
@@ -2086,8 +2088,8 @@ body.dialog-open .floating-edit-actions {
 .platform-logo-select.is-active .platform-logo-button,
 .platform-logo-select.is-open .platform-logo-button {
   color: #ffffff;
-  border-color: color-mix(in srgb, var(--accent) 68%, transparent);
-  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.075);
 }
 
 .platform-logo-menu {
@@ -2097,28 +2099,29 @@ body.dialog-open .floating-edit-actions {
   top: calc(100% + 6px);
   z-index: 70;
   display: none;
-  width: max(100%, 236px);
+  width: max(100%, 226px);
   max-height: 380px;
-  padding: 4px;
+  padding: 3px;
   overflow: auto;
-  background: #080912;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #050508;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
 }
 
 .platform-logo-select.is-open .platform-logo-menu {
   display: grid;
-  gap: 2px;
+  gap: 1px;
 }
 
 .platform-logo-option {
+  position: relative;
   display: flex;
   align-items: center;
-  min-height: 32px;
-  padding: 6px 28px 6px 10px;
+  min-height: 28px;
+  padding: 4px 10px 4px 9px;
   background: transparent;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
@@ -2126,15 +2129,39 @@ body.dialog-open .floating-edit-actions {
 .platform-logo-option:focus-visible,
 .platform-logo-option.is-selected {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.075);
   outline: none;
+}
+
+.platform-logo-hover-overlay {
+  position: fixed;
+  z-index: 120;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 7px 9px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: #07070b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.44);
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.platform-logo-hover-overlay.visible {
+  opacity: 1;
 }
 
 .platform-logo-choice {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
+  width: 100%;
 }
 
 .platform-logo-choice span {
@@ -2148,15 +2175,15 @@ body.dialog-open .floating-edit-actions {
 .platform-logo-choice-icon {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
 }
 
 .platform-logo-choice-icon img {
   display: block;
-  max-width: 18px;
-  max-height: 18px;
+  max-width: 17px;
+  max-height: 17px;
   object-fit: contain;
 }
 

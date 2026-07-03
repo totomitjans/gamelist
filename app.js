@@ -142,6 +142,7 @@ const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
 let selectMeasureContext = null;
 let selectOverflowPopover = null;
+let platformLogoOverlay = null;
 let playingTrailerFrame = 0;
 const searchCache = new Map();
 const searchInflight = new Map();
@@ -2365,7 +2366,7 @@ function syncPlatformLogoSelect(select) {
     </button>
     <div class="platform-logo-menu" role="listbox">
       ${options.map((option) => `
-        <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}">
+        <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}" data-full-label="${escapeHtml(option.label)}">
           ${platformLogoChoiceMarkup(option.value, option.label)}
         </button>
       `).join("")}
@@ -2378,12 +2379,24 @@ function syncPlatformLogoSelect(select) {
     button.setAttribute("aria-expanded", open ? "true" : "false");
   });
   control.querySelectorAll(".platform-logo-option").forEach((option) => {
+    const label = option.querySelector(".platform-logo-choice-label");
+    option.classList.toggle("is-ellipsed", Boolean(label && label.scrollWidth > label.clientWidth));
+    option.addEventListener("pointerenter", () => showPlatformLogoOverlay(option));
+    option.addEventListener("focus", () => showPlatformLogoOverlay(option));
+    option.addEventListener("pointerleave", hidePlatformLogoOverlay);
+    option.addEventListener("blur", hidePlatformLogoOverlay);
     option.addEventListener("click", (event) => {
       event.stopPropagation();
       select.value = option.dataset.value || "all";
       control.classList.remove("is-open");
       button?.setAttribute("aria-expanded", "false");
       select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+  requestAnimationFrame(() => {
+    control.querySelectorAll(".platform-logo-option").forEach((option) => {
+      const label = option.querySelector(".platform-logo-choice-label");
+      option.classList.toggle("is-ellipsed", Boolean(label && label.scrollWidth > label.clientWidth));
     });
   });
   control.addEventListener("keydown", (event) => {
@@ -2395,11 +2408,30 @@ function syncPlatformLogoSelect(select) {
 }
 
 function closePlatformLogoSelects(event) {
+  hidePlatformLogoOverlay();
   document.querySelectorAll(".platform-logo-select.is-open").forEach((control) => {
     if (event?.target && control.contains(event.target)) return;
     control.classList.remove("is-open");
     control.querySelector(".platform-logo-button")?.setAttribute("aria-expanded", "false");
   });
+}
+
+function showPlatformLogoOverlay(option) {
+  if (!option.classList.contains("is-ellipsed")) return;
+  if (!platformLogoOverlay) {
+    platformLogoOverlay = document.createElement("div");
+    platformLogoOverlay.className = "platform-logo-hover-overlay";
+    document.body.appendChild(platformLogoOverlay);
+  }
+  platformLogoOverlay.textContent = option.dataset.fullLabel || "";
+  const rect = option.getBoundingClientRect();
+  platformLogoOverlay.style.left = `${Math.min(rect.right + 8, window.innerWidth - 24)}px`;
+  platformLogoOverlay.style.top = `${rect.top + rect.height / 2}px`;
+  platformLogoOverlay.classList.add("visible");
+}
+
+function hidePlatformLogoOverlay() {
+  platformLogoOverlay?.classList.remove("visible");
 }
 
 function platformLogoChoiceMarkup(value, label) {
