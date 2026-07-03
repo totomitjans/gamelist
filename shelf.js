@@ -12,6 +12,7 @@ const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const VIEW_KEY = "shelf:view-mode:v2";
 const LAYOUT_KEY = "shelf:layout:v2";
 const LOCAL_DRAFT_KEY = "shelf:draft-data:v2";
+const MODULE_CACHE_KEY = "shelf:module-cache:v1";
 const DEFAULT_LAYOUT = ["playing", "latestFinished", "favorites", "trophies", "calendar", "kpis", "filters", "library"];
 const LAYOUT_KEYS = [...DEFAULT_LAYOUT];
 const DEFAULT_HIDDEN_MODULES = ["playing", "trophies"];
@@ -25,13 +26,13 @@ const THEMES = {
 const siteVersion = { version: "", updatedAt: "" };
 const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", favorites: "Showcase", trophies: "Achievements", calendar: "Calendar", kpis: "Highlights", filters: "Search", library: "Shelf" };
 const PLATFORM_OPTIONS = [
-  "Nintendo Switch", "Nintendo Switch 2", "Sony PlayStation 5", "Sony PlayStation 4",
-  "Sony PlayStation 2", "Sony PlayStation", "Nintendo 3DS", "Nintendo DS", "Nintendo 64",
-  "Nintendo GameCube", "Super Nintendo Entertainment System", "Nintendo Entertainment System",
-  "Game Boy Advance", "Game Boy Color", "Game Boy", "Nintendo Wii U", "Nintendo Wii",
-  "Sega Game Gear", "Sega Genesis", "Sega Mega Drive", "Sega Saturn", "Sega Dreamcast",
-  "Sega Master System", "Sega CD", "Sega 32X",
-  "Xbox Series", "Xbox One", "Xbox 360", "Steam",
+  "PC",
+  "Sega Game Gear", "Sega Genesis", "Sega Dreamcast",
+  "Game Boy", "Game Boy Color", "Nintendo Entertainment System", "Super Nintendo Entertainment System",
+  "Nintendo 64", "Nintendo GameCube", "Game Boy Advance", "Nintendo DS", "Nintendo Wii", "Nintendo Wii U", "Nintendo 3DS",
+  "Nintendo Switch", "Nintendo Switch 2",
+  "Sony PlayStation", "Sony PlayStation 2", "Sony PlayStation 3", "Sony Playstation Portable", "Sony Playstation Vita", "Sony PlayStation 4", "Sony Playstation 5",
+  "Xbox", "Xbox 360", "Xbox One", "Xbox PC", "Xbox Series",
 ];
 const COUNTRY_OPTIONS = [
   ["Australia", "Australia"], ["China", "China"], ["Europe", "EU"], ["France", "France"], ["Germany", "Germany"],
@@ -181,6 +182,7 @@ async function init() {
   populateEditorOptions();
   bindEvents();
   if (window.self === window.top) initPagePullTransition({ targetLabel: "Gamelist", targetUrl: "./" });
+  hydrateModuleCache();
   const [shelfData, auth, gamelistData] = await Promise.all([
     fetch("/api/shelf", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).catch(() => null),
     fetch("/api/auth", { cache: "no-store" }).then((response) => response.ok).catch(() => false),
@@ -213,11 +215,11 @@ function bindEvents() {
     }
     scrollToShelfLibrary();
   });
-  el.search.addEventListener("input", () => { state.filters.query = normalizeSearchText(el.search.value); renderLibrary(); });
-  el.platform.addEventListener("change", () => { state.filters.platform = el.platform.value; renderLibrary(); });
-  el.region.addEventListener("change", () => { state.filters.region = el.region.value; renderLibrary(); });
-  el.condition.addEventListener("change", () => { state.filters.condition = el.condition.value; renderLibrary(); });
-  el.category.addEventListener("change", () => { state.filters.category = el.category.value; renderLibrary(); });
+  el.search.addEventListener("input", () => { state.filters.query = normalizeSearchText(el.search.value); renderFilteredShelf(); });
+  el.platform.addEventListener("change", () => { state.filters.platform = el.platform.value; renderFilteredShelf(); });
+  el.region.addEventListener("change", () => { state.filters.region = el.region.value; renderFilteredShelf(); });
+  el.condition.addEventListener("change", () => { state.filters.condition = el.condition.value; renderFilteredShelf(); });
+  el.category.addEventListener("change", () => { state.filters.category = el.category.value; renderFilteredShelf(); });
   el.sort.addEventListener("change", () => { state.filters.sort = el.sort.value; if (["added", "value"].includes(state.filters.sort)) state.filters.direction = "desc"; renderChrome(); renderLibrary(); });
   el.sortDirection.addEventListener("click", () => { state.filters.direction = state.filters.direction === "asc" ? "desc" : "asc"; renderChrome(); renderLibrary(); });
   el.view.addEventListener("click", toggleView);
@@ -311,6 +313,39 @@ function renderAll() {
   renderReleaseCalendar();
   renderGamelistModules();
   renderLibrary();
+  saveModuleCache();
+}
+
+function hydrateModuleCache() {
+  try {
+    const cache = JSON.parse(localStorage.getItem(MODULE_CACHE_KEY) || "{}");
+    if (!cache || typeof cache !== "object") return;
+    if (cache.playing) el.playingCarousel.innerHTML = cache.playing;
+    if (cache.finished) el.finishedCarousel.innerHTML = cache.finished;
+    if (cache.favorites) el.favorites.innerHTML = cache.favorites;
+    if (cache.stats) el.stats.innerHTML = cache.stats;
+    if (cache.calendar) el.releaseCalendar.innerHTML = cache.calendar;
+    if (cache.playingCount) el.playingCount.textContent = cache.playingCount;
+    syncShelfActivityVisibility();
+  } catch {
+    localStorage.removeItem(MODULE_CACHE_KEY);
+  }
+}
+
+function saveModuleCache() {
+  try {
+    localStorage.setItem(MODULE_CACHE_KEY, JSON.stringify({
+      playing: el.playingCarousel.innerHTML,
+      finished: el.finishedCarousel.innerHTML,
+      favorites: el.favorites.innerHTML,
+      stats: el.stats.innerHTML,
+      calendar: el.releaseCalendar.innerHTML,
+      playingCount: el.playingCount.textContent,
+      savedAt: Date.now(),
+    }));
+  } catch {
+    // Module cache is only a paint-speed hint.
+  }
 }
 
 function renderFavorites() {
@@ -711,7 +746,7 @@ function delay(ms) {
 }
 
 function renderStats() {
-  const visibleGames = visibleShelfGames();
+  const visibleGames = filteredShelfStatsGames();
   const collectionGames = visibleGames.filter((game) => !isPendingCollectionGame(game));
   const value = collectionGames.reduce((sum, game) => sum + (collectionValueFor(game) || 0), 0);
   const valueText = normalizePriceSettings(state.gamelistSettings).currency === "USD" ? `$${Math.round(value).toLocaleString("en")}` : `${Math.round(value).toLocaleString("en")}€`;
@@ -729,7 +764,7 @@ function renderFilters() {
     state.filters.direction = "asc";
   }
   const visibleGames = visibleShelfGames();
-  const platforms = uniqueSorted(visibleGames.map((game) => game.platform));
+  const platforms = orderedPlatforms(uniqueSorted(visibleGames.map((game) => game.platform)));
   const countries = uniqueSorted(visibleGames.map((game) => game.country));
   const categories = uniqueSorted(visibleGames.flatMap((game) => [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).filter(Boolean)));
   el.platform.innerHTML = `<option value="all">${escapeHtml(tt("All platforms"))}</option>${platforms.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(platformDisplayName(value))}</option>`).join("")}`;
@@ -900,6 +935,11 @@ function renderLibrary() {
   el.empty.hidden = games.length > 0;
 }
 
+function renderFilteredShelf() {
+  renderStats();
+  renderLibrary();
+}
+
 function normalizedShelfTab(tab) {
   return tab === "new" ? "new" : "shelf";
 }
@@ -949,6 +989,17 @@ function filteredGames() {
       && (normalizedShelfTab(state.filters.tab) === "new" ? isPendingCollectionGame(game) : !isPendingCollectionGame(game))
       && (!state.filters.query || haystack.includes(state.filters.query));
   }).sort(sorter(state.filters.sort));
+}
+function filteredShelfStatsGames() {
+  return visibleShelfGames().filter((game) => {
+    const haystack = normalizeSearchText(`${game.title} ${game.platform} ${game.publisher} ${game.developer} ${game.genre} ${game.notes} ${(game.tags || []).join(" ")} ${(game.owners || []).join(" ")}`);
+    return !game.deletedAt
+      && (state.filters.platform === "all" || game.platform === state.filters.platform)
+      && (state.filters.region === "all" || game.country === state.filters.region)
+      && conditionMatches(game, state.filters.condition)
+      && (state.filters.category === "all" || [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).includes(state.filters.category))
+      && (!state.filters.query || haystack.includes(state.filters.query));
+  });
 }
 function isPendingCollectionGame(game) { return Boolean(game?.pendingCollection); }
 function visibleShelfGames() { return state.canEdit ? state.games : state.games.filter((game) => !isPendingCollectionGame(game)); }
@@ -1763,7 +1814,7 @@ function openShowcaseEditor() {
 
 function renderShowcaseFilters() {
   const games = ownedShelfGames();
-  const platforms = uniqueSorted(games.map((game) => game.platform));
+  const platforms = orderedPlatforms(uniqueSorted(games.map((game) => game.platform)));
   const countries = uniqueSorted(games.map((game) => game.country));
   const categories = uniqueSorted(games.flatMap((game) => [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).filter(Boolean)));
   el.showcasePlatform.innerHTML = `<option value="all">All platforms</option>${platforms.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(platformDisplayName(value))}</option>`).join("")}`;
@@ -1969,7 +2020,7 @@ function clearFilters() {
   el.condition.value = "all";
   el.category.value = "all";
   renderFilters();
-  renderLibrary();
+  renderFilteredShelf();
 }
 
 function openDialog(dialog) { dialog.showModal(); document.body.classList.add("dialog-open"); }
@@ -2420,7 +2471,7 @@ async function hydrateCompletedCovers(items) {
 }
 function renderCompletedGames(items) {
   const years = uniqueSorted(items.map(completedYearFor).filter(Boolean)).reverse();
-  const platforms = uniqueSorted(items.map((item) => completedPlatformFor(item.platform)));
+  const platforms = orderedPlatforms(uniqueSorted(items.map((item) => completedPlatformFor(item.platform))));
   if (state.completedYear !== "all" && !years.includes(state.completedYear)) state.completedYear = "all";
   if (state.completedPlatform !== "all" && !platforms.includes(state.completedPlatform)) state.completedPlatform = "all";
   const direction = state.completedDirection === "asc" ? 1 : -1;
@@ -2429,7 +2480,7 @@ function renderCompletedGames(items) {
   el.completedCount.textContent = `${visible.length} completed`;
   el.completedYear.innerHTML = `<option value="all">All</option>${years.map((year) => `<option value="${year}">${year}</option>`).join("")}`;
   el.completedYear.value = state.completedYear;
-  el.completedPlatform.innerHTML = `<option value="all">All</option>${platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platform)}</option>`).join("")}`;
+  el.completedPlatform.innerHTML = `<option value="all">All</option>${platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platformDisplayName(platform))}</option>`).join("")}`;
   el.completedPlatform.value = state.completedPlatform;
   el.completedSort.value = state.completedSort;
   el.completedDirection.innerHTML = sortArrowIcon(state.completedDirection === "desc");
@@ -2964,16 +3015,25 @@ function platformDisplayName(value) {
     PS2: "Sony PlayStation 2",
     PS3: "Sony PlayStation 3",
     PS4: "Sony PlayStation 4",
-    PS5: "Sony PlayStation 5",
-    PSP: "Sony PSP",
-    PSVita: "Sony PlayStation Vita",
+    PS5: "Sony Playstation 5",
+    PSP: "Sony Playstation Portable",
+    PSVita: "Sony Playstation Vita",
     X360: "Xbox 360",
     XOne: "Xbox One",
     GBC: "Game Boy Color",
     GB: "Game Boy",
-    GC: "Nintendo GameCube",
+    GC: "Nintendo Gamecube",
+    GBA: "Game Boy Advanced",
+    NES: "Nintendo Entertainment System",
+    SNES: "Super Nintendo Entertainment System",
+    N64: "Nintendo 64",
+    DS: "Nintendo DS",
+    Wii: "Nintendo Wii",
+    "Wii U": "Nintendo Wii U",
+    "3DS": "Nintendo 3DS",
     Gen: "Sega Genesis",
     DC: "Sega Dreamcast",
+    Steam: "PC",
   };
   return labels[platform] || value || platform;
 }
@@ -2992,16 +3052,16 @@ function canonicalShelfPlatform(value) {
     sonyplaystation3: "PS3", playstation3: "PS3", ps3: "PS3",
     sonyplaystation4: "PS4", playstation4: "PS4", ps4: "PS4",
     sonyplaystation5: "PS5", playstation5: "PS5", ps5: "PS5",
-    playstationportable: "PSP", psp: "PSP", playstationvita: "PSVita", psvita: "PSVita", vita: "PSVita",
+    sonyplaystationportable: "PSP", playstationportable: "PSP", psp: "PSP", sonyplaystationvita: "PSVita", playstationvita: "PSVita", psvita: "PSVita", vita: "PSVita",
     nintendoswitch: "Switch", switch: "Switch", nintendoswitch2: "Switch 2", switch2: "Switch 2",
     nintendo64: "N64", n64: "N64", nintendogamecube: "GC", gamecube: "GC", gc: "GC",
     nintendoentertainmentsystem: "NES", nes: "NES", supernintendo: "SNES", supernintendoentertainmentsystem: "SNES", snes: "SNES",
     nintendods: "DS", nds: "DS", ds: "DS", nintendo3ds: "3DS", n3ds: "3DS", "3ds": "3DS",
-    gameboyadvance: "GBA", gba: "GBA", gameboycolor: "GBC", gbc: "GBC", gameboy: "GB", gb: "GB",
+    gameboyadvance: "GBA", gameboyadvanced: "GBA", gba: "GBA", gameboycolor: "GBC", gbc: "GBC", gameboy: "GB", gb: "GB",
     genesis: "Gen", megadrive: "Gen", segamegadrive: "Gen", segagenesis: "Gen", sega: "Sega",
     dreamcast: "DC", segadreamcast: "DC", dc: "DC", segacd: "Sega CD", saturn: "Saturn", segasaturn: "Saturn",
     mastersystem: "Master System", segamastersystem: "Master System", gamegear: "Game Gear", segagamegear: "Game Gear", sega32x: "32X", "32x": "32X",
-    steam: "Steam", pc: "Steam", xbox360: "X360", x360: "X360", xboxone: "XOne", xone: "XOne", xboxseries: "Xbox Series", xbox: "Xbox",
+    steam: "Steam", pc: "Steam", xboxpc: "Xbox PC", microsoftpc: "Xbox PC", xbox360: "X360", x360: "X360", xboxone: "XOne", xone: "XOne", xboxseries: "Xbox Series", xbox: "Xbox",
   };
   return aliases[key] || text;
 }
@@ -3011,6 +3071,19 @@ function countValues(values) { const map = new Map(); values.filter(Boolean).for
 function conditionMatches(game, condition) { const label = conditionLabel(game).toLowerCase(); if (condition === "all") return true; if (condition === "complete") return label === "complete"; if (condition === "complete-plus") return label === "complete +"; if (condition === "loose") return label === "loose"; if (condition === "sealed") return label === "sealed"; return true; }
 function sorter(type) { const direction = state.filters.direction === "desc" ? -1 : 1; if (type === "custom") return (a, b) => direction * ((a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.title.localeCompare(b.title)); if (type === "title" || type === "name") return (a, b) => direction * a.title.localeCompare(b.title); if (type === "added") return (a, b) => direction * (new Date(a.createdAt || 0) - new Date(b.createdAt || 0)); if (type === "value") return (a, b) => direction * (collectionValueFor(a) - collectionValueFor(b)); if (type === "region") return (a, b) => direction * (a.country.localeCompare(b.country) || a.title.localeCompare(b.title)); return (a, b) => direction * (a.platform.localeCompare(b.platform) || a.title.localeCompare(b.title)); }
 function uniqueSorted(values) { return [...new Set(values.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: "base" })); }
+function orderedPlatforms(values) { return [...values].sort((a, b) => platformOrderRank(a) - platformOrderRank(b) || platformDisplayName(a).localeCompare(platformDisplayName(b), undefined, { sensitivity: "base" })); }
+function platformOrderRank(platform) {
+  const value = shortPlatform(platform);
+  const order = [
+    "Steam", "PC",
+    "Game Gear", "Gen", "DC",
+    "GB", "GBC", "NES", "SNES", "N64", "GC", "GBA", "DS", "Wii", "Wii U", "3DS", "Switch", "Switch 2",
+    "PS1", "PS2", "PS3", "PSP", "PSVita", "PS4", "PS5",
+    "Xbox", "X360", "XOne", "Xbox PC", "Xbox Series",
+  ];
+  const index = order.indexOf(value);
+  return index >= 0 ? index : 1000;
+}
 function shelfSortForDefault(value) { if (value === "time") return "added"; if (value === "name") return "title"; return ["added", "title", "platform", "region", "value"].includes(value) ? value : "platform"; }
 function applyShelfDefaultOrder(value) { state.filters.sort = shelfSortForDefault(value); state.filters.direction = ["added", "value"].includes(state.filters.sort) ? "desc" : "asc"; }
 function bestCollectionPlatform(platforms, fallback) {

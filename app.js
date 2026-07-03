@@ -2308,7 +2308,11 @@ function handleBoardSwipeEnd(event) {
 }
 
 function syncMobileSectionToResults() {
-  if (!state.filters.query && !state.filters.preordered) return;
+  const hasActiveFilter = Boolean(state.filters.query)
+    || state.filters.platform !== "all"
+    || state.filters.tag !== "all"
+    || state.filters.preordered;
+  if (!hasActiveFilter) return;
   const sections = state.filters.preordered ? mobileSections().filter((section) => section !== "new").sort((a, b) => ["upcoming", "backlog", "wanted"].indexOf(a) - ["upcoming", "backlog", "wanted"].indexOf(b)) : mobileSections();
   const hasCurrent = filteredGames().some((game) => (
     game.section === state.mobileSection
@@ -2326,7 +2330,7 @@ function syncMobileSectionToResults() {
 
 function renderFilters() {
   const active = state.games.filter((game) => !game.deletedAt);
-  const platforms = unique(active.map((game) => platformFilterGroup(game.platform)).filter(Boolean));
+  const platforms = orderedPlatforms(unique(active.map((game) => platformFilterGroup(game.platform)).filter(Boolean)));
   const genres = unique(active.flatMap((game) => game.genres || []));
   fillSelect(el.platformFilter, ["all", ...platforms], state.filters.platform, tt("All platforms"));
   fillSelect(el.tagFilter, ["all", ...genres], state.filters.tag, tt("All categories"));
@@ -2474,7 +2478,7 @@ function platformLogoChoiceMarkup(value, label, options = {}) {
 }
 
 function platformFilterDisplayName(value) {
-  return ["Steam", "Xbox PC", "PC"].includes(platformFilterGroup(value)) || ["Steam", "Xbox PC", "PC"].includes(canonicalPlatform(value) || value)
+  return ["Steam", "PC"].includes(platformFilterGroup(value)) || ["Steam", "PC"].includes(canonicalPlatform(value) || value)
     ? "PC"
     : platformDisplayName(value);
 }
@@ -4558,8 +4562,10 @@ function canonicalPlatform(value) {
     ps2: "PS2",
     playstation3: "PS3",
     ps3: "PS3",
+    sonyplaystationportable: "PSP",
     playstationportable: "PSP",
     psp: "PSP",
+    sonyplaystationvita: "PSVita",
     playstationvita: "PSVita",
     psvita: "PSVita",
     vita: "PSVita",
@@ -4609,6 +4615,7 @@ function canonicalPlatform(value) {
     threeds: "3DS",
     "3ds": "3DS",
     gameboyadvance: "GBA",
+    gameboyadvanced: "GBA",
     gba: "GBA",
     gameboycolor: "GBC",
     gbc: "GBC",
@@ -4638,7 +4645,7 @@ function canonicalPlatform(value) {
 
 function platformFilterGroup(platform) {
   const value = canonicalPlatform(platform);
-  return ["Steam", "Xbox PC"].includes(value) ? "PC" : value;
+  return value === "Steam" ? "PC" : value;
 }
 
 function platformDisplayName(platform) {
@@ -4649,18 +4656,43 @@ function platformDisplayName(platform) {
     PS2: "Sony PlayStation 2",
     PS3: "Sony PlayStation 3",
     PS4: "Sony PlayStation 4",
-    PS5: "Sony PlayStation 5",
-    PSP: "Sony PSP",
-    PSVita: "Sony PlayStation Vita",
+    PS5: "Sony Playstation 5",
+    PSP: "Sony Playstation Portable",
+    PSVita: "Sony Playstation Vita",
     X360: "Xbox 360",
     XOne: "Xbox One",
     GBC: "Game Boy Color",
     GB: "Game Boy",
-    GC: "Nintendo GameCube",
+    GC: "Nintendo Gamecube",
+    GBA: "Game Boy Advanced",
+    NES: "Nintendo Entertainment System",
+    SNES: "Super Nintendo Entertainment System",
+    N64: "Nintendo 64",
+    DS: "Nintendo DS",
+    Wii: "Nintendo Wii",
+    "Wii U": "Nintendo Wii U",
+    "3DS": "Nintendo 3DS",
     Gen: "Sega Genesis",
     DC: "Sega Dreamcast",
   };
   return labels[value] || value;
+}
+
+function orderedPlatforms(values) {
+  return [...values].sort((a, b) => platformOrderRank(a) - platformOrderRank(b) || stringCompare(platformDisplayName(a), platformDisplayName(b)));
+}
+
+function platformOrderRank(platform) {
+  const value = platformFilterGroup(platform);
+  const order = [
+    "PC",
+    "Game Gear", "Gen", "DC",
+    "GB", "GBC", "NES", "SNES", "N64", "GC", "GBA", "DS", "Wii", "Wii U", "3DS", "Switch", "Switch 2",
+    "PS1", "PS2", "PS3", "PSP", "PSVita", "PS4", "PS5",
+    "Xbox", "X360", "XOne", "Xbox PC", "Xbox Series",
+  ];
+  const index = order.indexOf(value);
+  return index >= 0 ? index : 1000;
 }
 
 function normalizeGameRecords(games) {
