@@ -2337,7 +2337,7 @@ function fillSelect(select, values, selected, allLabel) {
     return;
   }
   select.innerHTML = values.map((value) => {
-    const label = value === "all" ? allLabel : platformDisplayName(value);
+    const label = value === "all" ? allLabel : (select === el.platformFilter ? platformFilterDisplayName(value) : platformDisplayName(value));
     return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
   }).join("");
   select.value = values.includes(selected) ? selected : "all";
@@ -2435,7 +2435,7 @@ function hidePlatformLogoOverlay() {
 }
 
 function platformLogoChoiceMarkup(value, label) {
-  const showLogo = value && value !== "all" && value !== "PC";
+  const showLogo = value && value !== "all" && platformFilterDisplayName(value) !== "PC";
   const cls = showLogo ? platformClass(value) : "platform-generic";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
@@ -2443,6 +2443,12 @@ function platformLogoChoiceMarkup(value, label) {
       <span class="platform-logo-choice-label">${escapeHtml(label)}</span>
     </span>
   `;
+}
+
+function platformFilterDisplayName(value) {
+  return ["Steam", "Xbox PC", "PC"].includes(platformFilterGroup(value)) || ["Steam", "Xbox PC", "PC"].includes(canonicalPlatform(value) || value)
+    ? "PC"
+    : platformDisplayName(value);
 }
 
 function handleSelectOverflowTitle(event) {
