@@ -2435,7 +2435,7 @@ function hidePlatformLogoOverlay() {
 }
 
 function platformLogoChoiceMarkup(value, label) {
-  const showLogo = value && value !== "all";
+  const showLogo = value && value !== "all" && value !== "PC";
   const cls = showLogo ? platformClass(value) : "platform-generic";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
@@ -4602,6 +4602,7 @@ function platformFilterGroup(platform) {
 function platformDisplayName(platform) {
   const value = canonicalPlatform(platform) || platform;
   const labels = {
+    PC: "PC",
     PS1: "Sony PlayStation",
     PS2: "Sony PlayStation 2",
     PS3: "Sony PlayStation 3",

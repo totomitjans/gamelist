@@ -2063,6 +2063,8 @@ body.dialog-open .floating-edit-actions {
   min-width: 0;
   color: var(--text);
   font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
   text-align: left;
   border: 0;
 }
@@ -2103,7 +2105,7 @@ body.dialog-open .floating-edit-actions {
   max-height: 380px;
   padding: 3px;
   overflow: auto;
-  background: #050508;
+  background: #222125;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
@@ -2129,7 +2131,7 @@ body.dialog-open .floating-edit-actions {
 .platform-logo-option:focus-visible,
 .platform-logo-option.is-selected {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.075);
+  background: transparent;
   outline: none;
 }
 
@@ -2162,6 +2164,11 @@ body.dialog-open .floating-edit-actions {
   gap: 7px;
   min-width: 0;
   width: 100%;
+  height: 100%;
+  color: #ffffff;
+  background: transparent !important;
+  border-color: transparent !important;
+  border-radius: 0;
 }
 
 .platform-logo-choice span {
@@ -2185,6 +2192,16 @@ body.dialog-open .floating-edit-actions {
   max-width: 17px;
   max-height: 17px;
   object-fit: contain;
+}
+
+.platform-logo-option:hover .platform-logo-choice-label,
+.platform-logo-option:focus-visible .platform-logo-choice-label,
+.platform-logo-option.is-selected .platform-logo-choice-label {
+  color: #ffffff;
+}
+
+.platform-logo-choice .platform-logo-choice-label {
+  color: #ffffff;
 }
 
 .platform-logo-choice.platform-ps3 .platform-logo-choice-icon img,
