@@ -3661,6 +3661,34 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   border-color: rgba(0, 0, 0, 0.12);
 }
 
+.platform-ps1 {
+  background: rgba(142, 148, 160, 0.18);
+  border-color: rgba(183, 189, 202, 0.36);
+}
+
+.platform-ps1 .platform-label,
+.platform-ps1 .platform-count {
+  color: #aeb4c0;
+}
+
+.platform-ps3,
+.platform-psp {
+  background: #05070b;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.platform-ps3 .platform-label,
+.platform-ps3 .platform-count,
+.platform-psp .platform-label,
+.platform-psp .platform-count {
+  color: #ffffff;
+}
+
+.platform-ps3 .platform-icon img,
+.platform-psp .platform-icon img {
+  filter: brightness(0) invert(1);
+}
+
 .platform-wii .platform-label,
 .platform-nes .platform-label,
 .platform-ds .platform-label,

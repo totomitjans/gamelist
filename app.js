@@ -4280,7 +4280,10 @@ function platformClass(platform) {
   if (value === "dc" || value.includes("dreamcast")) return "platform-dreamcast";
   if (isSegaPlatform(value)) return "platform-sega";
   if (value.includes("switch")) return "platform-nintendo";
+  if (value === "ps1") return "platform-playstation platform-ps1";
+  if (value === "ps3") return "platform-playstation platform-ps3";
   if (value === "ps5") return "platform-playstation platform-ps5";
+  if (value === "psp") return "platform-playstation platform-psp";
   if (/\bps\d*\b/.test(value) || value.includes("playstation") || value.includes("psp") || value.includes("vita")) return "platform-playstation";
   if (value.includes("xbox") || value.includes("microsoft") || value === "x360" || value === "xone") return "platform-xbox";
   if (value.includes("steam") || value.includes("pc")) return "platform-pc";
