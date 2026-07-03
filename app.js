@@ -2324,8 +2324,10 @@ function renderFilters() {
   const platforms = unique(active.map((game) => platformFilterGroup(game.platform)).filter(Boolean));
   const genres = unique(active.flatMap((game) => game.genres || []));
   fillSelect(el.platformFilter, ["all", ...platforms], state.filters.platform, tt("All platforms"));
-  syncPlatformLogoSelect(el.platformFilter);
   fillSelect(el.tagFilter, ["all", ...genres], state.filters.tag, tt("All categories"));
+  syncStyledSelect(el.platformFilter, { logos: true, activeValue: "all" });
+  syncStyledSelect(el.tagFilter, { activeValue: "all" });
+  syncStyledSelect(el.sortFilter, { activeValue: "custom" });
 }
 
 function fillSelect(select, values, selected, allLabel) {
@@ -2344,30 +2346,31 @@ function fillSelect(select, values, selected, allLabel) {
   updateSelectOverflowTitle(select);
 }
 
-function syncPlatformLogoSelect(select) {
+function syncStyledSelect(select, options = {}) {
   if (!select) return;
-  select.classList.add("native-platform-filter");
+  const useLogos = Boolean(options.logos);
+  select.classList.add(useLogos ? "native-platform-filter" : "native-styled-select");
   let control = select.nextElementSibling;
   if (!control?.classList?.contains("platform-logo-select")) {
     control = document.createElement("div");
     control.className = "platform-logo-select";
     select.insertAdjacentElement("afterend", control);
   }
-  const options = [...select.options].map((option) => ({
+  const selectOptions = [...select.options].map((option) => ({
     value: option.value,
     label: option.textContent.trim(),
     selected: option.selected,
   }));
-  const selected = options.find((option) => option.selected) || options[0] || { value: "all", label: "All platforms" };
-  control.classList.toggle("is-active", selected.value !== "all");
+  const selected = selectOptions.find((option) => option.selected) || selectOptions[0] || { value: "all", label: "All platforms" };
+  control.classList.toggle("is-active", selected.value !== (options.activeValue ?? "all"));
   control.innerHTML = `
     <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false">
-      ${platformLogoChoiceMarkup(selected.value, selected.label)}
+      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos })}
     </button>
     <div class="platform-logo-menu" role="listbox">
-      ${options.map((option) => `
+      ${selectOptions.map((option) => `
         <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}" data-full-label="${escapeHtml(option.label)}">
-          ${platformLogoChoiceMarkup(option.value, option.label)}
+          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos })}
         </button>
       `).join("")}
     </div>
@@ -2434,8 +2437,8 @@ function hidePlatformLogoOverlay() {
   platformLogoOverlay?.classList.remove("visible");
 }
 
-function platformLogoChoiceMarkup(value, label) {
-  const showLogo = value && value !== "all" && platformFilterDisplayName(value) !== "PC";
+function platformLogoChoiceMarkup(value, label, options = {}) {
+  const showLogo = options.logos && value && value !== "all" && platformFilterDisplayName(value) !== "PC";
   const cls = showLogo ? platformClass(value) : "platform-generic";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
