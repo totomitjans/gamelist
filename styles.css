@@ -7501,6 +7501,8 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 }
 
 .platinum-filter-bar {
+  position: relative;
+  z-index: 30;
   display: grid;
   grid-template-columns: 110px 132px auto;
   align-items: end;
@@ -7522,9 +7524,15 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 .platinum-year-select,
 .platinum-platform-select,
 .platinum-order-label {
+  position: relative;
   display: grid;
+  z-index: 1;
   min-width: 0;
   margin: 0;
+}
+
+.platinum-filter-bar .platform-logo-select.is-open {
+  z-index: 60;
 }
 
 .platinum-year-select select,
@@ -7580,6 +7588,8 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 }
 
 .platinum-list {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
