@@ -146,6 +146,7 @@ function runnerHtml() {
     <p>This accepts pending Shelf New additions into the physical collection in small batches.</p>
     <div class="row">
       <label>Batch size <input id="limit" type="number" min="1" max="50" value="10"></label>
+      <label>Platform <select id="platform"><option value="all">All platforms</option></select></label>
       <button class="primary" id="start" type="button">Accept pending additions</button>
       <a href="/shelf">Back to Shelf</a>
     </div>
@@ -157,6 +158,7 @@ function runnerHtml() {
     const log = document.querySelector("#log");
     const bar = document.querySelector("#bar");
     const limit = document.querySelector("#limit");
+    const platform = document.querySelector("#platform");
     const password = () => sessionStorage.getItem("gamelist-editor:password") || "";
     const line = (text) => { log.textContent += text + "\\n"; log.scrollTop = log.scrollHeight; };
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -170,14 +172,28 @@ function runnerHtml() {
       }
       return data;
     }
+    const platformKey = (value) => String(value || "").trim().toLowerCase();
+    const platformLabel = (value) => String(value || "").trim() || "Unknown";
+    const matchesPlatform = (game) => platform.value === "all" || platformKey(game.platform) === platform.value;
+    async function hydratePlatforms() {
+      const shelf = await fetch("/api/shelf", { cache: "no-store" }).then((response) => readJson(response, "GET /api/shelf"));
+      const platforms = [...new Map((shelf.games || [])
+        .filter((game) => game.pendingCollection)
+        .map((game) => [platformKey(game.platform), platformLabel(game.platform)])
+        .filter(([key]) => key)).entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]));
+      platform.innerHTML = '<option value="all">All platforms</option>' + platforms.map(([key, label]) => '<option value="' + key.replace(/"/g, "&quot;") + '">' + label.replace(/</g, "&lt;") + '</option>').join("");
+      return shelf;
+    }
+    hydratePlatforms().catch((error) => line("Could not load platforms: " + (error.message || error)));
     start.addEventListener("click", async () => {
       start.disabled = true;
       log.textContent = "";
       try {
         const shelf = await fetch("/api/shelf", { cache: "no-store" }).then((response) => readJson(response, "GET /api/shelf"));
-        const queue = (shelf.games || []).filter((game) => game.pendingCollection);
+        const queue = (shelf.games || []).filter((game) => game.pendingCollection && matchesPlatform(game));
         const ids = queue.map((game) => game.id);
-        if (!ids.length) { line("No pending Shelf additions found."); return; }
+        if (!ids.length) { line("No pending Shelf additions found for the selected platform."); return; }
         const size = Math.max(1, Math.min(50, Number(limit.value) || 10));
         line("Found " + ids.length + " pending additions. Running " + size + " at a time...");
         line("");

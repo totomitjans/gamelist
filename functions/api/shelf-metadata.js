@@ -316,6 +316,7 @@ function runnerHtml() {
     <p>This fills only missing Shelf fields from IGDB and PriceCharting. Existing values are left alone.</p>
     <div class="row">
       <label class="control">Batch size <input id="limit" type="number" min="1" max="25" value="5"></label>
+      <label class="control">Platform <select id="platform"><option value="all">All platforms</option></select></label>
       <label><input id="igdb" type="checkbox" checked> IGDB</label>
       <label><input id="pricecharting" type="checkbox" checked> PriceCharting</label>
       <label><input id="pending" type="checkbox"> Include pending</label>
@@ -333,6 +334,7 @@ function runnerHtml() {
     const igdb = document.querySelector("#igdb");
     const pricecharting = document.querySelector("#pricecharting");
     const pending = document.querySelector("#pending");
+    const platform = document.querySelector("#platform");
     const password = () => sessionStorage.getItem("gamelist-editor:password") || "";
     const line = (text) => { log.textContent += text + "\\n"; log.scrollTop = log.scrollHeight; };
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -346,6 +348,20 @@ function runnerHtml() {
       }
       return data;
     }
+    const platformKey = (value) => String(value || "").trim().toLowerCase();
+    const platformLabel = (value) => String(value || "").trim() || "Unknown";
+    const matchesPlatform = (game) => platform.value === "all" || platformKey(game.platform) === platform.value;
+    async function hydratePlatforms() {
+      const shelf = await fetch("/api/shelf", { cache: "no-store" }).then((response) => readJson(response, "GET /api/shelf"));
+      const games = [...(shelf.sourceGames || []), ...(shelf.games || [])];
+      const platforms = [...new Map(games
+        .map((game) => [platformKey(game.platform), platformLabel(game.platform)])
+        .filter(([key]) => key)).entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]));
+      platform.innerHTML = '<option value="all">All platforms</option>' + platforms.map(([key, label]) => '<option value="' + key.replace(/"/g, "&quot;") + '">' + label.replace(/</g, "&lt;") + '</option>').join("");
+      return shelf;
+    }
+    hydratePlatforms().catch((error) => line("Could not load platforms: " + (error.message || error)));
     const missingIgdb = (game) => !game.cover || !game.releaseDate || !game.publisher || !game.developer || !game.genre || !game.description || !game.igdbUrl;
     const missingPrice = (game) => {
       const prices = game.collectionPrices || {};
@@ -359,11 +375,11 @@ function runnerHtml() {
         const shelf = await fetch("/api/shelf", { cache: "no-store" }).then((response) => readJson(response, "GET /api/shelf"));
         const games = [...(shelf.sourceGames || []), ...(shelf.games || [])];
         const queue = games
-          .filter((game) => game.title && (pending.checked || !game.pendingCollection))
+          .filter((game) => game.title && (pending.checked || !game.pendingCollection) && matchesPlatform(game))
           .map((game) => ({ game, needsIgdb: igdb.checked && missingIgdb(game), needsPrice: pricecharting.checked && missingPrice(game) }))
           .filter((item) => item.needsIgdb || item.needsPrice);
         const ids = queue.map((item) => item.game.id);
-        if (!ids.length) { line("No Shelf games are missing the selected metadata."); return; }
+        if (!ids.length) { line("No Shelf games are missing the selected metadata for the selected platform."); return; }
         const size = Math.max(1, Math.min(25, Number(limit.value) || 5));
         line("Found " + ids.length + " games missing selected metadata. Running " + size + " at a time...");
         line("");
