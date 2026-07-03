@@ -950,7 +950,7 @@ function openEditor(game = null) {
   el.lookupResults.classList.remove("loaded");
   el.lookupResults.innerHTML = "";
   el.lookupInput.value = game?.title || "";
-  const values = game || { platform: "Nintendo Switch", country: defaultShelfCountry(), owners: defaultShelfOwners(), game: true, box: true, manual: true };
+  const values = game || { platform: "", country: defaultShelfCountry(), owners: defaultShelfOwners(), game: true, box: true, manual: true };
   for (const [key, input] of Object.entries(el.fields)) input.value = values[key] ?? "";
   el.fields.owners.value = (values.owners || []).join(", ");
   const links = normalizedStoreLinks(values);
@@ -1233,7 +1233,7 @@ async function saveEditor(event) {
   const game = {
     ...(existing || {}),
     id: existing?.id || `shelf-${crypto.randomUUID()}`,
-    title: el.fields.title.value.trim(), platform: el.fields.platform.value, country: el.fields.country.value,
+    title: el.fields.title.value.trim(), platform: el.fields.platform.value.trim(), country: el.fields.country.value,
     region: regionFor(el.fields.country.value), ...conditionFromInputs(),
     price: numberOrNull(el.fields.price.value), publisher: el.fields.publisher.value.trim(), developer: el.fields.developer.value.trim(),
     genre: el.fields.genre.value.trim(), cover: rawCoverUrl(el.fields.cover.value.trim()), notes: el.fields.notes.value.trim(),
