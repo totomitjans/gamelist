@@ -342,7 +342,6 @@ body.theme-kash .brand span:last-child {
 }
 
 body.theme-big-logo .brand-mark {
-  filter: unset !important;
   width: 70px !important;
   height: 70px !important;
 }
