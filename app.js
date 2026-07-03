@@ -2469,7 +2469,7 @@ function hidePlatformLogoOverlay() {
 }
 
 function platformLogoChoiceMarkup(value, label, options = {}) {
-  const showLogo = options.logos && value && value !== "all" && platformFilterDisplayName(value) !== "PC";
+  const showLogo = options.logos && value && value !== "all";
   const cls = showLogo ? platformClass(value) : "platform-generic";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
@@ -2480,9 +2480,7 @@ function platformLogoChoiceMarkup(value, label, options = {}) {
 }
 
 function platformFilterDisplayName(value) {
-  return ["Steam", "PC"].includes(platformFilterGroup(value)) || ["Steam", "PC"].includes(canonicalPlatform(value) || value)
-    ? "PC"
-    : platformDisplayName(value);
+  return platformDisplayName(value);
 }
 
 function handleSelectOverflowTitle(event) {
@@ -4647,7 +4645,7 @@ function canonicalPlatform(value) {
 
 function platformFilterGroup(platform) {
   const value = canonicalPlatform(platform);
-  return value === "Steam" ? "PC" : value;
+  return value;
 }
 
 function platformDisplayName(platform) {
@@ -4687,7 +4685,7 @@ function orderedPlatforms(values) {
 function platformOrderRank(platform) {
   const value = platformFilterGroup(platform);
   const order = [
-    "PC",
+    "Steam", "PC",
     "Game Gear", "Gen", "DC",
     "GB", "GBC", "NES", "SNES", "N64", "GC", "GBA", "DS", "Wii", "Wii U", "3DS", "Switch", "Switch 2",
     "PS1", "PS2", "PS3", "PSP", "PSVita", "PS4", "PS5",

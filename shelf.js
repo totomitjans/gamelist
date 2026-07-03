@@ -26,7 +26,7 @@ const THEMES = {
 const siteVersion = { version: "", updatedAt: "" };
 const MODULE_NAMES = { playing: "Currently Playing", latestFinished: "Last Finished", favorites: "Showcase", trophies: "Achievements", calendar: "Calendar", kpis: "Highlights", filters: "Search", library: "Shelf" };
 const PLATFORM_OPTIONS = [
-  "PC",
+  "Steam",
   "Sega Game Gear", "Sega Genesis", "Sega Dreamcast",
   "Game Boy", "Game Boy Color", "Nintendo Entertainment System", "Super Nintendo Entertainment System",
   "Nintendo 64", "Nintendo GameCube", "Game Boy Advance", "Nintendo DS", "Nintendo Wii", "Nintendo Wii U", "Nintendo 3DS",
@@ -3035,7 +3035,6 @@ function platformDisplayName(value) {
     "3DS": "Nintendo 3DS",
     Gen: "Sega Genesis",
     DC: "Sega Dreamcast",
-    Steam: "PC",
   };
   return labels[platform] || value || platform;
 }
