@@ -3646,46 +3646,46 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   color: var(--playstation);
 }
 
-.platform-ps5 .platform-label {
+.platform-playstation.platform-ps5 .platform-label {
   color: #05070b;
 }
 
-.platform-ps5 {
+.platform-playstation.platform-ps5 {
   background: #ffffff;
   border-color: rgba(255, 255, 255, 0.92);
 }
 
-.platform-ps5 .platform-count {
+.platform-playstation.platform-ps5 .platform-count {
   color: #05070b;
   background: rgba(0, 0, 0, 0.08);
   border-color: rgba(0, 0, 0, 0.12);
 }
 
-.platform-ps1 {
+.platform-playstation.platform-ps1 {
   background: rgba(142, 148, 160, 0.18);
   border-color: rgba(183, 189, 202, 0.36);
 }
 
-.platform-ps1 .platform-label,
-.platform-ps1 .platform-count {
+.platform-playstation.platform-ps1 .platform-label,
+.platform-playstation.platform-ps1 .platform-count {
   color: #aeb4c0;
 }
 
-.platform-ps3,
-.platform-psp {
+.platform-playstation.platform-ps3,
+.platform-playstation.platform-psp {
   background: #05070b;
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.platform-ps3 .platform-label,
-.platform-ps3 .platform-count,
-.platform-psp .platform-label,
-.platform-psp .platform-count {
+.platform-playstation.platform-ps3 .platform-label,
+.platform-playstation.platform-ps3 .platform-count,
+.platform-playstation.platform-psp .platform-label,
+.platform-playstation.platform-psp .platform-count {
   color: #ffffff;
 }
 
-.platform-ps3 .platform-icon img,
-.platform-psp .platform-icon img {
+.platform-playstation.platform-ps3 .platform-icon img,
+.platform-playstation.platform-psp .platform-icon img {
   filter: brightness(0) invert(1);
 }
 
