@@ -2011,7 +2011,7 @@ body.dialog-open .floating-edit-actions {
   top: calc(20px + var(--pull-ui-offset, 0px));
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(180px, 0.72fr) 126px 220px 170px 150px var(
+  grid-template-columns: minmax(260px, 1.15fr) 116px minmax(190px, 210px) minmax(150px, 165px) 132px var(
       --toolbar-control-height
     );
   gap: 10px;
