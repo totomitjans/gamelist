@@ -2080,7 +2080,7 @@ body.dialog-open .floating-edit-actions {
   min-width: 0;
   color: var(--text);
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1;
   text-align: left;
   border: 0;
@@ -2095,7 +2095,7 @@ body.dialog-open .floating-edit-actions {
   min-height: var(--dropdown-control-height);
   padding: 0 34px 0 11px;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   background-color: rgba(255, 255, 255, 0.065);
   background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
