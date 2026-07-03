@@ -2136,8 +2136,9 @@ body.dialog-open .floating-edit-actions {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 28px;
-  padding: 3px 6px 3px 8px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 6px 0 8px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -2202,11 +2203,16 @@ body.dialog-open .floating-edit-actions {
   gap: 7px;
   min-width: 0;
   width: 100%;
-  min-height: 18px;
+  min-height: 100%;
   color: #ffffff;
   background: transparent !important;
   border-color: transparent !important;
   border-radius: 0;
+}
+
+.platform-logo-option .platform-logo-choice {
+  height: 100%;
+  align-items: center;
 }
 
 .platform-logo-button .platform-logo-choice {
@@ -2268,7 +2274,7 @@ body.dialog-open .floating-edit-actions {
   position: relative;
   align-items: center;
   min-width: 0;
-  min-height: 18px;
+  min-height: 100%;
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
