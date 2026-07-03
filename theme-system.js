@@ -121,6 +121,7 @@ export function applySiteTheme(settings = {}, options = {}) {
   body?.classList.toggle("theme-big-logo", theme.bigLogo);
   body?.classList.toggle("theme-font-pokemon", theme.accentFont === "pokemon");
   root.style.setProperty("--accent", theme.mainColor);
+  root.style.setProperty("--accent-1", theme.accentColor);
   root.style.setProperty("--accent-2", theme.accentColor);
   root.style.setProperty("--accent-3", theme.accent3);
   root.style.setProperty("--extra-color", theme.extraColor);
