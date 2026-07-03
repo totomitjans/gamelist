@@ -1,17 +1,18 @@
-import { runnerStyle } from "./runner-style.js";
+import { runnerStyle, runnerThemeSettings } from "./runner-style.js";
 
 const KV_KEY = "shelf-data";
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   if (!env.GAMELIST) return json({ error: "Missing GAMELIST KV binding" }, 501);
+  const settings = await runnerThemeSettings(env);
   const shelf = await env.GAMELIST.get(KV_KEY, "json") || {};
   const games = mergedShelfGames(shelf);
   const rows = games.map(priceAuditRow).filter((row) => row.isDollar || row.isZero);
   const dollars = rows.filter((row) => row.isDollar);
   const zeros = rows.filter((row) => row.isZero);
   if (url.searchParams.get("format") === "json") return json({ ok: true, total: rows.length, dollars, zeros });
-  return html(auditHtml({ dollars, zeros }));
+  return html(auditHtml({ dollars, zeros, settings }));
 }
 
 function mergedShelfGames(shelf) {
@@ -95,7 +96,7 @@ function numberOrNull(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function auditHtml({ dollars, zeros }) {
+function auditHtml({ dollars, zeros, settings }) {
   const payload = JSON.stringify({ dollars, zeros }).replace(/</g, "\\u003c");
   return `<!doctype html>
 <html lang="en">
@@ -103,7 +104,7 @@ function auditHtml({ dollars, zeros }) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shelf Price Audit</title>
-  ${runnerStyle({ maxWidth: "1100px" })}
+  ${runnerStyle({ maxWidth: "1100px", settings, page: "shelf" })}
 </head>
 <body>
   <main>

@@ -1,5 +1,5 @@
 import { isEditorRequest } from "./editor-auth.js";
-import { runnerStyle } from "./runner-style.js";
+import { runnerStyle, runnerThemeSettings } from "./runner-style.js";
 import { onRequestGet as searchMetadata } from "./search.js";
 import { onRequestGet as collectionPrice } from "./collection-price.js";
 
@@ -7,8 +7,8 @@ const KV_KEY = "shelf-data";
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
 
-export async function onRequestGet() {
-  return html(runnerHtml());
+export async function onRequestGet({ env }) {
+  return html(runnerHtml(await runnerThemeSettings(env)));
 }
 
 export async function onRequestPost({ request, env }) {
@@ -294,14 +294,14 @@ function html(markup, status = 200) {
   return new Response(markup, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
-function runnerHtml() {
+function runnerHtml(settings = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shelf Metadata Fill</title>
-  ${runnerStyle()}
+  ${runnerStyle({ settings, page: "shelf" })}
 </head>
 <body>
   <main>

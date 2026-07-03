@@ -1,10 +1,10 @@
 import { isEditorRequest } from "./editor-auth.js";
-import { runnerStyle } from "./runner-style.js";
+import { runnerStyle, runnerThemeSettings } from "./runner-style.js";
 
 const KV_KEY = "gamelist-data";
 
-export async function onRequestGet() {
-  return html(runnerHtml());
+export async function onRequestGet({ env }) {
+  return html(runnerHtml(await runnerThemeSettings(env)));
 }
 
 export async function onRequestPost({ request, env }) {
@@ -59,14 +59,14 @@ function html(markup, status = 200) {
   return new Response(markup, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
-function runnerHtml() {
+function runnerHtml(settings = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gamelist Mass Add</title>
-  ${runnerStyle({ maxWidth: "900px" })}
+  ${runnerStyle({ maxWidth: "900px", settings, page: "gamelist" })}
 </head>
 <body>
   <main>

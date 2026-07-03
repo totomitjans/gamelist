@@ -1,6 +1,6 @@
 import { isEditorRequest } from "./editor-auth.js";
 import { igdbCredentials, igdbLookup } from "./search.js";
-import { runnerStyle } from "./runner-style.js";
+import { runnerStyle, runnerThemeSettings } from "./runner-style.js";
 
 const KV_KEY = "shelf-data";
 const DEFAULT_LIMIT = 8;
@@ -8,14 +8,15 @@ const MAX_LIMIT = 20;
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
+  const settings = await runnerThemeSettings(env);
   if (!env.GAMELIST) return json({ error: "Missing GAMELIST KV binding" }, 501);
   if (!env.EDIT_PASSWORD) return json({ error: "Missing EDIT_PASSWORD secret" }, 503);
-  if (!await isEditorRequest(request, env)) return wantsJson(url) ? json({ error: "Unauthorized" }, 401) : html(authHtml(), 401);
+  if (!await isEditorRequest(request, env)) return wantsJson(url) ? json({ error: "Unauthorized" }, 401) : html(authHtml(settings), 401);
 
   const igdb = igdbCredentials(env);
-  if (!igdb) return wantsJson(url) ? json({ error: "Missing IGDB credentials" }, 503) : html(errorHtml("Missing IGDB_CLIENT_ID or IGDB_CLIENT_SECRET."), 503);
+  if (!igdb) return wantsJson(url) ? json({ error: "Missing IGDB credentials" }, 503) : html(errorHtml("Missing IGDB_CLIENT_ID or IGDB_CLIENT_SECRET.", settings), 503);
 
-  if (!wantsJson(url) && !url.searchParams.has("cursor")) return html(runnerHtml(url.searchParams.get("apply") === "1", url.searchParams.get("run") === "1"));
+  if (!wantsJson(url) && !url.searchParams.has("cursor")) return html(runnerHtml(url.searchParams.get("apply") === "1", url.searchParams.get("run") === "1", settings));
 
   const apply = url.searchParams.get("apply") === "1";
   const force = url.searchParams.get("force") === "1";
@@ -125,14 +126,14 @@ function stripShelfEdition(title) {
     .trim();
 }
 
-function runnerHtml(apply, autorun) {
+function runnerHtml(apply, autorun, settings = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shelf IGDB Cover Refresh</title>
-  ${runnerStyle()}
+  ${runnerStyle({ settings, page: "shelf" })}
 </head>
 <body>
   <main>
@@ -214,14 +215,14 @@ function runnerHtml(apply, autorun) {
 </html>`;
 }
 
-function authHtml() {
+function authHtml(settings = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Unauthorized</title>
-  ${runnerStyle()}
+  ${runnerStyle({ settings, page: "shelf" })}
 </head>
 <body>
   <main>
@@ -233,14 +234,14 @@ function authHtml() {
 </html>`;
 }
 
-function errorHtml(message) {
+function errorHtml(message, settings = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shelf IGDB Cover Refresh</title>
-  ${runnerStyle()}
+  ${runnerStyle({ settings, page: "shelf" })}
 </head>
 <body>
   <main>
