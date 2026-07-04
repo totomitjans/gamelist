@@ -4997,9 +4997,9 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   width: 88px;
   height: 34px;
   min-height: 34px;
-  padding-top: 0;
-  padding-bottom: 0;
-  line-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  line-height: normal;
 }
 
 .completed-head-actions #completedCount {
