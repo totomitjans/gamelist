@@ -1872,7 +1872,8 @@ body.dialog-open .floating-edit-actions {
 
 .release-day.today {
   border-color: var(--accent-1, var(--accent));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-1, var(--accent)) 42%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--accent-1, var(--accent)) 42%, transparent);
 }
 
 .release-day.today:disabled {
@@ -2068,9 +2069,9 @@ body.dialog-open .floating-edit-actions {
   top: calc(20px + var(--pull-ui-offset, 0px));
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 132px minmax(190px, 210px) minmax(150px, 165px) 132px var(
-      --toolbar-control-height
-    );
+  grid-template-columns:
+    minmax(240px, 1fr) 132px minmax(190px, 210px) minmax(150px, 165px)
+    132px var(--toolbar-control-height);
   gap: 10px;
   padding: 12px;
   border-radius: 8px;
@@ -2164,7 +2165,8 @@ body.dialog-open .floating-edit-actions {
   background-repeat: no-repeat;
   background-size: 14px 14px;
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 15px center / 14px 14px no-repeat,
+    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      right 15px center / 14px 14px no-repeat,
     rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 7px;
@@ -2183,7 +2185,8 @@ body.dialog-open .floating-edit-actions {
   border-color: color-mix(in srgb, var(--accent) 68%, transparent);
   background-color: rgba(255, 255, 255, 0.07);
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.9' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 15px center / 14px 14px no-repeat,
+    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.9' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      right 15px center / 14px 14px no-repeat,
     rgba(255, 255, 255, 0.07);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
@@ -2318,7 +2321,7 @@ body.dialog-open .floating-edit-actions {
 }
 
 .platform-logo-choice span {
-  margin-bottom: 0;
+  margin-bottom: -2px;
   color: inherit;
   font-size: inherit;
   font-weight: inherit;
@@ -2678,7 +2681,8 @@ textarea:hover {
 
 select:hover {
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.9' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 15px center / 14px 14px no-repeat,
+    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.9' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      right 15px center / 14px 14px no-repeat,
     rgba(255, 255, 255, 0.08);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
 }
@@ -2697,7 +2701,8 @@ select {
   background-repeat: no-repeat;
   background-size: 14px 14px;
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 15px center / 14px 14px no-repeat,
+    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      right 15px center / 14px 14px no-repeat,
     rgba(255, 255, 255, 0.07);
   transition:
     background-color 160ms ease,
@@ -2721,7 +2726,8 @@ select.is-active {
   color: #ffffff;
   border-color: color-mix(in srgb, var(--accent) 68%, transparent);
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23ffffff' stroke-opacity='.92' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 15px center / 14px 14px no-repeat,
+    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23ffffff' stroke-opacity='.92' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      right 15px center / 14px 14px no-repeat,
     linear-gradient(
       135deg,
       color-mix(in srgb, var(--accent) 22%, transparent),
@@ -5002,10 +5008,6 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   line-height: normal;
 }
 
-.completed-year-control .platform-logo-choice span {
-  margin-bottom: 0;
-}
-
 .completed-head-actions #completedCount {
   align-self: center;
   line-height: 34px;
@@ -6151,7 +6153,9 @@ html.theme-light .platform-logo-choice .platform-logo-choice-label {
 }
 
 html.theme-light .platform-logo-option:hover .platform-logo-choice-label,
-html.theme-light .platform-logo-option:focus-visible .platform-logo-choice-label,
+html.theme-light
+  .platform-logo-option:focus-visible
+  .platform-logo-choice-label,
 html.theme-light .platform-logo-option.is-selected .platform-logo-choice-label {
   color: color-mix(in srgb, var(--accent) 56%, #152033);
 }
@@ -6521,8 +6525,10 @@ html.theme-light .release-day.today {
   color: #111827;
   border-color: var(--accent-1, var(--accent));
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent-1, var(--accent)) 38%, #ffffff),
-    0 0 0 3px color-mix(in srgb, var(--accent-1, var(--accent)) 12%, transparent);
+    inset 0 0 0 1px
+      color-mix(in srgb, var(--accent-1, var(--accent)) 38%, #ffffff),
+    0 0 0 3px
+      color-mix(in srgb, var(--accent-1, var(--accent)) 12%, transparent);
 }
 
 html.theme-light .release-day.has-release {
