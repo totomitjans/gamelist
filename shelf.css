@@ -1486,12 +1486,16 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
   margin: 0;
 }
 .shelf-card-notes {
-  padding: 9px 10px;
-  color: var(--muted);
+  min-height: calc(1.45em + 20px);
+  padding: 10px 12px;
+  color: color-mix(in srgb, var(--text) 84%, var(--muted));
   border-left: 3px solid var(--accent);
   border-radius: 0 6px 6px 0;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
   font-size: 11px;
+  font-style: italic;
   line-height: 1.4;
 }
 .shelf-card-description {
