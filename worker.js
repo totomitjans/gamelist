@@ -5,17 +5,23 @@ import * as collectionPrice from "./functions/api/collection-price.js";
 import * as cover from "./functions/api/cover.js";
 import * as gamelistMassAdd from "./functions/api/gamelist-mass-add.js";
 import * as gamelistMetadata from "./functions/api/gamelist-metadata.js";
+import * as completedGamesByYear from "./functions/api/completed-games-by-year.js";
+import * as gamelistGamesByList from "./functions/api/gamelist-games-by-list.js";
 import * as prices from "./functions/api/prices.js";
+import * as psnTrophiesByYear from "./functions/api/psn-trophies-by-year.js";
 import * as search from "./functions/api/search.js";
 import * as shelf from "./functions/api/shelf.js";
 import * as shelfCovers from "./functions/api/shelf-covers.js";
+import * as shelfGamesPlatforms from "./functions/api/shelf-games-platforms.js";
 import * as shelfMassAdd from "./functions/api/shelf-mass-add.js";
 import * as shelfMetadata from "./functions/api/shelf-metadata.js";
 import * as shelfPriceAudit from "./functions/api/shelf-price-audit.js";
 import * as sync from "./functions/api/sync.js";
 import * as steamAchievements from "./functions/api/steam-achievements.js";
+import * as steamTrophiesByYear from "./functions/api/steam-trophies-by-year.js";
 import * as trophies from "./functions/api/trophies.js";
 import * as xboxAchievements from "./functions/api/xbox-achievements.js";
+import * as xboxTrophiesByYear from "./functions/api/xbox-trophies-by-year.js";
 
 const routes = {
   "/api/achievements": achievements,
@@ -23,19 +29,25 @@ const routes = {
   "/api/calendar": calendar,
   "/api/collection-price": collectionPrice,
   "/api/cover": cover,
+  "/api/completed-games-by-year": completedGamesByYear,
+  "/api/gamelist-games-by-list": gamelistGamesByList,
   "/api/gamelist-mass-add": gamelistMassAdd,
   "/api/gamelist-metadata": gamelistMetadata,
   "/api/prices": prices,
+  "/api/psn-trophies-by-year": psnTrophiesByYear,
   "/api/search": search,
   "/api/shelf": shelf,
   "/api/shelf-covers": shelfCovers,
+  "/api/shelf-games-platforms": shelfGamesPlatforms,
   "/api/shelf-mass-add": shelfMassAdd,
   "/api/shelf-metadata": shelfMetadata,
   "/api/shelf-price-audit": shelfPriceAudit,
   "/api/steam-achievements": steamAchievements,
+  "/api/steam-trophies-by-year": steamTrophiesByYear,
   "/api/sync": sync,
   "/api/trophies": trophies,
   "/api/xbox-achievements": xboxAchievements,
+  "/api/xbox-trophies-by-year": xboxTrophiesByYear,
 };
 
 const shelfOnlyPaths = new Set([
@@ -48,6 +60,7 @@ const shelfOnlyPaths = new Set([
   "/api/cover",
   "/api/shelf",
   "/api/shelf-covers",
+  "/api/shelf-games-platforms",
   "/api/shelf-mass-add",
   "/api/shelf-metadata",
   "/api/shelf-price-audit",

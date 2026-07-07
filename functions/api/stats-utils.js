@@ -8,6 +8,37 @@ export function json(data, status = 200, cache = false) {
   });
 }
 
+export async function cachedStats({ request, env, key, producer, cacheSeconds = 60 * 60 }) {
+  const url = new URL(request.url);
+  const cacheKey = statsCacheKey(key, url);
+  const canCache = Boolean(env?.GAMELIST);
+  if (canCache && url.searchParams.get("refresh") !== "1") {
+    const cached = await env.GAMELIST.get(cacheKey, "json").catch(() => null);
+    if (cached?.expiresAt && cached.expiresAt > Date.now() && cached.payload) {
+      return json(cached.payload, cached.status || 200, true);
+    }
+  }
+  const payload = await producer();
+  if (canCache) {
+    await env.GAMELIST.put(cacheKey, JSON.stringify({
+      payload,
+      status: 200,
+      cachedAt: new Date().toISOString(),
+      expiresAt: Date.now() + cacheSeconds * 1000,
+    }), { expirationTtl: cacheSeconds * 2 }).catch(() => {});
+  }
+  return json(payload, 200, true);
+}
+
+function statsCacheKey(key, url) {
+  const params = [...url.searchParams.entries()]
+    .filter(([name]) => name !== "refresh")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, value]) => `${name}=${value}`)
+    .join("&");
+  return `stats-cache:${key}:${params}`.slice(0, 512);
+}
+
 export function gameSummary(game = {}) {
   return {
     id: game.id || "",

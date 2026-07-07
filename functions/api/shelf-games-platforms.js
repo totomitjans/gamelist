@@ -1,24 +1,26 @@
-import { json } from "./stats-utils.js";
+import { cachedStats } from "./stats-utils.js";
 
 const KV_KEY = "shelf-data";
 
-export async function onRequestGet({ env }) {
-  if (!env.GAMELIST) return json({ source: "shelf", games: [], platforms: [], totalGames: 0 });
-  const data = await env.GAMELIST.get(KV_KEY, "json") || { sourceGames: [], games: [] };
-  const sourceGames = (Array.isArray(data.sourceGames) ? data.sourceGames : []).map((game) => shelfGameSummary(game, "source"));
-  const games = (Array.isArray(data.games) ? data.games : []).map((game) => shelfGameSummary(game, "collection"));
-  const allGames = [...sourceGames, ...games].filter((game) => game.title);
-  const platforms = [...platformGroups(allGames).values()]
-    .map((items) => ({ platform: items[0].platform || "Unknown", count: items.length, games: items.sort(compareTitles) }))
-    .sort((a, b) => b.count - a.count || a.platform.localeCompare(b.platform));
-  return json({
-    source: "shelf",
-    games: allGames.sort(compareTitles),
-    platforms,
-    totalGames: allGames.length,
-    totalPlatforms: platforms.length,
-    updatedAt: data.updatedAt || "",
-  });
+export async function onRequestGet({ request, env }) {
+  return cachedStats({ request, env, key: "shelf-games-platforms", producer: async () => {
+    if (!env.GAMELIST) return { source: "shelf", games: [], platforms: [], totalGames: 0 };
+    const data = await env.GAMELIST.get(KV_KEY, "json") || { sourceGames: [], games: [] };
+    const sourceGames = (Array.isArray(data.sourceGames) ? data.sourceGames : []).map((game) => shelfGameSummary(game, "source"));
+    const games = (Array.isArray(data.games) ? data.games : []).map((game) => shelfGameSummary(game, "collection"));
+    const allGames = [...sourceGames, ...games].filter((game) => game.title);
+    const platforms = [...platformGroups(allGames).values()]
+      .map((items) => ({ platform: items[0].platform || "Unknown", count: items.length, games: items.sort(compareTitles) }))
+      .sort((a, b) => b.count - a.count || a.platform.localeCompare(b.platform));
+    return {
+      source: "shelf",
+      games: allGames.sort(compareTitles),
+      platforms,
+      totalGames: allGames.length,
+      totalPlatforms: platforms.length,
+      updatedAt: data.updatedAt || "",
+    };
+  } });
 }
 
 function shelfGameSummary(game = {}, origin) {

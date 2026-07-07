@@ -515,6 +515,8 @@ By default, `/api/shelf-metadata` only fills missing fields and leaves existing 
 - Auth endpoint: `/api/auth`
 - Local browser draft backup: `localStorage`
 
+The summary endpoints above are served under `/api/...` and cache their generated JSON in KV for one hour, including the PSN/Steam/Xbox aggregate endpoints so they do not repeatedly fan out to external profile APIs. Add `?refresh=1` to rebuild a summary immediately.
+
 In edit mode, Settings also exposes page-specific **Dev features** links. Gamelist shows data/settings/auth endpoints. Shelf shows Shelf data, mass add, metadata fill, Shelf price audit, and Shelf IGDB cover refresh tools.
 
 To start clean, use a brand-new KV namespace. To clone existing data, copy the relevant KV values into the new namespace.
