@@ -1584,6 +1584,8 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
     showToast("No finished games found for this year.", "error");
     return;
   }
+  state.gotyYear = String(year);
+  el.gotyForm.dataset.gotyYear = String(year);
   const entry = state.settings.gameOfTheYear?.[year] || {};
   const picks = entry.picks || {};
   el.gotyDialogTitle.textContent = `Games of the Year ${year}`;
@@ -1615,7 +1617,7 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
 
 async function saveGameOfTheYearFromForm(event) {
   event.preventDefault();
-  const year = currentGameOfTheYear();
+  const year = el.gotyForm.dataset.gotyYear || currentGameOfTheYear();
   const picks = Object.fromEntries([...el.gotyPickerGrid.querySelectorAll(".goty-picker-field")]
     .map((field) => [field.dataset.gotyCategory, field.querySelector(".goty-choice-card.is-selected")?.dataset.gameId || ""]));
   if (!gameOfTheYearComplete(picks)) {
@@ -1660,7 +1662,7 @@ function showGameOfTheYearCallout(year) {
     event.preventDefault();
     event.stopPropagation();
     callout.classList.remove("visible");
-    if (action === "choose") openGameOfTheYearDialog(currentGameOfTheYear(), { force: true });
+    if (action === "choose") openGameOfTheYearDialog(year, { force: true });
   };
   requestAnimationFrame(() => callout.classList.add("visible"));
 }
