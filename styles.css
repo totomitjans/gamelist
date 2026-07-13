@@ -1796,6 +1796,7 @@ html.theme-uppercase-titles .column-head h2 {
 #backlog > .column-head h2,
 #upcoming > .column-head h2,
 #wanted > .column-head h2,
+.goty-section .column-head h2,
 .completed > .column-head h2 {
   font-family: var(--display-title-font);
   font-size: var(--display-title-size, clamp(28px, 2.5vw, 38px));
