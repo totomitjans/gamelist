@@ -969,26 +969,10 @@ html.theme-font-pokemon {
 }
 
 .goty-meta .chip.genre,
-.goty-meta .platform-badge,
 .goty-meta .card-trophy-progress {
   min-height: 18px;
   padding: 3px 5px;
   font-size: 8px;
-}
-
-.goty-meta .platform-icon {
-  width: 13px;
-  height: 13px;
-}
-
-.goty-meta .platform-badge {
-  gap: 0;
-  padding: 3px;
-}
-
-.goty-meta .platform-label,
-.goty-meta .platform-count {
-  display: none;
 }
 
 .goty-dialog .goty-modal {
@@ -1146,6 +1130,19 @@ html.theme-font-pokemon {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.goty-choice-title .platform-badge {
+  min-height: 18px;
+  gap: 4px;
+  padding: 3px 5px 3px 3px;
+  font-size: 8px;
+}
+
+.goty-choice-title .platform-icon {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
 }
 
 .goty-title-overlay {
