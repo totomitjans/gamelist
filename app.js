@@ -1580,6 +1580,10 @@ function maybePromptGameOfTheYear() {
 function openGameOfTheYearDialog(year = currentGameOfTheYear()) {
   if (!state.canEdit || year !== currentGameOfTheYear()) return;
   const games = completedGamesForYear(year);
+  if (!games.length) {
+    showToast("No finished games found for this year.", "error");
+    return;
+  }
   const entry = state.settings.gameOfTheYear?.[year] || {};
   const picks = entry.picks || {};
   el.gotyDialogTitle.textContent = `Games of the Year ${year}`;
@@ -1601,7 +1605,11 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear()) {
       field.querySelector(".goty-picker-head strong").textContent = button.dataset.title || "Choose one";
     });
   });
-  el.gotyDialog.showModal();
+  try {
+    el.gotyDialog.showModal();
+  } catch {
+    el.gotyDialog.show();
+  }
   syncScrollLock();
 }
 
@@ -1642,15 +1650,17 @@ function showGameOfTheYearCallout(year) {
   }
   callout.innerHTML = `
     <span>Choose your games of this year.</span>
-    <button class="primary-button" type="button">Choose now</button>
-    <button class="icon-button" type="button" title="Dismiss" aria-label="Dismiss">×</button>
+    <button class="primary-button" type="button" data-goty-callout-action="choose">Choose now</button>
+    <button class="icon-button" type="button" data-goty-callout-action="dismiss" title="Dismiss" aria-label="Dismiss">×</button>
   `;
-  const [chooseButton, closeButton] = callout.querySelectorAll("button");
-  chooseButton.addEventListener("click", () => {
+  callout.onclick = (event) => {
+    const action = event.target.closest("[data-goty-callout-action]")?.dataset.gotyCalloutAction;
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
     callout.classList.remove("visible");
-    openGameOfTheYearDialog(year);
-  }, { once: true });
-  closeButton.addEventListener("click", () => callout.classList.remove("visible"), { once: true });
+    if (action === "choose") openGameOfTheYearDialog(currentGameOfTheYear());
+  };
   requestAnimationFrame(() => callout.classList.add("visible"));
 }
 
