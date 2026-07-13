@@ -526,6 +526,7 @@ html.theme-font-pokemon {
   display: flex;
   align-items: center;
   gap: 7px;
+  min-height: 36px;
 }
 
 .playing-slider-button {
