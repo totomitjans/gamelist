@@ -1098,6 +1098,12 @@ html.theme-font-pokemon {
   flex: 0 0 auto;
 }
 
+.goty-callout .icon-button:hover {
+  color: #ffffff;
+  border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.08));
+}
+
 .playing-finished-tags .platform-badge,
 .playing-finished-tags .owner-pill,
 .playing-finished-tags .digital-pill,
@@ -2090,6 +2096,7 @@ body.dialog-open .scroll-top-button {
 #detailCloseButton:hover,
 #historyCloseButton:hover,
 #releaseCloseButton:hover,
+#gotyCloseButton:hover,
 .ghost-button:not(.trophy-action):hover,
 .primary-button:hover,
 .danger-button:hover,

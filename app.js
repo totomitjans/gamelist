@@ -1654,7 +1654,8 @@ function showGameOfTheYearCallout(year) {
     <button class="icon-button" type="button" data-goty-callout-action="dismiss" title="Dismiss" aria-label="Dismiss">×</button>
   `;
   callout.onclick = (event) => {
-    const action = event.target.closest("[data-goty-callout-action]")?.dataset.gotyCalloutAction;
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const action = target?.closest("[data-goty-callout-action]")?.dataset.gotyCalloutAction;
     if (!action) return;
     event.preventDefault();
     event.stopPropagation();
