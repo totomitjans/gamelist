@@ -80,6 +80,9 @@
   --accent-1: #79f2ce;
   --accent-2: #79f2ce;
   --accent-3: #ee32b3;
+  --scrollbar-track: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.08));
+  --scrollbar-thumb: color-mix(in srgb, var(--accent) 76%, var(--accent-2));
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--accent) 88%, #ffffff);
   --title-gradient-start: var(--accent);
   --title-gradient-end: var(--accent);
   --glow-primary: rgba(255, 0, 81, 0.22);
@@ -200,6 +203,28 @@ html.theme-light {
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--scrollbar-thumb), var(--accent-2));
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--scrollbar-thumb-hover), var(--accent-2));
+  background-clip: padding-box;
 }
 
 html {
@@ -611,7 +636,7 @@ html.theme-font-pokemon {
 
 .playing-section .card-list::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), #f7df69);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
 }
 
 .playing-finished {
