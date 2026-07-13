@@ -1555,20 +1555,11 @@ function renderGameOfTheYear() {
     const game = gameById(picks[key]);
     if (!game) return "";
     const cover = coverUrl(game.cover || "") || platformLogo(game.platform || "PS5");
-    const details = [
-      completedOwnerBadges(game),
-      completedBadges(game, { includePsn: false }),
-      game.completedAt ? `<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatLongDate(game.completedAt))}</strong></span>` : "",
-      completedDurationLine(game),
-    ].join("");
     return `
       <button class="goty-card ${ownerCardClass(game)}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`${label}: ${game.title}`)}">
         <span class="goty-category">${escapeHtml(label)}</span>
-        <img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async">
-        <span class="goty-overlay">
-          <strong>${escapeHtml(game.title)}</strong>
-          <span class="goty-meta">${details}</span>
-        </span>
+        <span class="goty-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"></span>
+        ${gameOfTheYearHoverInfo(game, "goty-hover-info")}
       </button>
     `;
   }).join("");
@@ -1583,9 +1574,7 @@ function maybePromptGameOfTheYear() {
   if (gameOfTheYearComplete(state.settings.gameOfTheYear?.[year]?.picks || {})) return;
   if (!completedGamesForYear(year).length) return;
   state.gotyPromptShown = true;
-  window.setTimeout(() => {
-    if (state.canEdit && !el.gotyDialog.open) openGameOfTheYearDialog(year);
-  }, 300);
+  window.setTimeout(() => showGameOfTheYearCallout(year), 300);
 }
 
 function openGameOfTheYearDialog(year = currentGameOfTheYear()) {
@@ -1595,15 +1584,23 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear()) {
   const picks = entry.picks || {};
   el.gotyDialogTitle.textContent = `Games of the Year ${year}`;
   el.gotyPickerGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => `
-    <label class="goty-picker-field">
-      <span>${escapeHtml(label)}</span>
-      <select data-goty-category="${escapeHtml(key)}" required>
-        <option value="">Choose a finished game</option>
-        ${games.map((game) => `<option value="${escapeHtml(game.id)}" ${picks[key] === game.id ? "selected" : ""}>${escapeHtml(game.title)}</option>`).join("")}
-      </select>
-    </label>
+    <section class="goty-picker-field" data-goty-category="${escapeHtml(key)}">
+      <div class="goty-picker-head">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(gameById(picks[key])?.title || "Choose one")}</strong>
+      </div>
+      <div class="goty-choice-list">
+        ${games.map((game) => gameOfTheYearChoiceCard(game, picks[key] === game.id)).join("")}
+      </div>
+    </section>
   `).join("");
-  syncStyledSelects(el.gotyDialog, { activeValue: null });
+  el.gotyPickerGrid.querySelectorAll(".goty-choice-card").forEach((button) => {
+    button.addEventListener("click", () => {
+      const field = button.closest(".goty-picker-field");
+      field.querySelectorAll(".goty-choice-card").forEach((item) => item.classList.toggle("is-selected", item === button));
+      field.querySelector(".goty-picker-head strong").textContent = button.dataset.title || "Choose one";
+    });
+  });
   el.gotyDialog.showModal();
   syncScrollLock();
 }
@@ -1611,8 +1608,8 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear()) {
 async function saveGameOfTheYearFromForm(event) {
   event.preventDefault();
   const year = currentGameOfTheYear();
-  const picks = Object.fromEntries([...el.gotyPickerGrid.querySelectorAll("[data-goty-category]")]
-    .map((select) => [select.dataset.gotyCategory, select.value]));
+  const picks = Object.fromEntries([...el.gotyPickerGrid.querySelectorAll(".goty-picker-field")]
+    .map((field) => [field.dataset.gotyCategory, field.querySelector(".goty-choice-card.is-selected")?.dataset.gameId || ""]));
   if (!gameOfTheYearComplete(picks)) {
     showToast("Choose a game for every category.", "error");
     return;
@@ -1627,9 +1624,65 @@ async function saveGameOfTheYearFromForm(event) {
   state.gotyYear = year;
   persistLocalSettings();
   await persistCloud();
+  document.querySelector(".goty-callout")?.classList.remove("visible");
   el.gotyDialog.close();
   render();
   showToast(`Published Games of the Year ${year}.`);
+}
+
+function showGameOfTheYearCallout(year) {
+  if (!state.canEdit || el.gotyDialog?.open) return;
+  let callout = document.querySelector(".goty-callout");
+  if (!callout) {
+    callout = document.createElement("div");
+    callout.className = "goty-callout";
+    callout.setAttribute("role", "status");
+    callout.setAttribute("aria-live", "polite");
+    document.body.appendChild(callout);
+  }
+  callout.innerHTML = `
+    <span>Choose your games of this year.</span>
+    <button class="primary-button" type="button">Choose now</button>
+    <button class="icon-button" type="button" title="Dismiss" aria-label="Dismiss">×</button>
+  `;
+  const [chooseButton, closeButton] = callout.querySelectorAll("button");
+  chooseButton.addEventListener("click", () => {
+    callout.classList.remove("visible");
+    openGameOfTheYearDialog(year);
+  }, { once: true });
+  closeButton.addEventListener("click", () => callout.classList.remove("visible"), { once: true });
+  requestAnimationFrame(() => callout.classList.add("visible"));
+}
+
+function gameOfTheYearChoiceCard(game, selected) {
+  const cover = coverUrl(game.cover || "") || platformLogo(game.platform || "PS5");
+  return `
+    <button class="goty-choice-card ${selected ? "is-selected" : ""}" type="button" data-game-id="${escapeHtml(game.id)}" data-title="${escapeHtml(game.title)}">
+      <span class="goty-choice-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"></span>
+      <span class="goty-choice-title"><strong>${escapeHtml(game.title)}</strong>${platformBadge(game.platform)}</span>
+    </button>
+  `;
+}
+
+function gameOfTheYearHoverInfo(game, className) {
+  const details = [
+    game.developer || "",
+    game.publisher || "",
+  ].filter(Boolean);
+  const tags = [
+    ...String(game.genres || "").split(","),
+    ...(Array.isArray(game.tags) ? game.tags : []),
+  ].map((tag) => tag.trim()).filter(Boolean).slice(0, 4);
+  return `
+    <span class="${className}">
+      <strong>${escapeHtml(game.title)}</strong>
+      ${details.length ? `<small>${escapeHtml(details.join(" · "))}</small>` : ""}
+      <span class="goty-meta">
+        <span class="goty-main-pills">${platformBadge(game.platform)}${game.completedAt ? `<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatLongDate(game.completedAt))}</strong></span>` : ""}</span>
+        ${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}
+      </span>
+    </span>
+  `;
 }
 
 function gameOfTheYearVisible() {

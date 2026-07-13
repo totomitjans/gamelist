@@ -781,6 +781,7 @@ html.theme-font-pokemon {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
+  overflow: visible;
 }
 
 .goty-card {
@@ -788,21 +789,39 @@ html.theme-font-pokemon {
   display: grid;
   min-width: 0;
   aspect-ratio: 2 / 3;
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
   color: #fff;
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border: 0;
   border-radius: 8px;
-  background: var(--panel-dark);
-  box-shadow: var(--shadow);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
+  transition: transform 170ms ease, filter 170ms ease, z-index 170ms ease;
+}
+
+.goty-card:hover,
+.goty-card:focus-visible {
+  z-index: 8;
+  transform: scale(1.06);
+  filter: saturate(1.08);
+}
+
+.goty-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
 }
 
 .goty-card img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 220ms ease, filter 220ms ease;
+  object-fit: contain;
+  background: transparent;
+  transition: filter 180ms ease;
 }
 
 .goty-category {
@@ -824,41 +843,68 @@ html.theme-font-pokemon {
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.32);
 }
 
-.goty-overlay {
+.goty-hover-info {
   position: absolute;
-  inset: auto 0 0;
-  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: 4;
   display: grid;
-  gap: 8px;
-  padding: 44px 10px 10px;
+  gap: 6px;
+  padding: 9px;
+  color: var(--text);
   text-align: left;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.86) 32%, rgba(0, 0, 0, 0.94));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 12px),
+    color-mix(in srgb, var(--panel) 78%, rgba(0, 0, 0, 0.82));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(14px) saturate(1.18);
+  -webkit-backdrop-filter: blur(14px) saturate(1.18);
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 
 .goty-card:hover img,
 .goty-card:focus-visible img {
-  filter: saturate(1.08) brightness(0.72);
-  transform: scale(1.04);
+  filter: saturate(1.08) brightness(0.94);
 }
 
-.goty-card:hover .goty-overlay,
-.goty-card:focus-visible .goty-overlay {
+.goty-card:hover .goty-hover-info,
+.goty-card:focus-visible .goty-hover-info {
   opacity: 1;
   transform: translateY(0);
 }
 
-.goty-overlay strong {
-  font-size: 15px;
-  line-height: 1.1;
+.goty-hover-info strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.goty-hover-info small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.2;
 }
 
 .goty-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.goty-main-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
 }
 
 .goty-meta .history-pill,
@@ -887,16 +933,146 @@ html.theme-font-pokemon {
 
 .goty-picker-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .goty-picker-field {
+  display: grid;
+  gap: 8px;
   min-width: 0;
 }
 
-.goty-picker-field > span {
-  min-height: 24px;
+.goty-picker-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.goty-picker-head span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.goty-picker-head strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goty-choice-list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 92px;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+}
+
+.goty-choice-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.goty-choice-card:hover,
+.goty-choice-card:focus-visible {
+  transform: translateY(-2px);
+  filter: saturate(1.08);
+}
+
+.goty-choice-cover {
+  display: block;
+  aspect-ratio: 104 / 142;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.goty-choice-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.goty-choice-title {
+  display: grid;
+  gap: 4px;
+  min-height: 48px;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.goty-choice-title strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.goty-choice-card.is-selected .goty-choice-cover {
+  border-color: color-mix(in srgb, var(--accent) 72%, #fff);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 34%, transparent),
+    0 16px 30px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.goty-callout {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 10px;
+  color: var(--text);
+  background: var(--grid-fade), var(--grid-texture), var(--panel-strong);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px) saturate(1.12);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.goty-callout.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.goty-callout span {
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.goty-callout .primary-button,
+.goty-callout .icon-button {
+  flex: 0 0 auto;
 }
 
 .playing-finished-tags .platform-badge,
