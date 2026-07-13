@@ -1550,6 +1550,9 @@ function renderGameOfTheYear() {
   syncStyledSelect(el.gotyYearSelect, { activeValue: null });
   const canEditCurrent = state.canEdit && year === currentGameOfTheYear();
   el.gotyEditButton.hidden = !canEditCurrent;
+  el.gotyEditButton.innerHTML = pencilIcon();
+  el.gotyEditButton.title = "Edit";
+  el.gotyEditButton.setAttribute("aria-label", "Edit");
   el.gotySaveButton.hidden = !gameOfTheYearComplete(picks);
   el.gotyGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => {
     const game = gameById(picks[key]);
@@ -1606,6 +1609,7 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
 }
 
 function renderGameOfTheYearPicker(games, picks) {
+  hideGameOfTheYearTitleOverlay();
   const pickedIds = new Set(Object.values(picks).filter(Boolean));
   el.gotyPickerGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => {
     const selectedId = picks[key] || "";
@@ -1633,9 +1637,17 @@ function renderGameOfTheYearPicker(games, picks) {
   el.gotyPickerGrid.querySelectorAll(".goty-choice-card").forEach((button) => {
     button.addEventListener("click", () => {
       const field = button.closest(".goty-picker-field");
-      picks[field.dataset.gotyCategory] = button.dataset.gameId || "";
+      const category = field.dataset.gotyCategory;
+      const gameId = button.dataset.gameId || "";
+      picks[category] = picks[category] === gameId ? "" : gameId;
       renderGameOfTheYearPicker(games, picks);
     });
+  });
+  el.gotyPickerGrid.querySelectorAll(".goty-choice-title strong").forEach((title) => {
+    title.addEventListener("pointerenter", () => showGameOfTheYearTitleOverlay(title));
+    title.addEventListener("focus", () => showGameOfTheYearTitleOverlay(title));
+    title.addEventListener("pointerleave", hideGameOfTheYearTitleOverlay);
+    title.addEventListener("blur", hideGameOfTheYearTitleOverlay);
   });
   el.gotyPickerGrid.querySelectorAll(".goty-choice-nav").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1733,6 +1745,29 @@ function gameOfTheYearChoiceCard(game, selected) {
       <span class="goty-choice-title"><strong data-full-title="${escapeHtml(game.title)}">${escapeHtml(game.title)}</strong>${platformBadge(game.platform)}</span>
     </button>
   `;
+}
+
+function showGameOfTheYearTitleOverlay(target) {
+  hideGameOfTheYearTitleOverlay();
+  const text = target?.dataset.fullTitle || target?.textContent || "";
+  if (!text) return;
+  const overlay = document.createElement("div");
+  overlay.className = "goty-title-overlay";
+  overlay.textContent = text;
+  document.body.appendChild(overlay);
+  const rect = target.getBoundingClientRect();
+  const maxWidth = Math.min(520, window.innerWidth - 32);
+  overlay.style.maxWidth = `${maxWidth}px`;
+  const overlayRect = overlay.getBoundingClientRect();
+  const left = Math.min(Math.max(16, rect.left + rect.width / 2 - overlayRect.width / 2), window.innerWidth - overlayRect.width - 16);
+  const top = Math.max(16, rect.top - overlayRect.height - 10);
+  overlay.style.left = `${left}px`;
+  overlay.style.top = `${top}px`;
+  requestAnimationFrame(() => overlay.classList.add("visible"));
+}
+
+function hideGameOfTheYearTitleOverlay() {
+  document.querySelector(".goty-title-overlay")?.remove();
 }
 
 function gotyPickerArrowIcon(direction) {
