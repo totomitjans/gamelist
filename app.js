@@ -1776,6 +1776,7 @@ function gotyPickerArrowIcon(direction) {
 }
 
 function gameOfTheYearHoverInfo(game, className) {
+  const progress = achievementProgressForGame(game);
   const details = [
     game.developer || "",
     game.publisher || "",
@@ -1789,7 +1790,7 @@ function gameOfTheYearHoverInfo(game, className) {
       <strong>${escapeHtml(game.title)}</strong>
       ${details.length ? `<small>${escapeHtml(details.join(" · "))}</small>` : ""}
       <span class="goty-meta">
-        <span class="goty-main-pills">${platformBadge(game.platform)}${game.completedAt ? `<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatLongDate(game.completedAt))}</strong></span>` : ""}</span>
+        <span class="goty-main-pills">${platformBadge(game.platform)}${progress ? psnProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress" }) : ""}</span>
         ${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}
       </span>
     </span>

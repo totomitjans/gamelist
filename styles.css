@@ -821,8 +821,9 @@ html.theme-font-pokemon {
 .goty-card {
   position: relative;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 7px;
   min-width: 0;
-  aspect-ratio: 2 / 3;
   overflow: visible;
   padding: 0;
   color: #fff;
@@ -837,7 +838,7 @@ html.theme-font-pokemon {
 .goty-card:hover,
 .goty-card:focus-visible {
   z-index: 8;
-  transform: scale(1.06);
+  transform: translateY(-2px);
   filter: saturate(1.08);
 }
 
@@ -846,7 +847,8 @@ html.theme-font-pokemon {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  border-radius: 8px;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
 }
 
@@ -859,33 +861,27 @@ html.theme-font-pokemon {
 }
 
 .goty-category {
-  position: absolute;
-  z-index: 2;
-  top: 8px;
-  left: 8px;
-  right: 8px;
   display: block;
-  padding: 6px 7px;
-  color: #fff;
-  font-size: 10px;
+  min-height: 30px;
+  color: var(--accent);
+  font-size: 11px;
   font-weight: 920;
   line-height: 1.05;
   text-align: left;
   text-transform: uppercase;
-  background: color-mix(in srgb, var(--accent) 86%, rgba(0, 0, 0, 0.42));
-  border-radius: 6px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .goty-hover-info {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 8px;
+  bottom: 6px;
   z-index: 4;
   display: grid;
-  gap: 6px;
-  padding: 9px;
+  gap: 4px;
+  padding: 7px;
   color: var(--text);
   text-align: left;
   background:
@@ -917,27 +913,27 @@ html.theme-font-pokemon {
 
 .goty-hover-info strong {
   overflow-wrap: anywhere;
-  font-size: 12px;
-  line-height: 1.15;
+  font-size: 11px;
+  line-height: 1.1;
 }
 
 .goty-hover-info small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 750;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .goty-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
 }
 
 .goty-main-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
   width: 100%;
 }
 
@@ -951,8 +947,21 @@ html.theme-font-pokemon {
 .goty-meta .platinum-pill,
 .goty-meta .completed-duration {
   min-height: 20px;
-  padding: 4px 6px;
+  padding: 3px 5px;
   font-size: 9px;
+}
+
+.goty-meta .chip.genre,
+.goty-meta .platform-badge,
+.goty-meta .card-trophy-progress {
+  min-height: 18px;
+  padding: 3px 5px;
+  font-size: 8px;
+}
+
+.goty-meta .platform-icon {
+  width: 13px;
+  height: 13px;
 }
 
 .goty-dialog .goty-modal {
