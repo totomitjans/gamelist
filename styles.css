@@ -803,6 +803,8 @@ html.theme-font-pokemon {
 .goty-edit-button {
   width: 42px;
   min-width: 42px;
+  height: 42px;
+  min-height: 42px;
   padding-inline: 0;
 }
 
@@ -969,6 +971,16 @@ html.theme-font-pokemon {
   height: 13px;
 }
 
+.goty-meta .platform-badge {
+  gap: 0;
+  padding: 3px;
+}
+
+.goty-meta .platform-label,
+.goty-meta .platform-count {
+  display: none;
+}
+
 .goty-dialog .goty-modal {
   width: min(920px, calc(100vw - 28px));
   max-width: calc(100vw - 28px);
@@ -997,9 +1009,9 @@ html.theme-font-pokemon {
 }
 
 .goty-picker-head {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
 }
 
@@ -1012,20 +1024,26 @@ html.theme-font-pokemon {
 }
 
 .goty-picker-head strong {
+  grid-column: 1 / -1;
   min-width: 0;
   color: var(--text);
   font-size: 12px;
-  text-align: right;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.goty-picker-navs {
+  display: inline-flex;
+  gap: 6px;
+  justify-self: end;
+}
+
 .goty-choice-strip {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
   min-width: 0;
   max-width: 100%;
 }
@@ -1033,9 +1051,10 @@ html.theme-font-pokemon {
 .goty-choice-nav {
   width: 34px;
   min-width: 34px;
-  height: 46px;
-  min-height: 46px;
+  height: 34px;
+  min-height: 34px;
   align-self: center;
+  border-radius: 6px;
 }
 
 .goty-choice-nav[hidden] {
