@@ -1554,7 +1554,7 @@ function renderGameOfTheYear() {
   el.gotyGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => {
     const game = gameById(picks[key]);
     if (!game) return "";
-    const cover = coverUrl(game.cover || "") || platformLogo(game.platform || "PS5");
+    const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
     return `
       <button class="goty-card ${ownerCardClass(game)}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`${label}: ${game.title}`)}">
         <span class="goty-category">${escapeHtml(label)}</span>
@@ -1677,7 +1677,7 @@ function showGameOfTheYearCallout(year) {
 }
 
 function gameOfTheYearChoiceCard(game, selected) {
-  const cover = coverUrl(game.cover || "") || platformLogo(game.platform || "PS5");
+  const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
   return `
     <button class="goty-choice-card ${selected ? "is-selected" : ""}" type="button" data-game-id="${escapeHtml(game.id)}" data-title="${escapeHtml(game.title)}">
       <span class="goty-choice-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"></span>
@@ -1784,7 +1784,7 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, wit
     const x = startX + col * (cardW + gap);
     const y = startY + row * (cardH + gap);
     drawRoundedRect(ctx, x, y, cardW, cardH, 18, "rgba(255,255,255,.08)");
-    const cover = withCovers ? await loadCanvasImage(coverUrl(rows[index].game.cover || "")) : null;
+    const cover = withCovers ? await loadCanvasImage(coverDisplayUrl(rows[index].game.cover || "")) : null;
     if (cover) ctx.drawImage(cover, x + 18, y + 72, 124, 172);
     else drawRoundedRect(ctx, x + 18, y + 72, 124, 172, 12, "rgba(255,255,255,.12)");
     ctx.fillStyle = main;
