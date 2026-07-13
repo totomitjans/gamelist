@@ -24,19 +24,31 @@ export async function cachedStats({ request, env, key, producer, cacheSeconds = 
       payload,
       status: 200,
       cachedAt: new Date().toISOString(),
-      expiresAt: Date.now() + cacheSeconds * 1000,
+      expiresAt: nextCacheHour(),
     }), { expirationTtl: cacheSeconds * 2 }).catch(() => {});
   }
   return json(payload, 200, true);
 }
 
 function statsCacheKey(key, url) {
+  const hour = currentCacheHour();
   const params = [...url.searchParams.entries()]
     .filter(([name]) => name !== "refresh")
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => `${name}=${value}`)
     .join("&");
-  return `stats-cache:${key}:${params}`.slice(0, 512);
+  return `stats-cache:${key}:${hour}:${params}`.slice(0, 512);
+}
+
+function currentCacheHour() {
+  return new Date().toISOString().slice(0, 13);
+}
+
+function nextCacheHour() {
+  const date = new Date();
+  date.setUTCMinutes(0, 0, 0);
+  date.setUTCHours(date.getUTCHours() + 1);
+  return date.getTime();
 }
 
 export function gameSummary(game = {}) {

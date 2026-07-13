@@ -17,6 +17,7 @@ const KASH_TWITCH_URL = "https://www.twitch.tv/kashhoward";
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
 const VERSION_STORAGE_KEY = "gamelist:site-version";
+const CACHE_HOUR_STORAGE_KEY = "gamelist:cache-hour";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
@@ -398,6 +399,7 @@ function registerServiceWorker() {
 async function checkSiteVersion() {
   try {
     const fromPullNavigation = consumeRecentPullNavigation();
+    await clearSiteCachesForNewHour();
     const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) return false;
     const remote = await response.json();
@@ -426,6 +428,22 @@ async function checkSiteVersion() {
   } catch {
     return false;
   }
+}
+
+async function clearSiteCachesForNewHour() {
+  const currentHour = currentCacheHour();
+  const previousHour = localStorage.getItem(CACHE_HOUR_STORAGE_KEY);
+  if (!previousHour) {
+    localStorage.setItem(CACHE_HOUR_STORAGE_KEY, currentHour);
+    return;
+  }
+  if (previousHour === currentHour) return;
+  await clearSiteCaches();
+  localStorage.setItem(CACHE_HOUR_STORAGE_KEY, currentHour);
+}
+
+function currentCacheHour() {
+  return new Date().toISOString().slice(0, 13);
 }
 
 function forceCacheOnLoadEnabled() {
