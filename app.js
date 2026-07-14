@@ -1879,11 +1879,13 @@ function gameOfTheYearVisible() {
 }
 
 function isGameOfTheYearSeason(date = new Date()) {
-  return date.getMonth() === 11;
+  const month = date.getMonth();
+  return month === 11 || (month === 0 && date.getDate() <= 14);
 }
 
-function currentGameOfTheYear() {
-  return String(new Date().getFullYear());
+function currentGameOfTheYear(date = new Date()) {
+  const year = date.getFullYear();
+  return String(date.getMonth() === 0 && date.getDate() <= 14 ? year - 1 : year);
 }
 
 function gameOfTheYearYears() {
