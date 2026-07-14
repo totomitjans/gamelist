@@ -1901,12 +1901,17 @@ async function downloadGameOfTheYearImage() {
   const theme = normalizeThemeSettings(state.settings);
   const assetRows = await Promise.all(rows.map(async (row) => ({
     ...row,
-    coverSrc: await imageToDataUrl(coverDisplayUrl(row.game.cover || "") || platformLogo(row.game.platform || "PS5")),
+    coverSrc: await exportImageDataUrl(coverDisplayUrl(row.game.cover || ""), platformLogo(row.game.platform || "PS5")),
   })));
-  const logo = await imageToDataUrl(document.querySelector(".brand-mark")?.src || THEMES.shabii.icon);
-  const background = await imageToDataUrl(theme.backgroundImage || (theme.mode === "light" ? "assets/backdrop_light.png" : "assets/backdrop.png"));
+  const logo = await exportImageDataUrl(document.querySelector(".brand-mark")?.src || THEMES.shabii.icon, THEMES.shabii.icon);
+  const background = await exportImageDataUrl(theme.backgroundImage || "", theme.mode === "light" ? "assets/backdrop_light.png" : "assets/backdrop.png");
   const html = gameOfTheYearExportMarkup({ owner, year, rows: assetRows, theme, logo, background });
-  await downloadHtmlPosterPng(html, `games-of-the-year-${year}.png`);
+  try {
+    await downloadHtmlPosterPng(html, `games-of-the-year-${year}.png`);
+  } catch (error) {
+    console.error("Unable to export GOTY poster", error);
+    showToast("Could not create the image download.", "error");
+  }
 }
 
 function gameOfTheYearExportMarkup({ owner, year, rows, theme, logo, background }) {
@@ -2120,7 +2125,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   `;
 }
 
-function downloadHtmlPosterPng(html, filename) {
+function downloadHtmlPosterPng(html, filename, retried = false) {
   return new Promise((resolve, reject) => {
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
@@ -2150,6 +2155,10 @@ function downloadHtmlPosterPng(html, filename) {
         }, "image/png");
       } catch (error) {
         URL.revokeObjectURL(svgUrl);
+        if (!retried) {
+          downloadHtmlPosterPng(html.replace(/@font-face\s*\{[^}]*\}\s*/g, ""), filename, true).then(resolve).catch(reject);
+          return;
+        }
         reject(error);
       }
     };
@@ -2161,21 +2170,27 @@ function downloadHtmlPosterPng(html, filename) {
   });
 }
 
+async function exportImageDataUrl(src, fallback = "") {
+  const inline = await imageToDataUrl(src);
+  if (inline) return inline;
+  return fallback && fallback !== src ? await imageToDataUrl(fallback) : "";
+}
+
 async function imageToDataUrl(src) {
   if (!src) return "";
   if (String(src).startsWith("data:")) return src;
   try {
-    const response = await fetch(src);
-    if (!response.ok) return src;
+    const response = await fetch(src, { cache: "no-store" });
+    if (!response.ok || response.type === "opaque") return "";
     const blob = await response.blob();
     return await new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || src));
-      reader.onerror = () => resolve(src);
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => resolve("");
       reader.readAsDataURL(blob);
     });
   } catch {
-    return src;
+    return "";
   }
 }
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gamelist-cache-v423";
+const CACHE_VERSION = "gamelist-cache-v424";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const MEDIA_CACHE = `${CACHE_VERSION}:media`;
 const STATIC_ASSETS = [
@@ -114,6 +114,7 @@ self.addEventListener("fetch", (event) => {
 
 function shouldCacheMedia(request, url) {
   if (url.origin === location.origin && (request.destination === "image" || request.destination === "font")) return true;
+  if (request.mode !== "no-cors") return false;
   return [
     "howlongtobeat.com",
     "images.igdb.com",
