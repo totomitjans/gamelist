@@ -743,18 +743,6 @@ html.theme-font-pokemon {
   display: grid;
   gap: 14px;
   margin: 0 0 28px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--grid-fade), var(--grid-texture), color-mix(in srgb, var(--panel) 42%, transparent);
-  background-position:
-    center,
-    var(--grid-x) var(--grid-y),
-    center;
-  background-size:
-    auto,
-    auto,
-    auto;
 }
 
 .goty-section[hidden] {
@@ -786,12 +774,16 @@ html.theme-font-pokemon {
   width: 1.02em;
   height: 1.02em;
   min-width: 1.02em;
-  color: var(--accent);
   stroke: currentColor;
 }
 
 .goty-section .column-head h2 .trophy-icon {
   color: var(--accent);
+  transform: translateY(-0.08em);
+}
+
+html.theme-gradient .goty-section .column-head h2 .trophy-icon {
+  color: var(--title-gradient-start, var(--accent));
 }
 
 #gotyDialogTitle {
@@ -903,10 +895,18 @@ html.theme-font-pokemon {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
   overflow: visible;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--grid-fade), var(--grid-texture), color-mix(in srgb, var(--panel) 42%, transparent);
+  background-position:
+    center,
+    var(--grid-x) var(--grid-y),
+    center;
+  background-size:
+    auto,
+    auto,
+    auto;
 }
 
 .goty-card {
