@@ -372,7 +372,7 @@ init();
 
 async function init() {
   if (await checkSiteVersion()) return;
-  logPageVersion("gamelist");
+  logPageVersion();
   await window.__initialThemeReady?.catch(() => "shabii");
   registerServiceWorker();
   syncDisplayMode();
@@ -488,8 +488,8 @@ function applySiteVersion(value = {}) {
   siteVersion.updatedAt = String(value.updatedAt || "").trim();
 }
 
-function logPageVersion(page) {
-  console.log(`[${page}] version`, { version: siteVersion.version || "unknown", updatedAt: siteVersion.updatedAt || "" });
+function logPageVersion() {
+  console.log("version", siteVersion.version || "unknown");
 }
 
 function consumeRecentPullNavigation() {
