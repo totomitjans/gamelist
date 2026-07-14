@@ -1632,6 +1632,19 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
 }
 
 @media (max-width: 760px) {
+  .showcase-modal {
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .showcase-modal form {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
   .shelf-intro {
     min-height: 100px;
     padding: 16px 0;
@@ -1682,6 +1695,10 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
   }
   .showcase-picker-grid {
     grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    overflow: visible;
+    padding-bottom: 32px;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
   .favorite-cover-card:not(.favorite-cover-empty):hover .favorite-cover-info,
   .favorite-cover-card:not(.favorite-cover-empty):focus-visible .favorite-cover-info {

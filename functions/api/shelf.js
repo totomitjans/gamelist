@@ -4,8 +4,11 @@ const KV_KEY = "shelf-data";
 
 export async function onRequestGet({ env }) {
   if (!env.GAMELIST) return json({ sourceGames: [], games: [], overrides: {}, layout: null, favoriteGameIds: [] });
-  const data = await env.GAMELIST.get(KV_KEY, "json");
-  return json(data || { sourceGames: [], games: [], overrides: {}, layout: null, favoriteGameIds: [] });
+  const [shelf, list] = await Promise.all([
+    env.GAMELIST.get(KV_KEY, "json"),
+    env.GAMELIST.get("gamelist-data", "json"),
+  ]);
+  return json(withEffectiveFavoriteGameIds(shelf || { sourceGames: [], games: [], overrides: {}, layout: null, favoriteGameIds: [] }, list));
 }
 
 export async function onRequestPut({ request, env }) {
@@ -26,6 +29,7 @@ export async function onRequestPut({ request, env }) {
       updatedAt: new Date().toISOString(),
     };
     await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
+    await saveShowcaseFavoriteSettings(env, data.favoriteGameIds);
     return json({ ok: true, updatedAt: data.updatedAt, favoriteGameIds: data.favoriteGameIds });
   }
   if (!body || !Array.isArray(body.games) || !body.overrides || typeof body.overrides !== "object") {
@@ -44,6 +48,7 @@ export async function onRequestPut({ request, env }) {
     updatedAt: new Date().toISOString(),
   };
   await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
+  await saveShowcaseFavoriteSettings(env, data.favoriteGameIds);
   await syncShelfGamesToBacklog(env, body.games, newlyAdded);
   return json({ ok: true, updatedAt: data.updatedAt, favoriteGameIds: data.favoriteGameIds });
 }
@@ -126,6 +131,33 @@ function validLayout(value) {
 
 function validFavoriteGameIds(value) {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function withEffectiveFavoriteGameIds(shelf, list) {
+  const settings = list?.settings && typeof list.settings === "object" ? list.settings : {};
+  if (Object.prototype.hasOwnProperty.call(settings, "shelfShowcaseFavoriteGameIds")) {
+    return {
+      ...shelf,
+      favoriteGameIds: validFavoriteGameIds(settings.shelfShowcaseFavoriteGameIds)
+        ? settings.shelfShowcaseFavoriteGameIds.slice(0, 5)
+        : [],
+    };
+  }
+  return {
+    ...shelf,
+    favoriteGameIds: validFavoriteGameIds(shelf?.favoriteGameIds) ? shelf.favoriteGameIds.slice(0, 5) : [],
+  };
+}
+
+async function saveShowcaseFavoriteSettings(env, favoriteGameIds) {
+  const list = await env.GAMELIST.get("gamelist-data", "json") || { games: [], settings: {} };
+  const settings = list.settings && typeof list.settings === "object" ? list.settings : {};
+  await env.GAMELIST.put("gamelist-data", JSON.stringify({
+    ...list,
+    games: Array.isArray(list.games) ? list.games : [],
+    settings: { ...settings, shelfShowcaseFavoriteGameIds: favoriteGameIds.slice(0, 5) },
+    updatedAt: new Date().toISOString(),
+  }));
 }
 
 function json(data, status = 200) {
