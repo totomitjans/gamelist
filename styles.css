@@ -1008,7 +1008,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 6px;
+  bottom: 2px;
   z-index: 4;
   display: grid;
   gap: 4px;
@@ -1072,6 +1072,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   overflow-wrap: anywhere;
   font-size: 11px;
   line-height: 1.1;
+  text-align: center;
 }
 
 .goty-hover-info small {
@@ -1079,6 +1080,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   font-size: 9px;
   font-weight: 750;
   line-height: 1.15;
+  text-align: center;
 }
 
 .goty-meta {
