@@ -1793,7 +1793,7 @@ function gameOfTheYearHoverInfo(game, className) {
       <strong>${escapeHtml(game.title)}</strong>
       ${details.length ? `<small>${escapeHtml(details.join(" · "))}</small>` : ""}
       <span class="goty-meta">
-        <span class="goty-main-pills">${platformBadge(game.platform)}${progress ? psnProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress" }) : ""}</span>
+        <span class="goty-main-pills">${platformBadge(game.platform)}${progress ? psnProgressBadge(progress, { className: "goty-progress-pill" }) : ""}</span>
         ${tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("")}
       </span>
     </span>
