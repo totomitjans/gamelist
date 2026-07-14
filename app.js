@@ -4190,6 +4190,9 @@ function statsBreakdownRow(item, tone, index) {
     const color = categoryStatsColor(index);
     return `<span class="finished-stats-category-row" style="--category-stat-color:${escapeHtml(color)}"><b><i></i>${escapeHtml(item.label)}</b><em>${item.count}</em></span>`;
   }
+  if (tone === "owner") {
+    return `<span class="finished-stats-owner-row"><b>${ownerBadge(item.label)}</b><em>${item.count}</em></span>`;
+  }
   return `<span><b>${escapeHtml(item.label)}</b><em>${item.count}</em></span>`;
 }
 
@@ -4206,7 +4209,7 @@ function statsCompletedGameList(items) {
 }
 
 function statsOwnerBreakdown(games) {
-  return statsBreakdownList(countBy(games.flatMap((game) => visibleOwnerTags(game).map((owner) => ({ owner }))), (item) => item.owner));
+  return statsBreakdownList(countBy(games.flatMap((game) => visibleOwnerTags(game).map((owner) => ({ owner }))), (item) => item.owner), "owner");
 }
 
 function countBy(items, getter) {

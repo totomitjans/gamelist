@@ -6259,6 +6259,13 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   max-width: 128px;
 }
 
+.finished-stats-owner-row .owner-pill {
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+
 .finished-stats-platform-row .platform-icon,
 .finished-stats-game-row .platform-icon {
   width: 13px;
