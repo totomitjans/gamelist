@@ -1938,7 +1938,7 @@ function gameOfTheYearExportMarkup({ owner, year, rows, theme, logo, background 
 }
 
 function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
-  const cover = coverSrc || coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
+  const cover = coverSrc || "";
   const progress = achievementProgressForGame(game);
   const progressNumber = progress ? Math.round(Number(progress.progress ?? progressValue(progress.game)) || 0) : 0;
   const progressCount = progress ? canvasProgressCount(progress.label) : "";
@@ -1949,7 +1949,7 @@ function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
   ].map((tag) => tag.trim()).filter(Boolean).slice(0, 2);
   return `
     <article class="goty-export-card ${index >= 4 ? "is-bottom" : ""}">
-      <div class="goty-export-cover-wrap"><img class="goty-export-cover" src="${escapeHtml(cover)}" alt="" /></div>
+      <div class="goty-export-cover-wrap">${cover ? `<img class="goty-export-cover" src="${escapeHtml(cover)}" alt="" />` : `<span class="goty-export-cover goty-export-cover-fallback"></span>`}</div>
       <div class="goty-export-info">
         <strong class="goty-export-category">${escapeHtml(label)}</strong>
         <h2>${escapeHtml(game.title || "")}</h2>
@@ -2056,6 +2056,12 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       height: 216px;
       object-fit: contain;
       border-radius: 12px;
+    }
+    .goty-export-cover-fallback {
+      display: block;
+      background:
+        linear-gradient(135deg, ${canvasRgba(main, 0.22)}, transparent),
+        ${theme.mode === "light" ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"};
     }
     .goty-export-info {
       display: flex;
@@ -2180,7 +2186,9 @@ async function imageToDataUrl(src) {
   if (!src) return "";
   if (String(src).startsWith("data:")) return src;
   try {
-    const response = await fetch(src, { cache: "no-store" });
+    const url = new URL(src, window.location.href);
+    if (url.origin !== window.location.origin) return "";
+    const response = await fetch(url.href, { cache: "no-store" });
     if (!response.ok || response.type === "opaque") return "";
     const blob = await response.blob();
     return await new Promise((resolve) => {
