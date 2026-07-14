@@ -22,8 +22,8 @@ const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
 const MAX_PRICE_STORES = 5;
 const GAME_OF_YEAR_CATEGORIES = [
-  ["singleplayer", "FAVORITE SINGLEPLAYER GAME"],
-  ["multiplayer", "FAVORITE MULTIPLAYER GAME"],
+  ["singleplayer", "FAVORITE SINGLEPLAYER"],
+  ["multiplayer", "FAVORITE MULTIPLAYER"],
   ["fun", "MOST FUN GAME"],
   ["soundtrack", "FAVORITE SOUNDTRACK"],
   ["indie", "FAVORITE INDIE"],
