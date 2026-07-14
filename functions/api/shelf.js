@@ -30,7 +30,7 @@ export async function onRequestPut({ request, env }) {
   };
   await env.GAMELIST.put(KV_KEY, JSON.stringify(data));
   await syncShelfGamesToBacklog(env, body.games, newlyAdded);
-  return json({ ok: true, updatedAt: data.updatedAt });
+  return json({ ok: true, updatedAt: data.updatedAt, favoriteGameIds: data.favoriteGameIds });
 }
 
 export async function onRequestDelete({ request, env }) {

@@ -98,6 +98,7 @@ async function syncBacklogGamesToShelf(env, allGames, games) {
   }));
   if (!additions.length && !changed) return;
   await env.GAMELIST.put("shelf-data", JSON.stringify({
+    ...shelf,
     sourceGames,
     games: [...additions, ...shelfGames].slice(0, 1000),
     overrides: shelf.overrides || {},

@@ -234,6 +234,8 @@ function bindEvents() {
   el.playingCarousel.addEventListener("scroll", () => { updatePlayingControls(); scheduleShelfTrailerUpdate(); }, { passive: true });
   el.finishedCarousel.addEventListener("scroll", updateFinishedControls, { passive: true });
   el.clear.addEventListener("click", clearFilters);
+  el.stats.addEventListener("click", handleStatsAction);
+  el.stats.addEventListener("keydown", handleStatsActionKeydown);
   document.addEventListener("click", closePlatformLogoSelects);
   el.login.addEventListener("click", toggleEditMode);
   el.addButton.addEventListener("click", () => openEditor());
@@ -745,6 +747,7 @@ function applyTheme() {
 
 function scrollToShelfLibrary() {
   document.querySelector("[data-module='library']")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.shelf.scrollTo?.({ top: 0, left: 0, behavior: "smooth" });
 }
 
 function delay(ms) {
@@ -757,11 +760,25 @@ function renderStats() {
   const value = collectionGames.reduce((sum, game) => sum + (collectionValueFor(game) || 0), 0);
   const valueText = normalizePriceSettings(state.gamelistSettings).currency === "USD" ? `$${Math.round(value).toLocaleString("en")}` : `${Math.round(value).toLocaleString("en")}€`;
   const rows = [
-    [collectionGames.length, "Physical games", "stat-backlog"],
+    [collectionGames.length, "Physical games", "stat-backlog", "shelf-start"],
     [new Set(collectionGames.map((game) => game.platform)).size, "Platforms", "stat-available"],
     ...(shelfPricesVisible() ? [[valueText, "Estimated value", "stat-done"]] : []),
   ];
-  el.stats.innerHTML = rows.map(([valueText, label, className]) => `<div class="stat glass ${className}"><strong>${escapeHtml(valueText)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+  el.stats.innerHTML = rows.map(([valueText, label, className, action]) => `<div class="stat glass ${className}${action ? " stat-action" : ""}"${action ? ` data-stat-action="${escapeHtml(action)}" role="button" tabindex="0"` : ""}><strong>${escapeHtml(valueText)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+}
+
+function handleStatsAction(event) {
+  const stat = event.target.closest("[data-stat-action]");
+  if (!stat) return;
+  if (stat.dataset.statAction === "shelf-start") scrollToShelfLibrary();
+}
+
+function handleStatsActionKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const stat = event.target.closest("[data-stat-action]");
+  if (!stat) return;
+  event.preventDefault();
+  if (stat.dataset.statAction === "shelf-start") scrollToShelfLibrary();
 }
 
 function renderFilters() {
@@ -1544,7 +1561,7 @@ async function deleteGame(game) {
   return true;
 }
 
-async function persistShelf() {
+async function persistShelf(options = {}) {
   const payload = { sourceGames: state.sourceGames.map(stripRuntimeFields), games: state.additions.map(stripRuntimeFields), overrides: state.overrides, layout: state.layout, favoriteGameIds: normalizeFavoriteGameIds(state.favoriteGameIds) };
   localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(payload));
   try {
@@ -1552,6 +1569,13 @@ async function persistShelf() {
     const response = await fetch("/api/shelf", { method: "PUT", headers: { "Content-Type": "application/json", "x-edit-password": password }, body: JSON.stringify(payload) });
     if (!response.ok) throw new Error("Save failed");
     const data = await response.json();
+    if (options.verifyFavorites) {
+      const expected = normalizeFavoriteGameIds(options.verifyFavorites);
+      const savedIds = Array.isArray(data.favoriteGameIds)
+        ? data.favoriteGameIds.map((id) => String(id || "").trim()).filter(Boolean)
+        : [];
+      if (JSON.stringify(savedIds) !== JSON.stringify(expected)) throw new Error("Showcase save verification failed");
+    }
     state.updatedAt = data.updatedAt || new Date().toISOString();
     localStorage.removeItem(LOCAL_DRAFT_KEY);
     return true;
@@ -1990,7 +2014,7 @@ function handleShowcaseSelectedClick(event) {
 async function saveShowcase(event) {
   event.preventDefault();
   state.favoriteGameIds = normalizeFavoriteGameIds(state.showcaseDraftIds);
-  const saved = await persistShelf();
+  const saved = await persistShelf({ verifyFavorites: state.favoriteGameIds });
   if (!saved) {
     showToast("Showcase could not be saved. Please try again.", "error");
     return;
