@@ -10079,27 +10079,64 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 
 @media (max-width: 460px) {
   .goty-section .column-head {
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 36px 36px;
+    align-items: start;
+    gap: 6px 8px;
+  }
+
+  .goty-section .column-head > div:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .goty-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+    transform: none;
+  }
+
+  .goty-year-count {
+    margin-left: calc(1.02em + 8px);
+    font-size: 12px;
+    transform: none;
   }
 
   .goty-head-actions {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: stretch;
-    margin-left: 0;
+    display: contents;
   }
 
   .goty-year-select {
-    flex: 0 0 88px;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 88px;
+    margin-left: calc(1.02em + 8px);
   }
 
   .goty-save-button,
   .goty-edit-button {
-    flex: 0 0 36px;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .goty-edit-button {
+    grid-column: 2;
+  }
+
+  .goty-save-button {
+    grid-column: 3;
   }
 
   .goty-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .goty-grid .goty-card:last-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc((100% - 10px) / 2);
   }
 
   .goty-picker-grid {
