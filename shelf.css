@@ -273,8 +273,8 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  padding: 16px 8px 8px;
+  top: 0;
+  padding: 8px 8px 16px;
   overflow: hidden;
   font-size: 11px;
   font-weight: 850;
@@ -282,7 +282,7 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
   text-overflow: ellipsis;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
 }
 
 .showcase-selected-slot.is-empty {
@@ -473,12 +473,12 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
   position: absolute;
   left: 0;
   right: 0;
-  top: 0;
+  bottom: 0;
   display: grid;
   justify-items: start;
   gap: 5px;
   max-height: calc(1.1em * 4 + 56px);
-  padding: 8px 8px 26px;
+  padding: 26px 8px 8px;
   overflow: hidden;
   color: #fff;
   font-size: 11px;
@@ -488,8 +488,8 @@ html.theme-font-pokemon .shelf-page .column-head h2 {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   white-space: normal;
   overflow-wrap: anywhere;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.56) 68%, rgba(0, 0, 0, 0));
-  border-radius: 8px 8px 0 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.56) 68%, rgba(0, 0, 0, 0));
+  border-radius: 0 0 8px 8px;
   opacity: 0;
   pointer-events: none;
   transform: translateY(6px);
