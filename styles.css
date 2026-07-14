@@ -2563,6 +2563,7 @@ body.dialog-open .scroll-top-button {
 #releaseCloseButton:hover,
 #shelfReleaseCloseButton:hover,
 #gotyCloseButton:hover,
+#finishedStatsCloseButton:hover,
 #settingsCloseButton:hover,
 #layoutClose:hover,
 #showcaseClose:hover,
@@ -5973,6 +5974,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-dialog {
   width: min(920px, calc(100vw - 24px));
+  overflow: visible;
   border: 0;
   padding: 0;
   background: transparent;
@@ -5985,13 +5987,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-modal {
   position: relative;
-  max-height: min(760px, calc(100vh - 28px));
-  padding: 18px;
-  overflow: auto;
-  background:
-    linear-gradient(rgba(8, 9, 12, 0.86), rgba(8, 9, 12, 0.86)),
-    var(--grid-texture),
-    color-mix(in srgb, var(--accent) 7%, rgba(8, 9, 12, 0.94));
+  width: min(920px, calc(100vw - 24px));
+  overflow: visible !important;
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.48),
     inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -6127,14 +6124,10 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   padding: 10px;
   overflow: auto;
   color: var(--text);
-  background:
-    linear-gradient(rgba(8, 9, 12, 0.94), rgba(8, 9, 12, 0.94)),
-    var(--grid-texture);
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.12));
+  background: rgba(8, 9, 12, 0.96);
+  border: 0;
   border-radius: 8px;
-  box-shadow:
-    0 18px 42px rgba(0, 0, 0, 0.46),
-    0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 140ms ease, transform 140ms ease;
@@ -6178,11 +6171,6 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   white-space: nowrap;
 }
 
-.finished-stats-platform-row b {
-  color: var(--platform-stat-color);
-}
-
-.finished-stats-platform-row b::before,
 .finished-stats-category-row b i {
   content: "";
   width: 8px;
@@ -6193,22 +6181,24 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   box-shadow: 0 0 12px currentColor;
 }
 
-.finished-stats-platform-row b::before {
-  color: var(--platform-stat-color);
+.finished-stats-platform-row .platform-badge,
+.finished-stats-game-row .platform-badge {
+  min-width: 0;
+  height: 20px;
+  padding: 0 7px 0 5px;
+  font-size: 9px;
 }
 
-.finished-stats-platform-row img {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  object-fit: contain;
+.finished-stats-platform-row .platform-icon,
+.finished-stats-game-row .platform-icon {
+  width: 13px;
+  height: 13px;
 }
 
-.finished-stats-platform-row i {
-  overflow: hidden;
-  font-style: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.finished-stats-platform-row .platform-icon img,
+.finished-stats-game-row .platform-icon img {
+  width: 12px;
+  height: 12px;
 }
 
 .finished-stats-category-row b i {
@@ -6446,6 +6436,7 @@ dialog {
 
 .platinum-dialog {
   width: min(920px, calc(100vw - 24px));
+  overflow: visible;
 }
 
 #authDialog {
@@ -6550,6 +6541,7 @@ body.dialog-open .mobile-section-tabs {
 .release-modal,
 .settings-modal,
 .goty-modal,
+.finished-stats-modal,
 .platinum-modal {
   max-height: calc(100vh - 70px);
   overflow: auto;
@@ -7664,6 +7656,7 @@ html.theme-light #detailCloseButton:hover,
 html.theme-light #historyCloseButton:hover,
 html.theme-light #releaseCloseButton:hover,
 html.theme-light #shelfReleaseCloseButton:hover,
+html.theme-light #finishedStatsCloseButton:hover,
 html.theme-light #settingsCloseButton:hover,
 html.theme-light #layoutClose:hover,
 html.theme-light #showcaseClose:hover,
@@ -8811,6 +8804,7 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 .platinum-modal {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+  overflow: visible !important;
 }
 
 .platinum-modal .modal-head {
@@ -8846,6 +8840,7 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 .platinum-filter-bar {
   position: relative;
   z-index: 30;
+  overflow: visible;
   display: grid;
   grid-template-columns: 110px 132px auto;
   align-items: end;
@@ -8936,6 +8931,9 @@ body.theme-kash .history-row.completed-trophy-card:hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  max-height: min(530px, calc(100vh - 270px));
+  padding-right: 4px;
+  overflow: auto;
 }
 
 .platinum-list.list-view {

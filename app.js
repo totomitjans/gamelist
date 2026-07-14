@@ -4049,10 +4049,10 @@ function completedCountForSelectedYear() {
 }
 
 function openFinishedStatsDialog(year = "all") {
-  const scope = String(year || "all");
+  const scope = finishedStatsScope(year);
   const games = finishedStatsGames(scope);
   const completed = finishedStatsCompleted(scope);
-  el.finishedStatsTitle.textContent = scope === "all" ? "Finished stats" : `Finished stats ${scope}`;
+  el.finishedStatsTitle.textContent = scope === "all" ? "Finished games" : `Finished games ${scope}`;
   el.finishedStatsBody.innerHTML = finishedStatsMarkup(scope, games, completed);
   el.finishedStatsBody.querySelector("[data-stats-action='completed']")?.addEventListener("click", () => {
     el.finishedStatsDialog.close();
@@ -4060,6 +4060,12 @@ function openFinishedStatsDialog(year = "all") {
   });
   el.finishedStatsDialog.showModal();
   syncScrollLock();
+}
+
+function finishedStatsScope(year = "all") {
+  const value = String(year || "all");
+  const years = completedYears();
+  return value === "all" && years.length === 1 ? years[0] : value;
 }
 
 function finishedStatsGames(year = "all") {
@@ -4084,9 +4090,10 @@ function finishedStatsMarkup(year, games, completed) {
   const streamed = games.filter((game) => game.stream);
   const otherOwnerGames = games.filter((game) => visibleOwnerTags(game).length);
   const allYears = year === "all";
+  const showYearlyDetail = !allYears;
   const cards = [
-    statsKpiCard("Finished games", games.length, "", { tone: "finished" }),
-    statsKpiCard("Completed games", completed.length, "", { action: "completed", tone: "completed", icon: trophyIcon() }),
+    statsKpiCard("Finished games", games.length, showYearlyDetail ? statsGameList(games) : "", { tone: "finished" }),
+    statsKpiCard("Completed games", completed.length, showYearlyDetail ? statsCompletedGameList(completed) : "", { action: "completed", tone: "completed", icon: trophyIcon() }),
     streamed.length ? statsKpiCard("Streamed games", streamed.length, statsGameList(streamed), { tone: "streamed" }) : "",
     otherOwnerGames.length ? statsKpiCard("Other owners", otherOwnerGames.length, statsOwnerBreakdown(otherOwnerGames), { tone: "owners" }) : "",
   ].filter(Boolean).join("");
@@ -4168,8 +4175,7 @@ function statsBreakdownList(counts, tone = "") {
 
 function statsBreakdownRow(item, tone, index) {
   if (tone === "platform") {
-    const color = platformStatsColor(item.label, index);
-    return `<span class="finished-stats-platform-row" style="--platform-stat-color:${escapeHtml(color)}"><b><img src="${escapeHtml(platformLogo(item.label))}" alt="" width="18" height="18" decoding="async"><i>${escapeHtml(item.label)}</i></b><em>${item.count}</em></span>`;
+    return `<span class="finished-stats-platform-row"><b>${platformBadge(item.label)}</b><em>${item.count}</em></span>`;
   }
   if (tone === "category") {
     const color = categoryStatsColor(index);
@@ -4179,8 +4185,15 @@ function statsBreakdownRow(item, tone, index) {
 }
 
 function statsGameList(games) {
-  return games.slice(0, 12).map((game) => `<span><b>${escapeHtml(game.title)}</b><em>${escapeHtml(canonicalPlatform(game.platform) || game.platform || "")}</em></span>`).join("")
+  return games.slice(0, 12).map((game) => `<span class="finished-stats-game-row"><b>${escapeHtml(game.title)}</b>${game.platform ? platformBadge(game.platform) : ""}</span>`).join("")
     + (games.length > 12 ? `<span><b>More</b><em>+${games.length - 12}</em></span>` : "");
+}
+
+function statsCompletedGameList(items) {
+  return statsGameList(items.map((item) => ({
+    title: item.title,
+    platform: item.platform || platinumPlatformFor(item),
+  })));
 }
 
 function statsOwnerBreakdown(games) {
@@ -4199,7 +4212,7 @@ function countBy(items, getter) {
 }
 
 function gameStatsCategory(game) {
-  return [...(game.genres || []), ...(game.tags || []), canonicalStatus(game.section)]
+  return (game.genres || [])
     .map((value) => String(value || "").trim())
     .find((value) => value && normalizeTag(value) !== "game") || "Uncategorized";
 }
