@@ -1921,35 +1921,23 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   const main = theme.mainColorReset ? DEFAULT_SETTINGS.theme === "kash" ? THEMES.kash.themeColor : THEMES.shabii.themeColor : theme.mainColor;
   const accent = theme.accentColor || "#79f2ce";
   const titleGradient = theme.gradient ? theme.gradientColor : main;
+  const titleFont = canvasTitleFont(theme);
+  const bodyFont = canvasBodyFont();
   ctx.fillStyle = theme.mode === "light" ? "#e8edf5" : "#08090d";
   ctx.fillRect(0, 0, width, height);
   if (background) {
-    ctx.globalAlpha = 0.42;
+    ctx.globalAlpha = theme.mode === "light" ? 0.62 : 0.9;
     drawCanvasImageCover(ctx, background, 0, 0, width, height);
     ctx.globalAlpha = 1;
   }
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, canvasRgba(main, 0.44));
-  gradient.addColorStop(0.44, theme.mode === "light" ? "rgba(232,237,245,.76)" : "rgba(8,9,13,.88)");
-  gradient.addColorStop(1, canvasRgba(accent, 0.32));
-  ctx.fillStyle = gradient;
+  drawCanvasGlow(ctx, width * 0.78, height * 0.09, 580, canvasThemeColorBySource(theme, theme.glowPrimary || "main", main, accent), theme.disableGlow ? 0 : 0.24);
+  drawCanvasGlow(ctx, width * 0.11, height * 0.84, 650, canvasThemeColorBySource(theme, theme.glowSecondary || "accent", main, accent), theme.disableGlow ? 0 : 0.16);
+  const sweep = ctx.createLinearGradient(0, 0, width, height * 0.72);
+  sweep.addColorStop(0, theme.mode === "light" ? "rgba(255,255,255,.58)" : "rgba(255,255,255,.055)");
+  sweep.addColorStop(0.38, "rgba(255,255,255,0)");
+  sweep.addColorStop(1, theme.mode === "light" ? "rgba(232,237,245,.32)" : "rgba(8,9,13,.36)");
+  ctx.fillStyle = sweep;
   ctx.fillRect(0, 0, width, height);
-  drawCanvasGlow(ctx, 190, 128, 420, main, 0.26);
-  drawCanvasGlow(ctx, 1640, 940, 520, accent, 0.18);
-  ctx.strokeStyle = theme.mode === "light" ? "rgba(18,24,36,.13)" : "rgba(255,255,255,.045)";
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= width; x += 48) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-  for (let y = 0; y <= height; y += 48) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
   if (logo) {
     drawCanvasImageCover(ctx, logo, 84, 68, 112, 112, 22);
   }
@@ -1957,13 +1945,10 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   titleFill.addColorStop(0, titleGradient);
   titleFill.addColorStop(1, main);
   ctx.fillStyle = titleFill;
-  ctx.font = "900 64px Arial";
+  ctx.font = `900 64px ${titleFont}`;
   wrapCanvasText(ctx, `${owner}'s Games of the Year ${year}`, 220, 108, 1260, 70);
-  ctx.font = "700 25px Arial";
-  ctx.fillStyle = theme.mode === "light" ? "rgba(22,28,42,.72)" : "#a6adbd";
-  ctx.fillText(`${rows.length} picks from ${year}`, 224, 190);
-  const siteUrl = window.location.origin && window.location.origin !== "null" ? window.location.origin : "Gamelist";
-  ctx.font = "800 24px Arial";
+  const siteUrl = cleanCanvasSiteUrl(window.location.origin && window.location.origin !== "null" ? window.location.origin : window.location.hostname || "Gamelist");
+  ctx.font = `800 24px ${bodyFont}`;
   ctx.textAlign = "right";
   ctx.fillStyle = theme.mode === "light" ? "rgba(22,28,42,.72)" : "rgba(246,247,251,.74)";
   ctx.fillText(siteUrl, width - 82, height - 52);
@@ -1982,7 +1967,8 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
     const y = topRow ? topY : bottomY;
     const game = rows[index].game;
     const progress = achievementProgressForGame(game);
-    const progressText = progress ? `${Math.round(progressValue(progress.game))}% trophies` : "";
+    const progressValueNumber = progress ? Math.round(Number(progress.progress ?? progressValue(progress.game)) || 0) : 0;
+    const progressCount = progress ? canvasProgressCount(progress.label) : "";
     const details = [game.platform || "", game.developer || game.publisher || ""].filter(Boolean).join(" · ");
     const tags = [
       ...String(game.genres || "").split(","),
@@ -1995,26 +1981,111 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
     if (cover) drawCanvasImageContain(ctx, cover, x + 22, y + 78, 154, 216, 12);
     else drawRoundedRect(ctx, x + 22, y + 78, 154, 216, 12, "rgba(255,255,255,.12)");
     ctx.fillStyle = accent;
-    ctx.font = "900 20px Arial";
-    wrapCanvasText(ctx, rows[index].label, x + 18, y + 34, cardW - 36, 24);
+    ctx.textAlign = "right";
+    ctx.font = `900 20px ${titleFont}`;
+    wrapCanvasText(ctx, rows[index].label, x + cardW - 18, y + 34, cardW - 36, 24);
     ctx.fillStyle = theme.mode === "light" ? "#151925" : "#f6f7fb";
-    ctx.font = "900 31px Arial";
-    wrapCanvasText(ctx, game.title || "", x + 194, y + 92, cardW - 214, 35, 3);
+    ctx.font = `900 31px ${bodyFont}`;
+    wrapCanvasText(ctx, game.title || "", x + cardW - 22, y + 92, cardW - 214, 35, 3);
     ctx.fillStyle = theme.mode === "light" ? "rgba(22,28,42,.72)" : "#a6adbd";
-    ctx.font = "700 19px Arial";
-    wrapCanvasText(ctx, details || "Finished game", x + 194, y + 212, cardW - 214, 24, 2);
+    ctx.font = `700 19px ${bodyFont}`;
+    wrapCanvasText(ctx, details || "Finished game", x + cardW - 22, y + 212, cardW - 214, 24, 2);
     ctx.fillStyle = theme.mode === "light" ? "rgba(22,28,42,.62)" : "rgba(246,247,251,.68)";
-    ctx.font = "700 17px Arial";
-    wrapCanvasText(ctx, [progressText, tags].filter(Boolean).join(" · "), x + 194, y + 268, cardW - 214, 22, 2);
+    ctx.font = `700 17px ${bodyFont}`;
+    wrapCanvasText(ctx, tags, x + cardW - 22, y + 264, cardW - 214, 22, 1);
+    let pillRight = x + cardW - 22;
+    if (progress) {
+      pillRight -= drawCanvasProgressPill(ctx, pillRight, y + 288, progressValueNumber, progressCount, { theme, bodyFont, main }) + 8;
+    }
+    drawCanvasPill(ctx, pillRight, y + 288, platformDisplayName(game.platform || "Game"), { theme, bodyFont, align: "right" });
+    ctx.textAlign = "left";
   }
 }
 
 function drawCanvasGlow(ctx, x, y, radius, color, alpha) {
+  if (!alpha) return;
   const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
   glow.addColorStop(0, canvasRgba(color, alpha));
   glow.addColorStop(1, canvasRgba(color, 0));
   ctx.fillStyle = glow;
   ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+}
+
+function drawCanvasPill(ctx, right, y, text, { theme, bodyFont, align = "right" }) {
+  const label = String(text || "").trim();
+  if (!label) return 0;
+  ctx.save();
+  ctx.font = `800 15px ${bodyFont}`;
+  const width = Math.ceil(ctx.measureText(label).width) + 26;
+  const height = 28;
+  const x = align === "right" ? right - width : right;
+  drawRoundedRect(ctx, x, y, width, height, 10, theme.mode === "light" ? "rgba(255,255,255,.76)" : "rgba(255,255,255,.11)");
+  drawRoundedStroke(ctx, x, y, width, height, 10, theme.mode === "light" ? "rgba(18,24,36,.16)" : "rgba(255,255,255,.15)");
+  ctx.fillStyle = theme.mode === "light" ? "#151925" : "#f6f7fb";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + width / 2, y + height / 2 + 1);
+  ctx.restore();
+  return width;
+}
+
+function drawCanvasProgressPill(ctx, right, y, progress, count, { theme, bodyFont, main }) {
+  const pct = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+  const label = [`${pct}%`, count || ""].filter(Boolean).join(" · ");
+  ctx.save();
+  ctx.font = `900 15px ${bodyFont}`;
+  const width = Math.max(118, Math.ceil(ctx.measureText(label).width) + 34);
+  const height = 28;
+  const x = right - width;
+  drawRoundedRect(ctx, x, y, width, height, 10, theme.mode === "light" ? "rgba(255,255,255,.76)" : "rgba(255,255,255,.11)");
+  drawRoundedRect(ctx, x + 4, y + 4, Math.max(10, (width - 8) * pct / 100), height - 8, 8, canvasRgba(main, theme.mode === "light" ? 0.32 : 0.42));
+  drawRoundedStroke(ctx, x, y, width, height, 10, theme.mode === "light" ? "rgba(18,24,36,.16)" : "rgba(255,255,255,.15)");
+  ctx.fillStyle = theme.mode === "light" ? "#151925" : "#f6f7fb";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + width / 2, y + height / 2 + 1);
+  ctx.restore();
+  return width;
+}
+
+function canvasProgressCount(label = "") {
+  const match = String(label).match(/(\d+\s*\/\s*\d+)/);
+  return match ? match[1].replace(/\s+/g, "") : "";
+}
+
+function cleanCanvasSiteUrl(value) {
+  return String(value || "")
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/\/$/, "");
+}
+
+function canvasTitleFont(theme) {
+  return canvasFontFamily(theme?.accentFont, true);
+}
+
+function canvasBodyFont() {
+  return "\"Cascadia Code\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+}
+
+function canvasFontFamily(value, fallbackToBody = false) {
+  const fonts = {
+    antique: "\"Antique Olive Nord\"",
+    georgia: "\"Georgia Bold\"",
+    pokemon: "\"Pokemon GBA\"",
+    pixel: "\"04B 30\"",
+    michroma: "\"Michroma\"",
+    minecraft: "\"Minecraft\"",
+    mata: "\"Mata Regular\"",
+  };
+  return fonts[value] || (fallbackToBody ? canvasBodyFont() : "\"Cascadia Code\"");
+}
+
+function canvasThemeColorBySource(theme, source, main, accent) {
+  if (source === "accent") return accent;
+  if (source === "gradient") return theme.gradientColor || main;
+  if (source === "extra") return theme.extraColor || accent;
+  return main;
 }
 
 function drawRoundedRect(ctx, x, y, width, height, radius, fill) {
