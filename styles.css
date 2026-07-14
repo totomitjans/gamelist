@@ -2573,6 +2573,8 @@ body.dialog-open .scroll-top-button {
 #loginButton:hover,
 #fetchPricesButton:hover,
 #addButton:hover,
+#scrollTopButton:hover,
+#floatingAddButton:hover,
 #lookupButton:hover,
 #pricesButton:hover,
 #deleteButton:hover,
@@ -2593,8 +2595,8 @@ body.dialog-open .scroll-top-button {
 
 .scroll-top-button:hover {
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(142, 150, 168, 0.42);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .floating-edit-actions {
@@ -2641,8 +2643,8 @@ body.dialog-open .scroll-top-button {
 
 .floating-action-button:hover {
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.28);
-  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .floating-action-button .pencil-icon {
@@ -5552,9 +5554,11 @@ a.time-pill {
 
 .icon-button.floating-action-button:hover {
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.28);
-  background: var(--accent);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent),
+    0 10px 28px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .icon-button.view-toggle {
