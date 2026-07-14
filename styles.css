@@ -926,7 +926,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
   overflow: visible;
-  padding: 12px;
+  padding: 12px 12px 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--grid-fade), var(--grid-texture), color-mix(in srgb, var(--panel) 42%, transparent);
