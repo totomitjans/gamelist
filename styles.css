@@ -80,7 +80,11 @@
   --accent-1: #79f2ce;
   --accent-2: #79f2ce;
   --accent-3: #ee32b3;
-  --scrollbar-track: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.08));
+  --scrollbar-track: color-mix(
+    in srgb,
+    var(--accent) 10%,
+    rgba(255, 255, 255, 0.08)
+  );
   --scrollbar-thumb: var(--accent);
   --scrollbar-thumb-hover: var(--accent-2);
   --title-gradient-start: var(--accent);
@@ -846,7 +850,10 @@ html.theme-font-pokemon {
   background: transparent;
   box-shadow: none;
   cursor: pointer;
-  transition: transform 170ms ease, filter 170ms ease, z-index 170ms ease;
+  transition:
+    transform 170ms ease,
+    filter 170ms ease,
+    z-index 170ms ease;
 }
 
 .goty-card:hover,
@@ -862,8 +869,7 @@ html.theme-font-pokemon {
   height: 100%;
   overflow: hidden;
   overflow: clip;
-  aspect-ratio: 2 / 3;
-  border-radius: 7px;
+  border-radius: 12px;
   clip-path: inset(0 round 7px);
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
 }
@@ -912,9 +918,21 @@ html.theme-font-pokemon {
   color: var(--text);
   text-align: left;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 62%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 12px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 12px),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 62%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.035) 0 1px,
+      transparent 1px 12px
+    ),
     color-mix(in srgb, var(--panel) 78%, rgba(0, 0, 0, 0.82));
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -924,7 +942,9 @@ html.theme-font-pokemon {
   opacity: 0;
   pointer-events: none;
   transform: translateY(-6px);
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .goty-card-edge-right .goty-hover-info {
@@ -1127,17 +1147,44 @@ html.theme-font-pokemon {
   padding: 2px;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 36px,
+    #000 calc(100% - 36px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 36px,
+    #000 calc(100% - 36px),
+    transparent 100%
+  );
 }
 
 .goty-choice-strip.at-start .goty-choice-list {
-  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 36px), transparent 100%);
-  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 36px), transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    #000 0,
+    #000 calc(100% - 36px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    #000 0,
+    #000 calc(100% - 36px),
+    transparent 100%
+  );
 }
 
 .goty-choice-strip.at-end .goty-choice-list {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 100%);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 36px,
+    #000 100%
+  );
   mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 100%);
 }
 
@@ -1162,7 +1209,12 @@ html.theme-font-pokemon {
   border-radius: 8px;
   cursor: pointer;
   scroll-snap-align: start;
-  transition: transform 160ms ease, filter 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    filter 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .goty-choice-card:hover,
@@ -1243,7 +1295,9 @@ html.theme-font-pokemon {
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 .goty-title-overlay.visible {
@@ -1281,7 +1335,9 @@ html.theme-font-pokemon {
   opacity: 0;
   pointer-events: none;
   transform: translateY(12px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .goty-callout.visible {
