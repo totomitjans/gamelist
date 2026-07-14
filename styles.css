@@ -769,6 +769,23 @@ html.theme-font-pokemon {
   gap: 8px;
 }
 
+.goty-section .column-head h2 > span {
+  color: transparent;
+  background: var(--accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+html.theme-gradient .goty-section .column-head h2 > span {
+  background: linear-gradient(
+    135deg,
+    var(--title-gradient-start, var(--accent)) 0%,
+    var(--title-gradient-end, var(--accent)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 .goty-section .column-head h2 .trophy-icon,
 #gotyDialogTitle .trophy-icon {
   width: 1.02em;
@@ -803,6 +820,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   font-weight: 820;
   line-height: 1;
   white-space: nowrap;
+  transform: translateY(3px);
 }
 
 .goty-year-select {
