@@ -222,6 +222,7 @@ const el = {
   gotyYearSelect: document.querySelector("#gotyYearSelect"),
   gotySaveButton: document.querySelector("#gotySaveButton"),
   gotyEditButton: document.querySelector("#gotyEditButton"),
+  gotyResetButton: document.querySelector("#gotyResetButton"),
   gotyGrid: document.querySelector("#gotyGrid"),
   achievementSection: document.querySelector("#achievementSection"),
   calendarSection: document.querySelector(".calendar-section"),
@@ -634,6 +635,7 @@ function bindEvents() {
   });
   el.gotyEditButton?.addEventListener("click", () => openGameOfTheYearDialog(currentGameOfTheYear(), { force: true }));
   el.gotySaveButton?.addEventListener("click", downloadGameOfTheYearImage);
+  el.gotyResetButton?.addEventListener("click", resetGameOfTheYearFromForm);
   el.gotyCloseButton?.addEventListener("click", () => el.gotyDialog.close());
   el.gotyDialog?.addEventListener("click", (event) => {
     if (event.target === el.gotyDialog) el.gotyDialog.close();
@@ -1075,7 +1077,7 @@ function applyPageOrder() {
   const orderMap = new Map(order.map((key, index) => [key, index + 1]));
   const hasPlayingGames = activeGames().some((game) => game.playing);
   const hasFinishedGames = state.games.some((game) => !game.deletedAt && game.completedAt);
-  el.playingSection.style.order = "0";
+  el.playingSection.style.order = "1";
   if (el.gotySection) el.gotySection.style.order = "0";
   el.achievementSection.style.order = String(orderMap.get("trophies") || 1);
   el.calendarSection.style.order = String(orderMap.get("calendar") || 2);
@@ -1596,6 +1598,7 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
   const entry = state.settings.gameOfTheYear?.[year] || {};
   const picks = { ...(entry.picks || {}) };
   el.gotyDialogTitle.textContent = `Games of the Year ${year}`;
+  if (el.gotyResetButton) el.gotyResetButton.innerHTML = trashIcon();
   renderGameOfTheYearPicker(games, picks);
   try {
     if (!el.gotyDialog.open) el.gotyDialog.showModal();
@@ -1716,6 +1719,21 @@ async function saveGameOfTheYearFromForm(event) {
   el.gotyDialog.close();
   render();
   showToast(`Published Games of the Year ${year}.`);
+}
+
+async function resetGameOfTheYearFromForm() {
+  const year = el.gotyForm.dataset.gotyYear || currentGameOfTheYear();
+  const gameOfTheYear = { ...(state.settings.gameOfTheYear || {}) };
+  delete gameOfTheYear[year];
+  state.settings = normalizeSettings({ ...state.settings, gameOfTheYear });
+  state.gotyYear = year;
+  state.gotyPromptShown = false;
+  persistLocalSettings();
+  await persistCloud();
+  el.gotyDialog.close();
+  render();
+  window.setTimeout(() => showGameOfTheYearCallout(year), 250);
+  showToast(`Reset Games of the Year ${year}.`);
 }
 
 function showGameOfTheYearCallout(year) {
