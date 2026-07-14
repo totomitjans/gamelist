@@ -10105,7 +10105,7 @@ body.theme-kash .history-row.completed-trophy-card:hover {
   .goty-year-count {
     margin-left: 0;
     font-size: 12px;
-    transform: none;
+    transform: translateY(11px);
   }
 
   .goty-head-actions {
@@ -10117,7 +10117,6 @@ body.theme-kash .history-row.completed-trophy-card:hover {
     justify-content: end;
     justify-self: end;
     margin-left: 0;
-    transform: translateY(18px);
   }
 
   .goty-year-select {
