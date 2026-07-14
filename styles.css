@@ -10097,8 +10097,13 @@ body.theme-kash .history-row.completed-trophy-card:hover {
     transform: none;
   }
 
+  .goty-section .column-head h2 .trophy-icon,
+  #gotyDialogTitle .trophy-icon {
+    display: none;
+  }
+
   .goty-year-count {
-    margin-left: calc(1.02em + 8px);
+    margin-left: 0;
     font-size: 12px;
     transform: none;
   }
@@ -10112,6 +10117,7 @@ body.theme-kash .history-row.completed-trophy-card:hover {
     justify-content: end;
     justify-self: end;
     margin-left: 0;
+    transform: translateY(18px);
   }
 
   .goty-year-select {
