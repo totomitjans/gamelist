@@ -762,6 +762,7 @@ html.theme-font-pokemon {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  transform: translateY(5px);
 }
 
 .goty-section .column-head h2,
