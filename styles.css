@@ -798,6 +798,7 @@ html.theme-font-pokemon {
 .goty-edit-button {
   width: 36px;
   min-width: 36px;
+  flex: 0 0 36px;
   height: 36px;
   min-height: 36px;
   padding-inline: 0;
@@ -807,6 +808,21 @@ html.theme-font-pokemon {
 .goty-save-button .download-icon {
   width: 18px;
   height: 18px;
+}
+
+.goty-save-button .download-icon {
+  stroke-width: 2;
+}
+
+.goty-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.goty-publish-button {
+  min-height: 36px;
+  padding: 8px 16px;
 }
 
 .goty-grid {
