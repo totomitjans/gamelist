@@ -1619,7 +1619,7 @@ function renderGameOfTheYearPicker(games, picks) {
     const selectedId = picks[key] || "";
     const pickedElsewhere = new Set([...pickedIds].filter((id) => id !== selectedId));
     const selectedGame = games.find((game) => game.id === selectedId);
-    const choices = games.filter((game) => game.id !== selectedId && !pickedElsewhere.has(game.id));
+    const choices = games.filter((game) => game.id !== selectedId);
     return `
     <section class="goty-picker-field" data-goty-category="${escapeHtml(key)}">
       <div class="goty-picker-head">
@@ -1633,7 +1633,7 @@ function renderGameOfTheYearPicker(games, picks) {
       <div class="goty-choice-strip">
         ${selectedGame ? `<div class="goty-choice-selected">${gameOfTheYearChoiceCard(selectedGame, true)}</div>` : ""}
         <div class="goty-choice-list">
-          ${choices.map((game) => gameOfTheYearChoiceCard(game, false)).join("")}
+          ${choices.map((game) => gameOfTheYearChoiceCard(game, false, pickedElsewhere.has(game.id))).join("")}
         </div>
       </div>
     </section>
@@ -1641,6 +1641,7 @@ function renderGameOfTheYearPicker(games, picks) {
   }).join("");
   el.gotyPickerGrid.querySelectorAll(".goty-choice-card").forEach((button) => {
     button.addEventListener("click", () => {
+      if (button.disabled || button.classList.contains("is-unavailable")) return;
       const field = button.closest(".goty-picker-field");
       const category = field.dataset.gotyCategory;
       const gameId = button.dataset.gameId || "";
@@ -1746,10 +1747,10 @@ function showGameOfTheYearCallout(year) {
   requestAnimationFrame(() => callout.classList.add("visible"));
 }
 
-function gameOfTheYearChoiceCard(game, selected) {
+function gameOfTheYearChoiceCard(game, selected, unavailable = false) {
   const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
   return `
-    <button class="goty-choice-card ${selected ? "is-selected" : ""}" type="button" data-game-id="${escapeHtml(game.id)}" data-title="${escapeHtml(game.title)}">
+    <button class="goty-choice-card ${selected ? "is-selected" : ""} ${unavailable ? "is-unavailable" : ""}" type="button" data-game-id="${escapeHtml(game.id)}" data-title="${escapeHtml(game.title)}" ${unavailable ? "disabled aria-disabled=\"true\"" : ""}>
       <span class="goty-choice-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"></span>
       <span class="goty-choice-title"><strong data-full-title="${escapeHtml(game.title)}">${escapeHtml(game.title)}</strong>${platformBadge(game.platform)}</span>
     </button>
@@ -4913,9 +4914,9 @@ function plusIcon() {
 function downloadIcon() {
   return `
     <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3v12"></path>
-      <path d="M7 10l5 5 5-5"></path>
-      <path d="M5 20h14"></path>
+      <path d="M12 2.5v13.5"></path>
+      <path d="M6.5 10.5l5.5 5.5 5.5-5.5"></path>
+      <path d="M4.5 20.5h15"></path>
     </svg>
   `;
 }
