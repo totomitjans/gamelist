@@ -364,12 +364,15 @@ function saveModuleCache() {
 function renderFavorites() {
   const before = state.favoriteGameIds.slice();
   state.favoriteGameIds = normalizeFavoriteGameIds(state.favoriteGameIds);
-  logShowcaseDebug("renderFavorites:normalize", {
-    before,
-    after: state.favoriteGameIds,
-    ownedCount: ownedShelfGames().length,
-    missing: before.filter((id) => !ownedShelfGames().some((game) => game.id === id)),
-  });
+  const missing = before.filter((id) => !ownedShelfGames().some((game) => game.id === id));
+  if (JSON.stringify(before) !== JSON.stringify(state.favoriteGameIds) || missing.length) {
+    logShowcaseDebug("renderFavorites:normalize", {
+      before,
+      after: state.favoriteGameIds,
+      ownedCount: ownedShelfGames().length,
+      missing,
+    });
+  }
   const games = favoriteGames();
   el.favorites.innerHTML = Array.from({ length: 5 }, (_, index) => favoriteCoverCard(games[index], index)).join("");
   el.favorites.closest("[data-module='favorites']").hidden = state.layout.hidden.includes("favorites");
@@ -393,9 +396,7 @@ function shelfFavoriteIdsFromSources(shelfData, gamelistData, draft = {}) {
 
 function logShowcaseDebug(stage, data = {}) {
   try {
-    console.groupCollapsed(`[showcase] ${stage}`);
-    console.log(data);
-    console.groupEnd();
+    console.info(`[showcase] ${stage}`, data);
   } catch {}
 }
 
