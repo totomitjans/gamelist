@@ -1153,15 +1153,18 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 }
 
 .goty-dialog-copy {
-  margin: -4px 0 8px;
+  min-width: 0;
+  margin: 0;
   color: var(--muted);
   font-size: 13px;
 }
 
 .goty-picker-toolbar {
   display: flex;
-  justify-content: flex-end;
-  margin: -4px 0 8px;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 10px;
 }
 
 .goty-picker-order {
