@@ -869,7 +869,7 @@ html.theme-font-pokemon {
   height: 100%;
   overflow: hidden;
   overflow: clip;
-  border-radius: 12px;
+  border-radius: 8px;
   clip-path: inset(0 round 7px);
   box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
 }
@@ -1043,7 +1043,6 @@ html.theme-font-pokemon {
 }
 
 .goty-dialog .goty-modal {
-  width: min(920px, calc(100vw - 28px));
   max-width: calc(100vw - 28px);
   overflow-x: hidden;
 }
