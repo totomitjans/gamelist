@@ -1910,7 +1910,8 @@ async function downloadGameOfTheYearImage() {
     await downloadHtmlPosterPng(html, `games-of-the-year-${year}.png`);
   } catch (error) {
     console.error("Unable to export GOTY poster", error);
-    showToast("Could not create the image download.", "error");
+    downloadHtmlPosterSvg(html, `games-of-the-year-${year}.svg`);
+    showToast("PNG export was blocked, so I downloaded an SVG instead.", "error");
   }
 }
 
@@ -1972,14 +1973,6 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   const titleFont = canvasTitleFont(theme);
   const bodyFont = canvasBodyFont();
   return `
-    @font-face { font-family: "Cascadia Code"; src: url("assets/fonts/CascadiaCode.woff2") format("woff2"); font-display: swap; }
-    @font-face { font-family: "Antique Olive Nord"; src: url("assets/fonts/AntiqueOliveNord.woff2") format("woff2"); font-display: swap; }
-    @font-face { font-family: "Georgia Bold"; src: url("assets/fonts/Georgia-Bold.ttf") format("truetype"); font-display: swap; }
-    @font-face { font-family: "Pokemon GBA"; src: url("assets/fonts/pokemon-emerald.ttf") format("truetype"); font-display: swap; }
-    @font-face { font-family: "04B 30"; src: url("assets/fonts/04B_30.TTF") format("truetype"); font-display: swap; }
-    @font-face { font-family: "Michroma"; src: url("assets/fonts/Michroma.ttf") format("truetype"); font-display: swap; }
-    @font-face { font-family: "Minecraft"; src: url("assets/fonts/Minecraft.ttf") format("truetype"); font-display: swap; }
-    @font-face { font-family: "Mata Regular"; src: url("assets/fonts/Mata Regular.otf") format("opentype"); font-display: swap; }
     .goty-export-poster {
       position: relative;
       box-sizing: border-box;
@@ -2131,12 +2124,16 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   `;
 }
 
-function downloadHtmlPosterPng(html, filename, retried = false) {
-  return new Promise((resolve, reject) => {
-    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+function htmlPosterSvg(html) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
   <foreignObject width="1920" height="1080">${html}</foreignObject>
 </svg>`;
+}
+
+function downloadHtmlPosterPng(html, filename) {
+  return new Promise((resolve, reject) => {
+    const svg = htmlPosterSvg(html);
     const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
     const image = new Image();
     image.onload = () => {
@@ -2161,10 +2158,6 @@ function downloadHtmlPosterPng(html, filename, retried = false) {
         }, "image/png");
       } catch (error) {
         URL.revokeObjectURL(svgUrl);
-        if (!retried) {
-          downloadHtmlPosterPng(html.replace(/@font-face\s*\{[^}]*\}\s*/g, ""), filename, true).then(resolve).catch(reject);
-          return;
-        }
         reject(error);
       }
     };
@@ -2174,6 +2167,18 @@ function downloadHtmlPosterPng(html, filename, retried = false) {
     };
     image.src = svgUrl;
   });
+}
+
+function downloadHtmlPosterSvg(html, filename) {
+  const blob = new Blob([htmlPosterSvg(html)], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function exportImageDataUrl(src, fallback = "") {
