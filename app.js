@@ -4122,31 +4122,63 @@ function statsKpiCard(label, value, detail = "", options = {}) {
 }
 
 function statsDonutCard(title, counts, tone, visibleLimit = counts.length) {
-  const segments = donutSegments(counts, tone);
   const visibleCounts = counts.slice(0, visibleLimit);
   const hasMore = counts.length > visibleCounts.length;
   return `
     <article class="finished-stats-chart">
-      <div class="finished-stats-donut ${tone === "category" ? "is-category" : "is-platform"}" style="--donut:${escapeHtml(segments)}"></div>
+      <h3>${escapeHtml(title)}</h3>
+      <div class="finished-stats-donut ${tone === "category" ? "is-category" : "is-platform"}">${statsPieMarkup(counts, tone)}</div>
       <div class="finished-stats-chart-copy">
-        <h3>${escapeHtml(title)}</h3>
-        <div class="finished-stats-chart-list">${statsBreakdownList(visibleCounts, tone)}${hasMore ? `<span class="finished-stats-more-row" aria-hidden="true">...</span>` : ""}</div>
+        <div class="finished-stats-chart-list">${statsBreakdownList(visibleCounts, tone)}${hasMore ? `<span class="finished-stats-more-row" aria-hidden="true">...</span>` : ""}<div class="finished-stats-breakdown">${statsBreakdownList(counts, tone)}</div></div>
       </div>
-      <div class="finished-stats-breakdown">${statsBreakdownList(counts, tone)}</div>
     </article>
   `;
 }
 
-function donutSegments(counts, tone) {
+function statsPieMarkup(counts, tone) {
   const total = counts.reduce((sum, item) => sum + item.count, 0);
-  if (!total) return "rgba(255,255,255,.08) 0 360deg";
+  if (!total) return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.08)"></circle></svg>`;
   let cursor = 0;
-  return counts.map((item, index) => {
+  const paths = counts.map((item, index) => {
     const start = cursor;
     cursor += (item.count / total) * 360;
     const color = tone === "category" ? categoryStatsColor(index) : platformStatsColor(item.label, index);
-    return `${color} ${start.toFixed(2)}deg ${cursor.toFixed(2)}deg`;
-  }).join(", ");
+    return statsPieSegmentMarkup(item, start, cursor, color, total);
+  }).join("");
+  return `<svg viewBox="0 0 100 100" role="img" aria-label="Stats breakdown">${paths}</svg>`;
+}
+
+function statsPieSegmentMarkup(item, startDeg, endDeg, color, total) {
+  const sweep = Math.max(0.01, endDeg - startDeg);
+  const start = polarPoint(50, 50, 46, startDeg - 90);
+  const end = polarPoint(50, 50, 46, endDeg - 90);
+  const mid = polarPoint(50, 50, 24, startDeg + sweep / 2 - 90);
+  const percent = total ? Math.round((item.count / total) * 100) : 0;
+  const tooltipX = clampNumber(mid.x - 31, 3, 67);
+  const tooltipY = clampNumber(mid.y - 16, 3, 73);
+  const shape = sweep >= 359.99
+    ? `<circle class="finished-stats-pie-shape" cx="50" cy="50" r="46" fill="${escapeHtml(color)}"></circle>`
+    : `<path class="finished-stats-pie-shape" d="M 50 50 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 46 46 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}"></path>`;
+  return `
+    <g class="finished-stats-pie-segment" tabindex="0">
+      ${shape}
+      <foreignObject class="finished-stats-segment-tip" x="${tooltipX.toFixed(2)}" y="${tooltipY.toFixed(2)}" width="62" height="34">
+        <div xmlns="http://www.w3.org/1999/xhtml"><b>${escapeHtml(item.label)}</b><span>${escapeHtml(String(item.count))} · ${percent}%</span></div>
+      </foreignObject>
+    </g>
+  `;
+}
+
+function polarPoint(cx, cy, radius, angleDeg) {
+  const radians = angleDeg * Math.PI / 180;
+  return {
+    x: cx + radius * Math.cos(radians),
+    y: cy + radius * Math.sin(radians),
+  };
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function statsMonthBars(games, counts, total) {
