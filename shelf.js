@@ -192,9 +192,10 @@ async function init() {
     fetch("/api/sync", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).catch(() => null),
   ]);
   const draft = loadDraft();
-  state.sourceGames = draft.sourceGames || shelfData?.sourceGames || [];
-  state.additions = draft.games || shelfData?.games || [];
-  state.overrides = draft.overrides || shelfData?.overrides || {};
+  if (shelfData) localStorage.removeItem(LOCAL_DRAFT_KEY);
+  state.sourceGames = shelfData?.sourceGames || draft.sourceGames || [];
+  state.additions = shelfData?.games || draft.games || [];
+  state.overrides = shelfData?.overrides || draft.overrides || {};
   state.layout = normalizeLayout(shelfData?.layout || state.layout);
   state.favoriteGameIds = Array.isArray(shelfData?.favoriteGameIds)
     ? shelfData.favoriteGameIds.slice(0, 5)
