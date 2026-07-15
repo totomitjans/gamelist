@@ -2021,7 +2021,7 @@ function gameOfTheYearExportMarkup({ owner, year, rows, statsGames, theme, logo,
     <style>${gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary, glowSecondary })}</style>
     <img class="goty-export-logo" src="${escapeHtml(logoSrc)}" alt="" />
     <header class="goty-export-head">
-      <h1>${escapeHtml(`${owner}'s Games of the Year ${year}`)}</h1>
+      <h1><span>${escapeHtml(`${owner}'s Games of`)}</span><br><span>${escapeHtml(`the Year ${year}`)}</span></h1>
     </header>
     ${gameOfTheYearExportTopStatsMarkup(year, statsGames)}
     <main class="goty-export-grid">
@@ -2047,9 +2047,9 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
   const coopGames = games.filter((game) => game.coop);
   const completed = finishedStatsCompleted(String(year));
   return `
-    <section class="goty-export-top-kpis">
+    <section class="goty-export-top-kpis ${completed.length ? "has-completed" : ""} ${coopGames.length ? "has-coop" : ""}">
       <article class="goty-export-small-kpi goty-export-total-kpi"><strong>${games.length}</strong><span>Games played</span></article>
-      <article class="goty-export-small-kpi goty-export-completed-kpi"><strong>${trophyIcon()}${completed.length}</strong><span>Completed games</span></article>
+      ${completed.length ? `<article class="goty-export-small-kpi goty-export-completed-kpi"><strong>${trophyIcon()}${completed.length}</strong><span>Completed games</span></article>` : ""}
       <span class="goty-export-kpi-separator" aria-hidden="true"></span>
       <article class="goty-export-small-kpi goty-export-new-kpi"><strong>${yearGames.length}</strong><span>New releases</span></article>
       <article class="goty-export-small-kpi goty-export-older-kpi"><strong>${otherYearGames.length}</strong><span>Older games</span></article>
@@ -2173,7 +2173,7 @@ function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
             ${game.platform ? platformBadge(game.platform, null, { title: game.title }) : ""}
             ${progress ? psnProgressBadge(progress, { className: "goty-export-progress", label: progressCount, separator: Boolean(progressCount) }) : ""}
             ${game.coop ? `<span class="goty-export-pill goty-export-coop">Coop</span>` : ""}
-            ${game.stream ? `<span class="goty-export-pill goty-export-stream">Streamed</span>` : ""}
+            ${game.stream ? `<span class="goty-export-pill goty-export-stream">Stream</span>` : ""}
             ${tags.map((tag) => `<span class="goty-export-pill goty-export-tag">${escapeHtml(tag)}</span>`).join("")}
           </div>
         </div>
@@ -2188,6 +2188,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   const line = theme.mode === "light" ? "rgba(18,24,36,.16)" : "rgba(255,255,255,.14)";
   const sweep = theme.mode === "light" ? "rgba(255,255,255,.58)" : "rgba(255,255,255,.055)";
   const titleFont = canvasTitleFont(theme);
+  const titleSize = theme.accentFont === "pokemon" ? 58 : 53;
   const bodyFont = canvasBodyFont();
   return `
     .goty-export-poster {
@@ -2228,23 +2229,38 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       margin: 0;
       overflow: hidden;
       color: transparent;
-      font: 900 53px/1.02 ${titleFont};
+      font: 900 ${titleSize}px/1.02 ${titleFont};
       text-overflow: ellipsis;
-      white-space: normal;
+      white-space: nowrap;
       background: linear-gradient(135deg, ${gradient}, ${main});
       -webkit-background-clip: text;
       background-clip: text;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+    }
+    .goty-export-head h1 span {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .goty-export-top-kpis {
       position: absolute;
       top: 50px;
       right: 78px;
       display: grid;
-      grid-template-columns: 142px 168px 24px repeat(3, 120px);
+      grid-template-columns: 142px 24px repeat(2, 120px);
       gap: 10px;
+      width: 436px;
+    }
+    .goty-export-top-kpis.has-coop:not(.has-completed) {
+      grid-template-columns: 142px 24px repeat(3, 120px);
+      width: 566px;
+    }
+    .goty-export-top-kpis.has-completed {
+      grid-template-columns: 142px 168px 24px repeat(2, 120px);
+      width: 614px;
+    }
+    .goty-export-top-kpis.has-completed.has-coop {
+      grid-template-columns: 142px 168px 24px repeat(3, 120px);
       width: 744px;
     }
     .goty-export-small-kpi,
@@ -2597,9 +2613,9 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       background: rgba(121,242,206,.1);
     }
     .goty-export-stream {
-      color: #7cc7ff;
-      border-color: rgba(124,199,255,.38);
-      background: rgba(124,199,255,.1);
+      color: #bf94ff;
+      border-color: rgba(145,70,255,.42);
+      background: rgba(145,70,255,.13);
     }
     .goty-export-poster .platform-badge {
       position: relative;
@@ -2875,8 +2891,10 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   titleFill.addColorStop(0, titleGradient);
   titleFill.addColorStop(1, main);
   ctx.fillStyle = titleFill;
-  ctx.font = `900 64px ${titleFont}`;
-  wrapCanvasText(ctx, `${owner}'s Games of the Year ${year}`, 220, 108, 1260, 70);
+  ctx.font = `900 ${theme.accentFont === "pokemon" ? 70 : 64}px ${titleFont}`;
+  ctx.textAlign = "left";
+  ctx.fillText(`${owner}'s Games of`, 220, 116);
+  ctx.fillText(`the Year ${year}`, 220, 182);
   const siteUrl = cleanCanvasSiteUrl(window.location.origin && window.location.origin !== "null" ? window.location.origin : window.location.hostname || "Gamelist");
   ctx.font = `800 24px ${bodyFont}`;
   ctx.textAlign = "right";
