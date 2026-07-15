@@ -11095,6 +11095,41 @@ body.theme-kash .history-row.completed-trophy-card:hover {
 }
 
 @media (max-width: 460px) {
+  .finished-stats-dialog {
+    width: calc(100vw - 14px);
+    max-height: calc(100dvh - 14px);
+    overflow: hidden;
+  }
+
+  .finished-stats-modal {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    max-height: calc(100dvh - 14px);
+    padding: 14px;
+    overflow: hidden !important;
+  }
+
+  .finished-stats-modal .modal-head {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    margin: -14px -14px 0;
+    padding: 14px 14px 10px;
+    background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
+    background-size: auto, 22px 22px, auto;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .finished-stats-body {
+    min-height: 0;
+    padding: 0 1px 18px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .finished-stats-charts {
     grid-template-columns: 1fr;
   }
