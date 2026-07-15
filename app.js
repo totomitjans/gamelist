@@ -4188,7 +4188,7 @@ function clampNumber(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function statsMonthBars(games, counts, total) {
+function statsMonthBars(games, counts) {
   const order = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const byLabel = new Map(counts.map((item) => [item.label, item.count]));
   const max = Math.max(1, ...counts.map((item) => item.count));
@@ -4198,7 +4198,7 @@ function statsMonthBars(games, counts, total) {
       .filter((game) => monthShortName(game.completedAt) === label)
       .sort((a, b) => String(a.completedAt || "").localeCompare(String(b.completedAt || "")) || stringCompare(a.title, b.title));
     return `<div class="finished-stats-month" title="${escapeHtml(`${label}: ${count}`)}"><span>${escapeHtml(label)}</span><em style="--month:${count / max}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(monthGames)}</span>` : ""}</div>`;
-  }).join("") + `<small>${total} total</small>`;
+  }).join("");
 }
 
 function statsYearBars(games) {
@@ -4212,7 +4212,7 @@ function statsYearBars(games) {
         .sort((a, b) => String(a.completedAt || "").localeCompare(String(b.completedAt || "")) || stringCompare(a.title, b.title));
       return `<div class="finished-stats-month finished-stats-year" title="${escapeHtml(`${label}: ${count}`)}"><span>${escapeHtml(label)}</span><em style="--month:${count / max}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(yearGames)}</span>` : ""}</div>`;
     })
-    .join("") + `<small>${games.length} total</small>`;
+    .join("");
 }
 
 function statsBreakdownList(counts, tone = "") {
