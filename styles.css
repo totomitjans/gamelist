@@ -6807,11 +6807,17 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .finished-stats-segment-tip .platform-badge .platform-count {
   min-width: 16px;
   height: 16px;
-  color: var(--text) !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  background: rgba(116, 124, 140, 0.42) !important;
+  border-color: rgba(202, 208, 218, 0.34) !important;
   border-radius: 5px;
   font-size: 8px;
+}
+
+.finished-stats-segment-tip .platform-playstation.platform-ps5 .platform-count {
+  color: #05070b !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+  border-color: rgba(0, 0, 0, 0.24) !important;
 }
 
 .finished-stats-platform-row b {
