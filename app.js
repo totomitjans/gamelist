@@ -4085,7 +4085,7 @@ function completedStatsYearFor(item) {
 }
 
 function finishedStatsMarkup(year, games, completed) {
-  const platforms = countBy(games, (game) => canonicalPlatform(game.platform) || game.platform || "Unknown");
+  const platforms = countBy(games, statsPlatformLabel);
   const tags = countTags(games);
   const timeBuckets = countApproximatePlaytimeBuckets(games);
   const months = countBy(games, (game) => monthShortName(game.completedAt));
@@ -4104,9 +4104,9 @@ function finishedStatsMarkup(year, games, completed) {
   return `
     <div class="finished-stats-kpis">${cards}</div>
     <div class="finished-stats-charts ${allYears ? "is-all" : ""}">
-      ${statsDonutCard("Platforms", platforms, "platform", 5)}
+      ${statsDonutCard("Platforms", platforms, "platform", 5, games)}
       ${statsDonutCard("Categories", tags, "category", 5)}
-      ${statsDonutCard("Aproximate playtime", timeBuckets, "time", 5)}
+      ${statsDonutCard("Aproximate playtime", timeBuckets, "time", 5, games)}
       ${allYears ? "" : statsReleaseKpisCard(releaseInsights)}
     </div>
     <section class="finished-stats-months">
@@ -4127,7 +4127,7 @@ function statsKpiCard(label, value, detail = "", options = {}) {
   `;
 }
 
-function statsDonutCard(title, counts, tone, visibleLimit = counts.length) {
+function statsDonutCard(title, counts, tone, visibleLimit = counts.length, games = []) {
   const visibleCounts = counts.slice(0, visibleLimit);
   const hasMore = counts.length > visibleCounts.length;
   return `
@@ -4135,7 +4135,7 @@ function statsDonutCard(title, counts, tone, visibleLimit = counts.length) {
       <h3>${escapeHtml(title)}</h3>
       <div class="finished-stats-donut ${tone === "category" ? "is-category" : "is-platform"}">${statsPieMarkup(counts, tone)}</div>
       <div class="finished-stats-chart-copy">
-        <div class="finished-stats-chart-list" data-stats-overlay-title="${escapeHtml(title)}">${statsBreakdownList(visibleCounts, tone)}${hasMore ? `<span class="finished-stats-more-row" aria-hidden="true">...</span>` : ""}<div class="finished-stats-breakdown">${statsBreakdownList(counts, tone)}</div></div>
+        <div class="finished-stats-chart-list" data-stats-overlay-title="${escapeHtml(title)}">${statsBreakdownList(visibleCounts, tone)}${hasMore ? `<span class="finished-stats-more-row" aria-hidden="true">...</span>` : ""}<div class="finished-stats-breakdown">${statsBreakdownList(counts, tone, games)}</div></div>
       </div>
     </article>
   `;
@@ -4147,7 +4147,7 @@ function statsReleaseKpisCard(insights) {
       <div class="finished-stats-release-kpis">
         ${statsReleaseMiniKpi({
           value: `${insights.interested.length}/${insights.playedFromYear.length}`,
-          label: insights.scopeYear ? `Interested vs played released in ${insights.scopeYear}` : "Interested vs same-year played",
+          label: insights.scopeYear ? `Interested upcoming / Played new releases from ${insights.scopeYear}` : "Interested upcoming / Played new releases",
           detail: insights.hoverable ? statsGameList(insights.playedFromYear) : "",
         })}
         ${statsReleaseMiniKpi({
@@ -4282,13 +4282,26 @@ function statsYearBars(games) {
     .join("");
 }
 
-function statsBreakdownList(counts, tone = "") {
+function statsBreakdownList(counts, tone = "", games = []) {
   return counts.length
-    ? counts.map((item, index) => statsBreakdownRow(item, tone, index)).join("")
+    ? counts.map((item, index) => statsBreakdownRow(item, tone, index, games)).join("")
     : `<span><b>None</b><em>0</em></span>`;
 }
 
-function statsBreakdownRow(item, tone, index) {
+function statsBreakdownRow(item, tone, index, games = []) {
+  if (games.length && tone === "platform") {
+    const platformGames = games
+      .filter((game) => statsPlatformLabel(game) === item.label)
+      .sort(statsGameListSort);
+    return statsGroupedBreakdown(platformBadge(item.label), item.count, platformGames);
+  }
+  if (games.length && tone === "time") {
+    const bucketGames = games
+      .filter((game) => playtimeBucketLabel(game) === item.label)
+      .sort(statsGameListSort);
+    const color = statsSegmentColor(item.label, tone, index);
+    return statsGroupedBreakdown(`<span class="finished-stats-category-row" style="--category-stat-color:${escapeHtml(color)}"><b><i></i>${escapeHtml(item.label)}</b></span>`, item.count, bucketGames);
+  }
   if (tone === "platform") {
     return `<span class="finished-stats-platform-row"><b>${platformBadge(item.label)}</b><em>${item.count}</em></span>`;
   }
@@ -4300,6 +4313,19 @@ function statsBreakdownRow(item, tone, index) {
     return `<span class="finished-stats-owner-row"><b>${ownerBadge(item.label)}</b><em>${item.count}</em></span>`;
   }
   return `<span><b>${escapeHtml(item.label)}</b><em>${item.count}</em></span>`;
+}
+
+function statsGroupedBreakdown(heading, count, games) {
+  return `
+    <div class="finished-stats-owner-group finished-stats-breakdown-group">
+      <div class="finished-stats-owner-heading"><b>${heading}</b><em>${count}</em></div>
+      <div class="finished-stats-owner-games">${games.length ? statsGameList(games) : `<span><b>None</b><em>0</em></span>`}</div>
+    </div>
+  `;
+}
+
+function statsGameListSort(a, b) {
+  return String(a.completedAt || "").localeCompare(String(b.completedAt || "")) || stringCompare(a.title, b.title);
 }
 
 function statsGameList(games) {
@@ -4325,6 +4351,10 @@ function statsPlatformBar(games) {
     cursor += (item.count / total) * 100;
     return `${platformStatsColor(item.label, index)} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
   }).join(", ")})`;
+}
+
+function statsPlatformLabel(game) {
+  return canonicalPlatform(game.platform) || game.platform || "Unknown";
 }
 
 function bindFinishedStatsMobileOverlays() {
@@ -4414,10 +4444,8 @@ function countTags(games) {
 function countApproximatePlaytimeBuckets(games) {
   const bucketMap = new Map();
   games.forEach((game) => {
-    const hours = Number(game.lengthHours);
-    if (!Number.isFinite(hours) || hours <= 0) return;
-    const start = Math.floor(hours / 10) * 10;
-    const label = start === 0 ? "<10" : `${start}-${start + 10}`;
+    const label = playtimeBucketLabel(game);
+    if (!label) return;
     bucketMap.set(label, (bucketMap.get(label) || 0) + 1);
   });
   const buckets = [...bucketMap.entries()]
@@ -4425,6 +4453,13 @@ function countApproximatePlaytimeBuckets(games) {
     .sort((a, b) => a.order - b.order)
     .map(({ label, count }) => ({ label, count }));
   return buckets;
+}
+
+function playtimeBucketLabel(game) {
+  const hours = Number(game.lengthHours);
+  if (!Number.isFinite(hours) || hours <= 0) return "";
+  const start = Math.floor(hours / 10) * 10;
+  return start === 0 ? "<10" : `${start}-${start + 10}`;
 }
 
 function gameStatsTags(game) {
