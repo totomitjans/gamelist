@@ -1980,8 +1980,7 @@ async function downloadGameOfTheYearImage() {
     await downloadHtmlPosterPng(html, `games-of-the-year-${year}.png`);
   } catch (error) {
     console.error("Unable to export GOTY poster", error);
-    downloadHtmlPosterSvg(html, `games-of-the-year-${year}.svg`);
-    showToast("PNG export was blocked, so I downloaded an SVG instead.", "error");
+    showToast("PNG export failed.", "error");
   }
 }
 
@@ -2194,61 +2193,77 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   `;
 }
 
-function htmlPosterSvg(html) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
-  <foreignObject width="1920" height="1080">${html}</foreignObject>
-</svg>`;
+async function downloadHtmlPosterPng(html, filename) {
+  const htmlToImage = await loadHtmlToImage();
+  const host = document.createElement("div");
+  host.className = "goty-export-host";
+  host.innerHTML = html;
+  Object.assign(host.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "1920px",
+    height: "1080px",
+    overflow: "hidden",
+    pointerEvents: "none",
+    zIndex: "-1",
+  });
+  document.body.appendChild(host);
+  const node = host.querySelector(".goty-export-poster") || host.firstElementChild;
+  try {
+    await waitForPosterAssets(node);
+    const dataUrl = await htmlToImage.toPng(node, {
+      width: 1920,
+      height: 1080,
+      pixelRatio: 1,
+      cacheBust: true,
+      backgroundColor: "transparent",
+    });
+    downloadDataUrl(dataUrl, filename);
+  } finally {
+    host.remove();
+  }
 }
 
-function downloadHtmlPosterPng(html, filename) {
+function loadHtmlToImage() {
+  if (window.htmlToImage?.toPng) return Promise.resolve(window.htmlToImage);
   return new Promise((resolve, reject) => {
-    const svg = htmlPosterSvg(html);
-    const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
-    const image = new Image();
-    image.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1920;
-        canvas.height = 1080;
-        const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0);
-        URL.revokeObjectURL(svgUrl);
-        canvas.toBlob((blob) => {
-          if (!blob) return reject(new Error("PNG export failed"));
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-          resolve();
-        }, "image/png");
-      } catch (error) {
-        URL.revokeObjectURL(svgUrl);
-        reject(error);
-      }
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(svgUrl);
-      reject(new Error("Could not render poster"));
-    };
-    image.src = svgUrl;
+    const existing = document.querySelector("script[data-html-to-image]");
+    if (existing) {
+      existing.addEventListener("load", () => window.htmlToImage?.toPng ? resolve(window.htmlToImage) : reject(new Error("HTML to PNG renderer unavailable")), { once: true });
+      existing.addEventListener("error", () => reject(new Error("HTML to PNG renderer failed to load")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js";
+    script.async = true;
+    script.dataset.htmlToImage = "true";
+    script.onload = () => window.htmlToImage?.toPng ? resolve(window.htmlToImage) : reject(new Error("HTML to PNG renderer unavailable"));
+    script.onerror = () => reject(new Error("HTML to PNG renderer failed to load"));
+    document.head.appendChild(script);
   });
 }
 
-function downloadHtmlPosterSvg(html, filename) {
-  const blob = new Blob([htmlPosterSvg(html)], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
+async function waitForPosterAssets(node) {
+  if (!node) throw new Error("Poster markup unavailable");
+  if (document.fonts?.ready) await document.fonts.ready.catch(() => {});
+  const images = [...node.querySelectorAll("img")];
+  await Promise.all(images.map((image) => {
+    if (image.complete && image.naturalWidth) return Promise.resolve();
+    return new Promise((resolve) => {
+      image.addEventListener("load", resolve, { once: true });
+      image.addEventListener("error", resolve, { once: true });
+    });
+  }));
+}
+
+function downloadDataUrl(dataUrl, filename) {
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function exportImageDataUrl(src, fallback = "") {
@@ -2262,8 +2277,11 @@ async function imageToDataUrl(src) {
   if (String(src).startsWith("data:")) return src;
   try {
     const url = new URL(src, window.location.href);
-    if (url.origin !== window.location.origin) return "";
-    const response = await fetch(url.href, { cache: "no-store" });
+    const fetchUrl = url.origin === window.location.origin
+      ? url.href
+      : (url.protocol === "https:" ? `/api/cover?src=${encodeURIComponent(url.href)}` : "");
+    if (!fetchUrl) return "";
+    const response = await fetch(fetchUrl, { cache: "no-store" });
     if (!response.ok || response.type === "opaque") return "";
     const blob = await response.blob();
     return await new Promise((resolve) => {
