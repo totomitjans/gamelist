@@ -562,7 +562,6 @@ html.theme-font-pokemon {
   color: var(--muted);
   font-size: 12px;
   font-weight: 900;
-  text-transform: uppercase;
 }
 
 .playing-slider-button {
@@ -6039,7 +6038,11 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   min-width: 0;
   color: var(--text);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.075),
+      rgba(255, 255, 255, 0.035)
+    ),
     rgba(8, 9, 12, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -6272,7 +6275,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   stroke-width: 3.6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent-1) 42%, transparent));
+  filter: drop-shadow(
+    0 0 10px color-mix(in srgb, var(--accent-1) 42%, transparent)
+  );
 }
 
 .finished-stats-bell-dot {
@@ -6297,7 +6302,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   font-size: 9px;
   line-height: 1;
   transform: scale(0.9);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 .finished-stats-bell-dot:hover b,
@@ -6334,7 +6341,10 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .finished-stats-pie-shape {
   opacity: var(--slice-opacity, 0.96);
-  transition: filter 140ms ease, opacity 140ms ease, transform 140ms ease;
+  transition:
+    filter 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
   transform-box: fill-box;
   transform-origin: center;
 }
@@ -6373,7 +6383,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   overflow: visible;
   pointer-events: none;
   transform: translate(-50%, -50%) scale(0.98);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 .finished-stats-segment-tip::after {
@@ -6422,7 +6434,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
   opacity: 0;
   transform: translate(-50%, 6px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
   pointer-events: none;
 }
 
@@ -6522,7 +6536,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
   pointer-events: none;
 }
 
@@ -6648,12 +6664,17 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   box-shadow: inset 0 0 0 1px rgba(255, 225, 101, 0.34) !important;
 }
 
-.finished-stats-kpi.is-completed .finished-stats-breakdown .finished-stats-game-row {
+.finished-stats-kpi.is-completed
+  .finished-stats-breakdown
+  .finished-stats-game-row {
   background: rgba(255, 225, 101, 0.16) !important;
   box-shadow: inset 0 0 0 1px rgba(255, 225, 101, 0.34) !important;
 }
 
-.finished-stats-kpi.is-completed .finished-stats-breakdown .finished-stats-game-row b {
+.finished-stats-kpi.is-completed
+  .finished-stats-breakdown
+  .finished-stats-game-row
+  b {
   color: #ffe985 !important;
 }
 
@@ -6895,7 +6916,10 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   align-self: end;
   min-height: 3px;
   height: calc(70px * var(--month));
-  background: var(--platform-bar, color-mix(in srgb, var(--accent) 58%, rgba(255, 255, 255, 0.26)));
+  background: var(
+    --platform-bar,
+    color-mix(in srgb, var(--accent) 58%, rgba(255, 255, 255, 0.26))
+  );
   border-radius: 6px 6px 2px 2px;
 }
 
@@ -6938,7 +6962,10 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   overflow: hidden;
   color: var(--text);
   background: var(--grid-fade), var(--grid-texture), rgba(8, 9, 12, 0.98);
-  background-size: auto, 22px 22px, auto;
+  background-size:
+    auto,
+    22px 22px,
+    auto;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
@@ -9216,13 +9243,19 @@ body.theme-kash button.finished-stats-kpi.is-completed:focus-visible {
 }
 
 button.finished-stats-kpi.is-completed:hover strong,
-button.finished-stats-kpi.is-completed:hover > span:not(.finished-stats-breakdown),
+button.finished-stats-kpi.is-completed:hover
+  > span:not(.finished-stats-breakdown),
 button.finished-stats-kpi.is-completed:focus-visible strong,
-button.finished-stats-kpi.is-completed:focus-visible > span:not(.finished-stats-breakdown),
+button.finished-stats-kpi.is-completed:focus-visible
+  > span:not(.finished-stats-breakdown),
 body.theme-kash button.finished-stats-kpi.is-completed:hover strong,
-body.theme-kash button.finished-stats-kpi.is-completed:hover > span:not(.finished-stats-breakdown),
+body.theme-kash
+  button.finished-stats-kpi.is-completed:hover
+  > span:not(.finished-stats-breakdown),
 body.theme-kash button.finished-stats-kpi.is-completed:focus-visible strong,
-body.theme-kash button.finished-stats-kpi.is-completed:focus-visible > span:not(.finished-stats-breakdown) {
+body.theme-kash
+  button.finished-stats-kpi.is-completed:focus-visible
+  > span:not(.finished-stats-breakdown) {
   color: #ffe985 !important;
 }
 
