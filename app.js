@@ -4113,7 +4113,7 @@ function finishedStatsMarkup(year, games, completed) {
     <div class="finished-stats-kpis">${cards}</div>
     <div class="finished-stats-charts ${allYears ? "is-all" : ""}">
       ${statsDonutCard("Platforms", platforms, "platform", 5, games)}
-      ${statsDonutCard("Categories", tags, "category", 5)}
+      ${statsDonutCard("Categories", tags, "category", 5, games)}
       ${statsDonutCard("Aproximate playtime", timeBuckets, "time", 5, games)}
       ${allYears ? "" : statsReleaseKpisCard(releaseInsights)}
     </div>
@@ -4236,6 +4236,7 @@ function statsPieMarkup(counts, tone, games = []) {
     .finished-stats-donut:has(.finished-stats-pie-segment-${index}:focus-visible) .finished-stats-segment-tip-${index} {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
     }
     .finished-stats-donut:has(.finished-stats-pie-segment-${index}:hover) .finished-stats-segment-tip-${index} .finished-stats-segment-games,
     .finished-stats-donut:has(.finished-stats-pie-segment-${index}:focus-visible) .finished-stats-segment-tip-${index} .finished-stats-segment-games {

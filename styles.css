@@ -6260,7 +6260,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   position: absolute;
   left: var(--dot-x);
   top: var(--dot-y);
-  z-index: 35;
+  z-index: 5;
   display: inline-grid;
   width: 18px;
   height: 18px;
@@ -6287,12 +6287,17 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   transform: scale(1);
 }
 
+.finished-stats-bell-dot:hover,
+.finished-stats-bell-dot:focus-visible {
+  z-index: 95;
+}
+
 .finished-stats-bell-dot .finished-stats-breakdown {
   right: auto;
   left: 50%;
   top: 100%;
   bottom: auto;
-  z-index: 60;
+  z-index: 100;
   text-align: left;
 }
 
@@ -6325,7 +6330,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-pie-tips {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: 90;
   pointer-events: none;
 }
 
@@ -6333,7 +6338,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   position: absolute;
   left: var(--tip-x);
   top: var(--tip-y);
-  z-index: 30;
+  z-index: 90;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -6374,7 +6379,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   position: absolute;
   left: 50%;
   top: calc(100% + 8px);
-  z-index: 5;
+  z-index: 100;
   display: grid;
   gap: 5px;
   width: min(320px, calc(100vw - 42px));
@@ -6394,7 +6399,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-segment-tip > .finished-stats-segment-games {
   position: absolute;
-  z-index: 5;
+  z-index: 100;
 }
 
 .finished-stats-segment-tip:hover .finished-stats-segment-games,
@@ -6473,7 +6478,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   right: 10px;
   top: calc(100% - 10px);
   bottom: auto;
-  z-index: 8;
+  z-index: 90;
   display: grid;
   gap: 5px;
   width: min(360px, calc(100vw - 42px));
@@ -6528,7 +6533,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .finished-stats-breakdown > span,
-.finished-stats-owner-games > .finished-stats-game-row {
+.finished-stats-owner-games > .finished-stats-game-row,
+.finished-stats-segment-games > .finished-stats-game-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6543,14 +6549,25 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-breakdown > .finished-stats-game-row,
 .finished-stats-owner-games > .finished-stats-game-row,
-.finished-stats-mini-list > .finished-stats-game-row {
+.finished-stats-mini-list > .finished-stats-game-row,
+.finished-stats-segment-games > .finished-stats-game-row {
   gap: 4px;
 }
 
 .finished-stats-breakdown .finished-stats-game-row.is-complete,
-.finished-stats-mini-list .finished-stats-game-row.is-complete {
+.finished-stats-mini-list .finished-stats-game-row.is-complete,
+.finished-stats-segment-games .finished-stats-game-row.is-complete {
   background: rgba(255, 225, 101, 0.16) !important;
   box-shadow: inset 0 0 0 1px rgba(255, 225, 101, 0.34) !important;
+}
+
+.finished-stats-kpi.is-completed .finished-stats-breakdown .finished-stats-game-row {
+  background: rgba(255, 225, 101, 0.16) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 225, 101, 0.34) !important;
+}
+
+.finished-stats-kpi.is-completed .finished-stats-breakdown .finished-stats-game-row b {
+  color: #ffe985 !important;
 }
 
 .finished-stats-breakdown b,
