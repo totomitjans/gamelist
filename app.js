@@ -4252,7 +4252,11 @@ function statsGameList(games) {
     const progress = achievementProgressForGame(game);
     const progressNumber = progress ? Math.round(Number(progress.progress ?? progressValue(progress.game)) || 0) : 0;
     const completed = game.platinum || progressNumber >= 100;
-    return `<span class="finished-stats-game-row ${completed ? "is-complete" : ""}"><b>${escapeHtml(game.title)}</b>${game.platform ? platformBadge(game.platform) : ""}${progress ? psnProgressBadge(progress, { className: "finished-stats-progress-pill" }) : ""}</span>`;
+    const ownerTitleClass = ownerTitleClasses(visibleOwnerTags(game));
+    const progressPill = progress
+      ? psnProgressBadge(progress, { className: "finished-stats-progress-pill" })
+      : (completed ? psnProgressBadge({ title: game.title, progress: 100 }, { className: "finished-stats-progress-pill" }) : "");
+    return `<span class="finished-stats-game-row ${completed ? "is-complete" : ""}"><b class="${escapeHtml(ownerTitleClass)}">${escapeHtml(game.title)}</b>${game.platform ? platformBadge(game.platform) : ""}${progressPill}</span>`;
   }).join("");
 }
 
