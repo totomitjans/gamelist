@@ -2090,7 +2090,7 @@ function gameOfTheYearExportPlatformSegment(item, index, startDeg, endDeg, color
   const sweep = Math.max(0.01, endDeg - startDeg);
   const start = polarPoint(110, 110, 96, startDeg - 90);
   const end = polarPoint(110, 110, 96, endDeg - 90);
-  const label = polarPoint(50, 50, 50, startDeg + sweep / 2 - 90);
+  const label = polarPoint(50, 50, 51, startDeg + sweep / 2 - 90);
   const shape = sweep >= 359.99
     ? `<circle class="goty-export-platform-slice" cx="110" cy="110" r="96" fill="${escapeHtml(color)}"></circle>`
     : `<path class="goty-export-platform-slice" d="M 110 110 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 96 96 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}"></path>`;
@@ -2188,7 +2188,8 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   const line = theme.mode === "light" ? "rgba(18,24,36,.16)" : "rgba(255,255,255,.14)";
   const sweep = theme.mode === "light" ? "rgba(255,255,255,.58)" : "rgba(255,255,255,.055)";
   const titleFont = canvasTitleFont(theme);
-  const titleSize = theme.accentFont === "pokemon" ? 58 : 53;
+  const titleSize = theme.accentFont === "pokemon" ? 66 : 53;
+  const titleLineHeight = theme.accentFont === "pokemon" ? 0.82 : 1.02;
   const bodyFont = canvasBodyFont();
   return `
     .goty-export-poster {
@@ -2229,7 +2230,10 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       margin: 0;
       overflow: hidden;
       color: transparent;
-      font: 900 ${titleSize}px/1.02 ${titleFont};
+      font-family: ${titleFont};
+      font-size: ${titleSize}px;
+      font-weight: 900;
+      line-height: ${titleLineHeight};
       text-overflow: ellipsis;
       white-space: nowrap;
       background: linear-gradient(135deg, ${gradient}, ${main});
@@ -2891,10 +2895,12 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   titleFill.addColorStop(0, titleGradient);
   titleFill.addColorStop(1, main);
   ctx.fillStyle = titleFill;
-  ctx.font = `900 ${theme.accentFont === "pokemon" ? 70 : 64}px ${titleFont}`;
+  const titleSize = theme.accentFont === "pokemon" ? 80 : 64;
+  const titleLineGap = theme.accentFont === "pokemon" ? 56 : 66;
+  ctx.font = `900 ${titleSize}px ${titleFont}`;
   ctx.textAlign = "left";
   ctx.fillText(`${owner}'s Games of`, 220, 116);
-  ctx.fillText(`the Year ${year}`, 220, 182);
+  ctx.fillText(`the Year ${year}`, 220, 116 + titleLineGap);
   const siteUrl = cleanCanvasSiteUrl(window.location.origin && window.location.origin !== "null" ? window.location.origin : window.location.hostname || "Gamelist");
   ctx.font = `800 24px ${bodyFont}`;
   ctx.textAlign = "right";
