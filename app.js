@@ -4157,17 +4157,17 @@ function statsReleaseKpisCard(insights) {
       <div class="finished-stats-release-kpis">
         ${statsReleaseMiniKpi({
           value: insights.interested.length,
-          label: insights.scopeYear ? `Upcoming interesting games ${insights.scopeYear}` : "Upcoming interesting games",
+          label: "Interested in games",
         })}
         ${statsReleaseMiniKpi({
           value: insights.playedFromYear.length,
-          label: insights.scopeYear ? `Played new games from ${insights.scopeYear}` : "Played new games",
+          label: "Played new games",
           detail: insights.hoverable ? statsGameList(insights.playedFromYear) : "",
           tone: "played",
         })}
         ${statsReleaseMiniKpi({
           value: insights.playedOutsideYear.length,
-          label: insights.scopeYear ? `Played games not from ${insights.scopeYear}` : "Played outside release year",
+          label: "Played games not from that year",
           detail: insights.hoverable ? statsGameList(insights.playedOutsideYear) : "",
           tone: "played",
         })}
