@@ -2202,10 +2202,10 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       content: "";
       position: absolute;
       top: 13px;
-      right: -11px;
+      right: -6px;
       bottom: 13px;
-      width: 1px;
-      background: rgba(255,255,255,.26);
+      width: 2px;
+      background: rgba(255,255,255,.36);
       border-radius: 999px;
     }
     .goty-export-small-kpi strong {
