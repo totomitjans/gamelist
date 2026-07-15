@@ -1465,12 +1465,13 @@ async function saveEditor(event) {
   event.preventDefault();
   if (!state.canEdit) return;
   const existing = state.games.find((game) => game.id === state.editingId);
+  const manualPrice = numberOrNull(el.fields.price.value);
   const game = {
     ...(existing || {}),
     id: existing?.id || `shelf-${crypto.randomUUID()}`,
     title: el.fields.title.value.trim(), platform: el.fields.platform.value.trim(), country: el.fields.country.value,
     region: regionFor(el.fields.country.value), ...conditionFromInputs(),
-    price: numberOrNull(el.fields.price.value), publisher: el.fields.publisher.value.trim(), developer: el.fields.developer.value.trim(),
+    price: manualPrice, publisher: el.fields.publisher.value.trim(), developer: el.fields.developer.value.trim(),
     genre: el.fields.genre.value.trim(), cover: rawCoverUrl(el.fields.cover.value.trim()), notes: el.fields.notes.value.trim(),
     owners: splitValues(el.fields.owners.value).map(canonicalOwner).filter(Boolean), category: existing?.category || "Game",
     releaseDate: el.fields.releaseDate.value, trophyName: el.fields.trophyName.value.trim(), websites: legacyWebsiteLinks(existing),
@@ -1484,6 +1485,7 @@ async function saveEditor(event) {
     createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), recordType: "Owned", releaseType: existing?.releaseType || "Official",
   };
   if (!game.title) return;
+  applyManualCollectionValue(game, el.fields.price.value, existing);
   if (existing?.sourceRecord) state.overrides[game.id] = stripRuntimeFields(game);
   else {
     const index = state.additions.findIndex((item) => item.id === game.id);
@@ -2743,6 +2745,35 @@ function collectionValueFor(game) {
   return Number.isFinite(number) ? number : 0;
 }
 
+function applyManualCollectionValue(game, rawValue, existing = null) {
+  const price = numberOrNull(rawValue);
+  if (!Number.isFinite(price) || price <= 0) return;
+  const key = collectionPriceKey(game);
+  const currency = currencyForManualPrice(rawValue);
+  const today = new Date().toISOString().slice(0, 10);
+  const previousHistory = Array.isArray(existing?.priceHistory) ? existing.priceHistory : [];
+  const history = previousHistory
+    .map((item) => ({ ...item, value: numberOrNull(item.value) }))
+    .filter((item) => Number.isFinite(item.value));
+  const last = history.at(-1);
+  const nextPoint = { date: today, value: price };
+  const nextHistory = last && last.date === today
+    ? [...history.slice(0, -1), nextPoint]
+    : (last && Number(last.value) === price ? history : [...history, nextPoint]);
+  game.collectionPrices = { ...(game.collectionPrices || {}), [key]: price };
+  game.price = price;
+  game.priceCurrency = currency;
+  game.priceFetchedAt = game.priceFetchedAt || new Date().toISOString();
+  game.priceHistory = nextHistory.slice(-60);
+}
+
+function currencyForManualPrice(value) {
+  const text = String(value || "");
+  if (text.includes("$")) return "USD";
+  if (text.includes("€")) return "EUR";
+  return normalizePriceSettings(state.gamelistSettings).currency || "USD";
+}
+
 function normalizePriceLabel(value, currency = "USD") {
   if (!value) return currency === "USD" ? "- $" : "- €";
   const text = String(value).trim();
@@ -3136,7 +3167,29 @@ function consumeRecentPullNavigation() { try { const url = new URL(window.locati
 async function clearSiteCaches() { if ("caches" in window) { const keys = await caches.keys(); await Promise.all(keys.filter((key) => key.startsWith("gamelist-cache-")).map((key) => caches.delete(key))); } if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.map((registration) => registration.update().catch(() => {}))); } }
 async function clearSiteCachesAndReload() { await clearSiteCaches(); if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version); window.location.reload(); }
 function stripRuntimeFields(game) { const { sourceRecord, ...clean } = game; return clean; }
-function numberOrNull(value) { const number = Number(value); return Number.isFinite(number) && value !== "" ? number : null; }
+function numberOrNull(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  const cleaned = text.replace(/[^\d,.-]/g, "");
+  if (!cleaned || !/\d/.test(cleaned)) return null;
+  const comma = cleaned.lastIndexOf(",");
+  const dot = cleaned.lastIndexOf(".");
+  let normalized = cleaned;
+  if (comma >= 0 && dot >= 0) {
+    const decimal = comma > dot ? "," : ".";
+    const thousands = decimal === "," ? "." : ",";
+    normalized = cleaned.split(thousands).join("").replace(decimal, ".");
+  } else if (comma >= 0) {
+    const decimals = cleaned.length - comma - 1;
+    normalized = decimals > 0 && decimals <= 2 ? cleaned.replace(",", ".") : cleaned.replace(/,/g, "");
+  } else if (dot >= 0) {
+    const decimals = cleaned.length - dot - 1;
+    normalized = decimals > 0 && decimals <= 2 ? cleaned : cleaned.replace(/\./g, "");
+  }
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
 function firstGenre(value) { return String(value).split(",")[0].trim(); }
 function rawCoverUrl(value) { try { const url = new URL(value, location.origin); return url.searchParams.get("src") || value; } catch { return value; } }
 function coverUrl(value) { return value.includes("howlongtobeat.com/games/") ? `/api/cover?src=${encodeURIComponent(value)}` : value; }
