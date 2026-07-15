@@ -2037,8 +2037,6 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
   const coopGames = games.filter((game) => game.coop);
   const completed = finishedStatsCompleted(String(year));
   const platforms = countBy(games, statsPlatformLabel);
-  const categories = countTags(games);
-  const visibleCategories = categories.slice(0, 5);
   return `
     <section class="goty-export-top-kpis">
       <article class="goty-export-small-kpi goty-export-total-kpi"><strong>${games.length}</strong><span>Total played</span></article>
@@ -2047,7 +2045,6 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
       <article class="goty-export-small-kpi"><strong>${otherYearGames.length}</strong><span>Older games</span></article>
       ${coopGames.length ? `<article class="goty-export-small-kpi"><strong>${coopGames.length}</strong><span>Coop games</span></article>` : ""}
       <div class="goty-export-top-platforms">${platforms.map((item) => platformBadge(item.label, item.count)).join("")}</div>
-      <div class="goty-export-top-categories">${visibleCategories.map((item) => `<b>${escapeHtml(item.label)}<em>${item.count}</em></b>`).join("")}${categories.length > visibleCategories.length ? "<i>...</i>" : ""}</div>
     </section>
   `;
 }
@@ -2141,7 +2138,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     .goty-export-logo {
       position: absolute;
       left: 62px;
-      top: 43px;
+      top: 48px;
       width: 82px;
       height: 82px;
       object-fit: cover;
@@ -2175,9 +2172,10 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       top: 47px;
       right: 62px;
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 10px;
-      width: 650px;
+      grid-template-columns: 122px 148px repeat(3, 96px);
+      gap: 8px;
+      row-gap: 4px;
+      width: 646px;
     }
     .goty-export-small-kpi,
     .goty-export-stat {
@@ -2205,7 +2203,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       display: flex;
       align-items: center;
       gap: 5px;
-      color: ${accent};
+      color: ${text};
       font: 900 33px/1 ${bodyFont};
     }
     .goty-export-completed-kpi strong,
@@ -2226,54 +2224,17 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       display: flex;
       flex-wrap: nowrap;
       justify-content: flex-end;
-      gap: 5px;
+      gap: 4px;
       min-width: 0;
       overflow: visible;
     }
     .goty-export-top-platforms .platform-badge {
       max-width: none;
     }
-    .goty-export-top-categories {
-      grid-column: 1 / -1;
-      display: flex;
-      flex-wrap: nowrap;
-      justify-content: flex-end;
-      gap: 5px;
-      min-width: 0;
-      overflow: hidden;
-    }
-    .goty-export-top-categories b,
-    .goty-export-top-categories i {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      min-height: 25px;
-      box-sizing: border-box;
-      padding: 5px 8px;
-      overflow: hidden;
-      color: ${text};
-      font: 900 12px/1 ${bodyFont};
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      background: ${theme.mode === "light" ? "rgba(18,24,36,.08)" : "rgba(8,9,13,.58)"};
-      border: 1px solid ${theme.mode === "light" ? "rgba(18,24,36,.13)" : "rgba(255,255,255,.12)"};
-      border-radius: 7px;
-    }
-    .goty-export-top-categories b {
-      max-width: 130px;
-    }
-    .goty-export-top-categories em {
-      color: ${accent};
-      font-style: normal;
-    }
-    .goty-export-top-categories i {
-      color: ${muted};
-      font-style: normal;
-    }
     .goty-export-bottom-stats {
       position: absolute;
       left: 62px;
-      right: 62px;
+      right: 360px;
       bottom: 72px;
       display: block;
     }
@@ -2482,6 +2443,10 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       background: ${theme.mode === "light" ? "rgba(255,255,255,.76)" : "rgba(255,255,255,.11)"};
       border: 1px solid ${line};
       border-radius: 7px;
+    }
+    .goty-export-tag {
+      background: ${theme.mode === "light" ? "rgba(18,24,36,.08)" : "rgba(8,9,13,.58)"};
+      border-color: ${theme.mode === "light" ? "rgba(18,24,36,.13)" : "rgba(255,255,255,.12)"};
     }
     .goty-export-coop {
       color: #79f2ce;
