@@ -2010,7 +2010,6 @@ function gameOfTheYearExportMarkup({ owner, year, rows, theme, logo, background 
 function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
   const cover = coverSrc || "";
   const progress = achievementProgressForGame(game);
-  const progressNumber = progress ? Math.round(Number(progress.progress ?? progressValue(progress.game)) || 0) : 0;
   const progressCount = progress ? canvasProgressCount(progress.label) : "";
   const studio = game.developer || game.publisher || "";
   const tags = [
@@ -2018,19 +2017,22 @@ function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
     ...(Array.isArray(game.tags) ? game.tags : []),
   ].map((tag) => tag.trim()).filter(Boolean).slice(0, 2);
   return `
-    <article class="goty-export-card ${index >= 4 ? "is-bottom" : ""}">
-      <div class="goty-export-cover-wrap">${cover ? `<img class="goty-export-cover" src="${escapeHtml(cover)}" alt="" />` : `<span class="goty-export-cover goty-export-cover-fallback"></span>`}</div>
-      <div class="goty-export-info">
-        <strong class="goty-export-category">${escapeHtml(label)}</strong>
-        <h2>${escapeHtml(game.title || "")}</h2>
-        <p>${escapeHtml(studio || "Finished game")}</p>
-        <div class="goty-export-pills">
-          ${progress ? `<span class="goty-export-pill goty-export-progress" style="--progress:${progressNumber}%"><em></em><b>${progressNumber}%</b>${progressCount ? `<span>${escapeHtml(progressCount)}</span>` : ""}</span>` : ""}
-          <span class="goty-export-pill">${escapeHtml(platformDisplayName(game.platform || "Game"))}</span>
-          ${tags.map((tag) => `<span class="goty-export-pill goty-export-tag">${escapeHtml(tag)}</span>`).join("")}
+    <div class="goty-export-item ${index >= 4 ? "is-bottom" : ""}">
+      <strong class="goty-export-category">${escapeHtml(label)}</strong>
+      <article class="goty-export-card">
+        ${cover ? `<img class="goty-export-card-bg" src="${escapeHtml(cover)}" alt="" />` : ""}
+        <div class="goty-export-cover-wrap">${cover ? `<img class="goty-export-cover" src="${escapeHtml(cover)}" alt="" />` : `<span class="goty-export-cover goty-export-cover-fallback"></span>`}</div>
+        <div class="goty-export-info">
+          <h2>${escapeHtml(game.title || "")}</h2>
+          <p>${escapeHtml(studio || "Finished game")}</p>
+          <div class="goty-export-pills">
+            ${game.platform ? platformBadge(game.platform, null, { title: game.title }) : ""}
+            ${progress ? psnProgressBadge(progress, { className: "goty-export-progress", label: progressCount, separator: Boolean(progressCount) }) : ""}
+            ${tags.map((tag) => `<span class="goty-export-pill goty-export-tag">${escapeHtml(tag)}</span>`).join("")}
+          </div>
         </div>
-      </div>
-    </article>`;
+      </article>
+    </div>`;
 }
 
 function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary, glowSecondary }) {
@@ -2060,19 +2062,18 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     }
     .goty-export-logo {
       position: absolute;
-      left: 84px;
-      top: 68px;
-      width: 112px;
-      height: 112px;
+      right: 64px;
+      bottom: 42px;
+      width: 82px;
+      height: 82px;
       object-fit: cover;
-      border-radius: 22px;
+      border-radius: 18px;
     }
     .goty-export-head {
-      margin-left: 158px;
-      min-height: 150px;
+      min-height: 142px;
     }
     .goty-export-head h1 {
-      width: 1260px;
+      width: 1420px;
       margin: 0;
       color: transparent;
       font: 900 64px/1.08 ${titleFont};
@@ -2083,11 +2084,29 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     .goty-export-grid {
       display: grid;
       grid-template-columns: repeat(4, 425px);
-      grid-template-rows: repeat(2, 342px);
-      gap: 36px 26px;
-      margin-top: 34px;
+      grid-template-rows: repeat(2, 376px);
+      gap: 30px 26px;
+      margin-top: 14px;
+    }
+    .goty-export-item {
+      display: grid;
+      grid-template-rows: 34px 342px;
+      gap: 8px;
+      width: 425px;
+      height: 376px;
+    }
+    .goty-export-category {
+      align-self: end;
+      min-width: 0;
+      overflow: hidden;
+      color: ${accent};
+      font: 900 22px/1.05 ${titleFont};
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
     }
     .goty-export-card {
+      position: relative;
       box-sizing: border-box;
       display: grid;
       grid-template-columns: 154px minmax(0, 1fr);
@@ -2095,17 +2114,38 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       width: 425px;
       height: 342px;
       padding: 34px 22px 30px;
+      overflow: hidden;
       background: ${panel};
       border: 1px solid ${line};
       border-radius: 18px;
     }
-    .goty-export-card.is-bottom:first-of-type {
+    .goty-export-item.is-bottom:first-of-type {
       grid-column: 1;
     }
-    .goty-export-card:nth-child(5) {
+    .goty-export-item:nth-child(5) {
       grid-column: 2;
     }
+    .goty-export-card-bg {
+      position: absolute;
+      inset: -32px;
+      width: calc(100% + 64px);
+      height: calc(100% + 64px);
+      object-fit: cover;
+      opacity: ${theme.mode === "light" ? ".22" : ".30"};
+      filter: blur(26px) saturate(1.18);
+      transform: scale(1.04);
+    }
+    .goty-export-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, ${theme.mode === "light" ? "rgba(255,255,255,.72)" : "rgba(8,9,13,.68)"}, ${theme.mode === "light" ? "rgba(255,255,255,.42)" : "rgba(8,9,13,.38)"}),
+        linear-gradient(135deg, ${canvasRgba(main, 0.12)}, transparent 62%);
+    }
     .goty-export-cover-wrap {
+      position: relative;
+      z-index: 1;
       align-self: end;
       width: 154px;
       height: 216px;
@@ -2126,20 +2166,16 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
         ${theme.mode === "light" ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"};
     }
     .goty-export-info {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
+      align-items: flex-start;
       min-width: 0;
-      text-align: right;
-    }
-    .goty-export-category {
-      min-height: 48px;
-      color: ${accent};
-      font: 900 20px/1.15 ${titleFont};
-      text-transform: uppercase;
+      text-align: left;
     }
     .goty-export-info h2 {
-      margin: 10px 0 0;
+      margin: 2px 0 0;
       color: ${text};
       font: 900 31px/1.12 ${bodyFont};
     }
@@ -2151,12 +2187,16 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     .goty-export-pills {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
+      justify-content: flex-start;
       gap: 7px;
       margin-top: auto;
     }
-    .goty-export-pill {
+    .goty-export-pill,
+    .goty-export-progress {
       position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       overflow: hidden;
       min-height: 28px;
       box-sizing: border-box;
@@ -2167,28 +2207,73 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       border: 1px solid ${line};
       border-radius: 10px;
     }
+    .goty-export-poster .platform-badge {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      overflow: hidden;
+      min-height: 28px;
+      box-sizing: border-box;
+      width: auto;
+      max-width: 138px;
+      min-width: 0;
+      padding: 5px 10px 5px 7px;
+      border-radius: 10px;
+    }
+    .goty-export-poster .platform-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+    }
+    .goty-export-poster .platform-icon img,
+    .goty-export-progress .trophy-icon {
+      width: 17px;
+      height: 17px;
+    }
+    .goty-export-poster .platform-label {
+      overflow: hidden;
+      font: 800 13px/1 ${bodyFont};
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .goty-export-progress {
+      min-width: 104px;
+      color: #ffe985;
+      border-color: rgba(255,225,101,.36);
+      background: rgba(255,225,101,.12);
+    }
     .goty-export-progress em {
       position: absolute;
       inset: 4px auto 4px 4px;
       width: var(--progress);
       max-width: calc(100% - 8px);
-      background: ${canvasRgba(main, theme.mode === "light" ? 0.32 : 0.42)};
+      background: rgba(255,225,101,.22);
       border-radius: 8px;
     }
-    .goty-export-progress b,
-    .goty-export-progress span {
+    .goty-export-progress .trophy-icon,
+    .goty-export-progress strong,
+    .goty-export-progress > span {
       position: relative;
       z-index: 1;
+      color: #ffe985;
+      font: 900 13px/1 ${bodyFont};
     }
-    .goty-export-progress span::before {
-      content: " · ";
+    .goty-export-progress > span b {
+      padding: 0 3px;
     }
     footer {
       position: absolute;
-      right: 82px;
-      bottom: 52px;
+      right: 162px;
+      bottom: 56px;
       color: ${muted};
-      font: 800 24px/1 ${bodyFont};
+      font: 800 16px/1 ${bodyFont};
     }
   `;
 }
