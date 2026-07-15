@@ -4106,7 +4106,7 @@ function finishedStatsMarkup(year, games, completed) {
     statsKpiCard("Finished games", games.length, showYearlyDetail ? statsGameList(games) : "", { tone: "finished" }),
     statsKpiCard("Completed games", completed.length, showYearlyDetail ? statsCompletedGameList(completed) : "", { action: "completed", tone: "completed", icon: trophyIcon() }),
     streamed.length ? statsKpiCard("Streamed games", streamed.length, showYearlyDetail ? statsGameList(streamed) : "", { tone: "streamed" }) : "",
-    coopGames.length ? statsKpiCard("Coop games", coopGames.length, showYearlyDetail ? statsGameList(coopGames) : "", { tone: "coop" }) : "",
+    coopGames.length ? statsKpiCard("Coop games", coopGames.length, statsGameList(coopGames), { tone: "coop" }) : "",
     otherOwnerGames.length ? statsKpiCard(otherOwnerSummary.label, otherOwnerGames.length, statsOwnerBreakdown(otherOwnerGames), { tone: "owners", valueClass: otherOwnerSummary.valueClass }) : "",
   ].filter(Boolean).join("");
   return `

@@ -6273,8 +6273,17 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .finished-stats-bell-dot b {
+  opacity: 0;
   font-size: 9px;
   line-height: 1;
+  transform: scale(0.9);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.finished-stats-bell-dot:hover b,
+.finished-stats-bell-dot:focus-visible b {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .finished-stats-pie-segment {
@@ -6324,19 +6333,6 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   pointer-events: none;
   transform: translate(-50%, -50%) scale(0.98);
   transition: opacity 120ms ease;
-}
-
-.finished-stats-segment-tip::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: -5px;
-  z-index: 0;
-  width: 10px;
-  height: 10px;
-  background: rgba(8, 9, 12, 0.96);
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 2px;
 }
 
 .finished-stats-segment-tip > * {
@@ -6456,6 +6452,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-month .finished-stats-breakdown {
   top: auto;
   bottom: calc(100% - 10px);
+  text-align: left;
   transform: translateY(-6px);
 }
 
@@ -6499,8 +6496,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-breakdown .finished-stats-game-row.is-complete,
 .finished-stats-mini-list .finished-stats-game-row.is-complete {
-  background: rgba(255, 225, 101, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 225, 101, 0.22);
+  background: rgba(255, 225, 101, 0.16) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 225, 101, 0.34) !important;
 }
 
 .finished-stats-breakdown b,
@@ -6714,16 +6711,18 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .finished-stats-period-grid.is-yearly {
-  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
-  max-height: 178px;
-  overflow-y: auto;
-  padding-right: 4px;
+  grid-auto-columns: minmax(56px, 1fr);
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 4px;
 }
 
 .finished-stats-month {
   position: relative;
   display: grid;
-  grid-template-rows: 70px auto auto;
+  grid-template-rows: auto 70px auto;
   gap: 5px;
   min-width: 0;
   color: var(--muted);
@@ -6732,8 +6731,12 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   text-align: center;
 }
 
-.finished-stats-month em {
+.finished-stats-month > span {
   grid-row: 1;
+}
+
+.finished-stats-month em {
+  grid-row: 2;
   align-self: end;
   min-height: 3px;
   height: calc(70px * var(--month));
