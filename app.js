@@ -581,7 +581,10 @@ function bindEvents() {
   el.finishedStatsDialog?.addEventListener("click", (event) => {
     if (event.target === el.finishedStatsDialog) el.finishedStatsDialog.close();
   });
-  el.finishedStatsDialog?.addEventListener("close", syncScrollLock);
+  el.finishedStatsDialog?.addEventListener("close", () => {
+    el.finishedStatsDialog.classList.remove("has-mini-overlay");
+    syncScrollLock();
+  });
   window.addEventListener("scroll", () => {
     updateScrollTopButton();
     scheduleFocusedPlayingTrailerUpdate();
@@ -4493,8 +4496,12 @@ function openFinishedStatsMiniOverlay(title, content) {
   if (!overlay) {
     overlay = document.createElement("div");
     overlay.className = "finished-stats-mini-overlay";
-    el.finishedStatsDialog.querySelector(".finished-stats-modal")?.appendChild(overlay);
+    el.finishedStatsDialog.appendChild(overlay);
   }
+  const closeMiniOverlay = () => {
+    overlay.hidden = true;
+    el.finishedStatsDialog.classList.remove("has-mini-overlay");
+  };
   overlay.innerHTML = `
     <div class="finished-stats-mini-panel">
       <div class="finished-stats-mini-head">
@@ -4505,11 +4512,10 @@ function openFinishedStatsMiniOverlay(title, content) {
     </div>
   `;
   overlay.hidden = false;
-  overlay.querySelector("[data-stats-mini-close]")?.addEventListener("click", () => {
-    overlay.hidden = true;
-  });
+  el.finishedStatsDialog.classList.add("has-mini-overlay");
+  overlay.querySelector("[data-stats-mini-close]")?.addEventListener("click", closeMiniOverlay);
   overlay.onclick = (event) => {
-    if (event.target === overlay) overlay.hidden = true;
+    if (event.target === overlay) closeMiniOverlay();
   };
 }
 

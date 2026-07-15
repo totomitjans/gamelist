@@ -6848,9 +6848,10 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-mini-overlay {
   position: absolute;
   inset: 0;
-  z-index: 80;
+  z-index: 120;
   display: grid;
   align-items: end;
+  justify-items: stretch;
   padding: 14px;
   background: rgba(0, 0, 0, 0.42);
   border-radius: inherit;
@@ -11180,14 +11181,24 @@ body.theme-kash .history-row.completed-trophy-card:hover {
   .finished-stats-mini-overlay {
     position: fixed;
     inset: 0;
+    z-index: 999;
     align-items: center;
     justify-items: center;
     padding: 18px;
+    border-radius: 0;
+    overscroll-behavior: contain;
+    touch-action: none;
   }
 
   .finished-stats-mini-panel {
     width: min(420px, 100%);
     max-height: min(520px, calc(100dvh - 44px));
+    touch-action: auto;
+  }
+
+  .finished-stats-dialog.has-mini-overlay,
+  .finished-stats-dialog.has-mini-overlay .finished-stats-modal {
+    overflow: hidden !important;
   }
 
   .finished-stats-months > div {
