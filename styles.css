@@ -5994,6 +5994,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-dialog {
   width: min(920px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
   overflow: visible;
   border: 0;
   padding: 0;
@@ -6008,7 +6009,9 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-modal {
   position: relative;
   width: min(920px, calc(100vw - 24px));
-  overflow: visible !important;
+  max-height: calc(100vh - 24px);
+  overflow-x: visible !important;
+  overflow-y: auto !important;
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.48),
     inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -6804,6 +6807,9 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-period-grid.is-yearly {
   grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  grid-auto-rows: minmax(92px, auto);
+  align-items: end;
+  padding-bottom: 8px;
 }
 
 .finished-stats-month {
