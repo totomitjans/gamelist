@@ -1568,7 +1568,7 @@ function handleDetailClose() {
 function renderPlayingSection() {
   const games = activeGames().filter((game) => game.playing);
   games.sort(comparePlayingGames);
-  el.playingCount.innerHTML = playingCountMarkup(games.length);
+  el.playingCount.textContent = playingCountText(games.length);
   el.playingList.innerHTML = "";
   el.playingSection.classList.toggle("playing-single", games.length === 1);
   games.forEach((game) => el.playingList.appendChild(cardFor(game, { staticCard: true, imagePriority: "eager" })));
@@ -1583,8 +1583,8 @@ function renderPlayingSection() {
   scheduleFocusedPlayingTrailerUpdate();
 }
 
-function playingCountMarkup(count) {
-  return `Playing <span class="playing-count-number">${escapeHtml(String(count))}</span> ${count === 1 ? "game" : "games"}`;
+function playingCountText(count) {
+  return `Playing ${count} ${count === 1 ? "game" : "games"}`;
 }
 
 function renderPlayingFinished() {
