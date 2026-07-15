@@ -2310,7 +2310,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,.18),
         0 6px 14px rgba(0,0,0,.18);
-      opacity: .92;
+      background-clip: padding-box;
     }
     .goty-export-stat-months b span {
       color: ${muted};
@@ -4747,12 +4747,25 @@ function statsPieSegmentData(item, startDeg, endDeg, color, total, index, tone, 
   const shape = sweep >= 359.99
     ? `<circle class="finished-stats-pie-shape" cx="50" cy="50" r="46" fill="${escapeHtml(color)}" stroke="rgba(255,255,255,.22)" stroke-width="0.9"></circle>`
     : `<path class="finished-stats-pie-shape" d="M 50 50 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 46 46 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}" stroke="rgba(255,255,255,.22)" stroke-width="0.9"></path>`;
-  const label = tone === "platform" ? platformBadge(item.label) : `<b>${escapeHtml(item.label)}</b>`;
+  const label = statsPieSegmentLabel(item, tone);
   const segmentGames = statsSegmentGames(item.label, tone, games);
   return {
     shape: `<g class="finished-stats-pie-segment finished-stats-pie-segment-${index}" style="--slice-opacity:${index % 2 ? 0.78 : 0.96}" tabindex="0">${shape}</g>`,
-    tip: `<div class="finished-stats-segment-tip finished-stats-segment-tip-${index}" style="--tip-x:${left.toFixed(2)}%;--tip-y:${top.toFixed(2)}%"><span class="finished-stats-segment-percent">${percent}%</span>${label}<span class="finished-stats-segment-count">${escapeHtml(String(item.count))}</span>${segmentGames.length ? `<div class="finished-stats-segment-games">${statsGameList(segmentGames)}</div>` : ""}</div>`,
+    tip: `<div class="finished-stats-segment-tip finished-stats-segment-tip-${index}" style="--tip-x:${left.toFixed(2)}%;--tip-y:${top.toFixed(2)}%"><span class="finished-stats-segment-percent">${percent}%</span>${label}${segmentGames.length ? `<div class="finished-stats-segment-games">${statsGameList(segmentGames)}</div>` : ""}</div>`,
   };
+}
+
+function statsPieSegmentLabel(item, tone) {
+  if (tone === "platform") return platformBadge(item.label, item.count);
+  if (tone === "category") {
+    return `
+      <span class="finished-stats-category-pill">
+        <b>${escapeHtml(item.label)}</b>
+        <span>${escapeHtml(String(item.count))}</span>
+      </span>
+    `;
+  }
+  return `<b>${escapeHtml(item.label)}</b><span class="finished-stats-segment-count">${escapeHtml(String(item.count))}</span>`;
 }
 
 function statsSegmentGames(label, tone, games = []) {
@@ -4887,7 +4900,7 @@ function statsPlatformBar(games) {
 function platformStatsBarColor(platform, index, previousColor) {
   const color = platformStatsColor(platform, index);
   if (!previousColor || !statsColorsAreSimilar(color, previousColor)) return color;
-  return `color-mix(in srgb, ${color} ${index % 2 ? 78 : 90}%, transparent)`;
+  return `color-mix(in srgb, ${color} ${index % 2 ? 78 : 88}%, #ffffff)`;
 }
 
 function statsColorsAreSimilar(a, b) {
