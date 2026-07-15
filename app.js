@@ -2172,9 +2172,9 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       top: 47px;
       right: 12px;
       display: grid;
-      grid-template-columns: 122px 148px repeat(3, 96px);
+      grid-template-columns: 122px 148px repeat(3, 108px);
       gap: 8px;
-      width: 646px;
+      width: 682px;
     }
     .goty-export-small-kpi,
     .goty-export-stat {
@@ -2346,7 +2346,6 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       grid-template-columns: 198px minmax(0, 1fr);
       gap: 16px;
       width: 435px;
-      height: 302px;
       padding: 20px;
       overflow: hidden;
       background:
