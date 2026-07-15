@@ -6088,12 +6088,12 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   text-transform: uppercase;
 }
 
-.finished-stats-kpi.is-clickable {
+.finished-stats-kpi.is-completed.is-clickable {
   cursor: pointer;
 }
 
-.finished-stats-kpi.is-clickable:hover,
-.finished-stats-kpi.is-clickable:focus-visible {
+.finished-stats-kpi.is-completed.is-clickable:hover,
+.finished-stats-kpi.is-completed.is-clickable:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   background: color-mix(in srgb, var(--accent) 14%, rgba(255, 255, 255, 0.06));
 }
