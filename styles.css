@@ -5995,7 +5995,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-dialog {
   width: min(920px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
-  overflow: visible;
+  overflow: hidden;
   border: 0;
   padding: 0;
   background: transparent;
@@ -6010,8 +6010,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   position: relative;
   width: min(920px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
-  overflow-x: visible !important;
-  overflow-y: auto !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.48),
     inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -9151,6 +9151,29 @@ body.theme-kash .history-row.completed-trophy-card:hover {
   box-shadow:
     0 0 0 1px rgba(247, 223, 105, 0.16),
     0 12px 28px rgba(247, 223, 105, 0.1) !important;
+}
+
+button.finished-stats-kpi.is-completed:hover,
+button.finished-stats-kpi.is-completed:focus-visible,
+body.theme-kash button.finished-stats-kpi.is-completed:hover,
+body.theme-kash button.finished-stats-kpi.is-completed:focus-visible {
+  border-color: rgba(255, 225, 101, 0.58) !important;
+  color: #ffe985 !important;
+  background: rgba(255, 225, 101, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 3px rgba(255, 225, 101, 0.14) !important;
+}
+
+button.finished-stats-kpi.is-completed:hover strong,
+button.finished-stats-kpi.is-completed:hover > span:not(.finished-stats-breakdown),
+button.finished-stats-kpi.is-completed:focus-visible strong,
+button.finished-stats-kpi.is-completed:focus-visible > span:not(.finished-stats-breakdown),
+body.theme-kash button.finished-stats-kpi.is-completed:hover strong,
+body.theme-kash button.finished-stats-kpi.is-completed:hover > span:not(.finished-stats-breakdown),
+body.theme-kash button.finished-stats-kpi.is-completed:focus-visible strong,
+body.theme-kash button.finished-stats-kpi.is-completed:focus-visible > span:not(.finished-stats-breakdown) {
+  color: #ffe985 !important;
 }
 
 .history-row > div {
