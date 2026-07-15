@@ -2036,6 +2036,7 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
   const yearGames = games.filter((game) => releaseYear(game) === String(year));
   const otherYearGames = games.filter((game) => releaseYear(game) !== String(year));
   const coopGames = games.filter((game) => game.coop);
+  const completed = finishedStatsCompleted(String(year));
   const platforms = countBy(games, statsPlatformLabel);
   return `
     <section class="goty-export-top-kpis">
@@ -2043,6 +2044,7 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
         <span>Total played</span>
         <strong>${games.length}</strong>
       </article>
+      <article class="goty-export-small-kpi goty-export-completed-kpi"><strong>${trophyIcon()}${completed.length}</strong><span>Completed games</span></article>
       <article class="goty-export-small-kpi"><strong>${yearGames.length}</strong><span>New releases</span></article>
       <article class="goty-export-small-kpi"><strong>${otherYearGames.length}</strong><span>Older games</span></article>
       ${coopGames.length ? `<article class="goty-export-small-kpi"><strong>${coopGames.length}</strong><span>Coop games</span></article>` : ""}
@@ -2165,7 +2167,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       position: absolute;
       top: 52px;
       left: 164px;
-      width: 1020px;
+      width: 890px;
       margin: 0;
       overflow: hidden;
       color: transparent;
@@ -2181,9 +2183,9 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       top: 47px;
       right: 62px;
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 10px;
-      width: 520px;
+      width: 650px;
     }
     .goty-export-big-kpi,
     .goty-export-small-kpi,
@@ -2222,9 +2224,20 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       padding: 11px 10px 9px;
     }
     .goty-export-small-kpi strong {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 5px;
       color: ${accent};
       font: 900 33px/1 ${bodyFont};
+    }
+    .goty-export-completed-kpi strong,
+    .goty-export-completed-kpi .trophy-icon {
+      color: #ffe985;
+    }
+    .goty-export-completed-kpi .trophy-icon {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 auto;
     }
     .goty-export-small-kpi span {
       margin-top: 8px;
