@@ -2015,6 +2015,7 @@ function gameOfTheYearExportMarkup({ owner, year, rows, statsGames, theme, logo,
   const glowSecondary = canvasThemeColorBySource(theme, theme.glowSecondary || "accent", main, accent);
   const siteUrl = cleanCanvasSiteUrl(window.location.origin && window.location.origin !== "null" ? window.location.origin : window.location.hostname || "Gamelist");
   const logoSrc = logo || document.querySelector(".brand-mark")?.src || THEMES.shabii.icon;
+  const footerLines = gameOfTheYearExportFooterLines(owner, siteUrl);
   return `
   <div xmlns="http://www.w3.org/1999/xhtml" class="goty-export-poster">
     <style>${gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary, glowSecondary })}</style>
@@ -2029,8 +2030,15 @@ function gameOfTheYearExportMarkup({ owner, year, rows, statsGames, theme, logo,
       ${rows.slice(4).map((row, offset) => gameOfTheYearExportCard({ ...row, index: offset + 4 })).join("")}
     </main>
     ${gameOfTheYearExportBottomStatsMarkup(statsGames)}
-    <footer>${escapeHtml(siteUrl)}</footer>
+    <footer>${footerLines.map((line) => `<span>${escapeHtml(line)}</span>`).join("")}</footer>
   </div>`;
+}
+
+function gameOfTheYearExportFooterLines(owner, siteUrl) {
+  const lines = [];
+  if (normalizeSearchText(owner) === "kash") lines.push(cleanCanvasSiteUrl(KASH_TWITCH_URL));
+  lines.push(siteUrl);
+  return lines.filter(Boolean);
 }
 
 function gameOfTheYearExportTopStatsMarkup(year, games = []) {
@@ -2043,9 +2051,9 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
       <article class="goty-export-small-kpi goty-export-total-kpi"><strong>${games.length}</strong><span>Games played</span></article>
       <article class="goty-export-small-kpi goty-export-completed-kpi"><strong>${trophyIcon()}${completed.length}</strong><span>Completed games</span></article>
       <span class="goty-export-kpi-separator" aria-hidden="true"></span>
-      <article class="goty-export-small-kpi"><strong>${yearGames.length}</strong><span>New releases</span></article>
-      <article class="goty-export-small-kpi"><strong>${otherYearGames.length}</strong><span>Older games</span></article>
-      ${coopGames.length ? `<article class="goty-export-small-kpi"><strong>${coopGames.length}</strong><span>Coop games</span></article>` : ""}
+      <article class="goty-export-small-kpi goty-export-new-kpi"><strong>${yearGames.length}</strong><span>New releases</span></article>
+      <article class="goty-export-small-kpi goty-export-older-kpi"><strong>${otherYearGames.length}</strong><span>Older games</span></article>
+      ${coopGames.length ? `<article class="goty-export-small-kpi goty-export-coop-kpi"><strong>${coopGames.length}</strong><span>Coop games</span></article>` : ""}
     </section>
   `;
 }
@@ -2066,13 +2074,12 @@ function gameOfTheYearExportPlatformChartMarkup(games = []) {
   });
   return `
     <div class="goty-export-item goty-export-platform-item">
-      <strong class="goty-export-category">Platforms</strong>
       <article class="goty-export-platform-card">
         <div class="goty-export-platform-chart">
           <svg class="goty-export-platform-pie" viewBox="0 0 220 220" aria-hidden="true">
             ${segments.map((segment) => segment.shape).join("")}
           </svg>
-          ${segments.map((segment) => segment.label).join("")}
+          ${gameOfTheYearExportPlatformLabels(segments)}
         </div>
       </article>
     </div>
@@ -2083,16 +2090,35 @@ function gameOfTheYearExportPlatformSegment(item, index, startDeg, endDeg, color
   const sweep = Math.max(0.01, endDeg - startDeg);
   const start = polarPoint(110, 110, 96, startDeg - 90);
   const end = polarPoint(110, 110, 96, endDeg - 90);
-  const mid = polarPoint(110, 110, 58, startDeg + sweep / 2 - 90);
+  const mid = polarPoint(110, 110, 70, startDeg + sweep / 2 - 90);
   const shape = sweep >= 359.99
     ? `<circle class="goty-export-platform-slice" cx="110" cy="110" r="96" fill="${escapeHtml(color)}"></circle>`
     : `<path class="goty-export-platform-slice" d="M 110 110 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 96 96 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}"></path>`;
-  const left = clampNumber((mid.x / 220) * 100, 18, 82);
-  const top = clampNumber((mid.y / 220) * 100, 18, 82);
   return {
     shape,
-    label: `<span class="goty-export-platform-label goty-export-platform-label-${index}" style="--label-x:${left.toFixed(2)}%;--label-y:${top.toFixed(2)}%">${platformBadge(item.label, item.count)}</span>`,
+    item,
+    index,
+    left: clampNumber((mid.x / 220) * 100, 16, 84),
+    top: clampNumber((mid.y / 220) * 100, 16, 84),
   };
+}
+
+function gameOfTheYearExportPlatformLabels(segments) {
+  const minGap = segments.length > 6 ? 9 : 12;
+  const labels = segments.map((segment) => ({ ...segment })).sort((a, b) => a.top - b.top);
+  labels.forEach((label, index) => {
+    if (!index) return;
+    label.top = Math.max(label.top, labels[index - 1].top + minGap);
+  });
+  const overflow = Math.max(0, (labels.at(-1)?.top || 0) - 88);
+  if (overflow) labels.forEach((label) => {
+    label.top = Math.max(12, label.top - overflow);
+  });
+  const byIndex = new Map(labels.map((label) => [label.index, label]));
+  return segments.map((segment) => {
+    const label = byIndex.get(segment.index) || segment;
+    return `<span class="goty-export-platform-label goty-export-platform-label-${segment.index}" style="--label-x:${label.left.toFixed(2)}%;--label-y:${label.top.toFixed(2)}%">${platformBadge(segment.item.label, segment.item.count)}</span>`;
+  }).join("");
 }
 
 function gameOfTheYearExportBottomStatsMarkup(games = []) {
@@ -2263,6 +2289,13 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     .goty-export-completed-kpi .trophy-icon {
       color: #ffe985;
     }
+    .goty-export-new-kpi strong,
+    .goty-export-older-kpi strong {
+      color: #ff9ed2;
+    }
+    .goty-export-coop-kpi strong {
+      color: #79f2ce;
+    }
     .goty-export-completed-kpi .trophy-icon {
       width: 24px;
       height: 24px;
@@ -2416,24 +2449,21 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     }
     .goty-export-platform-card {
       position: relative;
+      grid-row: 1 / -1;
       box-sizing: border-box;
       width: 435px;
-      height: 304px;
+      height: 338px;
       overflow: hidden;
-      background:
-        linear-gradient(135deg, ${theme.mode === "light" ? "rgba(255,255,255,.36)" : "rgba(255,255,255,.035)"}, transparent 58%),
-        ${panel};
-      border: 1px solid ${line};
+      background: unset;
+      border: unset;
       border-radius: 12px;
-      box-shadow: inset 0 1px 0 ${theme.mode === "light" ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.08)"};
+      box-shadow: none;
     }
     .goty-export-platform-card::after {
       content: "";
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(circle at 50% 48%, ${canvasRgba(main, 0.14)}, transparent 58%),
-        linear-gradient(135deg, ${canvasRgba(accent, 0.08)}, transparent 62%);
+      background: none;
       pointer-events: none;
     }
     .goty-export-platform-chart {
@@ -2697,8 +2727,14 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       position: absolute;
       left: 62px;
       bottom: 43px;
+      display: grid;
+      gap: 6px;
+      justify-items: start;
       color: ${muted};
       font: 800 16px/1 ${bodyFont};
+    }
+    footer span {
+      display: block;
     }
   `;
 }
@@ -2841,7 +2877,9 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   ctx.font = `800 24px ${bodyFont}`;
   ctx.textAlign = "right";
   ctx.fillStyle = theme.mode === "light" ? "rgba(22,28,42,.72)" : "rgba(246,247,251,.74)";
-  ctx.fillText(siteUrl, width - 82, height - 52);
+  gameOfTheYearExportFooterLines(owner, siteUrl).forEach((line, index, lines) => {
+    ctx.fillText(line, width - 82, height - 52 - (lines.length - index - 1) * 30);
+  });
   ctx.textAlign = "left";
   const cardW = 425;
   const cardH = 342;
