@@ -6067,7 +6067,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .finished-stats-kpi.is-coop strong {
-  color: #ff9ed2;
+  color: #79f2ce;
 }
 
 .finished-stats-kpi.is-owners strong {
@@ -6672,16 +6672,17 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-month {
   position: relative;
   display: grid;
-  grid-template-rows: auto 70px;
+  grid-template-rows: 70px auto auto;
   gap: 5px;
   min-width: 0;
   color: var(--muted);
   font-size: 10px;
   font-weight: 850;
-  text-align: left;
+  text-align: center;
 }
 
 .finished-stats-month em {
+  grid-row: 1;
   align-self: end;
   min-height: 3px;
   height: calc(70px * var(--month));
@@ -6690,15 +6691,10 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 }
 
 .finished-stats-month strong {
-  position: absolute;
-  bottom: 35px;
-  left: 50%;
-  z-index: 1;
+  grid-row: 3;
   color: var(--text);
   font-size: 11px;
   line-height: 1;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.48);
-  transform: translate(-50%, 50%);
 }
 
 .finished-stats-months small {
