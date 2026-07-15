@@ -2039,7 +2039,7 @@ function gameOfTheYearExportTopStatsMarkup(year, games = []) {
   const platforms = countBy(games, statsPlatformLabel);
   return `
     <section class="goty-export-top-kpis">
-      <article class="goty-export-small-kpi goty-export-total-kpi"><strong>${games.length}</strong><span>Total played</span></article>
+      <article class="goty-export-small-kpi goty-export-total-kpi"><strong>${games.length}</strong><span>Games played</span></article>
       <article class="goty-export-small-kpi goty-export-completed-kpi"><strong>${trophyIcon()}${completed.length}</strong><span>Completed games</span></article>
       <article class="goty-export-small-kpi"><strong>${yearGames.length}</strong><span>New releases</span></article>
       <article class="goty-export-small-kpi"><strong>${otherYearGames.length}</strong><span>Older games</span></article>
@@ -2193,9 +2193,20 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       text-transform: uppercase;
     }
     .goty-export-small-kpi {
+      position: relative;
       height: 96px;
       min-width: 0;
       padding: 13px 12px 10px;
+    }
+    .goty-export-completed-kpi::after {
+      content: "";
+      position: absolute;
+      top: 13px;
+      right: -11px;
+      bottom: 13px;
+      width: 1px;
+      background: rgba(255,255,255,.26);
+      border-radius: 999px;
     }
     .goty-export-small-kpi strong {
       display: flex;
@@ -2221,7 +2232,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       position: absolute;
       left: auto;
       right: 70px;
-      bottom: 35px;
+      bottom: 20px;
       display: block;
       width: 1337px;
     }
@@ -2264,10 +2275,8 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     }
     .goty-export-stat-months {
       padding-bottom: 7px;
-      background:
-        linear-gradient(${theme.mode === "light" ? "rgba(18,24,36,.045)" : "rgba(255,255,255,.045)"} 1px, transparent 1px),
-        linear-gradient(90deg, ${theme.mode === "light" ? "rgba(18,24,36,.045)" : "rgba(255,255,255,.045)"} 1px, transparent 1px),
-        ${theme.mode === "light" ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.065)"};
+      background: unset;
+      border: unset;
       background-size: 26px 26px, 26px 26px, auto;
     }
     .goty-export-stat-months > div {
@@ -2275,7 +2284,6 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       grid-template-columns: repeat(12, minmax(0, 1fr));
       align-items: stretch;
       gap: 5px;
-      height: 88px;
     }
     .goty-export-stat-months b {
       position: relative;
