@@ -2472,6 +2472,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       z-index: 1;
       width: 100%;
       height: 100%;
+      margin-top: 15px;
       overflow: visible;
     }
     .goty-export-platform-pie {
