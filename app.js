@@ -4197,7 +4197,7 @@ function statsMonthBars(games, counts) {
     const monthGames = games
       .filter((game) => monthShortName(game.completedAt) === label)
       .sort((a, b) => String(a.completedAt || "").localeCompare(String(b.completedAt || "")) || stringCompare(a.title, b.title));
-    return `<div class="finished-stats-month" title="${escapeHtml(`${label}: ${count}`)}"><span>${escapeHtml(label)}</span><em style="--month:${count / max}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(monthGames)}</span>` : ""}</div>`;
+    return `<div class="finished-stats-month" title="${escapeHtml(`${label}: ${count}`)}"><span>${escapeHtml(label)}</span><em style="--month:${count / max};--platform-bar:${statsPlatformBar(monthGames)}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(monthGames)}</span>` : ""}</div>`;
   }).join("");
 }
 
@@ -4210,7 +4210,7 @@ function statsYearBars(games) {
       const yearGames = games
         .filter((game) => completionYear(game) === label)
         .sort((a, b) => String(a.completedAt || "").localeCompare(String(b.completedAt || "")) || stringCompare(a.title, b.title));
-      return `<div class="finished-stats-month finished-stats-year" title="${escapeHtml(`${label}: ${count}`)}"><span>${escapeHtml(label)}</span><em style="--month:${count / max}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(yearGames)}</span>` : ""}</div>`;
+      return `<div class="finished-stats-month finished-stats-year" title="${escapeHtml(`${label}: ${count}`)}"><span>${escapeHtml(label)}</span><em style="--month:${count / max};--platform-bar:${statsPlatformBar(yearGames)}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(yearGames)}</span>` : ""}</div>`;
     })
     .join("");
 }
@@ -4237,6 +4237,18 @@ function statsBreakdownRow(item, tone, index) {
 
 function statsGameList(games) {
   return games.map((game) => `<span class="finished-stats-game-row"><b>${escapeHtml(game.title)}</b>${game.platform ? platformBadge(game.platform) : ""}</span>`).join("");
+}
+
+function statsPlatformBar(games) {
+  if (!games.length) return "color-mix(in srgb, var(--accent) 58%, rgba(255, 255, 255, 0.26))";
+  const counts = countBy(games, (game) => canonicalPlatform(game.platform) || game.platform || "Unknown");
+  const total = counts.reduce((sum, item) => sum + item.count, 0);
+  let cursor = 0;
+  return `linear-gradient(to top, ${counts.map((item, index) => {
+    const start = cursor;
+    cursor += (item.count / total) * 100;
+    return `${platformStatsColor(item.label, index)} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
+  }).join(", ")})`;
 }
 
 function statsCompletedGameList(items) {

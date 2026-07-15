@@ -6262,7 +6262,8 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-breakdown {
   position: absolute;
   right: 10px;
-  bottom: calc(100% - 8px);
+  top: calc(100% - 8px);
+  bottom: auto;
   z-index: 8;
   display: grid;
   gap: 5px;
@@ -6349,10 +6350,12 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .finished-stats-game-row b {
   flex: 1 1 auto;
   max-width: 100%;
+  min-width: 0;
   width: 0;
 }
 
 .finished-stats-game-row .platform-badge {
+  min-width: max-content;
   max-width: 128px;
 }
 
@@ -6419,7 +6422,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   align-self: end;
   min-height: 3px;
   height: calc(70px * var(--month));
-  background: color-mix(in srgb, var(--accent) 58%, rgba(255, 255, 255, 0.26));
+  background: var(--platform-bar, color-mix(in srgb, var(--accent) 58%, rgba(255, 255, 255, 0.26)));
   border-radius: 6px 6px 2px 2px;
 }
 
