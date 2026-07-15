@@ -4409,6 +4409,7 @@ function platformStatsColor(platform, index = 0) {
   if (value.includes("xbox 360") || value === "x360") return "#62d470";
   if (value === "xbox") return "#05070b";
   if (value.includes("xbox") || value.includes("microsoft") || value === "xone") return "#62d470";
+  if (value.includes("steam") || value.includes("pc")) return "#08111f";
   if (value.includes("wiiu")) return "#9bd7ff";
   if (value.includes("3ds") || value.includes("gbc")) return "#ff5a66";
   if (value.includes("n64")) return "#349a4c";

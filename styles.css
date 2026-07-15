@@ -5046,6 +5046,15 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.platform-pc {
+  background: rgba(8, 17, 31, 0.9);
+  border-color: rgba(48, 82, 118, 0.58);
+}
+
+.platform-pc .platform-label {
+  color: #9bb9d8;
+}
+
 .platform-ds {
   background: rgba(160, 168, 184, 0.13);
   border-color: rgba(160, 168, 184, 0.3);
@@ -6227,7 +6236,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   font-size: 9px;
   font-weight: 900;
   background: var(--accent);
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
   transform: translateY(-50%);
 }
