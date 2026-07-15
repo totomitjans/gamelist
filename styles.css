@@ -6644,7 +6644,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   color: var(--muted);
   font-size: 10px;
   font-weight: 850;
-  text-align: center;
+  text-align: left;
 }
 
 .finished-stats-month em {
