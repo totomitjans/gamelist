@@ -4094,6 +4094,7 @@ function finishedStatsMarkup(year, games, completed) {
   const timeBuckets = countApproximatePlaytimeBuckets(games);
   const months = countBy(games, (game) => monthShortName(game.completedAt));
   const streamed = games.filter((game) => game.stream);
+  const coopGames = games.filter((game) => game.coop);
   const otherOwnerGames = games.filter((game) => visibleOwnerTags(game).length);
   const otherOwnerSummary = statsOtherOwnerSummary(otherOwnerGames);
   const allYears = year === "all";
@@ -4103,6 +4104,7 @@ function finishedStatsMarkup(year, games, completed) {
     statsKpiCard("Finished games", games.length, showYearlyDetail ? statsGameList(games) : "", { tone: "finished" }),
     statsKpiCard("Completed games", completed.length, showYearlyDetail ? statsCompletedGameList(completed) : "", { action: "completed", tone: "completed", icon: trophyIcon() }),
     streamed.length ? statsKpiCard("Streamed games", streamed.length, showYearlyDetail ? statsGameList(streamed) : "", { tone: "streamed" }) : "",
+    coopGames.length ? statsKpiCard("Coop games", coopGames.length, showYearlyDetail ? statsGameList(coopGames) : "", { tone: "coop" }) : "",
     otherOwnerGames.length ? statsKpiCard(otherOwnerSummary.label, otherOwnerGames.length, statsOwnerBreakdown(otherOwnerGames), { tone: "owners", valueClass: otherOwnerSummary.valueClass }) : "",
   ].filter(Boolean).join("");
   return `
@@ -4157,20 +4159,22 @@ function statsReleaseKpisCard(insights) {
           value: insights.playedFromYear.length,
           label: insights.scopeYear ? `Played new releases from ${insights.scopeYear}` : "Played new releases",
           detail: insights.hoverable ? statsGameList(insights.playedFromYear) : "",
+          tone: "played",
         })}
         ${statsReleaseMiniKpi({
           value: insights.playedOutsideYear.length,
           label: insights.scopeYear ? `Played games not from ${insights.scopeYear}` : "Played outside release year",
           detail: insights.hoverable ? statsGameList(insights.playedOutsideYear) : "",
+          tone: "played",
         })}
       </div>
     </article>
   `;
 }
 
-function statsReleaseMiniKpi({ value, label, detail = "" }) {
+function statsReleaseMiniKpi({ value, label, detail = "", tone = "" }) {
   return `
-    <button class="finished-stats-release-kpi" type="button" ${detail ? `data-stats-overlay-title="${escapeHtml(label)}"` : ""}>
+    <button class="finished-stats-release-kpi ${tone ? `is-${escapeHtml(tone)}` : ""}" type="button" ${detail ? `data-stats-overlay-title="${escapeHtml(label)}"` : ""}>
       <strong>${escapeHtml(String(value))}</strong>
       <span>${escapeHtml(label)}</span>
       ${detail ? `<span class="finished-stats-breakdown">${detail}</span>` : ""}

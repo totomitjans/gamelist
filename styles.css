@@ -6066,6 +6066,10 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   color: #79d9ff;
 }
 
+.finished-stats-kpi.is-coop strong {
+  color: #ff9ed2;
+}
+
 .finished-stats-kpi.is-owners strong {
   color: var(--text);
 }
@@ -6180,15 +6184,19 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   cursor: default;
 }
 
+.finished-stats-release-kpi.is-played {
+  --stat-color: #ff9ed2;
+}
+
 .finished-stats-release-kpi strong {
-  color: var(--text);
+  color: var(--stat-color, var(--text));
   font-size: 28px;
   line-height: 1;
 }
 
 .finished-stats-release-kpi > span:not(.finished-stats-breakdown) {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.25;
   text-transform: uppercase;
@@ -6273,11 +6281,17 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   position: absolute;
   left: 50%;
   top: -5px;
+  z-index: 0;
   width: 10px;
   height: 10px;
   background: rgba(8, 9, 12, 0.96);
   transform: translateX(-50%) rotate(45deg);
   border-radius: 2px;
+}
+
+.finished-stats-segment-tip > * {
+  position: relative;
+  z-index: 1;
 }
 
 .finished-stats-segment-tip b,
