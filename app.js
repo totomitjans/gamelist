@@ -2305,8 +2305,12 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       width: 100%;
       height: calc(5px + (20px * var(--month)));
       background: var(--month-platforms);
-      border: 1px solid rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.24);
       border-radius: 5px 5px 2px 2px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.18),
+        0 6px 14px rgba(0,0,0,.18);
+      opacity: .92;
     }
     .goty-export-stat-months b span {
       color: ${muted};
@@ -4741,8 +4745,8 @@ function statsPieSegmentData(item, startDeg, endDeg, color, total, index, tone, 
   const left = clampNumber(mid.x, 16, 84);
   const top = clampNumber(mid.y, 14, 86);
   const shape = sweep >= 359.99
-    ? `<circle class="finished-stats-pie-shape" cx="50" cy="50" r="46" fill="${escapeHtml(color)}"></circle>`
-    : `<path class="finished-stats-pie-shape" d="M 50 50 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 46 46 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}"></path>`;
+    ? `<circle class="finished-stats-pie-shape" cx="50" cy="50" r="46" fill="${escapeHtml(color)}" stroke="rgba(255,255,255,.22)" stroke-width="0.9"></circle>`
+    : `<path class="finished-stats-pie-shape" d="M 50 50 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 46 46 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}" stroke="rgba(255,255,255,.22)" stroke-width="0.9"></path>`;
   const label = tone === "platform" ? platformBadge(item.label) : `<b>${escapeHtml(item.label)}</b>`;
   const segmentGames = statsSegmentGames(item.label, tone, games);
   return {

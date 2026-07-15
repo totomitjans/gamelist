@@ -6265,14 +6265,15 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .finished-stats-bell-area {
-  fill: color-mix(in srgb, var(--accent-1) 18%, transparent);
-  stroke: none;
+  fill: color-mix(in srgb, var(--accent-1) 14%, transparent);
+  stroke: color-mix(in srgb, var(--accent-1) 24%, transparent);
+  stroke-width: 1.1;
 }
 
 .finished-stats-bell-line {
   fill: none;
-  stroke: var(--accent-1);
-  stroke-width: 3.6;
+  stroke: color-mix(in srgb, var(--accent-1) 86%, rgba(255, 255, 255, 0.32));
+  stroke-width: 3.2;
   stroke-linecap: round;
   stroke-linejoin: round;
   filter: drop-shadow(
@@ -6290,10 +6291,12 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   height: 18px;
   place-items: center;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.26);
+  border: 2px solid rgba(255, 255, 255, 0.34);
   border-radius: 999px;
-  background: var(--dot-color);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
+  background: color-mix(in srgb, var(--dot-color) 82%, transparent);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transform: translate(-50%, -50%);
 }
 
@@ -6341,6 +6344,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .finished-stats-pie-shape {
   opacity: var(--slice-opacity, 0.96);
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.12));
   transition:
     filter 140ms ease,
     opacity 140ms ease,
@@ -6413,7 +6417,15 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .finished-stats-segment-count {
-  color: var(--muted);
+  display: inline-grid;
+  min-width: 20px;
+  min-height: 18px;
+  place-items: center;
+  padding: 1px 5px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, rgba(255, 255, 255, 0.2));
+  border-radius: 5px;
 }
 
 .finished-stats-segment-games {
@@ -6464,7 +6476,8 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   color: var(--text);
   font-size: 9px;
   font-weight: 900;
-  background: var(--accent);
+  background: color-mix(in srgb, var(--accent) 24%, rgba(8, 9, 12, 0.78));
+  border: 1px solid color-mix(in srgb, var(--accent) 78%, rgba(255, 255, 255, 0.2));
   border-radius: 6px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
   transform: translateY(-50%);
@@ -6920,7 +6933,12 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
     --platform-bar,
     color-mix(in srgb, var(--accent) 58%, rgba(255, 255, 255, 0.26))
   );
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px 6px 2px 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 18px rgba(0, 0, 0, 0.18);
+  opacity: 0.92;
 }
 
 .finished-stats-month strong {
