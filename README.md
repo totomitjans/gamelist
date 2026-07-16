@@ -9,12 +9,6 @@ The app has two connected pages:
 
 Both pages share edit mode, themes, account settings, price-store settings, achievement integrations, and the same `GAMELIST` KV namespace. Shelf Sync can also send physical collection additions back into the main Gamelist flow.
 
-## Setup requirements
-
-- A Cloudflare account
-- A Github account
-- A Twitch account
-
 ## Features
 
 - Backlog, upcoming, available, currently playing, and finished-game boards.
@@ -32,7 +26,13 @@ Both pages share edit mode, themes, account settings, price-store settings, achi
 
 ## How To Setup Your Own Gamelist
 
-This is the main setup path. You do not need to download a ZIP or run terminal commands. Cloudflare can import the public GitHub repository URL directly from the dashboard.
+This is the main setup path. You do not need to download a ZIP or run terminal commands. Cloudflare can import the public GitHub repository URL directly from the dashboard and automatically setup your own personal copy for you, for free.
+
+### Setup requirements
+
+- A Cloudflare account
+- A Github account
+- A Twitch account
 
 ### 1. Start From Cloudflare
 
