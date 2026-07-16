@@ -40,6 +40,8 @@ https://github.com/ShabiiEXE/Gamelist
 3. Keep the default fork settings and create the fork.
 4. Open your new fork on GitHub.
 5. Confirm it includes `.github/workflows/sync-from-upstream.yml`.
+6. Go to **Actions**.
+7. If GitHub asks, click **I understand my workflows, go ahead and enable them**.
 
 ### 2. Start From Cloudflare
 
@@ -239,7 +241,7 @@ To turn it on in a GitHub copy:
 
 1. Open the repository on GitHub.
 2. Go to **Actions**.
-3. Enable workflows if GitHub asks.
+3. If GitHub asks, click **I understand my workflows, go ahead and enable them**.
 4. Open **Sync from upstream**.
 5. Click **Run workflow** once to test it.
 
