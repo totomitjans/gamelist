@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/Icon.png" alt="Gamelist logo" width="120">
+</p>
+
 # Gamelist
 
 Gamelist is a personal game backlog, preorder, price, trophy, achievement, and physical shelf tracker. It runs as a static frontend served by a Cloudflare Worker, with saved data stored in Cloudflare KV.
@@ -24,7 +28,9 @@ Both pages share edit mode, themes, account settings, price-store settings, achi
 - Cloud sync through Cloudflare Workers KV.
 - Google Calendar preorder events when configured.
 
-## How To Setup Your Own Gamelist
+---
+
+# How To Setup Your Own Gamelist
 
 This is the main setup path. You do not need to download a ZIP or run terminal commands. Cloudflare can import the public GitHub repository URL directly from the dashboard and automatically setup your own personal copy for you, for free.
 
@@ -295,21 +301,3 @@ The summary endpoints above are served under `/api/...` and cache their generate
 In edit mode, Settings also exposes page-specific **Dev features** links. Gamelist shows data/settings/auth endpoints. Shelf shows Shelf data, mass add, metadata fill, Shelf price audit, and Shelf IGDB cover refresh tools.
 
 To start clean, use a brand-new KV namespace. To clone existing saved data, copy the relevant KV values into the new namespace.
-
-## Project Structure
-
-```text
-.
-|-- index.html                 # Main Gamelist app shell
-|-- shelf.html                 # Shelf app shell
-|-- app.js                     # Main Gamelist frontend
-|-- shelf.js                   # Shelf frontend
-|-- styles.css                 # Main styles
-|-- shelf.css                  # Shelf styles
-|-- worker.js                  # Cloudflare Worker entry
-|-- functions/api/             # Worker API routes
-|-- assets/                    # Icons, platform art, flags, fonts, backdrops
-|-- scripts/                   # Local helper/test scripts
-|-- server.mjs                 # Simple local static server
-`-- wrangler.toml              # Cloudflare Worker configuration
-```
