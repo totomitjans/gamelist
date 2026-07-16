@@ -9,6 +9,12 @@ The app has two connected pages:
 
 Both pages share edit mode, themes, account settings, price-store settings, achievement integrations, and the same `GAMELIST` KV namespace. Shelf Sync can also send physical collection additions back into the main Gamelist flow.
 
+## Setup requirements
+
+- A Cloudflare account
+- A Github account
+- A Twitch account
+
 ## Features
 
 - Backlog, upcoming, available, currently playing, and finished-game boards.
@@ -266,13 +272,6 @@ The summary endpoints above are served under `/api/...` and cache their generate
 In edit mode, Settings also exposes page-specific **Dev features** links. Gamelist shows data/settings/auth endpoints. Shelf shows Shelf data, mass add, metadata fill, Shelf price audit, and Shelf IGDB cover refresh tools.
 
 To start clean, use a brand-new KV namespace. To clone existing saved data, copy the relevant KV values into the new namespace.
-
-## Requirements
-
-- A Cloudflare account
-- A Cloudflare KV namespace bound as `GAMELIST`
-- An `EDIT_PASSWORD` Worker secret
-- A GitHub account for the dashboard-only Cloudflare deploy path
 
 ## Project Structure
 
