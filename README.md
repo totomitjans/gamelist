@@ -74,6 +74,8 @@ EDIT_PASSWORD
 
 Now setup this required integration. It will let you fetch your games data and fill it up correctly.
 
+Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
+
 ### 3. Add game search and auto-fill
 
 Game lookup requires integrating with IGDB.
@@ -100,8 +102,6 @@ IGDB_CLIENT_ID
 IGDB_CLIENT_SECRET
 ```
 
-Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
-
 ### 4. Automatic Updates
 
 To receive upcoming Gamelist feature updates, manually add the GitHub Actions script to your repository.
@@ -124,7 +124,7 @@ To receive upcoming Gamelist feature updates, manually add the GitHub Actions sc
 
 ### PlayStation Trophy Activity
 
-1. Log into [PlayStation](https://www.playstation.com/) in your browser.
+1. Log into your [PlayStation](https://www.playstation.com/) account.
 2. In the same browser, open the [Sony SSO cookie page](https://ca.account.sony.com/api/v1/ssocookie).
 3. Copy only the long `npsso` token value from the JSON response.
 4. Add it to Cloudflare **Variables and Secrets** as:
@@ -134,7 +134,8 @@ PSN_NPSSO
 ```
 
 5. Set your **PlayStation profile name** inside the app: enter edit mode, open **Settings**, and fill the PlayStation account field.
-   The Playstation API access can expire after a while and will require adding the `npsso` token value again, if that is the case.
+
+The Playstation API access can expire after a while and will require adding the `npsso` token value again, if that is the case.
 
 ### Steam Achievements
 
@@ -146,12 +147,13 @@ STEAM_API_KEY
 ```
 
 3. Set your **Steam account** inside the app: enter edit mode, open **Settings**, and fill the **Steam account** field with a SteamID64, Steam profile URL, or vanity name.
-   Steam achievements are fetched only for app IDs owned by the configured Steam account. Make sure the account's game details and library visibility are set to **Public**.
+
+Steam achievements are fetched only for app IDs owned by the configured Steam account. Make sure the account's game details and library visibility are set to **Public**.
 
 ### Xbox Achievements
 
 Xbox 360, Xbox One, Xbox Series, and Xbox PC games can show achievements through OpenXBL.
-1.Access [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
+1.Register on [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
 
 ```text
 OPENXBL_API_KEY
