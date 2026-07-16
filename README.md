@@ -32,14 +32,15 @@ This is the main setup path. You do not need to download a ZIP or run terminal c
 2. Go to **Workers & Pages**.
 3. Click **Create application**.
 4. Choose **Import a repository**.
-5. Connect your GitHub account if Cloudflare asks.
-6. Add this repository URL:
+5. Click **Continue with GitHub**.
+6. Choose **Clone a public repository via GitHub URL**.
+7. Add this repository URL:
 
 ```text
 https://github.com/ShabiiEXE/Gamelist
 ```
 
-7. Continue with the imported repository.
+8. Continue with the imported repository.
 
 If Cloudflare only shows repositories that belong to your GitHub account, make a GitHub fork first:
 
