@@ -24,7 +24,7 @@ Both pages share edit mode, themes, account settings, price-store settings, achi
 - Cloud sync through Cloudflare Workers KV.
 - Google Calendar preorder events when configured.
 
-## Cloudflare Dashboard Setup
+## How To Setup Your Own Gamelist
 
 This is the main setup path. You do not need to download a ZIP or run terminal commands. Cloudflare Workers Builds can import the GitHub repository, build it, and deploy it from the Cloudflare dashboard.
 
@@ -71,41 +71,9 @@ EDIT_PASSWORD
 
 `EDIT_PASSWORD` is the password you will type in the app to unlock edit mode.
 
-Add these later if you use the integrations:
+Required integration:
 
-```text
-IGDB_CLIENT_ID
-IGDB_CLIENT_SECRET
-PRICECHARTING_TOKEN
-PSN_NPSSO
-STEAM_API_KEY
-OPENXBL_API_KEY
-GOOGLE_SERVICE_ACCOUNT_EMAIL
-GOOGLE_PRIVATE_KEY
-GOOGLE_CALENDAR_ID
-```
-
-Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
-
-Add profile/account names inside the app after the first deploy: enter edit mode, open **Settings**, then fill the PlayStation, Steam, and Microsoft/Xbox account fields there.
-
-### 6. Deploy
-
-Trigger the first build from Cloudflare. After that, every push to your connected GitHub repository can deploy automatically.
-
-Open the generated `workers.dev` URL, log in with your edit password, then configure Settings inside the app.
-
-## Required Cloudflare Pieces
-
-`GAMELIST` KV namespace:
-Stores saved Gamelist data, Shelf data, layout settings, favorite/showcase IDs, overrides, and synced preferences.
-
-`EDIT_PASSWORD` secret:
-Unlocks edit mode and allows saving to KV. Without it, the app can display data but cannot save edits to the cloud.
-
-## Required Integration
-
-### IGDB Lookup
+#### IGDB Lookup
 
 Game lookup works best with IGDB configured. In Cloudflare **Variables and Secrets**, add `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` as secrets.
 
@@ -124,6 +92,36 @@ IGDB authentication uses Twitch developer credentials:
 11. Create/copy the app secret into `IGDB_CLIENT_SECRET`.
 
 The app requests Twitch app access tokens automatically. Without IGDB credentials, lookup falls back where possible, but search and metadata quality will be weaker.
+
+Add these later if you use the recommended integrations:
+
+```text
+PRICECHARTING_TOKEN
+PSN_NPSSO
+STEAM_API_KEY
+OPENXBL_API_KEY
+GOOGLE_SERVICE_ACCOUNT_EMAIL
+GOOGLE_PRIVATE_KEY
+GOOGLE_CALENDAR_ID
+```
+
+Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
+
+Add profile/account names inside the app after the first deploy: enter edit mode, open **Settings**, then fill the PlayStation, Steam, and Microsoft/Xbox account fields there.
+
+### 3. Deploy
+
+Trigger the first build from Cloudflare. After that, every push to your connected GitHub repository can deploy automatically.
+
+Open the generated `workers.dev` URL, log in with your edit password, then configure Settings inside the app.
+
+## Required Cloudflare Pieces
+
+`GAMELIST` KV namespace:
+Stores saved Gamelist data, Shelf data, layout settings, favorite/showcase IDs, overrides, and synced preferences.
+
+`EDIT_PASSWORD` secret:
+Unlocks edit mode and allows saving to KV. Without it, the app can display data but cannot save edits to the cloud.
 
 ## Recommended Integrations
 
