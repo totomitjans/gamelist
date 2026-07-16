@@ -1,40 +1,48 @@
-# Gamelist
+<h1>
+  <img src="assets/Icon.png" alt="Gamelist logo" width="42" align="center">
+  <span style="color: #e92841;">Gamelist</span>
+</h1>
 
 Gamelist is a personal game backlog, preorder, price, trophy, achievement, and physical shelf tracker. It runs as a static frontend served by a Cloudflare Worker, with saved data stored in Cloudflare KV.
 
 The app has two connected pages:
 
-- `/` for the main digital backlog, preorder, release, and completion tracker.
-- `/shelf` for the physical collection tracker.
+- <img src="assets/Icon.png" alt="Gamelist" width="18" align="center"> `/` for the main digital backlog, preorder, release, and completion tracker.
+- <img src="assets/Icon_shelf.png" alt="Shelf" width="18" align="center"> `/shelf` for the physical collection tracker.
 
 Both pages share edit mode, themes, account settings, price-store settings, achievement integrations, and the same `GAMELIST` KV namespace. Shelf Sync can also send physical collection additions back into the main Gamelist flow.
 
 ## Features
 
+- Cloud sync through Cloudflare Workers KV.
+- IGDB-powered lookup for covers, release dates, descriptions, genres, developers, publishers, trailers, and store links.
 - Backlog, upcoming, available, currently playing, and finished-game boards.
+- Release calendar with preorder markers.
 - Physical Shelf library with multiple owners, regions, conditions, categories, prices, collection value, and linked Gamelist entries.
 - Shelf Showcase block for featured games, plus shared Currently Playing, Last Finished, Highlights, and Search modules.
-- IGDB-powered lookup for covers, release dates, descriptions, genres, developers, publishers, trailers, and store links.
 - PSN, Steam, and Xbox trophy/achievement dashboards.
 - Game of the Year tracking and poster export.
-- Release calendar with preorder markers.
-- Mobile-ready responsive layout for phone, tablet, and desktop use.
-- CSV import/export for Gamelist and Shelf data.
-- Theme editor with dark/light mode, colors, logos, title styles, and module ordering.
-- Cloud sync through Cloudflare Workers KV.
 - Google Calendar preorder events when configured.
+- Theme editor with dark/light mode, colors, logos, title styles, and module ordering.
+- CSV import/export for Gamelist and Shelf data.
+- Mobile-ready responsive layout for phone, tablet, and desktop use.
 
-## How To Setup Your Own Gamelist
+---
+
+<h1>
+  <img src="assets/Icon.png" alt="Gamelist logo" width="42" align="center">
+  <span style="color: #e92841;">How To Setup Your Own Gamelist</span>
+</h1>
 
 This is the main setup path. You do not need to download a ZIP or run terminal commands. Cloudflare can import the public GitHub repository URL directly from the dashboard and automatically setup your own personal copy for you, for free.
 
 #### Setup requirements
 
-- A Cloudflare account
-- A Github account
-- A Twitch account
+- <img src="https://cdn.simpleicons.org/cloudflare/F38020" alt="Cloudflare" width="18" align="center"> A Cloudflare account
+- <img src="https://cdn.simpleicons.org/github/181717" alt="GitHub" width="18" align="center"> A GitHub account
+- <img src="https://cdn.simpleicons.org/twitch/9146FF" alt="Twitch" width="18" align="center"> A Twitch account
 
-### 1. Start From Cloudflare
+### 1. Start from Cloudflare
 
 1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/).
 2. Go to **Workers & Pages**.
@@ -55,7 +63,7 @@ https://github.com/ShabiiEXE/Gamelist
 12. If the **Visit** button is not available, open **Domains** in the nav bar and enable both URLs.
 13. After your site opens, continue to **Automatic Updates** below if you want to add update sync.
 
-### 2. Add Secrets In Cloudflare
+### 2. Set your password to access settings (Adding Secrets in Cloudflare)
 
 In the Worker project settings, add your secrets through the Cloudflare website:
 
@@ -108,7 +116,7 @@ IGDB_CLIENT_ID
 IGDB_CLIENT_SECRET
 ```
 
-### 4. Automatic Updates
+### 4. Set up the automatic website updates/patches
 
 To receive upcoming Gamelist feature updates, add the GitHub Actions sync workflow to your repository.
 
@@ -149,9 +157,9 @@ For now, let's finish this setup.
 GITHUB_WORKFLOW_TOKEN
 ```
 
-## Recommended Integrations
+## Recommended integrations
 
-### PlayStation Trophy Activity
+### <img src="assets/platforms/playstation.png" alt="PlayStation" width="22" align="center"> PlayStation Trophy Activity
 
 1. Log into your [PlayStation](https://www.playstation.com/) account.
 2. In the same browser, open the [Sony SSO cookie page](https://ca.account.sony.com/api/v1/ssocookie).
@@ -166,7 +174,7 @@ PSN_NPSSO
 
 The Playstation API access can expire after a while and will require adding the `npsso` token value again, if that is the case.
 
-### Steam Achievements
+### <img src="assets/platforms/steam.png" alt="Steam" width="22" align="center"> Steam Achievements
 
 1. Enter [Steam Web API key page](https://steamcommunity.com/dev/apikey) and log into your account.
 2. Copy the key and create a new Cloudflare **Variables and Secrets** entry:
@@ -179,7 +187,7 @@ STEAM_API_KEY
 
 Steam achievements are fetched only for app IDs owned by the configured Steam account. Make sure the account's game details and library visibility are set to **Public**.
 
-### Xbox Achievements
+### <img src="assets/platforms/xbox.png" alt="Xbox" width="22" align="center"> Xbox Achievements
 
 Xbox 360, Xbox One, Xbox Series, and Xbox PC games can show achievements through OpenXBL.
 1.Register on [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
@@ -190,33 +198,36 @@ OPENXBL_API_KEY
 
 2.Set your **Xbox account** inside the app: enter edit mode, open **Settings**, and fill the **Microsoft account** field with an Xbox gamertag or XUID.
 
-### Google Calendar Preorder Events (ADVANCED)
+### <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/960px-Google_Calendar_icon_%282020%29.svg.png" alt="Google Calendar" width="22" align="center"> Google Calendar Preorder Events (ADVANCED)
 
 When you mark a game with a release date as preordered, the Worker can add an all-day Google Calendar event named `Preorder "Game Name"`.
 
-1. Set up a [Google Cloud](https://console.cloud.google.com/) service account with Google Calendar API access, then share the target calendar with the service account email generated with permission to make changes.
+1. Create a new Calendar in your Google Calendar.
+2. Set up a [Google Cloud](https://console.cloud.google.com/) service account with Google Calendar API access, then share the target calendar with the service account email generated with permission to make changes.
 
-2. Add the created service account email address as a Cloudflare **Variables and Secrets** entry:
+3. Add the created service account email address as a Cloudflare **Variables and Secrets** entry:
 
 ```text
 GOOGLE_SERVICE_ACCOUNT_EMAIL
 ```
 
-3. Add the `private_key` value from the service account JSON as another **secrets** entry:
+4. Add the `private_key` value from the service account JSON as another **secrets** entry:
 
 ```text
 GOOGLE_PRIVATE_KEY
 ```
 
-4. Add this service account email to your calendar and give it all the permissions.
+5. Add this service account email to your calendar and give it all the permissions.
 
-5. Add the calendar ID from the calendar you are using as a **secrets** entry. You can get this from your calendar settings after:
+6. Add the calendar ID from the calendar you are using as a **secrets** entry. You can get this from your calendar settings after:
 
 ```text
 GOOGLE_CALENDAR_ID
 ```
 
-## First Run
+---
+
+## <img src="assets/Icon.png" alt="Gamelist" width="22" align="center"> First run
 
 1. Deploy the Worker.
 2. Open the site.
@@ -227,25 +238,25 @@ GOOGLE_CALENDAR_ID
 
 Those settings are stored in the Worker KV namespace.
 
-## Common Workflows
+## <img src="assets/Icon.png" alt="Gamelist" width="22" align="center"> Common tasks
 
-### Add A Gamelist Game
+### Add a game to your gamelist
 
 1. Enter edit mode.
 2. Click **Add Game**.
 3. Search by title or paste an IGDB game URL.
-4. Choose the section: Backlog, Upcoming, Available, or New addition.
+4. Choose the place it should be in: Backlog, Upcoming, Available.
 5. Add platform, owners, preorder store, release date, store links, Steam App ID, trophy name, cover, and notes as needed.
 6. Save.
 
 If Google Calendar is configured, adding a new preorder store to an upcoming/wanted game with a release date can create a preorder calendar event.
 
-### Add A Shelf Game
+### Add a a physical game to your Shelf collection
 
-1. Open `/shelf`.
+1. Click the **top handle** or drag it down to access the **Shelf**.
 2. Enter edit mode.
 3. Click **Add Game**.
-4. Search by title, UPC/SKU/ASIN/PriceCharting data, or enter details manually.
+4. Search by title, paste a PriceCharting url, paste a IGDB url or enter details manually.
 5. Set platform, region, owners, condition parts, collection value fields, publisher/developer, genre, cover, and notes.
 6. Save.
 
@@ -260,56 +271,3 @@ Both pages have **CSV data** controls at the bottom of Settings, after Stores.
 - Arrays and objects, such as owners, tags, store links, prices, and metadata, are preserved as JSON text inside CSV cells.
 
 Use CSV export before any large bulk operation if you want a quick backup.
-
-## Data Notes
-
-- Main Gamelist KV key: `gamelist-data`
-- Shelf KV key: `shelf-data`
-- Cloud sync endpoint: `/api/sync`
-- Settings-only sync endpoint: `/api/sync?settings=1`
-- Shelf sync endpoint: `/api/shelf`
-- Shelf mass add endpoint: `/api/shelf-mass-add`
-- Shelf missing metadata endpoint: `/api/shelf-metadata`
-- Shelf IGDB cover refresh endpoint: `/api/shelf-covers`
-- Shelf price audit endpoint: `/api/shelf-price-audit`
-- Search/IGDB endpoint: `/api/search`
-- Store price endpoint: `/api/prices`
-- Shelf collection price endpoint: `/api/collection-price`
-- Cover proxy endpoint: `/api/cover`
-- Gamelist games by list endpoint: `/api/gamelist-games-by-list`
-- Completed Gamelist games by year endpoint: `/api/completed-games-by-year`
-- Shelf games and platforms endpoint: `/api/shelf-games-platforms`
-- PSN trophies and platinums by year endpoint: `/api/psn-trophies-by-year`
-- Steam achievements and completed games by year endpoint: `/api/steam-trophies-by-year`
-- Xbox achievements, gamerscore, and completed games by year endpoint: `/api/xbox-trophies-by-year`
-- PSN trophy endpoint: `/api/trophies`
-- PSN activity endpoint: `/api/achievements`
-- Steam achievements endpoint: `/api/steam-achievements`
-- Xbox achievements endpoint: `/api/xbox-achievements`
-- Google Calendar preorder endpoint: `/api/calendar`
-- Auth endpoint: `/api/auth`
-- Local browser draft backup: `localStorage`
-
-The summary endpoints above are served under `/api/...` and cache their generated JSON in KV for one hour, including the PSN/Steam/Xbox aggregate endpoints so they do not repeatedly call external profile APIs. Add `?refresh=1` to rebuild a summary immediately.
-
-In edit mode, Settings also exposes page-specific **Dev features** links. Gamelist shows data/settings/auth endpoints. Shelf shows Shelf data, mass add, metadata fill, Shelf price audit, and Shelf IGDB cover refresh tools.
-
-To start clean, use a brand-new KV namespace. To clone existing saved data, copy the relevant KV values into the new namespace.
-
-## Project Structure
-
-```text
-.
-|-- index.html                 # Main Gamelist app shell
-|-- shelf.html                 # Shelf app shell
-|-- app.js                     # Main Gamelist frontend
-|-- shelf.js                   # Shelf frontend
-|-- styles.css                 # Main styles
-|-- shelf.css                  # Shelf styles
-|-- worker.js                  # Cloudflare Worker entry
-|-- functions/api/             # Worker API routes
-|-- assets/                    # Icons, platform art, flags, fonts, backdrops
-|-- scripts/                   # Local helper/test scripts
-|-- server.mjs                 # Simple local static server
-`-- wrangler.toml              # Cloudflare Worker configuration
-```
