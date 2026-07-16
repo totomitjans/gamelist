@@ -12,11 +12,13 @@ Both pages share edit mode, themes, account settings, price-store settings, achi
 ## Features
 
 - Backlog, upcoming, available, currently playing, and finished-game boards.
-- Physical Shelf library with owners, regions, conditions, categories, prices, collection value, and linked Gamelist entries.
+- Physical Shelf library with multiple owners, regions, conditions, categories, prices, collection value, and linked Gamelist entries.
+- Shelf Showcase block for featured games, plus shared Currently Playing, Last Finished, Highlights, and Search modules.
 - IGDB-powered lookup for covers, release dates, descriptions, genres, developers, publishers, trailers, and store links.
 - PSN, Steam, and Xbox trophy/achievement dashboards.
 - Game of the Year tracking and poster export.
 - Release calendar with preorder markers.
+- Mobile-ready responsive layout for phone, tablet, and desktop use.
 - CSV import/export for Gamelist and Shelf data.
 - Theme editor with dark/light mode, colors, logos, title styles, and module ordering.
 - Cloud sync through Cloudflare Workers KV.
