@@ -61,7 +61,7 @@ In the Worker project settings, add your secrets through the Cloudflare website:
 7. Choose **Secret** for passwords, API keys, and tokens.
 8. Enter the variable name exactly as shown below.
 9. Paste the value.
-10. Save.
+10. Deploy/Save.
 
 Add this required secret first:
 
