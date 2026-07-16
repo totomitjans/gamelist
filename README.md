@@ -42,6 +42,8 @@ https://github.com/ShabiiEXE/Gamelist
 5. Confirm it includes `.github/workflows/sync-from-upstream.yml`.
 6. Go to **Actions**.
 7. If GitHub asks, click **I understand my workflows, go ahead and enable them**.
+8. Open **Sync from upstream**.
+9. Enable the workflow if GitHub asks.
 
 ### 2. Start From Cloudflare
 
@@ -243,7 +245,8 @@ To turn it on in a GitHub copy:
 2. Go to **Actions**.
 3. If GitHub asks, click **I understand my workflows, go ahead and enable them**.
 4. Open **Sync from upstream**.
-5. Click **Run workflow** once to test it.
+5. Enable the workflow if GitHub asks.
+6. Click **Run workflow** once to test it.
 
 If a file other than `wrangler.toml` has a merge conflict, GitHub stops the sync instead of overwriting custom work. Fix the conflict in GitHub or locally, then run the workflow again.
 
