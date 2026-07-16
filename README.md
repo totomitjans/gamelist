@@ -109,9 +109,7 @@ Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.tom
 
 ## Automatic Updates
 
-The direct Cloudflare import is the simplest deploy path. It does not create a GitHub repository for you, so GitHub Actions are not enabled automatically.
-
-If you later create your own GitHub copy of Gamelist, you can add `.github/workflows/sync-from-upstream.yml` there to keep your copy updated from the main repository.
+The direct Cloudflare import is the simplest deploy path, but GitHub Actions are not enabled automatically. To receive upcoming Gamelist feature updates from the main repository, you need to manually add the action script to your GitHub repository.
 
 The workflow:
 
