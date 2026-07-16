@@ -106,8 +106,6 @@ GOOGLE_CALENDAR_ID
 
 Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
 
-Add profile/account names inside the app after the first deploy: enter edit mode, open **Settings**, then fill the PlayStation, Steam, and Microsoft/Xbox account fields there.
-
 ## Recommended Integrations
 
 ### PSN Trophy Activity
