@@ -38,9 +38,9 @@ This is the main setup path. You do not need to download a ZIP or run terminal c
 
 #### Setup requirements
 
-- A Cloudflare account
-- A Github account
-- A Twitch account
+- <img src="https://cdn.simpleicons.org/cloudflare/F38020" alt="Cloudflare" width="18" align="center"> A Cloudflare account
+- <img src="https://cdn.simpleicons.org/github/181717" alt="GitHub" width="18" align="center"> A GitHub account
+- <img src="https://cdn.simpleicons.org/twitch/9146FF" alt="Twitch" width="18" align="center"> A Twitch account
 
 ### 1. Start From Cloudflare
 
@@ -159,7 +159,7 @@ GITHUB_WORKFLOW_TOKEN
 
 ## Recommended Integrations
 
-### PlayStation Trophy Activity
+### <img src="assets/platforms/playstation.png" alt="PlayStation" width="22" align="center"> PlayStation Trophy Activity
 
 1. Log into your [PlayStation](https://www.playstation.com/) account.
 2. In the same browser, open the [Sony SSO cookie page](https://ca.account.sony.com/api/v1/ssocookie).
@@ -174,7 +174,7 @@ PSN_NPSSO
 
 The Playstation API access can expire after a while and will require adding the `npsso` token value again, if that is the case.
 
-### Steam Achievements
+### <img src="assets/platforms/steam.png" alt="Steam" width="22" align="center"> Steam Achievements
 
 1. Enter [Steam Web API key page](https://steamcommunity.com/dev/apikey) and log into your account.
 2. Copy the key and create a new Cloudflare **Variables and Secrets** entry:
@@ -187,7 +187,7 @@ STEAM_API_KEY
 
 Steam achievements are fetched only for app IDs owned by the configured Steam account. Make sure the account's game details and library visibility are set to **Public**.
 
-### Xbox Achievements
+### <img src="assets/platforms/xbox.png" alt="Xbox" width="22" align="center"> Xbox Achievements
 
 Xbox 360, Xbox One, Xbox Series, and Xbox PC games can show achievements through OpenXBL.
 1.Register on [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
@@ -198,7 +198,7 @@ OPENXBL_API_KEY
 
 2.Set your **Xbox account** inside the app: enter edit mode, open **Settings**, and fill the **Microsoft account** field with an Xbox gamertag or XUID.
 
-### Google Calendar Preorder Events (ADVANCED)
+### <img src="https://cdn.simpleicons.org/googlecalendar/4285F4" alt="Google Calendar" width="22" align="center"> Google Calendar Preorder Events (ADVANCED)
 
 When you mark a game with a release date as preordered, the Worker can add an all-day Google Calendar event named `Preorder "Game Name"`.
 
