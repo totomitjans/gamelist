@@ -131,31 +131,6 @@ Trigger the first build from Cloudflare. After that, every push to your connecte
 
 Open the generated `workers.dev` URL, log in with your edit password, then configure Settings inside the app.
 
-## Automatic Updates
-
-This repository includes `.github/workflows/sync-from-upstream.yml` for people who deploy from their own GitHub copy of Gamelist.
-
-The workflow:
-
-- Runs at `00:00`, `06:00`, `12:00`, and `18:00` UTC.
-- Can also be started manually from the GitHub **Actions** tab.
-- Fetches updates from `https://github.com/ShabiiEXE/Gamelist`.
-- Merges those updates into the connected repository's `main` branch.
-- Restores that repository's own `wrangler.toml` before committing, so its Cloudflare Worker name, KV namespace, and account-specific config are not overwritten.
-- Pushes the synced result back to that repository.
-
-This matters because every Cloudflare account needs its own `wrangler.toml` values. The app code can stay up to date with the main repository, while each deploy keeps its own Cloudflare binding.
-
-To turn it on in a GitHub copy:
-
-1. Open the repository on GitHub.
-2. Go to **Actions**.
-3. Enable workflows if GitHub asks.
-4. Open **Sync from upstream**.
-5. Click **Run workflow** once to test it.
-
-If a file other than `wrangler.toml` has a merge conflict, GitHub stops the sync instead of overwriting custom work. Fix the conflict in GitHub or locally, then run the workflow again.
-
 ## Required Cloudflare Pieces
 
 `GAMELIST` KV namespace:
@@ -307,6 +282,31 @@ Both pages have **CSV data** controls at the bottom of Settings, after Stores.
 
 Use CSV export before any large bulk operation if you want a quick backup.
 
+## Automatic Updates
+
+This repository includes `.github/workflows/sync-from-upstream.yml` for people who deploy from their own GitHub copy of Gamelist.
+
+The workflow:
+
+- Runs at `00:00`, `06:00`, `12:00`, and `18:00` UTC.
+- Can also be started manually from the GitHub **Actions** tab.
+- Fetches updates from `https://github.com/ShabiiEXE/Gamelist`.
+- Merges those updates into the connected repository's `main` branch.
+- Restores that repository's own `wrangler.toml` before committing, so its Cloudflare Worker name, KV namespace, and account-specific config are not overwritten.
+- Pushes the synced result back to that repository.
+
+This matters because every Cloudflare account needs its own `wrangler.toml` values. The app code can stay up to date with the main repository, while each deploy keeps its own Cloudflare binding.
+
+To turn it on in a GitHub copy:
+
+1. Open the repository on GitHub.
+2. Go to **Actions**.
+3. Enable workflows if GitHub asks.
+4. Open **Sync from upstream**.
+5. Click **Run workflow** once to test it.
+
+If a file other than `wrangler.toml` has a merge conflict, GitHub stops the sync instead of overwriting custom work. Fix the conflict in GitHub or locally, then run the workflow again.
+
 ## Data Notes
 
 - Main Gamelist KV key: `gamelist-data`
@@ -348,46 +348,6 @@ To start clean, use a brand-new KV namespace. To clone existing saved data, copy
 - A Cloudflare KV namespace bound as `GAMELIST`
 - An `EDIT_PASSWORD` Worker secret
 - A GitHub account for the dashboard-only Cloudflare deploy path
-- Node.js 20 or newer and Wrangler only if you want local development or command-line deploys
-
-## Quick Start
-
-Local development is optional. Use it only if you want to edit and test the project on your computer.
-
-Run the local static server:
-
-```bash
-node server.mjs
-```
-
-Open:
-
-```text
-http://localhost:8790
-```
-
-For Worker-style local testing, use Wrangler:
-
-```bash
-npx wrangler dev
-```
-
-Before pushing changes, these checks are useful:
-
-```bash
-node --check app.js
-node --check shelf.js
-node --check worker.js
-node --check functions/api/prices.js
-node --check functions/api/collection-price.js
-node --check functions/api/sync.js
-node --check functions/api/shelf.js
-node --check functions/api/shelf-covers.js
-node --check functions/api/search.js
-node --check scripts/test-shelf-sync.mjs
-node scripts/test-shelf-sync.mjs
-git diff --check
-```
 
 ## Project Structure
 
