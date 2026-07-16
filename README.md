@@ -131,6 +131,8 @@ main.yml
 12. Click **Run workflow** once to test it.
 13. After that, the workflow checks for updates every 30 minutes and keeps your own `wrangler.toml` settings.
 
+To force an update manually later, open your repository, go to **Actions**, open **Sync from upstream**, and click **Run workflow**. This manual button is still available even when Cloudflare cron triggering is configured.
+
 If GitHub scheduled actions stop running, Cloudflare can trigger this workflow instead.
 
 1. Create a fine-grained GitHub personal access token.
