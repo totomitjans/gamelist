@@ -1,6 +1,6 @@
 <h1>
   <img src="assets/Icon.png" alt="Gamelist logo" width="42" align="center">
-  Gamelist
+  <span style="color: #e92841;">Gamelist</span>
 </h1>
 
 Gamelist is a personal game backlog, preorder, price, trophy, achievement, and physical shelf tracker. It runs as a static frontend served by a Cloudflare Worker, with saved data stored in Cloudflare KV.
@@ -29,7 +29,10 @@ Both pages share edit mode, themes, account settings, price-store settings, achi
 
 ---
 
-# How To Setup Your Own Gamelist
+<h1>
+  <img src="assets/Icon.png" alt="Gamelist logo" width="42" align="center">
+  <span style="color: #e92841;">How To Setup Your Own Gamelist</span>
+</h1>
 
 This is the main setup path. You do not need to download a ZIP or run terminal commands. Cloudflare can import the public GitHub repository URL directly from the dashboard and automatically setup your own personal copy for you, for free.
 
