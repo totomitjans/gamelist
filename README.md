@@ -74,17 +74,9 @@ EDIT_PASSWORD
 
 Now setup this required integration. It will let you fetch your games data and fill it up correctly.
 
-#### IGDB Lookup
+### 3. Add game search and auto-fill
 
-Game lookup works best with IGDB configured. Add these as separate Cloudflare **Variables and Secrets** entries:
-
-```text
-IGDB_CLIENT_ID
-IGDB_CLIENT_SECRET
-```
-
-Use **Secret** for each value.
-
+Game lookup requires integrating with IGDB.
 IGDB authentication uses Twitch developer credentials:
 
 1. Open the [Twitch Developer Console](https://dev.twitch.tv/console).
@@ -96,25 +88,21 @@ IGDB authentication uses Twitch developer credentials:
 7. Use `http://localhost` as the OAuth Redirect URL.
 8. Set the category to **Website Integration** or the closest available category.
 9. Create the app.
-10. Copy the **Client ID** into the `IGDB_CLIENT_ID` Cloudflare secret.
-11. Create/copy the app secret into `IGDB_CLIENT_SECRET`.
-
-The app requests Twitch app access tokens automatically. Without IGDB credentials, lookup falls back where possible, but search and metadata quality will be weaker.
-
-Add these later if you use the recommended integrations:
+10. Copy the **Client ID** and create a new **Cloudflare secret**:
 
 ```text
-PSN_NPSSO
-STEAM_API_KEY
-OPENXBL_API_KEY
-GOOGLE_SERVICE_ACCOUNT_EMAIL
-GOOGLE_PRIVATE_KEY
-GOOGLE_CALENDAR_ID
+IGDB_CLIENT_ID
+```
+
+11. Copy the **app secret** and create another **secret**:
+
+```text
+IGDB_CLIENT_SECRET
 ```
 
 Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
 
-## Automatic Updates
+### 4. Automatic Updates
 
 To receive upcoming Gamelist feature updates, manually add the GitHub Actions script to your repository.
 
@@ -122,8 +110,7 @@ To receive upcoming Gamelist feature updates, manually add the GitHub Actions sc
 2. Go to **Actions**.
 3. Click **set up a workflow yourself**.
 4. You will see an empty text box.
-5. Open the [sync-from-upstream.yml workflow file](https://github.com/ShabiiEXE/Gamelist/blob/main/.github/workflows/sync-from-upstream.yml) from the main Gamelist repository.
-
+5. Open the [sync-from-upstream.yml](https://github.com/ShabiiEXE/Gamelist/blob/main/.github/workflows/sync-from-upstream.yml) workflow action file from the main Gamelist repository.
 6. Copy the code from that file.
 7. Paste it into the empty workflow text box.
 8. Commit the changes.
@@ -135,7 +122,7 @@ To receive upcoming Gamelist feature updates, manually add the GitHub Actions sc
 
 ## Recommended Integrations
 
-### PSN Trophy Activity
+### PlayStation Trophy Activity
 
 1. Log into [PlayStation](https://www.playstation.com/) in your browser.
 2. In the same browser, open the [Sony SSO cookie page](https://ca.account.sony.com/api/v1/ssocookie).
@@ -146,63 +133,57 @@ To receive upcoming Gamelist feature updates, manually add the GitHub Actions sc
 PSN_NPSSO
 ```
 
-Set your PlayStation profile name inside the app: enter edit mode, open **Settings**, and fill the PlayStation account field.
-
-Treat the NPSSO token like a password. Do not commit it, paste it in chat, or put it in `wrangler.toml`. If trophies stop loading, refresh the token.
+5. Set your **PlayStation profile name** inside the app: enter edit mode, open **Settings**, and fill the PlayStation account field.
+   The Playstation API access can expire after a while and will require adding the `npsso` token value again, if that is the case.
 
 ### Steam Achievements
 
-Add this Cloudflare **Variables and Secrets** entry:
+1. Enter [Steam Web API key page](https://steamcommunity.com/dev/apikey) and log into your account.
+2. Copy the key and create a new Cloudflare **Variables and Secrets** entry:
 
 ```text
 STEAM_API_KEY
 ```
 
-Use **Secret** for this value.
-
-Get the key from the [Steam Web API key page](https://steamcommunity.com/dev/apikey).
-
-Set your Steam account inside the app: enter edit mode, open **Settings**, and fill the **Steam account** field with a SteamID64, Steam profile URL, or vanity name. For each PC game, add a Steam store URL or Steam App ID in the game editor.
-
-Steam achievements are fetched only for app IDs owned by the configured Steam account. Make sure the account's game details and library visibility allow Steam Web API access.
+3. Set your **Steam account** inside the app: enter edit mode, open **Settings**, and fill the **Steam account** field with a SteamID64, Steam profile URL, or vanity name.
+   Steam achievements are fetched only for app IDs owned by the configured Steam account. Make sure the account's game details and library visibility are set to **Public**.
 
 ### Xbox Achievements
 
-Xbox 360, Xbox One, Xbox Series, and Xbox PC games can show achievements through OpenXBL. Access [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
+Xbox 360, Xbox One, Xbox Series, and Xbox PC games can show achievements through OpenXBL.
+1.Access [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
 
 ```text
 OPENXBL_API_KEY
 ```
 
-Set your Xbox account inside the app: enter edit mode, open **Settings**, and fill the **Microsoft account** field with an Xbox gamertag or XUID.
+2.Set your **Xbox account** inside the app: enter edit mode, open **Settings**, and fill the **Microsoft account** field with an Xbox gamertag or XUID.
 
 ### Google Calendar Preorder Events (ADVANCED)
 
 When you mark a game with a release date as preordered, the Worker can add an all-day Google Calendar event named `Preorder "Game Name"`.
 
-Set up a [Google Cloud](https://console.cloud.google.com/) service account with Google Calendar API access, then share the target calendar with the service account email with permission to make changes.
+1. Set up a [Google Cloud](https://console.cloud.google.com/) service account with Google Calendar API access, then share the target calendar with the service account email generated with permission to make changes.
 
-Add these as three separate Cloudflare **Variables and Secrets** entries:
+2. Add the created service account email address as a Cloudflare **Variables and Secrets** entry:
 
 ```text
 GOOGLE_SERVICE_ACCOUNT_EMAIL
 ```
 
-The service account email address.
+3. Add the `private_key` value from the service account JSON as another **secrets** entry:
 
 ```text
 GOOGLE_PRIVATE_KEY
 ```
 
-The `private_key` value from the service account JSON.
+4. Add this service account email to your calendar and give it all the permissions.
+
+5. Add the calendar ID from the calendar you are using as a **secrets** entry. You can get this from your calendar settings after:
 
 ```text
 GOOGLE_CALENDAR_ID
 ```
-
-The calendar ID from Google Calendar settings.
-
-Use **Secret** for each value. Do not commit the private key.
 
 ## First Run
 
