@@ -229,14 +229,25 @@ The workflow:
 
 This matters because every Cloudflare account needs its own `wrangler.toml` values. The app code can stay up to date with the main repository, while each deploy keeps its own Cloudflare binding.
 
-To turn it on later in a GitHub copy:
+To add the workflow later:
 
-1. Open the repository on GitHub.
+1. Once the setup is done, go to your newly added GitHub repository.
 2. Go to **Actions**.
-3. If GitHub asks, click **I understand my workflows, go ahead and enable them**.
-4. Open **Sync from upstream**.
-5. Enable the workflow if GitHub asks.
-6. Click **Run workflow** once to test it.
+3. Click **set up a workflow yourself**.
+4. You will see an empty text box.
+5. Open this workflow file from the main Gamelist repository:
+
+```text
+https://github.com/ShabiiEXE/Gamelist/blob/main/.github/workflows/sync-from-upstream.yml
+```
+
+6. Copy the code from that file.
+7. Paste it into the empty workflow text box.
+8. Commit the changes.
+9. Go back to **Actions**.
+10. Open **Sync from upstream**.
+11. Enable the workflow if GitHub asks.
+12. Click **Run workflow** once to test it.
 
 If a file other than `wrangler.toml` has a merge conflict, GitHub stops the sync instead of overwriting custom work. Fix the conflict in GitHub or locally, then run the workflow again.
 
