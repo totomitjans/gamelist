@@ -62,7 +62,7 @@ const DEFAULT_SETTINGS = {
   region: "ES",
   stores: ["Amazon", "Xtralife", "GAME.es", "Retro Island NY"],
   storeSettingsVersion: 2,
-  defaultOwner: "Xavi",
+  defaultOwner: "User",
   shelfSync: true,
   hidePageSwitch: false,
   forceCacheOnLoad: false,

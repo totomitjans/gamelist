@@ -1122,12 +1122,12 @@ function gameRow(game) {
 }
 
 function visibleShelfCardOwners(owners = []) {
-  const defaultOwner = state.gamelistSettings.defaultOwner || "Xavi";
+  const defaultOwner = state.gamelistSettings.defaultOwner || "User";
   return owners.filter((owner) => owner !== defaultOwner);
 }
 
 function projectionOwners(game) {
-  const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
+  const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "User"];
   return owners.map(canonicalOwner).filter(Boolean);
 }
 
@@ -2280,7 +2280,7 @@ function openGamelistDetails(sourceGame) {
   el.detailDialog.dataset.id = game.id;
   el.detailDialog.dataset.projection = "true";
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
-  const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
+  const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "User"];
   el.detailTitle.textContent = game.title;
   el.detailTitle.className = `${el.detailTitle.className.replace(/\bowner-[\w-]+/g, "").trim()} ${owners.map(ownerColorClass).join(" ")}`.trim();
   el.detailStudio.textContent = [game.developer, game.publisher].filter(Boolean).join(" / ");
@@ -2332,7 +2332,7 @@ function gamelistProjectionCard(game, options = {}) {
   const isReleaseDialog = Boolean(options.releaseDialog);
   const neutralReleaseCard = isReleaseDialog && Boolean(game.playing);
   const cover = coverUrl(game.cover || "") || platformFallback(game.platform);
-  const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "Xavi"];
+  const owners = Array.isArray(game.owners) && game.owners.length ? game.owners : [state.gamelistSettings.defaultOwner || "User"];
   const visibleOwners = visibleShelfCardOwners(owners);
   const ownerClasses = visibleOwners.map((owner) => ` ${ownerCardColorClass(owner)}`).join("");
   const studio = [game.developer, game.publisher].filter(Boolean).join(" / ");
