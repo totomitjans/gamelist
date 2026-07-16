@@ -67,6 +67,11 @@ const shelfOnlyPaths = new Set([
 ]);
 
 export default {
+  async scheduled(controller, env, ctx) {
+    if (!env.GITHUB_WORKFLOW_TOKEN) return;
+    ctx.waitUntil(triggerGithubSync(env));
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (shelfOnlyPaths.has(url.pathname) && env.SHELF_ENABLED !== "true") {
@@ -95,6 +100,50 @@ export default {
     return env.ASSETS.fetch(request);
   },
 };
+
+async function triggerGithubSync(env) {
+  const repo = env.GITHUB_REPO_FULL_NAME || await findGithubRepo(env);
+  const workflow = env.GITHUB_WORKFLOW_FILE || "main.yml";
+  const ref = env.GITHUB_REF || "main";
+  const response = await fetch(
+    `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
+    {
+      method: "POST",
+      headers: githubHeaders(env),
+      body: JSON.stringify({ ref }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`GitHub sync dispatch failed: ${response.status} ${await response.text()}`);
+  }
+}
+
+async function findGithubRepo(env) {
+  const response = await fetch("https://api.github.com/user/repos?per_page=2", {
+    headers: githubHeaders(env),
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub repo lookup failed: ${response.status} ${await response.text()}`);
+  }
+
+  const repos = await response.json();
+  if (!Array.isArray(repos) || repos.length !== 1 || !repos[0]?.full_name) {
+    throw new Error(`GITHUB_WORKFLOW_TOKEN must have access to exactly one repo; found ${Array.isArray(repos) ? repos.length : 0}.`);
+  }
+
+  return repos[0].full_name;
+}
+
+function githubHeaders(env) {
+  return {
+    "Authorization": `Bearer ${env.GITHUB_WORKFLOW_TOKEN}`,
+    "Accept": "application/vnd.github+json",
+    "User-Agent": "gamelist-cloudflare-sync",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {

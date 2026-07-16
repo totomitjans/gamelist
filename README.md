@@ -110,13 +110,18 @@ IGDB_CLIENT_SECRET
 
 ### 4. Automatic Updates
 
-To receive upcoming Gamelist feature updates, manually add the GitHub Actions script to your repository.
+To receive upcoming Gamelist feature updates, add the GitHub Actions sync workflow to your repository.
 
 1. Once the setup is done, go to your newly added GitHub repository.
 2. Go to **Actions**.
 3. Click **set up a workflow yourself**.
-4. You will see an empty text box.
-5. Open the [sync-from-upstream.yml](https://github.com/ShabiiEXE/Gamelist/blob/main/.github/workflows/sync-from-upstream.yml) workflow action file from the main Gamelist repository.
+4. Name the file:
+
+```text
+main.yml
+```
+
+5. Open the [main.yml](https://github.com/ShabiiEXE/Gamelist/blob/main/.github/workflows/main.yml) workflow action file from the main Gamelist repository.
 6. Copy the code from that file.
 7. Paste it into the empty workflow text box.
 8. Commit the changes.
@@ -125,6 +130,26 @@ To receive upcoming Gamelist feature updates, manually add the GitHub Actions sc
 11. Enable the workflow if GitHub asks.
 12. Click **Run workflow** once to test it.
 13. After that, the workflow checks for updates every 30 minutes and keeps your own `wrangler.toml` settings.
+
+If GitHub scheduled actions stop running, Cloudflare can trigger this workflow instead.
+
+1. Create a fine-grained GitHub personal access token.
+2. Give it access to only your Gamelist repository.
+3. Give it **Actions: Read and write** permission.
+4. Add it in Cloudflare **Variables and Secrets** as a **Secret**:
+
+```text
+GITHUB_WORKFLOW_TOKEN
+```
+
+The token must only have access to one repository. Gamelist will detect that repository automatically and dispatch `.github/workflows/main.yml` on the Cloudflare cron schedule.
+
+For existing deployments, add this to your own `wrangler.toml` if it is missing:
+
+```toml
+[triggers]
+crons = ["13,43 * * * *"]
+```
 
 ## Recommended Integrations
 
