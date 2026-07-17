@@ -1,5 +1,5 @@
 const COOKIE_NAME = "gamelist_editor";
-const SESSION_SECONDS = 60 * 60 * 8;
+const SESSION_SECONDS = 60 * 60 * 24 * 400;
 
 export async function createEditorSession(env) {
   const expires = Math.floor(Date.now() / 1000) + SESSION_SECONDS;
