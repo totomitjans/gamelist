@@ -2014,7 +2014,9 @@ button.achievement-kpi {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   -webkit-mask: url("assets/Icon.png") center / contain no-repeat;
   mask: url("assets/Icon.png") center / contain no-repeat;
-  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 38%, transparent));
+  filter: drop-shadow(
+    0 0 12px color-mix(in srgb, var(--accent) 38%, transparent)
+  );
 }
 
 .achievement-fallback {
@@ -6288,12 +6290,16 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   min-height: 548px;
   align-content: center;
   padding: 14px;
-  gap: 12px;
+  gap: 20px;
   overflow: hidden;
   border: 1px solid rgba(183, 116, 255, 0.72);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 22% 18%, rgba(220, 184, 255, 0.22), transparent 28%),
+    radial-gradient(
+      circle at 22% 18%,
+      rgba(220, 184, 255, 0.22),
+      transparent 28%
+    ),
     linear-gradient(
       135deg,
       rgba(183, 116, 255, 0.38),
@@ -6325,9 +6331,6 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   border: 1px solid rgba(183, 116, 255, 0.36);
   color: #d7b8ff;
   background: rgba(132, 64, 255, 0.16);
-  box-shadow:
-    0 12px 28px rgba(68, 24, 125, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(14px);
   font-size: 11px;
   font-weight: 900;
@@ -6339,7 +6342,11 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .twitch-preview-status.is-live {
   color: #f3e7ff;
   background:
-    linear-gradient(135deg, rgba(183, 116, 255, 0.28), rgba(132, 64, 255, 0.18)),
+    linear-gradient(
+      135deg,
+      rgba(183, 116, 255, 0.28),
+      rgba(132, 64, 255, 0.18)
+    ),
     rgba(132, 64, 255, 0.16);
 }
 
@@ -6371,6 +6378,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   font-size: 13px;
   font-weight: 850;
   text-decoration: none;
+  margin-left: 10px;
 }
 
 .twitch-preview-link:hover {
@@ -6620,7 +6628,8 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   font-size: 9px;
   font-weight: 900;
   background: color-mix(in srgb, var(--accent) 24%, rgba(8, 9, 12, 0.78));
-  border: 1px solid color-mix(in srgb, var(--accent) 78%, rgba(255, 255, 255, 0.2));
+  border: 1px solid
+    color-mix(in srgb, var(--accent) 78%, rgba(255, 255, 255, 0.2));
   border-radius: 6px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
   transform: translateY(-50%);
