@@ -6284,8 +6284,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   position: relative;
   display: grid;
   grid-template-rows: auto auto;
-  flex: 0 0 min(860px, calc(100vw - clamp(54px, 9vw, 112px)));
-  align-self: start;
+  flex: 0 0 min(1220px, calc(100vw - clamp(54px, 9vw, 112px)));
+  min-height: 548px;
+  align-content: center;
   padding: 14px;
   gap: 12px;
   overflow: hidden;
@@ -6311,13 +6312,18 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .twitch-preview-status {
   position: absolute;
   top: 12px;
-  left: 12px;
+  right: 12px;
   z-index: 2;
-  padding: 7px 12px;
+  padding: 8px 13px;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.86);
-  background: rgba(12, 10, 18, 0.74);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  border: 1px solid color-mix(in srgb, #ffffff 24%, transparent);
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(145, 70, 255, 0.98), rgba(106, 49, 198, 0.94)),
+    #9146ff;
+  box-shadow:
+    0 12px 28px rgba(68, 24, 125, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(14px);
   font-size: 11px;
   font-weight: 900;
@@ -6328,7 +6334,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .twitch-preview-status.is-live {
   color: #fff;
-  background: #e91916;
+  background:
+    linear-gradient(135deg, #e91916, #9146ff 78%),
+    #9146ff;
 }
 
 .twitch-preview-player {
@@ -10781,6 +10789,40 @@ body.theme-kash
     align-items: start;
     padding: 11px;
     gap: 11px;
+  }
+
+  .twitch-preview-card {
+    flex-basis: calc(100vw - 54px);
+    min-height: 0;
+    align-content: start;
+    padding: 10px;
+    gap: 9px;
+  }
+
+  .twitch-preview-player {
+    min-width: 0;
+    min-height: 225px;
+  }
+
+  .twitch-preview-player iframe {
+    width: max(100%, 400px);
+    min-width: 400px;
+  }
+
+  .twitch-preview-status {
+    top: 9px;
+    right: 9px;
+    max-width: calc(100% - 18px);
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .twitch-preview-link {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
   }
 
   .playing-section .game-main {
