@@ -45,11 +45,10 @@ export function mountTwitchPreview(list, username, enabled = true) {
   card.className = "twitch-preview-card glass";
   card.setAttribute("aria-label", `${channel} Twitch stream`);
   card.innerHTML = `
-    <div class="twitch-preview-head">
-      <span class="twitch-preview-brand"><b aria-hidden="true">◧</b> Twitch</span>
+    <div class="twitch-preview-player">
       <span class="twitch-preview-status">Checking stream…</span>
+      <span class="twitch-preview-loading">Loading Twitch preview…</span>
     </div>
-    <div class="twitch-preview-player"><span>Loading Twitch preview…</span></div>
     <a class="twitch-preview-link" target="_blank" rel="noreferrer">Watch ${escapeActivityText(channel)} on Twitch</a>
   `;
   const channelUrl = `https://www.twitch.tv/${encodeURIComponent(channel)}`;
@@ -84,7 +83,8 @@ async function hydrateTwitchPreview(card, channel) {
   iframe.setAttribute("allowfullscreen", "");
   iframe.loading = "eager";
   const player = card.querySelector(".twitch-preview-player");
-  player.replaceChildren(iframe);
+  player.querySelector(".twitch-preview-loading")?.remove();
+  player.appendChild(iframe);
   const status = card.querySelector(".twitch-preview-status");
   status.textContent = preview.type === "video" ? "Latest stream" : preview.isLive === false ? "Channel preview" : "Live";
   status.classList.toggle("is-live", preview.isLive === true);
