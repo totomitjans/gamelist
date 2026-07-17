@@ -6330,7 +6330,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   border-radius: 999px;
   border: 1px solid rgba(183, 116, 255, 0.36);
   color: #d7b8ff;
-  background: rgba(132, 64, 255, 0.16);
+  background: rgb(0 0 0 / 50%);
   backdrop-filter: blur(14px);
   font-size: 11px;
   font-weight: 900;
