@@ -2,7 +2,9 @@ import { clearEditorCookie, createEditorSession, editorCookie, isEditorRequest }
 
 export async function onRequestGet({ request, env }) {
   const ok = await isEditorRequest(request, env);
-  return json({ ok }, ok ? 200 : 401);
+  const response = json({ ok }, ok ? 200 : 401);
+  if (ok) response.headers.set("Set-Cookie", editorCookie(await createEditorSession(env)));
+  return response;
 }
 
 export async function onRequestPost({ request, env }) {
