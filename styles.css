@@ -6290,11 +6290,17 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   padding: 14px;
   gap: 12px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, #9146ff 58%, transparent);
+  border: 1px solid rgba(183, 116, 255, 0.72);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 12% 0%, rgba(145, 70, 255, 0.22), transparent 40%),
-    linear-gradient(145deg, rgba(40, 22, 67, 0.68), rgba(12, 14, 19, 0.88));
+    radial-gradient(circle at 22% 18%, rgba(220, 184, 255, 0.22), transparent 28%),
+    linear-gradient(
+      135deg,
+      rgba(183, 116, 255, 0.38),
+      rgba(183, 116, 255, 0.14) 42%,
+      rgba(12, 14, 19, 0.72)
+    ),
+    var(--panel);
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
@@ -6316,13 +6322,11 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   z-index: 2;
   padding: 8px 13px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, #ffffff 24%, transparent);
-  color: #fff;
-  background:
-    linear-gradient(135deg, rgba(145, 70, 255, 0.7), rgba(106, 49, 198, 0.58)),
-    rgba(145, 70, 255, 0.62);
+  border: 1px solid rgba(183, 116, 255, 0.36);
+  color: #d7b8ff;
+  background: rgba(132, 64, 255, 0.16);
   box-shadow:
-    0 12px 28px rgba(68, 24, 125, 0.42),
+    0 12px 28px rgba(68, 24, 125, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(14px);
   font-size: 11px;
@@ -6333,10 +6337,10 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .twitch-preview-status.is-live {
-  color: #fff;
+  color: #f3e7ff;
   background:
-    linear-gradient(135deg, rgba(233, 25, 22, 0.78), rgba(145, 70, 255, 0.68) 78%),
-    rgba(145, 70, 255, 0.62);
+    linear-gradient(135deg, rgba(183, 116, 255, 0.28), rgba(132, 64, 255, 0.18)),
+    rgba(132, 64, 255, 0.16);
 }
 
 .twitch-preview-player {
