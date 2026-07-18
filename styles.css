@@ -6438,7 +6438,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .twitch-preview-toggle {
   position: absolute;
   right: 14px;
-  bottom: 8px;
+  bottom: 11px;
   z-index: 3;
   display: inline-flex;
   align-items: center;
@@ -6507,7 +6507,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   transform: rotate(-38deg) scaleX(1);
 }
 
-.twitch-preview-card.is-collapsed .twitch-preview-toggle:hover .twitch-preview-eye-wrap::after {
+.twitch-preview-card.is-collapsed
+  .twitch-preview-toggle:hover
+  .twitch-preview-eye-wrap::after {
   opacity: 0;
   transform: rotate(-38deg) scaleX(0);
 }
@@ -11036,7 +11038,7 @@ body.theme-kash
 
   .twitch-preview-toggle {
     right: 10px;
-    bottom: 10px;
+    bottom: 11px;
     justify-content: center;
     width: 34px;
     min-width: 34px;
