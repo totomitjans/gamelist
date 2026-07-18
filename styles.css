@@ -6533,9 +6533,9 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .twitch-preview-card.is-collapsed .twitch-preview-collapsed-logo span {
   display: block;
-  max-width: 104px;
+  max-width: 300px;
   color: #d7b8ff;
-  font-size: 12px;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -6544,6 +6544,8 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   text-transform: uppercase;
   transform: rotate(-90deg);
   white-space: nowrap;
+  margin-top: 30px;
+  text-align: right;
 }
 
 .twitch-preview-card.is-collapsed .twitch-preview-player {
@@ -11050,7 +11052,7 @@ body.theme-kash
   .twitch-preview-card.is-collapsed .twitch-preview-status {
     top: auto;
     right: auto;
-    left: 10px;
+    left: 34px;
     bottom: 0;
     max-width: none;
     font-size: 10px;
