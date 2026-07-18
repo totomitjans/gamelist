@@ -74,14 +74,14 @@ export function mountTwitchPreview(list, username, enabled = true) {
   card.querySelector(".twitch-preview-link").href = channelUrl;
   bindTwitchPreviewToggle(card, channel);
   list.prepend(card);
-  if (hidden) setCollapsedTwitchPreview(card);
-  else hydrateTwitchPreview(card, channel);
+  hydrateTwitchPreview(card, channel, { loadPlayer: !hidden });
   return card;
 }
 
-async function hydrateTwitchPreview(card, channel) {
-  if (card.dataset.loaded === "true") return;
-  card.dataset.loaded = "true";
+async function hydrateTwitchPreview(card, channel, options = {}) {
+  const loadPlayer = options.loadPlayer !== false;
+  if (loadPlayer && card.dataset.loaded === "true") return;
+  if (loadPlayer) card.dataset.loaded = "true";
   let preview = { type: "live", channel };
   try {
     const response = await fetch(`/api/twitch-preview?user=${encodeURIComponent(channel)}`, { cache: "no-store" });
@@ -90,6 +90,10 @@ async function hydrateTwitchPreview(card, channel) {
     // The channel player remains a useful fallback when Twitch status is unavailable.
   }
   if (!card.isConnected) return;
+  const status = card.querySelector(".twitch-preview-status");
+  status.textContent = preview.type === "video" ? "Latest stream" : preview.isLive === false ? "Channel preview" : "Live";
+  status.classList.toggle("is-live", preview.isLive === true);
+  if (!loadPlayer) return;
   const parent = window.location.hostname;
   if (!parent) return;
   const params = new URLSearchParams({
@@ -108,9 +112,6 @@ async function hydrateTwitchPreview(card, channel) {
   const player = card.querySelector(".twitch-preview-player");
   player.querySelector(".twitch-preview-loading")?.remove();
   player.appendChild(iframe);
-  const status = card.querySelector(".twitch-preview-status");
-  status.textContent = preview.type === "video" ? "Latest stream" : preview.isLive === false ? "Channel preview" : "Live";
-  status.classList.toggle("is-live", preview.isLive === true);
 }
 
 function bindTwitchPreviewToggle(card, channel) {
@@ -122,17 +123,8 @@ function bindTwitchPreviewToggle(card, channel) {
     button.setAttribute("aria-label", hidden ? "Show stream preview" : "Hide stream preview");
     button.setAttribute("aria-pressed", hidden ? "true" : "false");
     button.querySelector("span").textContent = hidden ? "Show stream" : "Hide stream";
-    if (hidden) setCollapsedTwitchPreview(card);
-    else hydrateTwitchPreview(card, channel);
+    hydrateTwitchPreview(card, channel, { loadPlayer: !hidden });
   });
-}
-
-function setCollapsedTwitchPreview(card) {
-  const status = card.querySelector(".twitch-preview-status");
-  if (status) {
-    status.textContent = status.classList.contains("is-live") ? "Live" : "Stream";
-    status.classList.remove("is-live");
-  }
 }
 
 function twitchPreviewHidden() {

@@ -6318,13 +6318,13 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .twitch-preview-card.is-collapsed {
   grid-template-rows: auto 1fr auto;
-  flex-basis: 120px;
-  width: 120px;
-  max-width: 120px;
+  flex-basis: 70px;
+  width: 70px;
+  max-width: 70px;
   align-content: stretch;
   justify-items: center;
-  padding: 14px 10px;
-  gap: 12px;
+  padding: 12px 7px;
+  gap: 10px;
 }
 
 .twitch-preview-link {
@@ -6337,8 +6337,8 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .twitch-preview-logo-icon {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   fill: #d7b8ff;
   filter: drop-shadow(0 0 14px rgba(183, 116, 255, 0.42));
 }
@@ -6366,6 +6366,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   align-self: end;
   justify-self: center;
   width: max-content;
+  max-width: none;
   transform: rotate(-90deg);
   transform-origin: center;
 }
@@ -6434,11 +6435,13 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   z-index: 3;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  min-height: 34px;
-  padding: 8px 12px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 9px;
   border: 1px solid rgba(183, 116, 255, 0.34);
-  border-radius: 999px;
+  border-radius: 9px;
   color: #d7b8ff;
   background: rgba(9, 8, 12, 0.62);
   backdrop-filter: blur(14px);
@@ -6449,13 +6452,34 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   cursor: pointer;
 }
 
+.twitch-preview-toggle::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transform: rotate(-38deg) scaleX(0);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
 .twitch-preview-toggle:hover {
   color: #fff;
   border-color: rgba(183, 116, 255, 0.62);
 }
 
+.twitch-preview-toggle:hover::after {
+  opacity: 0.92;
+  transform: rotate(-38deg) scaleX(1);
+}
+
 .twitch-preview-eye {
-  display: none;
+  display: block;
   width: 17px;
   height: 17px;
   flex: 0 0 17px;
@@ -6480,9 +6504,13 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .twitch-preview-card.is-collapsed .twitch-preview-toggle {
   position: static;
   justify-self: center;
-  width: 100%;
+  width: 38px;
+  min-width: 38px;
   justify-content: center;
-  padding-inline: 8px;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-toggle span {
+  display: none;
 }
 
 .finished-stats-bell-line {
@@ -10913,11 +10941,11 @@ body.theme-kash
   }
 
   .twitch-preview-card.is-collapsed {
-    flex-basis: 92px;
-    width: 92px;
-    max-width: 92px;
+    flex-basis: 70px;
+    width: 70px;
+    max-width: 70px;
     min-height: 214px;
-    padding: 10px 8px;
+    padding: 10px 7px;
     gap: 9px;
   }
 
@@ -10979,8 +11007,8 @@ body.theme-kash
   }
 
   .twitch-preview-card.is-collapsed .twitch-preview-logo-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 
   .playing-section .game-main {
