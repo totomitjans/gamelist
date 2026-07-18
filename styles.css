@@ -6324,11 +6324,10 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .twitch-preview-card.is-collapsed {
-  grid-template-rows: auto 1fr auto auto;
   flex-basis: 70px;
   width: 70px;
   max-width: 70px;
-  align-content: stretch;
+  align-content: start;
   justify-items: center;
   padding: 12px 5px;
   gap: 8px;
@@ -6369,13 +6368,14 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .twitch-preview-card.is-collapsed .twitch-preview-status {
-  position: static;
-  align-self: center;
-  justify-self: center;
+  position: absolute;
+  left: 12px;
+  bottom: 62px;
   width: max-content;
   max-width: none;
-  transform: translateY(-18px) rotate(-90deg);
-  transform-origin: center;
+  margin: 0;
+  transform: rotate(-90deg);
+  transform-origin: left center;
 }
 
 .twitch-preview-status.is-live {
@@ -6515,12 +6515,15 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .twitch-preview-card.is-collapsed .twitch-preview-collapsed-logo {
+  position: absolute;
+  top: 12px;
+  left: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  place-items: center;
-  gap: 22px;
-  min-height: 112px;
+  gap: 36px;
+  padding: 0;
+  transform: translateX(-50%);
 }
 
 .twitch-preview-collapsed-logo span {
@@ -6531,7 +6534,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   display: block;
   max-width: 104px;
   color: #d7b8ff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -6553,13 +6556,16 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 }
 
 .twitch-preview-card.is-collapsed .twitch-preview-toggle {
-  position: static;
-  justify-self: center;
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
   width: 34px;
   min-width: 34px;
   min-height: 34px;
+  margin: 0;
   padding: 0;
   justify-content: center;
+  transform: translateX(-50%);
 }
 
 .twitch-preview-card.is-collapsed .twitch-preview-toggle-label {
@@ -11028,6 +11034,16 @@ body.theme-kash
     font-size: 10px;
   }
 
+  .twitch-preview-card.is-collapsed .twitch-preview-status {
+    top: auto;
+    right: auto;
+    left: 12px;
+    bottom: 62px;
+    max-width: none;
+    transform: rotate(-90deg);
+    transform-origin: left center;
+  }
+
   .twitch-preview-link {
     max-width: 100%;
     overflow: hidden;
@@ -11040,14 +11056,10 @@ body.theme-kash
     right: 10px;
     bottom: 11px;
     justify-content: center;
-    width: 34px;
+    width: auto;
     min-width: 34px;
     height: 34px;
-    padding: 0;
-  }
-
-  .twitch-preview-toggle-label {
-    display: none;
+    padding: 0 9px;
   }
 
   .twitch-preview-eye {
