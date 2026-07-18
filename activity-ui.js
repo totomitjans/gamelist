@@ -38,13 +38,21 @@ export function mountActivitySlider(section, ids) {
   section.innerHTML = `<div class="playing-current"><div class="column-head"><div><h2>Currently Playing</h2></div><div class="playing-head-actions"><span id="${ids.count}"></span><button class="icon-button playing-slider-button" id="${ids.previous}" type="button" title="Previous playing game" aria-label="Previous playing game">←</button><button class="icon-button playing-slider-button" id="${ids.next}" type="button" title="Next playing game" aria-label="Next playing game">→</button></div></div><div class="playing-panel"><div class="card-list playing-list" id="${ids.list}"${ids.dataSection ? ` data-section="${ids.dataSection}"` : ""}></div></div></div><div class="playing-finished" id="${ids.finished}" hidden><span class="achievement-subtitle">Last finished games</span><div class="playing-finished-list" id="${ids.finishedList}"></div></div>`;
 }
 
+const TWITCH_PREVIEW_HIDDEN_KEY = "gamelist:twitch-preview-hidden";
+
 export function mountTwitchPreview(list, username, enabled = true) {
   const channel = cleanTwitchUsername(username);
   if (!list || !enabled || !channel) return null;
+  const hidden = twitchPreviewHidden();
   const card = document.createElement("article");
   card.className = "twitch-preview-card glass";
+  card.classList.toggle("is-collapsed", hidden);
+  card.dataset.loaded = "false";
   card.setAttribute("aria-label", `${channel} Twitch stream`);
   card.innerHTML = `
+    <div class="twitch-preview-collapsed-logo" aria-hidden="true">
+      ${twitchGlyphMarkup()}
+    </div>
     <div class="twitch-preview-player">
       <span class="twitch-preview-status">Checking stream…</span>
       <span class="twitch-preview-loading">Loading Twitch preview…</span>
@@ -55,15 +63,25 @@ export function mountTwitchPreview(list, username, enabled = true) {
       </svg>
       <span>Watch ${escapeActivityText(channel)} on Twitch</span>
     </a>
+    <button class="twitch-preview-toggle" type="button" aria-label="${hidden ? "Show stream preview" : "Hide stream preview"}" aria-pressed="${hidden ? "true" : "false"}">
+      <svg class="twitch-preview-eye" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 5c5.2 0 8.8 4.2 10 7-1.2 2.8-4.8 7-10 7S3.2 14.8 2 12c1.2-2.8 4.8-7 10-7Zm0 2C8.1 7 5.3 9.8 4.2 12c1.1 2.2 3.9 5 7.8 5s6.7-2.8 7.8-5C18.7 9.8 15.9 7 12 7Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"/>
+      </svg>
+      <span>${hidden ? "Show stream" : "Hide stream"}</span>
+    </button>
   `;
   const channelUrl = `https://www.twitch.tv/${encodeURIComponent(channel)}`;
   card.querySelector(".twitch-preview-link").href = channelUrl;
+  bindTwitchPreviewToggle(card, channel);
   list.prepend(card);
-  hydrateTwitchPreview(card, channel);
+  if (hidden) setCollapsedTwitchPreview(card);
+  else hydrateTwitchPreview(card, channel);
   return card;
 }
 
 async function hydrateTwitchPreview(card, channel) {
+  if (card.dataset.loaded === "true") return;
+  card.dataset.loaded = "true";
   let preview = { type: "live", channel };
   try {
     const response = await fetch(`/api/twitch-preview?user=${encodeURIComponent(channel)}`, { cache: "no-store" });
@@ -93,6 +111,46 @@ async function hydrateTwitchPreview(card, channel) {
   const status = card.querySelector(".twitch-preview-status");
   status.textContent = preview.type === "video" ? "Latest stream" : preview.isLive === false ? "Channel preview" : "Live";
   status.classList.toggle("is-live", preview.isLive === true);
+}
+
+function bindTwitchPreviewToggle(card, channel) {
+  const button = card.querySelector(".twitch-preview-toggle");
+  button?.addEventListener("click", () => {
+    const hidden = !card.classList.contains("is-collapsed");
+    setTwitchPreviewHidden(hidden);
+    card.classList.toggle("is-collapsed", hidden);
+    button.setAttribute("aria-label", hidden ? "Show stream preview" : "Hide stream preview");
+    button.setAttribute("aria-pressed", hidden ? "true" : "false");
+    button.querySelector("span").textContent = hidden ? "Show stream" : "Hide stream";
+    if (hidden) setCollapsedTwitchPreview(card);
+    else hydrateTwitchPreview(card, channel);
+  });
+}
+
+function setCollapsedTwitchPreview(card) {
+  const status = card.querySelector(".twitch-preview-status");
+  if (status) {
+    status.textContent = status.classList.contains("is-live") ? "Live" : "Stream";
+    status.classList.remove("is-live");
+  }
+}
+
+function twitchPreviewHidden() {
+  try {
+    return localStorage.getItem(TWITCH_PREVIEW_HIDDEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setTwitchPreviewHidden(hidden) {
+  try {
+    localStorage.setItem(TWITCH_PREVIEW_HIDDEN_KEY, hidden ? "1" : "0");
+  } catch {}
+}
+
+function twitchGlyphMarkup() {
+  return `<svg class="twitch-preview-logo-icon" viewBox="0 0 24 24" focusable="false"><path d="M6 0 1.7 4.3v15.4h5.1V24l4.3-4.3h3.4l7.8-7.7V0H6Zm14.6 11.1-3.4 3.4h-3.5l-3 3v-3H6.9V1.7h13.7v9.4ZM18 4.7v5.1h-1.7V4.7H18Zm-4.7 0v5.1h-1.7V4.7h1.7Z"/></svg>`;
 }
 
 function cleanTwitchUsername(value) {
