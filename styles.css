@@ -6309,6 +6309,13 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
     var(--panel);
   scroll-snap-align: start;
   scroll-snap-stop: always;
+  transition:
+    flex-basis 220ms ease,
+    max-width 220ms ease,
+    width 220ms ease,
+    padding 220ms ease,
+    gap 220ms ease,
+    background-color 220ms ease;
 }
 
 .playing-single .twitch-preview-card {
@@ -6316,9 +6323,31 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   width: 100%;
 }
 
+.twitch-preview-card.is-collapsed {
+  grid-template-rows: auto 1fr auto auto;
+  flex-basis: 70px;
+  width: 70px;
+  max-width: 70px;
+  align-content: stretch;
+  justify-items: center;
+  padding: 12px 5px;
+  gap: 8px;
+}
+
 .twitch-preview-link {
   position: relative;
   z-index: 1;
+}
+
+.twitch-preview-collapsed-logo {
+  display: none;
+}
+
+.twitch-preview-logo-icon {
+  width: 30px;
+  height: 30px;
+  fill: #d7b8ff;
+  filter: drop-shadow(0 0 14px rgba(183, 116, 255, 0.42));
 }
 
 .twitch-preview-status {
@@ -6337,6 +6366,16 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   line-height: 1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-status {
+  position: static;
+  align-self: center;
+  justify-self: center;
+  width: max-content;
+  max-width: none;
+  transform: translateY(-18px) rotate(-90deg);
+  transform-origin: center;
 }
 
 .twitch-preview-status.is-live {
@@ -6394,6 +6433,137 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .twitch-preview-link:hover {
   color: #fff;
+}
+
+.twitch-preview-toggle {
+  position: absolute;
+  right: 14px;
+  bottom: 11px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 9px;
+  border: 1px solid rgba(183, 116, 255, 0.34);
+  border-radius: 9px;
+  color: #d7b8ff;
+  background: rgba(9, 8, 12, 0.62);
+  backdrop-filter: blur(14px);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.twitch-preview-eye-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+}
+
+.twitch-preview-eye-wrap::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transform: rotate(-38deg) scaleX(0);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.twitch-preview-toggle:hover {
+  color: #fff;
+  border-color: rgba(183, 116, 255, 0.62);
+}
+
+.twitch-preview-toggle:hover .twitch-preview-eye-wrap::after {
+  opacity: 0.92;
+  transform: rotate(-38deg) scaleX(1);
+}
+
+.twitch-preview-eye {
+  display: block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  fill: currentColor;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-eye-wrap::after {
+  opacity: 0.92;
+  transform: rotate(-38deg) scaleX(1);
+}
+
+.twitch-preview-card.is-collapsed
+  .twitch-preview-toggle:hover
+  .twitch-preview-eye-wrap::after {
+  opacity: 0;
+  transform: rotate(-38deg) scaleX(0);
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-collapsed-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  place-items: center;
+  gap: 22px;
+  min-height: 112px;
+}
+
+.twitch-preview-collapsed-logo span {
+  display: none;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-collapsed-logo span {
+  display: block;
+  max-width: 104px;
+  color: #d7b8ff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  transform: rotate(-90deg);
+  white-space: nowrap;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-player {
+  display: contents;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-player iframe,
+.twitch-preview-card.is-collapsed .twitch-preview-loading,
+.twitch-preview-card.is-collapsed .twitch-preview-link {
+  display: none;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-toggle {
+  position: static;
+  justify-self: center;
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.twitch-preview-card.is-collapsed .twitch-preview-toggle-label {
+  display: none;
 }
 
 .finished-stats-bell-line {
@@ -10823,6 +10993,15 @@ body.theme-kash
     gap: 9px;
   }
 
+  .twitch-preview-card.is-collapsed {
+    flex-basis: 70px;
+    width: 70px;
+    max-width: 70px;
+    min-height: 214px;
+    padding: 10px 7px;
+    gap: 9px;
+  }
+
   .twitch-preview-player {
     --mobile-twitch-scale: 0.75;
     min-width: 0;
@@ -10855,6 +11034,34 @@ body.theme-kash
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 12px;
+  }
+
+  .twitch-preview-toggle {
+    right: 10px;
+    bottom: 11px;
+    justify-content: center;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .twitch-preview-toggle-label {
+    display: none;
+  }
+
+  .twitch-preview-eye {
+    display: block;
+  }
+
+  .twitch-preview-card.is-collapsed .twitch-preview-toggle {
+    width: 34px;
+    min-width: 34px;
+  }
+
+  .twitch-preview-card.is-collapsed .twitch-preview-logo-icon {
+    width: 24px;
+    height: 24px;
   }
 
   .playing-section .game-main {
