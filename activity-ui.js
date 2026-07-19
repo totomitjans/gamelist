@@ -181,6 +181,7 @@ export function achievementDashboardMarkup({ completedCount, completedBreakdown 
 
 export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophyIconHtml, platformBadge, platformLogo, trophyTone, escape }) {
   const sourceUrl = psn.sourceUrl || "https://www.playstation.com/";
+  const fallbackUrl = psn.authError ? "https://ca.account.sony.com/api/v1/ssocookie" : sourceUrl;
   const psnAchievements = Array.isArray(psn.achievements) ? psn.achievements : [];
   const steamAchievements = Array.isArray(steam.achievements) ? steam.achievements : [];
   const xboxAchievements = Array.isArray(xbox.achievements) ? xbox.achievements : [];
@@ -201,7 +202,7 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophy
           : "No recent achievement activity found yet.";
     return {
       sourceUrl,
-      html: `<a class="achievement-fallback" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><span class="achievement-fallback-logo" aria-hidden="true"></span><div><strong>Achievement activity</strong><span>${escape(fallbackText)}</span></div></a>`,
+      html: `<a class="achievement-fallback" href="${escape(fallbackUrl)}" target="_blank" rel="noreferrer"><span class="achievement-fallback-logo" aria-hidden="true"></span><div><strong>Achievement activity</strong><span>${escape(fallbackText)}</span></div></a>`,
     };
   }
   const trophies = psn.summary?.trophies || {};

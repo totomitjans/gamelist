@@ -571,6 +571,7 @@ async function clearSiteCaches() {
 
 async function clearSiteCachesAndReload() {
   await clearSiteCaches();
+  localStorage.removeItem(ACHIEVEMENT_CACHE_KEY);
   if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version);
   window.location.reload();
 }
@@ -3801,6 +3802,11 @@ function readAchievementCache(key) {
 
 function writeAchievementCache(key, data) {
   try {
+    if (data?.psn?.authError) {
+      const cached = JSON.parse(localStorage.getItem(ACHIEVEMENT_CACHE_KEY) || "{}");
+      if (cached?.key === key) localStorage.removeItem(ACHIEVEMENT_CACHE_KEY);
+      return;
+    }
     localStorage.setItem(ACHIEVEMENT_CACHE_KEY, JSON.stringify({ key, data, updatedAt: Date.now() }));
   } catch {
     // Achievement cache is only a load-time shortcut.
