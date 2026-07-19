@@ -8233,7 +8233,7 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-csv-data {
   display: inline-grid;
-  width: min(360px, 100%);
+  width: min(520px, 100%);
 }
 
 .settings-csv-data .settings-data-card {
@@ -8249,16 +8249,27 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-csv-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
+  grid-template-columns: minmax(210px, 1fr) minmax(150px, 190px);
   align-items: center;
   gap: 10px;
 }
 
 .settings-csv-row > span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
+  display: grid;
+  align-items: center;
+  justify-items: start;
+  min-height: var(--settings-control-height, 42px);
+  padding: 0 16px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: left;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .settings-dev-links {

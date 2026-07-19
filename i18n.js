@@ -1,6 +1,6 @@
 export const LANGUAGES = [
   { value: "en", label: "English" },
-  { value: "es-ES", label: "Español (España)" },
+  { value: "es-ES", label: "Español (WIP)" },
 ];
 
 const STRINGS = {
@@ -21,6 +21,10 @@ const STRINGS = {
     "Default owner": "Propietario predeterminado",
     Stores: "Tiendas",
     "CSV data": "Datos CSV",
+    "Your data": "Tus datos",
+    "Gamelist games": "Juegos de Gamelist",
+    "Shelf physical games": "Juegos físicos de Shelf",
+    GOTY: "GOTY",
     Search: "Buscar",
     Platform: "Plataforma",
     Category: "Categoría",

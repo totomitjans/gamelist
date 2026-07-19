@@ -3,28 +3,30 @@
   <span style="color: #e92841;">Gamelist</span>
 </h1>
 
-Gamelist is a personal game backlog, preorder, price, trophy, achievement, and physical shelf tracker. It runs as a self-hosted static frontend served by a Cloudflare Worker, with saved data stored in Cloudflare KV.
+Gamelist is a personal game backlog, preorder, price, trophy, achievement, and physical collection tracker. It runs as a self-hosted static frontend served by a Cloudflare Worker, with saved data stored in Cloudflare KV.
 
 The app has two connected pages:
 
-- <img src="assets/Icon.png" alt="Gamelist" width="18" align="center"> `/` for the main digital backlog, preorder, release, and completion tracker.
-- <img src="assets/Icon_shelf.png" alt="Shelf" width="18" align="center"> `/shelf` for the physical collection tracker.
+- <img src="assets/Icon.png" alt="Gamelist" width="18" align="center"> `/` for the main game backlog, preorder, release, and completion status tracker.
+- <img src="assets/Icon_shelf.png" alt="Shelf" width="18" align="center"> `/shelf` for the physical collection tracker and organizer.
 
-Both pages share edit mode, themes, account settings, price-store settings, achievement integrations, and the same `GAMELIST` KV namespace. Shelf Sync can also send physical collection additions back into the main Gamelist flow.
+Pull down the top bar/handle to go to the other page!
+
+Both pages share edit mode, themes, account settings, price-store settings, achievement integrations. Shelf Sync can also send physical collection additions back into the main Gamelist flow and in reverse when you add a new game to your backlog.
 
 Made and designed by <img src="assets/shabii_logo.png" alt="Shabii" width="18" align="center"> [Shabii](https://x.com/Shabii_exe) with the help of ChatGPT Codex.
 
 ## Features
 
-- Cloud sync through Cloudflare Workers KV.
-- IGDB-powered lookup for covers, release dates, descriptions, genres, developers, publishers, trailers, store links, and price-search helpers.
+- Cloud sync through Cloudflare Workers.
 - Backlog, upcoming, available, currently playing, and finished-game boards.
-- Twitch stream preview in Currently Playing when a streamed game and Twitch username are configured.
 - Release calendar with preorder markers.
 - Physical Shelf library with multiple owners, regions, conditions, categories, selected-store prices, PriceCharting collection values, and linked Gamelist entries.
+- Game of the year tracking and shareable image export.
+- IGDB-powered lookup for all game covers, release dates, descriptions, genres, developers, publishers, trailers, store links, and price-search helpers.
+- Twitch stream preview in Currently Playing when a streamed game and Twitch username are configured.
 - Shelf Showcase block for featured games, plus shared Currently Playing, Last Finished, Highlights, and Search modules.
 - PSN, Steam, and Xbox trophy/achievement dashboards.
-- Game of the year tracking and poster export.
 - Google Calendar preorder events when configured.
 - Theme editor with dark/light mode, colors, logos, title styles, and module ordering.
 - CSV import/export for Gamelist and Shelf data.
@@ -162,7 +164,7 @@ GITHUB_WORKFLOW_TOKEN
 
 ## Recommended integrations
 
-### <img src="assets/platforms/playstation.png" alt="PlayStation" width="22" align="center"> PlayStation Trophy Activity
+### <img src="assets/platforms/playstation.png" alt="PlayStation" width="22" align="center"> PlayStation Trophies
 
 1. Log into your [PlayStation](https://www.playstation.com/) account.
 2. In the same browser, open the [Sony SSO cookie page](https://ca.account.sony.com/api/v1/ssocookie).
@@ -302,18 +304,6 @@ If Google Calendar is configured, adding a new preorder store to an upcoming/wan
 
 New physical games can sync into the Gamelist as setup-needed backlog/new-addition entries when Shelf Sync is enabled.
 
-### Import And Export your data as CSV
-
-Both pages have **CSV data** controls at the bottom of Settings, after Store selection.
-
-- **Export** downloads the current game rows as CSV.
-- **Import** replaces the current game rows from a CSV after confirmation.
-- **Yearly statistics** exports/imports the completed-game fields that power the yearly stats views.
-- **GOTY** exports/imports saved Games of the year picks by year and category.
-- Arrays and objects, such as owners, tags, store links, prices, and metadata, are preserved as JSON text inside CSV cells.
-
-This can allow you to safely create a backup of your collection and data.
-
 ### Create your end of year GOTY image
 
 During December and January, Gamelist let's you pickyour yearly **Games of the year** and besides checking your statistics, it will let you turn it into a shareable image using your current theme and logo.
@@ -326,3 +316,15 @@ During December and January, Gamelist let's you pickyour yearly **Games of the y
 The export follows your active theme styling.
 
 If you have a Twitch username set in Settings, the poster footer can include your Twitch channel link alongside the site link.
+
+### Import and Export your data as CSV
+
+Both pages have **Your data** controls at the bottom of Settings, after Store selection.
+
+- **Gamelist games** exports/imports the digital backlog and finished game list.
+- **Shelf physical games** exports/imports the physical collection.
+- **GOTY** exports/imports saved Games of the year picks by year and category.
+- **Finished games** exports/imports the completed-game fields that power the yearly stats views.
+- Arrays and objects, such as owners, tags, store links, prices, and metadata, are preserved as JSON text inside CSV cells.
+
+This can allow you to safely create a backup of your collection and data.
