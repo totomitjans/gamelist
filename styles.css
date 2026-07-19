@@ -485,8 +485,8 @@ html.theme-font-michroma {
 }
 
 html.theme-font-mata {
-  --display-title-line-height: 0.92;
-  --display-title-letter-spacing: -0.035em;
+  --display-title-line-height: 0.82;
+  --display-title-letter-spacing: -0.35em;
 }
 
 .top-actions,
