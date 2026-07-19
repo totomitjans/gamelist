@@ -2088,7 +2088,7 @@ button.achievement-kpi {
   display: block;
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent);
   -webkit-mask: url("assets/Icon.png") center / contain no-repeat;
   mask: url("assets/Icon.png") center / contain no-repeat;
   filter: drop-shadow(
@@ -2098,6 +2098,17 @@ button.achievement-kpi {
 
 .achievement-fallback {
   grid-column: 1 / -1;
+}
+
+.achievement-auth-notice {
+  grid-column: 1 / -1;
+  justify-self: start;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .achievement-games {

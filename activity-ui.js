@@ -181,7 +181,8 @@ export function achievementDashboardMarkup({ completedCount, completedBreakdown 
 
 export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophyIconHtml, platformBadge, platformLogo, trophyTone, escape }) {
   const sourceUrl = psn.sourceUrl || "https://www.playstation.com/";
-  const fallbackUrl = psn.authError ? "https://ca.account.sony.com/api/v1/ssocookie" : sourceUrl;
+  const authErrorUrl = "https://ca.account.sony.com/api/v1/ssocookie";
+  const fallbackUrl = psn.authError ? authErrorUrl : sourceUrl;
   const psnAchievements = Array.isArray(psn.achievements) ? psn.achievements : [];
   const steamAchievements = Array.isArray(steam.achievements) ? steam.achievements : [];
   const xboxAchievements = Array.isArray(xbox.achievements) ? xbox.achievements : [];
@@ -200,9 +201,12 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophy
         : psn.blocked
           ? "The public tracker is blocking embedded scraping, but your profile is one click away."
           : "No recent achievement activity found yet.";
+    const authNotice = psn.authError && (steamAchievements.length || xboxAchievements.length)
+      ? `<a class="achievement-auth-notice" href="${escape(authErrorUrl)}" target="_blank" rel="noreferrer">${escape("Refresh PSN token")}</a>`
+      : "";
     return {
       sourceUrl,
-      html: `<a class="achievement-fallback" href="${escape(fallbackUrl)}" target="_blank" rel="noreferrer"><span class="achievement-fallback-logo" aria-hidden="true"></span><div><strong>Achievement activity</strong><span>${escape(fallbackText)}</span></div></a>`,
+      html: `${authNotice}<a class="achievement-fallback" href="${escape(fallbackUrl)}" target="_blank" rel="noreferrer"><span class="achievement-fallback-logo" aria-hidden="true"></span><div><strong>Achievement activity</strong><span>${escape(fallbackText)}</span></div></a>`,
     };
   }
   const trophies = psn.summary?.trophies || {};
@@ -224,12 +228,13 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, trophy
     levelLabel: psnLevel ? `LEVEL <small>${escape(String(psn.summary.progress || 0))}% next</small>` : "",
     counts, sourceUrl, trophyIconHtml, barHeight: sharedTrophyBarHeight, escape,
   });
+  const authNotice = psn.authError ? `<a class="achievement-auth-notice" href="${escape(authErrorUrl)}" target="_blank" rel="noreferrer">${escape("Refresh PSN token")}</a>` : "";
   const cards = achievements.map((item, index) => {
     const platform = item.source === "steam" ? "Steam" : String(item.platform || (item.source === "xbox" ? "Xbox" : "PlayStation")).trim() || "PlayStation";
     return achievementCardMarkup({ index, tone: item.source === "steam" ? "steam" : trophyTone(item.rarity), href: item.url || sourceUrl, game: item.game || "", title: item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"), icon: item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"), meta: `${platformBadge(platform)}${item.earnedAt ? `<span class="achievement-earned-date">${escape(item.earnedAt)}</span>` : ""}`, escape });
   }).join("");
   const subtitle = "Lastest achievements";
-  return { sourceUrl, html: `${dashboard}<span class="achievement-subtitle trophy-subtitle">${escape(subtitle)}</span>${cards}` };
+  return { sourceUrl, html: `${dashboard}${authNotice}<span class="achievement-subtitle trophy-subtitle">${escape(subtitle)}</span>${cards}` };
 }
 
 export function mountReleaseCalendar(container, options = {}) {

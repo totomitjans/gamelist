@@ -3794,6 +3794,10 @@ function readAchievementCache(key) {
   try {
     const cached = JSON.parse(localStorage.getItem(ACHIEVEMENT_CACHE_KEY) || "{}");
     if (!cached?.updatedAt || (Date.now() - Number(cached.updatedAt)) > ACHIEVEMENT_CACHE_TTL_MS) return null;
+    if (cached?.key === key && cached?.data?.psn?.authError) {
+      localStorage.removeItem(ACHIEVEMENT_CACHE_KEY);
+      return null;
+    }
     return cached?.key === key && cached.data ? cached.data : null;
   } catch {
     return null;
