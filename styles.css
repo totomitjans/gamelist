@@ -476,7 +476,7 @@ html.theme-font-pokemon {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px 22px;
+  gap: 0 6px;
   width: min(1620px, 100%);
   margin: 0 auto;
   padding: 0 clamp(18px, 4vw, 48px) 26px;
@@ -491,7 +491,7 @@ html.theme-font-pokemon {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -505,6 +505,15 @@ html.theme-font-pokemon {
 .site-footer button:hover,
 .footer-credit:hover {
   color: var(--text);
+}
+
+.footer-credit {
+  gap: 6px;
+  font-weight: 900;
+}
+
+.footer-separator {
+  color: color-mix(in srgb, var(--dim) 72%, transparent);
 }
 
 .footer-credit-logo {
@@ -2169,7 +2178,7 @@ h2 {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 4px 0;
+  /*padding: 4px 0;*/
   color: transparent;
   background: var(--accent);
   -webkit-background-clip: text;
@@ -10641,9 +10650,18 @@ body.theme-kash
   .site-footer {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px 16px;
+    gap: 4px 6px;
     padding-bottom: 22px;
     text-align: center;
+  }
+
+  .footer-credit-separator {
+    display: none;
+  }
+
+  .footer-credit {
+    flex-basis: 100%;
+    justify-content: center;
   }
 
   .completed-list {
