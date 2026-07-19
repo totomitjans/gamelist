@@ -3012,14 +3012,14 @@ function gameOfTheYearExportTitleLineHeight(theme) {
 
 function gameOfTheYearExportTitleSize(theme) {
   if (theme.accentFont === "pokemon") return 66;
-  if (theme.accentFont === "mata") return 38;
+  if (theme.accentFont === "mata") return 46;
   return 53;
 }
 
 function gameOfTheYearExportCategoryTitleSize(theme) {
   if (theme.accentFont === "pokemon") return 26;
   if (theme.accentFont === "michroma") return 18;
-  if (theme.accentFont === "mata") return 14;
+  if (theme.accentFont === "mata") return 18;
   return 22;
 }
 
@@ -3166,7 +3166,7 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   titleFill.addColorStop(0, titleGradient);
   titleFill.addColorStop(1, main);
   ctx.fillStyle = titleFill;
-  const titleSize = theme.accentFont === "pokemon" ? 80 : theme.accentFont === "mata" ? 48 : 64;
+  const titleSize = theme.accentFont === "pokemon" ? 80 : theme.accentFont === "mata" ? 56 : 64;
   const titleLineGap = gameOfTheYearCanvasTitleLineGap(theme, titleSize);
   ctx.font = `900 ${titleSize}px ${titleFont}`;
   ctx.letterSpacing = gameOfTheYearExportTitleLetterSpacing(theme);
