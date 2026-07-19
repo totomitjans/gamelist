@@ -3245,9 +3245,10 @@ function logPageVersion() { console.log(String.raw`%c
  {{{{{{{{{{{      {{{{{{{{{{{{{{        
 {{{{{{{{{{{        {{{{{{{{{{{{         
 %c
-  ${siteVersion.version || "unknown"}
+  ${consoleVersionLabel()}
   original repo: https://github.com/ShabiiEXE/Gamelist
 `, "color:#ff0039;font-weight:900;font-size:8px;line-height:1;", "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;"); }
+function consoleVersionLabel() { return siteVersion.version ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}` : "unknown"; }
 function consumeRecentPullNavigation() { try { const url = new URL(window.location.href); const fromPullUrl = url.searchParams.get("pull") === "1"; if (fromPullUrl) { url.searchParams.delete("pull"); url.searchParams.delete("v"); window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`); } const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}"); sessionStorage.removeItem(PULL_NAVIGATION_KEY); return fromPullUrl || Date.now() - Number(value.at || 0) < 8000; } catch { return false; } }
 async function clearSiteCaches() { if ("caches" in window) { const keys = await caches.keys(); await Promise.all(keys.filter((key) => key.startsWith("gamelist-cache-")).map((key) => caches.delete(key))); } if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.map((registration) => registration.update().catch(() => {}))); } }
 async function clearSiteCachesAndReload() { await clearSiteCaches(); if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version); window.location.reload(); }

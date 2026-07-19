@@ -527,9 +527,15 @@ function logPageVersion() {
  {{{{{{{{{{{      {{{{{{{{{{{{{{        
 {{{{{{{{{{{        {{{{{{{{{{{{         
 %c
-  ${siteVersion.version || "unknown"}
+  ${consoleVersionLabel()}
   original repo: https://github.com/ShabiiEXE/Gamelist
 `, "color:#ff0039;font-weight:900;font-size:8px;line-height:1;", "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;");
+}
+
+function consoleVersionLabel() {
+  return siteVersion.version
+    ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    : "unknown";
 }
 
 function consumeRecentPullNavigation() {
