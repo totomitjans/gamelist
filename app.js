@@ -13,6 +13,7 @@ const PLATINUM_META_CACHE_KEY = "gamelist:platinum-meta:v1";
 const PLATINUM_COVER_CACHE_KEY = "gamelist:platinum-covers:v1";
 const SETTINGS_KEY = "gamelist:settings:v1";
 const ACHIEVEMENT_CACHE_KEY = "gamelist:achievement-cache:v1";
+const ACHIEVEMENT_CACHE_TTL_MS = 30 * 60 * 1000;
 const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gamelist", "finished"];
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
 const VERSION_STORAGE_KEY = "gamelist:site-version";
@@ -570,6 +571,7 @@ async function clearSiteCaches() {
 
 async function clearSiteCachesAndReload() {
   await clearSiteCaches();
+  localStorage.removeItem(ACHIEVEMENT_CACHE_KEY);
   if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version);
   window.location.reload();
 }
@@ -3791,6 +3793,11 @@ function achievementSettingsKey(settings = state.settings) {
 function readAchievementCache(key) {
   try {
     const cached = JSON.parse(localStorage.getItem(ACHIEVEMENT_CACHE_KEY) || "{}");
+    if (!cached?.updatedAt || (Date.now() - Number(cached.updatedAt)) > ACHIEVEMENT_CACHE_TTL_MS) return null;
+    if (cached?.key === key && cached?.data?.psn?.authError) {
+      localStorage.removeItem(ACHIEVEMENT_CACHE_KEY);
+      return null;
+    }
     return cached?.key === key && cached.data ? cached.data : null;
   } catch {
     return null;
@@ -3799,6 +3806,11 @@ function readAchievementCache(key) {
 
 function writeAchievementCache(key, data) {
   try {
+    if (data?.psn?.authError) {
+      const cached = JSON.parse(localStorage.getItem(ACHIEVEMENT_CACHE_KEY) || "{}");
+      if (cached?.key === key) localStorage.removeItem(ACHIEVEMENT_CACHE_KEY);
+      return;
+    }
     localStorage.setItem(ACHIEVEMENT_CACHE_KEY, JSON.stringify({ key, data, updatedAt: Date.now() }));
   } catch {
     // Achievement cache is only a load-time shortcut.
@@ -6303,6 +6315,17 @@ async function renderDetailTrophies(game) {
   const psn = matchedPsnGame(game);
   const trophyId = psn?.npCommunicationId;
   if (!trophyId) {
+    const fallback = latestTrophiesForGame(game, 20);
+    if (fallback.length) {
+      state.detailGameId = game.id;
+      state.detailTrophyProvider = "psn";
+      state.detailTrophyRequest = "";
+      state.detailTrophiesData = fallback;
+      el.detailTrophies.hidden = false;
+      if (el.detailTrophyTitle) el.detailTrophyTitle.textContent = "TROPHIES";
+      renderDetailTrophyList();
+      return;
+    }
     console.warn("[trophies] no PSN trophy id for game overlay", {
       game: game?.title || "",
       platform: game?.platform || "",
@@ -6317,6 +6340,36 @@ async function renderDetailTrophies(game) {
     el.detailTrophyPercent.innerHTML = "";
     el.detailTrophyList.innerHTML = "";
     updateDetailTrophyEdges();
+    return;
+  }
+
+  const cached = state.cardTrophies[trophyId];
+  const cachedTrophies = Array.isArray(cached?.allTrophies) && cached.allTrophies.length
+    ? cached.allTrophies
+    : Array.isArray(cached?.trophies) ? cached.trophies : [];
+  if (cached && !cached.loading && cachedTrophies.length) {
+    state.detailGameId = game.id;
+    state.detailTrophyProvider = "psn";
+    state.detailTrophyRequest = "";
+    state.detailTrophiesData = cachedTrophies;
+    el.detailTrophies.hidden = false;
+    if (el.detailTrophyTitle) el.detailTrophyTitle.textContent = "TROPHIES";
+    renderDetailTrophyList();
+    refreshDetailPsnTrophiesInBackground(game, psn, trophyId);
+    return;
+  }
+  const activityTrophies = (state.psnActivity.achievements || [])
+    .filter((achievement) => achievement.npCommunicationId === trophyId)
+    .sort(compareEarnedTrophies);
+  if (activityTrophies.length) {
+    state.detailGameId = game.id;
+    state.detailTrophyProvider = "psn";
+    state.detailTrophyRequest = "";
+    state.detailTrophiesData = activityTrophies;
+    el.detailTrophies.hidden = false;
+    if (el.detailTrophyTitle) el.detailTrophyTitle.textContent = "TROPHIES";
+    renderDetailTrophyList();
+    refreshDetailPsnTrophiesInBackground(game, psn, trophyId);
     return;
   }
 
@@ -6343,6 +6396,14 @@ async function renderDetailTrophies(game) {
     if (state.detailTrophyRequest !== requestKey) return;
     logTrophyLoadIssue("detail", game, psn, response, data);
     state.detailTrophiesData = Array.isArray(data.trophies) ? data.trophies : [];
+    state.cardTrophies[trophyId] = {
+      loading: false,
+      allTrophies: state.detailTrophiesData,
+      trophies: state.detailTrophiesData.filter((trophy) => trophy.earned && trophy.earnedAt).sort(compareEarnedTrophies).slice(0, 3),
+      earned: state.detailTrophiesData.filter((trophy) => trophy.earned).length,
+      total: state.detailTrophiesData.length,
+    };
+    updateCardTrophyStrips(game.id);
     renderDetailTrophyList();
   } catch (error) {
     if (state.detailTrophyRequest !== requestKey) return;
@@ -6374,6 +6435,16 @@ async function renderDetailSteamAchievements(game) {
   const requestKey = `${game.id}:steam:${appId}:${Date.now()}`;
   state.detailGameId = game.id;
   state.detailTrophyProvider = "steam";
+  const cached = steamAchievementsForGame(game);
+  if (cached && !cached.loading && Array.isArray(cached.achievements) && cached.achievements.length) {
+    state.detailTrophyRequest = "";
+    state.detailTrophiesData = cached.achievements;
+    el.detailTrophies.hidden = false;
+    if (el.detailTrophyTitle) el.detailTrophyTitle.textContent = "ACHIEVEMENTS";
+    renderDetailTrophyList();
+    refreshDetailSteamAchievementsInBackground(game, appId, steamUser);
+    return;
+  }
   state.detailTrophyRequest = requestKey;
   el.detailTrophies.hidden = false;
   if (el.detailTrophyTitle) el.detailTrophyTitle.textContent = "ACHIEVEMENTS";
@@ -6388,6 +6459,8 @@ async function renderDetailSteamAchievements(game) {
     if (state.detailTrophyRequest !== requestKey) return;
     logTrophyLoadIssue("steam-detail", game, { npCommunicationId: appId, npServiceName: "steam" }, response, { trophies: data.achievements, ...data });
     state.detailTrophiesData = Array.isArray(data.achievements) ? data.achievements : [];
+    state.cardTrophies[steamAchievementCacheKey(game)] = xboxAchievementCache(data, state.detailTrophiesData);
+    updateCardAchievementUi(game.id);
     renderDetailTrophyList();
   } catch (error) {
     if (state.detailTrophyRequest !== requestKey) return;
@@ -6397,6 +6470,59 @@ async function renderDetailSteamAchievements(game) {
     el.detailTrophyPercent.innerHTML = "";
     el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Could not load achievements right now.</div>`;
     updateDetailTrophyEdges();
+  }
+}
+
+async function refreshDetailPsnTrophiesInBackground(game, psn, trophyId) {
+  try {
+    const params = achievementParams({
+      id: trophyId,
+      service: psn.npServiceName || "trophy",
+      user: state.settings.psnUser || "",
+      debug: "1",
+      schema: "3",
+    }, true);
+    const response = await fetch(`/api/trophies?${params}`, { cache: "no-store" });
+    const data = await response.json().catch(() => ({ error: "Invalid trophy API JSON response" }));
+    logTrophyLoadIssue("detail-background", game, psn, response, data);
+    if (!response.ok) return;
+    const trophies = Array.isArray(data.trophies) ? data.trophies : [];
+    if (!trophies.length) return;
+    state.cardTrophies[trophyId] = {
+      loading: false,
+      allTrophies: trophies,
+      trophies: trophies.filter((trophy) => trophy.earned && trophy.earnedAt).sort(compareEarnedTrophies).slice(0, 3),
+      earned: trophies.filter((trophy) => trophy.earned).length,
+      total: trophies.length,
+    };
+    updateCardTrophyStrips(game.id);
+    if (state.detailGameId === game.id && state.detailTrophyProvider === "psn" && el.detailDialog.open) {
+      state.detailTrophiesData = trophies;
+      renderDetailTrophyList();
+    }
+  } catch (error) {
+    logTrophyLoadIssue("detail-background", game, psn, null, null, error);
+  }
+}
+
+async function refreshDetailSteamAchievementsInBackground(game, appId, steamUser) {
+  try {
+    const params = steamAchievementParams(appId, steamUser);
+    params.set("fresh", String(Date.now()));
+    const response = await fetch(`/api/steam-achievements?${params}`, { cache: "no-store" });
+    const data = await response.json().catch(() => ({ error: "Invalid Steam achievements API JSON response" }));
+    logTrophyLoadIssue("steam-detail-background", game, { npCommunicationId: appId, npServiceName: "steam" }, response, { trophies: data.achievements, ...data });
+    if (!response.ok) return;
+    const achievements = Array.isArray(data.achievements) ? data.achievements : [];
+    if (!achievements.length) return;
+    state.cardTrophies[steamAchievementCacheKey(game)] = xboxAchievementCache(data, achievements);
+    updateCardAchievementUi(game.id);
+    if (state.detailGameId === game.id && state.detailTrophyProvider === "steam" && el.detailDialog.open) {
+      state.detailTrophiesData = achievements;
+      renderDetailTrophyList();
+    }
+  } catch (error) {
+    logTrophyLoadIssue("steam-detail-background", game, { npCommunicationId: appId, npServiceName: "steam" }, null, null, error);
   }
 }
 
@@ -6975,11 +7101,12 @@ async function loadCardTrophies(game, psn) {
     const data = await response.json().catch(() => ({ error: "Invalid trophy API JSON response" }));
     logTrophyLoadIssue("card", game, psn, response, data);
     if (!response.ok) throw new Error(`Card trophies failed (${response.status})`);
-    const trophies = (Array.isArray(data.trophies) ? data.trophies : [])
+    const allTrophies = Array.isArray(data.trophies) ? data.trophies : [];
+    const trophies = allTrophies
       .filter((trophy) => trophy.earned && trophy.earnedAt)
       .sort(compareEarnedTrophies)
       .slice(0, 3);
-    state.cardTrophies[cacheKey] = { loading: false, trophies };
+    state.cardTrophies[cacheKey] = { loading: false, allTrophies, trophies, earned: allTrophies.filter((trophy) => trophy.earned).length, total: allTrophies.length };
   } catch (error) {
     logTrophyLoadIssue("card", game, psn, null, null, error);
     state.cardTrophies[cacheKey] = { loading: false, trophies: [] };
