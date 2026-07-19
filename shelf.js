@@ -3237,7 +3237,7 @@ function logPageVersion() { console.log(`%c
   ███████║██║  ██║██║  ██║██████╔╝██║██║
   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝
 
-  version: ${siteVersion.version || "unknown"}
+  ${siteVersion.version || "unknown"}
   repo: https://github.com/ShabiiEXE/Gamelist
 `, "color:#ff0039;font-weight:900;"); }
 function consumeRecentPullNavigation() { try { const url = new URL(window.location.href); const fromPullUrl = url.searchParams.get("pull") === "1"; if (fromPullUrl) { url.searchParams.delete("pull"); url.searchParams.delete("v"); window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`); } const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}"); sessionStorage.removeItem(PULL_NAVIGATION_KEY); return fromPullUrl || Date.now() - Number(value.at || 0) < 8000; } catch { return false; } }

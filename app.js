@@ -519,7 +519,7 @@ function logPageVersion() {
   ███████║██║  ██║██║  ██║██████╔╝██║██║
   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝
 
-  version: ${siteVersion.version || "unknown"}
+  ${siteVersion.version || "unknown"}
   repo: https://github.com/ShabiiEXE/Gamelist
 `, "color:#ff0039;font-weight:900;");
 }
