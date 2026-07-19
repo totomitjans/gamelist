@@ -84,6 +84,7 @@ const state = {
 
 const el = {
   brandLink: document.querySelector(".brand"),
+  brandVersion: document.querySelector("#brandVersion"),
   stats: document.querySelector("#shelfStats"),
   count: document.querySelector("#resultCount"),
   shelf: document.querySelector("#gameShelf"),
@@ -255,6 +256,7 @@ function bindEvents() {
   el.scrollTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   el.footerUpdate.addEventListener("click", clearSiteCachesAndReload);
   el.footerVersion.addEventListener("click", clearSiteCachesAndReload);
+  el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
   window.addEventListener("scroll", updateFloatingActions, { passive: true });
   window.addEventListener("storage", (event) => { if (event.key === "gamelist-editor-signal") refreshSharedAuth(); });
   window.addEventListener("focus", refreshSharedAuth);
@@ -463,7 +465,22 @@ function renderChrome() {
   el.footerVersion.textContent = siteVersion.version
     ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
     : "Version -";
+  renderBrandVersionChip();
   updateFloatingActions();
+}
+
+function renderBrandVersionChip() {
+  if (!el.brandVersion) return;
+  const isShabiiOwner = normalizeOwnerKey(state.gamelistSettings.defaultOwner) === "shabii";
+  const shouldShow = state.canEdit && isShabiiOwner && Boolean(siteVersion.version);
+  el.brandVersion.hidden = !shouldShow;
+  el.brandVersion.textContent = shouldShow
+    ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    : "Version -";
+}
+
+function normalizeOwnerKey(value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function updateFloatingActions() {

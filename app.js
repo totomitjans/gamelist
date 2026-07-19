@@ -221,6 +221,7 @@ const state = {
 
 const el = {
   brandLink: document.querySelector(".brand"),
+  brandVersion: document.querySelector("#brandVersion"),
   playingSection: document.querySelector("#playingSection"),
   playingCurrent: document.querySelector("#playingSection .playing-current"),
   playingTitle: document.querySelector("#playingTitle"),
@@ -691,6 +692,7 @@ function bindEvents() {
   el.gotyForm?.addEventListener("submit", saveGameOfTheYearFromForm);
   el.footerDataUpdate?.addEventListener("click", clearSiteCachesAndReload);
   el.footerVersion?.addEventListener("click", clearSiteCachesAndReload);
+  el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
   el.scrollTopButton.addEventListener("click", () => {
     if (document.body.classList.contains("dialog-open")) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1113,6 +1115,7 @@ function render() {
   renderSection("wanted");
   renderCompleted();
   renderFooter();
+  renderBrandVersionChip();
   scheduleMobilePaintRefresh();
   el.sortDirectionButton.innerHTML = sortArrowIcon(state.filters.direction === "desc");
   el.sortDirectionButton.title = state.filters.direction === "asc" ? tt("Sort ascending") : tt("Sort descending");
@@ -4687,6 +4690,16 @@ function renderFooter() {
       ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
       : "Version -";
   }
+}
+
+function renderBrandVersionChip() {
+  if (!el.brandVersion) return;
+  const isShabiiOwner = normalizeTag(state.settings.defaultOwner) === "shabii";
+  const shouldShow = state.canEdit && isShabiiOwner && Boolean(siteVersion.version);
+  el.brandVersion.hidden = !shouldShow;
+  el.brandVersion.textContent = shouldShow
+    ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    : "Version -";
 }
 
 function latestGameUpdateDate() {

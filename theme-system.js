@@ -220,7 +220,7 @@ function renderThemeDialog(dialog, draft, settings, page, onSave) {
         ${colorField("extraColor", "Extra color", draft.extraColor, false, false, "theme-extra-color")}
         <div class="theme-editor-row theme-controls-row">
           <label class="settings-detail-compact theme-mode-field"><span>Theme</span><select name="mode"><option value="dark" ${draft.mode === "dark" ? "selected" : ""}>Dark</option><option value="light" ${draft.mode === "light" ? "selected" : ""}>Light (WIP)</option></select></label>
-          <label class="settings-detail-compact theme-font-field"><span>Title font</span><select name="accentFont" style="font-family:${htmlEscape(FONT_OPTIONS.find((font) => font.value === draft.accentFont)?.family || "Cascadia Code")}">${FONT_OPTIONS.map((font) => `<option value="${htmlEscape(font.value)}" style="font-family:${htmlEscape(font.family)}" ${draft.accentFont === font.value ? "selected" : ""}>${htmlEscape(font.label)}</option>`).join("")}</select></label>
+          ${fontPicker(draft.accentFont)}
           <label class="check-filter toggle-check theme-check"><input name="gradient" type="checkbox" ${draft.gradient ? "checked" : ""}><span>Gradient titles</span></label>
           <label class="check-filter toggle-check theme-check"><input name="uppercaseTitles" type="checkbox" ${draft.uppercaseTitles ? "checked" : ""}><span>Uppercase Titles</span></label>
           <label class="check-filter toggle-check theme-check"><input name="disableGlow" type="checkbox" ${draft.disableGlow ? "" : "checked"}><span>Background glows</span></label>
@@ -253,9 +253,7 @@ function renderThemeDialog(dialog, draft, settings, page, onSave) {
   `;
   const form = dialog.querySelector("form");
   dialog.querySelector("[data-theme-close]")?.addEventListener("click", () => dialog.close());
-  form.querySelector("[name='accentFont']")?.addEventListener("change", (event) => {
-    event.currentTarget.style.fontFamily = FONT_OPTIONS.find((font) => font.value === event.currentTarget.value)?.family || "Cascadia Code";
-  });
+  bindFontPicker(form);
   form.querySelector("[name='disableGlow']")?.addEventListener("change", (event) => {
     form.querySelector(".theme-glow-row")?.toggleAttribute("hidden", !event.currentTarget.checked);
   });
@@ -301,6 +299,55 @@ function glowSelect(name, value) {
     ["extra", "Extra Color"],
   ];
   return `<select name="${name}">${options.map(([source, label]) => `<option value="${source}" ${value === source ? "selected" : ""}>${label}</option>`).join("")}</select>`;
+}
+
+function fontPicker(value) {
+  const selected = FONT_OPTIONS.find((font) => font.value === value) || FONT_OPTIONS[0];
+  return `
+    <div class="settings-detail-compact theme-font-field theme-font-picker" data-font-picker>
+      <span>Title font</span>
+      <input type="hidden" name="accentFont" value="${htmlEscape(selected.value)}">
+      <button class="theme-font-trigger" type="button" data-font-trigger style="font-family:&quot;${htmlEscape(selected.family)}&quot;">
+        <span>${htmlEscape(selected.label)}</span>
+        <svg class="chevron-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+      </button>
+      <div class="theme-font-menu" data-font-menu hidden>
+        ${FONT_OPTIONS.map((font) => `
+          <button class="theme-font-option" type="button" data-font-value="${htmlEscape(font.value)}" style="font-family:&quot;${htmlEscape(font.family)}&quot;" ${selected.value === font.value ? "aria-current=\"true\"" : ""}>
+            ${htmlEscape(font.label)}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function bindFontPicker(form) {
+  const picker = form.querySelector("[data-font-picker]");
+  if (!picker) return;
+  const input = picker.querySelector("[name='accentFont']");
+  const trigger = picker.querySelector("[data-font-trigger]");
+  const menu = picker.querySelector("[data-font-menu]");
+  trigger?.addEventListener("click", () => {
+    menu.hidden = !menu.hidden;
+    picker.classList.toggle("is-open", !menu.hidden);
+  });
+  picker.querySelectorAll("[data-font-value]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const font = FONT_OPTIONS.find((item) => item.value === button.dataset.fontValue) || FONT_OPTIONS[0];
+      input.value = font.value;
+      trigger.style.fontFamily = `"${font.family}"`;
+      trigger.querySelector("span").textContent = font.label;
+      picker.querySelectorAll("[data-font-value]").forEach((item) => item.toggleAttribute("aria-current", item === button));
+      menu.hidden = true;
+      picker.classList.remove("is-open");
+    });
+  });
+  form.addEventListener("click", (event) => {
+    if (picker.contains(event.target)) return;
+    menu.hidden = true;
+    picker.classList.remove("is-open");
+  });
 }
 
 function imageField(name, label, value) {

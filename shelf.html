@@ -140,11 +140,12 @@
         <img class="brand-mark" src="assets/Icon_shelf.png" alt="">
         <span>Shabii's Shelf</span>
       </a>
+      <button class="brand-version-chip" id="brandVersion" type="button" hidden>Version -</button>
       <script>
         (() => {
           const theme = window.__initialTheme;
           if (!theme) return;
-          const brand = document.currentScript.previousElementSibling;
+          const brand = document.currentScript.previousElementSibling?.previousElementSibling;
           const mark = brand?.querySelector(".brand-mark");
           const label = brand?.querySelector("span:last-child");
           if (mark && theme.icon) mark.src = theme.icon;
