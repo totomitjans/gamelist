@@ -113,6 +113,8 @@ export function applySiteTheme(settings = {}, options = {}) {
   root.classList.toggle("theme-uppercase-titles", theme.uppercaseTitles);
   root.classList.toggle("theme-big-logo", theme.bigLogo);
   root.classList.toggle("theme-font-pokemon", theme.accentFont === "pokemon");
+  root.classList.toggle("theme-font-michroma", theme.accentFont === "michroma");
+  root.classList.toggle("theme-font-mata", theme.accentFont === "mata");
   body?.classList.toggle("theme-kash", settings.theme === "kash");
   body?.classList.toggle("theme-light", theme.mode === "light");
   body?.classList.toggle("theme-no-glow", theme.disableGlow);
@@ -120,6 +122,8 @@ export function applySiteTheme(settings = {}, options = {}) {
   body?.classList.toggle("theme-uppercase-titles", theme.uppercaseTitles);
   body?.classList.toggle("theme-big-logo", theme.bigLogo);
   body?.classList.toggle("theme-font-pokemon", theme.accentFont === "pokemon");
+  body?.classList.toggle("theme-font-michroma", theme.accentFont === "michroma");
+  body?.classList.toggle("theme-font-mata", theme.accentFont === "mata");
   root.style.setProperty("--accent", theme.mainColor);
   root.style.setProperty("--accent-1", theme.accentColor);
   root.style.setProperty("--accent-2", theme.accentColor);
@@ -220,7 +224,7 @@ function renderThemeDialog(dialog, draft, settings, page, onSave) {
         ${colorField("extraColor", "Extra color", draft.extraColor, false, false, "theme-extra-color")}
         <div class="theme-editor-row theme-controls-row">
           <label class="settings-detail-compact theme-mode-field"><span>Theme</span><select name="mode"><option value="dark" ${draft.mode === "dark" ? "selected" : ""}>Dark</option><option value="light" ${draft.mode === "light" ? "selected" : ""}>Light (WIP)</option></select></label>
-          <label class="settings-detail-compact theme-font-field"><span>Title font</span><select name="accentFont" style="font-family:${htmlEscape(FONT_OPTIONS.find((font) => font.value === draft.accentFont)?.family || "Cascadia Code")}">${FONT_OPTIONS.map((font) => `<option value="${htmlEscape(font.value)}" style="font-family:${htmlEscape(font.family)}" ${draft.accentFont === font.value ? "selected" : ""}>${htmlEscape(font.label)}</option>`).join("")}</select></label>
+          <label class="settings-detail-compact theme-font-field"><span>Title font</span><select name="accentFont" style="font-family:&quot;${htmlEscape(FONT_OPTIONS.find((font) => font.value === draft.accentFont)?.family || "Cascadia Code")}&quot;">${FONT_OPTIONS.map((font) => `<option value="${htmlEscape(font.value)}" style="font-family:&quot;${htmlEscape(font.family)}&quot;" ${draft.accentFont === font.value ? "selected" : ""}>${htmlEscape(font.label)}</option>`).join("")}</select></label>
           <label class="check-filter toggle-check theme-check"><input name="gradient" type="checkbox" ${draft.gradient ? "checked" : ""}><span>Gradient titles</span></label>
           <label class="check-filter toggle-check theme-check"><input name="uppercaseTitles" type="checkbox" ${draft.uppercaseTitles ? "checked" : ""}><span>Uppercase Titles</span></label>
           <label class="check-filter toggle-check theme-check"><input name="disableGlow" type="checkbox" ${draft.disableGlow ? "" : "checked"}><span>Background glows</span></label>
@@ -254,7 +258,7 @@ function renderThemeDialog(dialog, draft, settings, page, onSave) {
   const form = dialog.querySelector("form");
   dialog.querySelector("[data-theme-close]")?.addEventListener("click", () => dialog.close());
   form.querySelector("[name='accentFont']")?.addEventListener("change", (event) => {
-    event.currentTarget.style.fontFamily = FONT_OPTIONS.find((font) => font.value === event.currentTarget.value)?.family || "Cascadia Code";
+    event.currentTarget.style.fontFamily = `"${FONT_OPTIONS.find((font) => font.value === event.currentTarget.value)?.family || "Cascadia Code"}"`;
   });
   form.querySelector("[name='disableGlow']")?.addEventListener("change", (event) => {
     form.querySelector(".theme-glow-row")?.toggleAttribute("hidden", !event.currentTarget.checked);

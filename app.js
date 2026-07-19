@@ -221,6 +221,7 @@ const state = {
 
 const el = {
   brandLink: document.querySelector(".brand"),
+  brandVersion: document.querySelector("#brandVersion"),
   playingSection: document.querySelector("#playingSection"),
   playingCurrent: document.querySelector("#playingSection .playing-current"),
   playingTitle: document.querySelector("#playingTitle"),
@@ -510,7 +511,18 @@ function applySiteVersion(value = {}) {
 }
 
 function logPageVersion() {
-  console.log("version", siteVersion.version || "unknown");
+  console.log(String.raw`%c
+  ██████\        /████████
+  ██████ \      / ████████
+          \    /
+           ████
+          /    \
+  ██████ /      \ ████████
+  ██████/        \████████
+
+  ${siteVersion.version || "unknown"}
+  repo: https://github.com/ShabiiEXE/Gamelist
+`, "color:#ff0039;font-weight:900;");
 }
 
 function consumeRecentPullNavigation() {
@@ -691,6 +703,7 @@ function bindEvents() {
   el.gotyForm?.addEventListener("submit", saveGameOfTheYearFromForm);
   el.footerDataUpdate?.addEventListener("click", clearSiteCachesAndReload);
   el.footerVersion?.addEventListener("click", clearSiteCachesAndReload);
+  el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
   el.scrollTopButton.addEventListener("click", () => {
     if (document.body.classList.contains("dialog-open")) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1113,6 +1126,7 @@ function render() {
   renderSection("wanted");
   renderCompleted();
   renderFooter();
+  renderBrandVersionChip();
   scheduleMobilePaintRefresh();
   el.sortDirectionButton.innerHTML = sortArrowIcon(state.filters.direction === "desc");
   el.sortDirectionButton.title = state.filters.direction === "asc" ? tt("Sort ascending") : tt("Sort descending");
@@ -1261,6 +1275,10 @@ function renderSettingsDialog() {
   });
   document.querySelector("[data-export-csv='gamelist']")?.addEventListener("click", exportGamelistCsv);
   document.querySelector("[data-import-csv='gamelist']")?.addEventListener("click", importGamelistCsv);
+  document.querySelector("[data-export-csv='yearly-stats']")?.addEventListener("click", exportYearlyStatsCsv);
+  document.querySelector("[data-import-csv='yearly-stats']")?.addEventListener("click", importYearlyStatsCsv);
+  document.querySelector("[data-export-csv='goty']")?.addEventListener("click", exportGameOfTheYearCsv);
+  document.querySelector("[data-import-csv='goty']")?.addEventListener("click", importGameOfTheYearCsv);
   applyLanguage();
   syncStyledSelects(el.settingsDialog, { activeValue: null });
 }
@@ -1386,13 +1404,23 @@ function settingsPageSwitchItem() {
 }
 
 function settingsCsvDataItem(kind) {
+  const rows = [
+    [kind, "Games"],
+    ["yearly-stats", "Yearly statistics"],
+    ["goty", "GOTY"],
+  ];
   return `
     <article class="settings-layout-card settings-data-card">
-      <div class="settings-theme-select">
+      <div class="settings-theme-select settings-csv-groups">
+        ${rows.map(([key, label]) => `
+          <div class="settings-csv-row">
+            <span>${escapeHtml(tt(label))}</span>
         <div class="settings-data-actions">
-          <button class="ghost-button" type="button" data-export-csv="${escapeHtml(kind)}">${escapeHtml(tt("Export"))}</button>
-          <button class="ghost-button" type="button" data-import-csv="${escapeHtml(kind)}">${escapeHtml(tt("Import"))}</button>
+              <button class="ghost-button" type="button" data-export-csv="${escapeHtml(key)}">${escapeHtml(tt("Export"))}</button>
+              <button class="ghost-button" type="button" data-import-csv="${escapeHtml(key)}">${escapeHtml(tt("Import"))}</button>
+            </div>
         </div>
+        `).join("")}
       </div>
     </article>
   `;
@@ -1551,6 +1579,155 @@ async function importGamelistCsv() {
     showToast(`Imported ${state.games.length} games.`);
   } catch (error) {
     showToast(error?.message || "CSV import failed.", "error");
+  }
+}
+
+function yearlyStatsCsvRecords() {
+  return state.games
+    .filter((game) => !game.deletedAt && game.completedAt)
+    .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
+    .map((game) => ({
+      year: completionYear(game),
+      id: game.id,
+      title: game.title,
+      platform: game.platform,
+      owners: game.owners || [],
+      tags: game.tags || [],
+      startedAt: dateOnly(game.startedAt),
+      completedAt: dateOnly(game.completedAt),
+      lengthHours: game.lengthHours || "",
+      replayCount: game.replayCount || "",
+      stream: Boolean(game.stream),
+      coop: Boolean(game.coop),
+      platinum: Boolean(game.platinum),
+      digital: Boolean(game.digital),
+      emulator: Boolean(game.emulator),
+    }));
+}
+
+function exportYearlyStatsCsv() {
+  const records = yearlyStatsCsvRecords();
+  downloadCsv(records, `gamelist-yearly-statistics-${dateStamp()}.csv`);
+  showToast(`Exported ${records.length} yearly statistic rows.`);
+}
+
+async function importYearlyStatsCsv() {
+  const file = await pickCsvFile();
+  if (!file) return;
+  try {
+    const rows = csvToObjects(await file.text());
+    if (!rows.length) {
+      showToast("No yearly statistics found in that CSV.", "error");
+      return;
+    }
+    if (!window.confirm(`Import ${rows.length} yearly statistic rows? This updates matching games by id, or by title/platform.`)) return;
+    const now = new Date().toISOString();
+    let changed = 0;
+    rows.forEach((row) => {
+      const game = gameByCsvRow(row);
+      if (!game) return;
+      ["startedAt", "completedAt", "lengthHours", "replayCount", "owners", "tags", "stream", "coop", "platinum", "digital", "emulator"].forEach((key) => {
+        if (row[key] !== undefined && row[key] !== "") game[key] = row[key];
+      });
+      markGameEdited(game, now);
+      changed += 1;
+    });
+    if (!changed) {
+      showToast("No matching games found for that yearly statistics CSV.", "error");
+      return;
+    }
+    state.games = normalizeGameRecords(state.games);
+    persistLocal(false);
+    await persistCloud();
+    render();
+    showToast(`Imported yearly statistics for ${changed} games.`);
+  } catch (error) {
+    showToast(error?.message || "Yearly statistics CSV import failed.", "error");
+  }
+}
+
+function gameByCsvRow(row) {
+  const id = String(row.id || "").trim();
+  if (id) {
+    const byId = state.games.find((game) => game.id === id && !game.deletedAt);
+    if (byId) return byId;
+  }
+  const title = normalizeTag(row.title);
+  const platform = normalizeTag(row.platform);
+  if (!title) return null;
+  return state.games.find((game) => !game.deletedAt && normalizeTag(game.title) === title && (!platform || normalizeTag(game.platform) === platform)) || null;
+}
+
+function gameOfTheYearCsvRecords() {
+  return Object.entries(state.settings.gameOfTheYear || {})
+    .sort(([a], [b]) => b.localeCompare(a))
+    .flatMap(([year, entry]) => {
+      const picks = entry?.picks || {};
+      return GAME_OF_YEAR_CATEGORIES.map(([category, label], index) => {
+        const game = gameById(picks[category]);
+        return {
+          year,
+          category,
+          label,
+          order: index + 1,
+          gameId: picks[category] || "",
+          title: game?.title || "",
+          platform: game?.platform || "",
+          published: Boolean(entry?.published),
+          updatedAt: entry?.updatedAt || "",
+        };
+      });
+    });
+}
+
+function exportGameOfTheYearCsv() {
+  const records = gameOfTheYearCsvRecords();
+  downloadCsv(records, `gamelist-goty-${dateStamp()}.csv`);
+  showToast(`Exported ${records.length} GOTY rows.`);
+}
+
+async function importGameOfTheYearCsv() {
+  const file = await pickCsvFile();
+  if (!file) return;
+  try {
+    const rows = csvToObjects(await file.text());
+    if (!rows.length) {
+      showToast("No GOTY picks found in that CSV.", "error");
+      return;
+    }
+    if (!window.confirm(`Import GOTY picks from ${rows.length} CSV rows? This updates saved Games of the year picks.`)) return;
+    const imported = {};
+    rows.forEach((row) => {
+      const year = String(row.year || "").match(/\b(19|20)\d{2}\b/)?.[0];
+      const category = String(row.category || "").trim();
+      if (!year || !GAME_OF_YEAR_CATEGORIES.some(([key]) => key === category)) return;
+      const game = gameByCsvRow({ id: row.gameId, title: row.title, platform: row.platform });
+      imported[year] ||= { picks: {}, updatedAt: String(row.updatedAt || "") };
+      imported[year].picks[category] = game?.id || String(row.gameId || "");
+    });
+    const years = Object.keys(imported);
+    if (!years.length) {
+      showToast("No valid GOTY rows found in that CSV.", "error");
+      return;
+    }
+    const now = new Date().toISOString();
+    const nextGameOfTheYear = { ...(state.settings.gameOfTheYear || {}) };
+    years.forEach((year) => {
+      const previous = nextGameOfTheYear[year]?.picks || {};
+      const picks = Object.fromEntries(GAME_OF_YEAR_CATEGORIES.map(([key]) => [key, imported[year].picks[key] || previous[key] || ""]));
+      nextGameOfTheYear[year] = {
+        picks,
+        published: gameOfTheYearComplete(picks),
+        updatedAt: imported[year].updatedAt || now,
+      };
+    });
+    state.settings = normalizeSettings({ ...state.settings, gameOfTheYear: nextGameOfTheYear });
+    persistLocalSettings();
+    await persistCloud();
+    render();
+    showToast(`Imported GOTY picks for ${years.length} years.`);
+  } catch (error) {
+    showToast(error?.message || "GOTY CSV import failed.", "error");
   }
 }
 
@@ -2246,9 +2423,10 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   const line = theme.mode === "light" ? "rgba(18,24,36,.16)" : "rgba(255,255,255,.14)";
   const sweep = theme.mode === "light" ? "rgba(255,255,255,.58)" : "rgba(255,255,255,.055)";
   const titleFont = canvasTitleFont(theme);
-  const titleSize = theme.accentFont === "pokemon" ? 66 : 53;
-  const titleLineHeight = theme.accentFont === "pokemon" ? 0.82 : "95%";
-  const categoryTitleSize = theme.accentFont === "pokemon" ? 26 : 22;
+  const titleSize = gameOfTheYearExportTitleSize(theme);
+  const titleLineHeight = gameOfTheYearExportTitleLineHeight(theme);
+  const titleLetterSpacing = gameOfTheYearExportTitleLetterSpacing(theme);
+  const categoryTitleSize = gameOfTheYearExportCategoryTitleSize(theme);
   const logoSize = theme.bigLogo ? 104 : 82;
   const logoTop = theme.bigLogo ? 42 : 52;
   const bodyFont = canvasBodyFont();
@@ -2295,6 +2473,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       font-size: ${titleSize}px;
       font-weight: 900;
       line-height: ${titleLineHeight};
+      letter-spacing: ${titleLetterSpacing};
       text-overflow: ellipsis;
       white-space: nowrap;
       background: linear-gradient(135deg, ${gradient}, ${main});
@@ -2824,6 +3003,36 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   `;
 }
 
+function gameOfTheYearExportTitleLineHeight(theme) {
+  if (theme.accentFont === "pokemon") return 0.82;
+  if (theme.accentFont === "michroma") return "95%";
+  if (theme.accentFont === "mata") return 0.82;
+  return "95%";
+}
+
+function gameOfTheYearExportTitleSize(theme) {
+  if (theme.accentFont === "pokemon") return 66;
+  if (theme.accentFont === "mata") return 46;
+  return 53;
+}
+
+function gameOfTheYearExportCategoryTitleSize(theme) {
+  if (theme.accentFont === "pokemon") return 26;
+  if (theme.accentFont === "michroma") return 18;
+  if (theme.accentFont === "mata") return 18;
+  return 22;
+}
+
+function gameOfTheYearExportTitleLetterSpacing(theme) {
+  return theme.accentFont === "mata" ? "-0.35em" : "0";
+}
+
+function gameOfTheYearCanvasTitleLineGap(theme, titleSize) {
+  if (theme.accentFont === "pokemon") return 56;
+  if (theme.accentFont === "mata") return Math.round(titleSize * 0.82);
+  return Math.round(titleSize * 0.95);
+}
+
 async function downloadHtmlPosterPng(html, filename) {
   const htmlToImage = await loadHtmlToImage();
   const host = document.createElement("div");
@@ -2957,12 +3166,14 @@ async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, bac
   titleFill.addColorStop(0, titleGradient);
   titleFill.addColorStop(1, main);
   ctx.fillStyle = titleFill;
-  const titleSize = theme.accentFont === "pokemon" ? 80 : 64;
-  const titleLineGap = theme.accentFont === "pokemon" ? 56 : 66;
+  const titleSize = theme.accentFont === "pokemon" ? 80 : theme.accentFont === "mata" ? 56 : 64;
+  const titleLineGap = gameOfTheYearCanvasTitleLineGap(theme, titleSize);
   ctx.font = `900 ${titleSize}px ${titleFont}`;
+  ctx.letterSpacing = gameOfTheYearExportTitleLetterSpacing(theme);
   ctx.textAlign = "left";
   ctx.fillText(`${owner}'s Games of`, 220, 116);
   ctx.fillText(`the Year ${year}`, 220, 116 + titleLineGap);
+  ctx.letterSpacing = "0";
   const siteUrl = cleanCanvasSiteUrl(window.location.origin && window.location.origin !== "null" ? window.location.origin : window.location.hostname || "Gamelist");
   ctx.font = `800 24px ${bodyFont}`;
   ctx.textAlign = "right";
@@ -4242,18 +4453,19 @@ function syncStyledSelect(select, options = {}) {
     label: option.textContent.trim(),
     selected: option.selected,
     disabled: option.disabled || option.hidden,
+    fontFamily: option.style.fontFamily || "",
   }));
   const visibleOptions = selectOptions.filter((option) => !option.disabled);
   const selected = selectOptions.find((option) => option.selected) || visibleOptions[0] || { value: "all", label: "All platforms" };
   control.classList.toggle("is-active", options.activeValue != null && selected.value !== options.activeValue);
   control.innerHTML = `
     <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false" data-full-label="${escapeHtml(selected.label)}" aria-label="${escapeHtml(selected.label)}">
-      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos })}
+      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos, fontFamily: selected.fontFamily })}
     </button>
     <div class="platform-logo-menu" role="listbox">
       ${visibleOptions.map((option) => `
         <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}" data-full-label="${escapeHtml(option.label)}">
-          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos })}
+          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos, fontFamily: option.fontFamily })}
         </button>
       `).join("")}
     </div>
@@ -4343,10 +4555,11 @@ function hidePlatformLogoOverlay() {
 function platformLogoChoiceMarkup(value, label, options = {}) {
   const showLogo = options.logos && value && value !== "all";
   const cls = showLogo ? platformClass(value) : "platform-generic";
+  const fontStyle = options.fontFamily ? ` style="font-family:${escapeHtml(options.fontFamily)}"` : "";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
       ${showLogo ? `<span class="platform-logo-choice-icon"><img src="${escapeHtml(platformLogo(value))}" alt="" width="18" height="18" decoding="async"></span>` : ""}
-      <span class="platform-logo-choice-label">${escapeHtml(label)}</span>
+      <span class="platform-logo-choice-label"${fontStyle}>${escapeHtml(label)}</span>
     </span>
   `;
 }
@@ -4687,6 +4900,16 @@ function renderFooter() {
       ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
       : "Version -";
   }
+}
+
+function renderBrandVersionChip() {
+  if (!el.brandVersion) return;
+  const isShabiiOwner = normalizeTag(state.settings.defaultOwner) === "shabii";
+  const shouldShow = state.canEdit && isShabiiOwner && Boolean(siteVersion.version);
+  el.brandVersion.hidden = !shouldShow;
+  el.brandVersion.textContent = shouldShow
+    ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    : "Version -";
 }
 
 function latestGameUpdateDate() {

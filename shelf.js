@@ -84,6 +84,7 @@ const state = {
 
 const el = {
   brandLink: document.querySelector(".brand"),
+  brandVersion: document.querySelector("#brandVersion"),
   stats: document.querySelector("#shelfStats"),
   count: document.querySelector("#resultCount"),
   shelf: document.querySelector("#gameShelf"),
@@ -186,6 +187,7 @@ init();
 
 async function init() {
   if (await checkSiteVersion()) return;
+  logPageVersion();
   await window.__initialThemeReady?.catch(() => "shabii");
   applyTheme();
   document.documentElement.classList.remove("theme-booting");
@@ -255,6 +257,7 @@ function bindEvents() {
   el.scrollTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   el.footerUpdate.addEventListener("click", clearSiteCachesAndReload);
   el.footerVersion.addEventListener("click", clearSiteCachesAndReload);
+  el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
   window.addEventListener("scroll", updateFloatingActions, { passive: true });
   window.addEventListener("storage", (event) => { if (event.key === "gamelist-editor-signal") refreshSharedAuth(); });
   window.addEventListener("focus", refreshSharedAuth);
@@ -463,7 +466,22 @@ function renderChrome() {
   el.footerVersion.textContent = siteVersion.version
     ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
     : "Version -";
+  renderBrandVersionChip();
   updateFloatingActions();
+}
+
+function renderBrandVersionChip() {
+  if (!el.brandVersion) return;
+  const isShabiiOwner = normalizeOwnerKey(state.gamelistSettings.defaultOwner) === "shabii";
+  const shouldShow = state.canEdit && isShabiiOwner && Boolean(siteVersion.version);
+  el.brandVersion.hidden = !shouldShow;
+  el.brandVersion.textContent = shouldShow
+    ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    : "Version -";
+}
+
+function normalizeOwnerKey(value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function updateFloatingActions() {
@@ -862,18 +880,19 @@ function syncStyledSelect(select, options = {}) {
     label: option.textContent.trim(),
     selected: option.selected,
     disabled: option.disabled || option.hidden,
+    fontFamily: option.style.fontFamily || "",
   }));
   const visibleOptions = selectOptions.filter((option) => !option.disabled);
   const selected = selectOptions.find((option) => option.selected) || visibleOptions[0] || { value: "all", label: "All platforms" };
   control.classList.toggle("is-active", options.activeValue != null && selected.value !== options.activeValue);
   control.innerHTML = `
     <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false" data-full-label="${escapeHtml(selected.label)}" aria-label="${escapeHtml(selected.label)}">
-      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos })}
+      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos, fontFamily: selected.fontFamily })}
     </button>
     <div class="platform-logo-menu" role="listbox">
       ${visibleOptions.map((option) => `
         <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}" data-full-label="${escapeHtml(option.label)}">
-          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos })}
+          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos, fontFamily: option.fontFamily })}
         </button>
       `).join("")}
     </div>
@@ -963,10 +982,11 @@ function hidePlatformLogoOverlay() {
 function platformLogoChoiceMarkup(value, label, options = {}) {
   const showLogo = options.logos && value && value !== "all";
   const cls = showLogo ? platformClass(value) : "platform-generic";
+  const fontStyle = options.fontFamily ? ` style="font-family:${escapeHtml(options.fontFamily)}"` : "";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
       ${showLogo ? `<span class="platform-logo-choice-icon"><img src="${escapeHtml(platformLogo(value))}" alt="" width="18" height="18" decoding="async"></span>` : ""}
-      <span class="platform-logo-choice-label">${escapeHtml(label)}</span>
+      <span class="platform-logo-choice-label"${fontStyle}>${escapeHtml(label)}</span>
     </span>
   `;
 }
@@ -3209,6 +3229,18 @@ async function clearSiteCachesForNewHour() { const currentHour = currentCacheHou
 function currentCacheHour() { return new Date().toISOString().slice(0, 13); }
 function forceCacheOnLoadEnabled() { try { return JSON.parse(localStorage.getItem("gamelist:settings:v1") || "{}")?.forceCacheOnLoad === true; } catch { return false; } }
 function applySiteVersion(value = {}) { siteVersion.version = String(value.version || "").trim(); siteVersion.updatedAt = String(value.updatedAt || "").trim(); }
+function logPageVersion() { console.log(String.raw`%c
+  ██████\        /████████
+  ██████ \      / ████████
+          \    /
+           ████
+          /    \
+  ██████ /      \ ████████
+  ██████/        \████████
+
+  ${siteVersion.version || "unknown"}
+  repo: https://github.com/ShabiiEXE/Gamelist
+`, "color:#ff0039;font-weight:900;"); }
 function consumeRecentPullNavigation() { try { const url = new URL(window.location.href); const fromPullUrl = url.searchParams.get("pull") === "1"; if (fromPullUrl) { url.searchParams.delete("pull"); url.searchParams.delete("v"); window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`); } const value = JSON.parse(sessionStorage.getItem(PULL_NAVIGATION_KEY) || "{}"); sessionStorage.removeItem(PULL_NAVIGATION_KEY); return fromPullUrl || Date.now() - Number(value.at || 0) < 8000; } catch { return false; } }
 async function clearSiteCaches() { if ("caches" in window) { const keys = await caches.keys(); await Promise.all(keys.filter((key) => key.startsWith("gamelist-cache-")).map((key) => caches.delete(key))); } if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.map((registration) => registration.update().catch(() => {}))); } }
 async function clearSiteCachesAndReload() { await clearSiteCaches(); if (siteVersion.version) localStorage.setItem(VERSION_STORAGE_KEY, siteVersion.version); window.location.reload(); }
