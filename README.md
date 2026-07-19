@@ -164,7 +164,7 @@ GITHUB_WORKFLOW_TOKEN
 
 ## Recommended integrations
 
-### <img src="assets/platforms/playstation.png" alt="PlayStation" width="22" align="center"> PlayStation Trophy Activity
+### <img src="assets/platforms/playstation.png" alt="PlayStation" width="22" align="center"> PlayStation Trophies
 
 1. Log into your [PlayStation](https://www.playstation.com/) account.
 2. In the same browser, open the [Sony SSO cookie page](https://ca.account.sony.com/api/v1/ssocookie).
