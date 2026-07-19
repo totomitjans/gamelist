@@ -3229,13 +3229,14 @@ async function clearSiteCachesForNewHour() { const currentHour = currentCacheHou
 function currentCacheHour() { return new Date().toISOString().slice(0, 13); }
 function forceCacheOnLoadEnabled() { try { return JSON.parse(localStorage.getItem("gamelist:settings:v1") || "{}")?.forceCacheOnLoad === true; } catch { return false; } }
 function applySiteVersion(value = {}) { siteVersion.version = String(value.version || "").trim(); siteVersion.updatedAt = String(value.updatedAt || "").trim(); }
-function logPageVersion() { console.log(`%c
-  ███████╗██╗  ██╗ █████╗ ██████╗ ██╗██╗
-  ██╔════╝██║  ██║██╔══██╗██╔══██╗██║██║
-  ███████╗███████║███████║██████╔╝██║██║
-  ╚════██║██╔══██║██╔══██║██╔══██╗██║██║
-  ███████║██║  ██║██║  ██║██████╔╝██║██║
-  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝
+function logPageVersion() { console.log(String.raw`%c
+  ██████\        /████████
+  ██████ \      / ████████
+          \    /
+           ████
+          /    \
+  ██████ /      \ ████████
+  ██████/        \████████
 
   ${siteVersion.version || "unknown"}
   repo: https://github.com/ShabiiEXE/Gamelist
