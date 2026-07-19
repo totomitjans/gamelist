@@ -8216,7 +8216,7 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-csv-data {
   display: inline-grid;
-  width: min(260px, 100%);
+  width: min(360px, 100%);
 }
 
 .settings-csv-data .settings-data-card {
@@ -8224,6 +8224,24 @@ body.dialog-open .mobile-section-tabs {
   padding: 0;
   background: transparent;
   border: 0;
+}
+
+.settings-csv-groups {
+  gap: 8px;
+}
+
+.settings-csv-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-csv-row > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .settings-dev-links {

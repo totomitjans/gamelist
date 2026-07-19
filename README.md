@@ -308,9 +308,11 @@ Both pages have **CSV data** controls at the bottom of Settings, after Store sel
 
 - **Export** downloads the current game rows as CSV.
 - **Import** replaces the current game rows from a CSV after confirmation.
+- **Yearly statistics** exports/imports the completed-game fields that power the yearly stats views.
+- **GOTY** exports/imports saved Games of the year picks by year and category.
 - Arrays and objects, such as owners, tags, store links, prices, and metadata, are preserved as JSON text inside CSV cells.
 
-This can allow you to safely create a backup of your collection.
+This can allow you to safely create a backup of your collection and data.
 
 ### Create your end of year GOTY image
 
