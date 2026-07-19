@@ -508,6 +508,7 @@ html.theme-font-pokemon {
 }
 
 .footer-credit {
+  gap: 6px;
   font-weight: 900;
 }
 
