@@ -306,12 +306,12 @@ New physical games can sync into the Gamelist as setup-needed backlog/new-additi
 
 ### Import And Export your data as CSV
 
-Both pages have **CSV data** controls at the bottom of Settings, after Store selection.
+Both pages have **Your data** controls at the bottom of Settings, after Store selection.
 
-- **Export** downloads the current game rows as CSV.
-- **Import** replaces the current game rows from a CSV after confirmation.
-- **Yearly statistics** exports/imports the completed-game fields that power the yearly stats views.
+- **Gamelist games** exports/imports the digital backlog and finished game list.
+- **Shelf physical games** exports/imports the physical collection.
 - **GOTY** exports/imports saved Games of the year picks by year and category.
+- **Finished games** exports/imports the completed-game fields that power the yearly stats views.
 - Arrays and objects, such as owners, tags, store links, prices, and metadata, are preserved as JSON text inside CSV cells.
 
 This can allow you to safely create a backup of your collection and data.

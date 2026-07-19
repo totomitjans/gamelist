@@ -49,6 +49,15 @@ const WEEK_START_OPTIONS = [
   ["saturday", "Saturday"],
   ["sunday", "Sunday"],
 ];
+const GAME_OF_YEAR_CATEGORIES = [
+  ["goty", "Game of the year"],
+  ["story", "Best story"],
+  ["artDirection", "Best art direction"],
+  ["soundtrack", "Best soundtrack"],
+  ["surprise", "Best surprise"],
+  ["moment", "Best moment"],
+  ["character", "Best character"],
+];
 
 const state = {
   sourceGames: [],
@@ -167,7 +176,7 @@ const el = {
   settingsLanguage: document.querySelector("#shelfSettingsLanguage"),
   settingsStores: document.querySelector("#shelfSettingsStores"),
   settingsPsnUser: document.querySelector("#shelfSettingsPsnUser"), settingsMicrosoftUser: document.querySelector("#shelfSettingsMicrosoftUser"),
-  settingsSteamUser: document.querySelector("#shelfSettingsSteamUser"), settingsDefaultOwner: document.querySelector("#shelfSettingsDefaultOwner"),
+  settingsSteamUser: document.querySelector("#shelfSettingsSteamUser"), settingsTwitchUser: document.querySelector("#shelfSettingsTwitchUser"), settingsDefaultOwner: document.querySelector("#shelfSettingsDefaultOwner"),
   settingsDevFeatures: document.querySelector("#shelfSettingsDevFeatures"),
   showcaseDialog: document.querySelector("#showcaseDialog"), showcaseForm: document.querySelector("#showcaseForm"), showcaseClose: document.querySelector("#showcaseClose"),
   showcaseSelected: document.querySelector("#showcaseSelected"), showcaseSearch: document.querySelector("#showcaseSearch"), showcasePlatform: document.querySelector("#showcasePlatform"), showcaseRegion: document.querySelector("#showcaseRegion"), showcaseCategory: document.querySelector("#showcaseCategory"), showcaseDirection: document.querySelector("#showcaseSortDirection"), showcaseCount: document.querySelector("#showcaseCount"), showcaseList: document.querySelector("#showcaseList"),
@@ -1698,7 +1707,7 @@ function renderLayoutEditor() {
     ...state.layout.order.map((key, index) => settingsLayoutCard(key, index)),
     `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${themeSettingsButton(state.gamelistSettings, escapeHtml)}${settingsSelectCard("order", tt("Default order"), "shelfSettingsDefaultOrder", [{ value: "added", label: tt("Last added") }, { value: "title", label: tt("Name") }, { value: "platform", label: tt("Platform") }, { value: "region", label: tt("Region") }, { value: "value", label: tt("Value") }])}${settingsSelectCard("calendar", tt("Week starts"), "shelfSettingsWeekStart", WEEK_START_OPTIONS.map(([value, label]) => ({ value, label: tt(label) })))}${settingsShelfSyncCard()}${settingsShelfPricesCard()}${settingsPageSwitchCard()}</div>`,
   ].join("");
-  document.querySelector("#shelfSettingsCsvData").innerHTML = settingsCsvDataCard("shelf");
+  document.querySelector("#shelfSettingsCsvData").innerHTML = settingsCsvDataCard();
   if (el.settingsDevFeatures) el.settingsDevFeatures.innerHTML = settingsDevFeaturesCard("shelf");
   el.settingsDefaultOrder = document.querySelector("#shelfSettingsDefaultOrder");
   el.settingsWeekStart = document.querySelector("#shelfSettingsWeekStart");
@@ -1712,6 +1721,7 @@ function renderLayoutEditor() {
   el.settingsPsnUser.value = state.gamelistSettings.psnUser || "";
   el.settingsMicrosoftUser.value = state.gamelistSettings.microsoftUser || "";
   el.settingsSteamUser.value = state.gamelistSettings.steamUser || "";
+  el.settingsTwitchUser.value = state.gamelistSettings.twitchUser || "";
   el.settingsDefaultOwner.value = state.gamelistSettings.defaultOwner || "";
   el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `<label class="check-filter toggle-check settings-store-check"><input type="checkbox" value="${escapeHtml(store)}" ${settings.stores.includes(store) ? "checked" : ""}><span>${escapeHtml(store)}</span></label>`).join("");
   el.settingsStores.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
@@ -1733,8 +1743,14 @@ function renderLayoutEditor() {
     });
     requestAnimationFrame(() => syncStyledSelects(document.querySelector("#themeEditorDialog"), { activeValue: null }));
   });
-  document.querySelector("[data-export-csv='shelf']")?.addEventListener("click", exportShelfCsv);
-  document.querySelector("[data-import-csv='shelf']")?.addEventListener("click", importShelfCsv);
+  document.querySelector("[data-export-csv='gamelist']")?.addEventListener("click", exportGamelistCsv);
+  document.querySelector("[data-import-csv='gamelist']")?.addEventListener("click", importGamelistCsv);
+  document.querySelector("[data-export-csv='shelf']")?.addEventListener("click", exportShelfPhysicalCsv);
+  document.querySelector("[data-import-csv='shelf']")?.addEventListener("click", importShelfPhysicalCsv);
+  document.querySelector("[data-export-csv='goty']")?.addEventListener("click", exportGameOfTheYearCsv);
+  document.querySelector("[data-import-csv='goty']")?.addEventListener("click", importGameOfTheYearCsv);
+  document.querySelector("[data-export-csv='finished']")?.addEventListener("click", exportFinishedGamesCsv);
+  document.querySelector("[data-import-csv='finished']")?.addEventListener("click", importFinishedGamesCsv);
   applyLanguage();
   syncStyledSelects(el.layoutDialog, { activeValue: null });
 }
@@ -1766,8 +1782,14 @@ function settingsPageSwitchCard() {
   return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>${escapeHtml(tt("Shelf/Gamelist switch"))}</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Hide switch"))}"><input type="checkbox" id="shelfSettingsHidePageSwitch" ${state.gamelistSettings.hidePageSwitch ? "checked" : ""}><span>${escapeHtml(tt("Hide switch"))}</span></label></div></div></article>`;
 }
 
-function settingsCsvDataCard(kind) {
-  return `<article class="settings-layout-card settings-data-card"><div class="settings-theme-select"><div class="settings-data-actions"><button class="ghost-button" type="button" data-export-csv="${escapeHtml(kind)}">${escapeHtml(tt("Export"))}</button><button class="ghost-button" type="button" data-import-csv="${escapeHtml(kind)}">${escapeHtml(tt("Import"))}</button></div></div></article>`;
+function settingsCsvDataCard() {
+  const rows = [
+    ["gamelist", "Gamelist games"],
+    ["shelf", "Shelf physical games"],
+    ["goty", "GOTY"],
+    ["finished", "Finished games"],
+  ];
+  return `<article class="settings-layout-card settings-data-card"><div class="settings-theme-select settings-csv-groups">${rows.map(([key, label]) => `<div class="settings-csv-row"><span>${escapeHtml(tt(label))}</span><div class="settings-data-actions"><button class="ghost-button" type="button" data-export-csv="${escapeHtml(key)}">${escapeHtml(tt("Export"))}</button><button class="ghost-button" type="button" data-import-csv="${escapeHtml(key)}">${escapeHtml(tt("Import"))}</button></div></div>`).join("")}</div></article>`;
 }
 
 function settingsDevFeaturesCard(kind) {
@@ -1782,12 +1804,38 @@ function settingsDevFeaturesCard(kind) {
 
 const CSV_NUMERIC_FIELDS = new Set(["order", "lengthHours", "replayCount", "numericPrice", "price", "estimatedValue", "purchasePrice"]);
 
-function exportShelfCsv() {
-  downloadCsv(state.games.map(shelfCsvRecord), `shelf-games-${dateStamp()}.csv`);
-  showToast(`Exported ${state.games.length} shelf games.`);
+function exportGamelistCsv() {
+  downloadCsv(state.gamelistGames, `gamelist-games-${dateStamp()}.csv`);
+  showToast(`Exported ${state.gamelistGames.length} Gamelist games.`);
 }
 
-async function importShelfCsv() {
+async function importGamelistCsv() {
+  const file = await pickCsvFile();
+  if (!file) return;
+  try {
+    const rows = csvToObjects(await file.text());
+    if (!rows.length) {
+      showToast("No Gamelist games found in that CSV.", "error");
+      return;
+    }
+    if (!window.confirm(`Import ${rows.length} games from CSV? This replaces the current Gamelist games.`)) return;
+    const now = new Date().toISOString();
+    const nextGames = rows.map((row, index) => ({ ...row, id: row.id || csvImportedId("gamelist", index), updatedAt: row.updatedAt || now }));
+    await persistGamelistData(nextGames, state.gamelistSettings);
+    state.gamelistGames = nextGames;
+    renderGamelistModules();
+    showToast(`Imported ${state.gamelistGames.length} Gamelist games.`);
+  } catch (error) {
+    showToast(error?.message || "Gamelist games CSV import failed.", "error");
+  }
+}
+
+function exportShelfPhysicalCsv() {
+  downloadCsv(state.games.map(shelfCsvRecord), `shelf-physical-games-${dateStamp()}.csv`);
+  showToast(`Exported ${state.games.length} shelf physical games.`);
+}
+
+async function importShelfPhysicalCsv() {
   const file = await pickCsvFile();
   if (!file) return;
   try {
@@ -1809,10 +1857,196 @@ async function importShelfCsv() {
     await persistShelf();
     rebuildGames();
     renderAll();
-    showToast(`Imported ${state.games.length} shelf games.`);
+    showToast(`Imported ${state.games.length} shelf physical games.`);
   } catch (error) {
-    showToast(error?.message || "CSV import failed.", "error");
+    showToast(error?.message || "Shelf physical games CSV import failed.", "error");
   }
+}
+
+function finishedGamesCsvRecords() {
+  return state.gamelistGames
+    .filter((game) => !game.deletedAt && game.completedAt)
+    .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
+    .map((game) => ({
+      year: completionYear(game),
+      id: game.id,
+      title: game.title,
+      platform: game.platform,
+      owners: game.owners || [],
+      tags: game.tags || [],
+      startedAt: dateOnly(game.startedAt),
+      completedAt: dateOnly(game.completedAt),
+      lengthHours: game.lengthHours || "",
+      replayCount: game.replayCount || "",
+      stream: Boolean(game.stream),
+      coop: Boolean(game.coop),
+      platinum: Boolean(game.platinum),
+      digital: Boolean(game.digital),
+      emulator: Boolean(game.emulator),
+    }));
+}
+
+function exportFinishedGamesCsv() {
+  const records = finishedGamesCsvRecords();
+  downloadCsv(records, `gamelist-finished-games-${dateStamp()}.csv`);
+  showToast(`Exported ${records.length} finished game rows.`);
+}
+
+async function importFinishedGamesCsv() {
+  const file = await pickCsvFile();
+  if (!file) return;
+  try {
+    const rows = csvToObjects(await file.text());
+    if (!rows.length) {
+      showToast("No finished games found in that CSV.", "error");
+      return;
+    }
+    if (!window.confirm(`Import ${rows.length} finished game rows? This updates matching games by id, or by title/platform.`)) return;
+    const now = new Date().toISOString();
+    const nextGames = [...state.gamelistGames];
+    let changed = 0;
+    rows.forEach((row) => {
+      const game = gamelistGameByCsvRow(row, nextGames);
+      if (!game) return;
+      ["startedAt", "completedAt", "lengthHours", "replayCount", "owners", "tags", "stream", "coop", "platinum", "digital", "emulator"].forEach((key) => {
+        if (row[key] !== undefined && row[key] !== "") game[key] = row[key];
+      });
+      game.updatedAt = now;
+      game.editedAt = now;
+      changed += 1;
+    });
+    if (!changed) {
+      showToast("No matching games found for that Finished games CSV.", "error");
+      return;
+    }
+    await persistGamelistData(nextGames, state.gamelistSettings);
+    state.gamelistGames = nextGames;
+    renderGamelistModules();
+    showToast(`Imported finished data for ${changed} games.`);
+  } catch (error) {
+    showToast(error?.message || "Finished games CSV import failed.", "error");
+  }
+}
+
+function gameOfTheYearCsvRecords() {
+  return Object.entries(state.gamelistSettings.gameOfTheYear || {})
+    .sort(([a], [b]) => b.localeCompare(a))
+    .flatMap(([year, entry]) => {
+      const picks = entry?.picks || {};
+      return GAME_OF_YEAR_CATEGORIES.map(([category, label], index) => {
+        const game = gamelistGameById(picks[category]);
+        return {
+          year,
+          category,
+          label,
+          order: index + 1,
+          gameId: picks[category] || "",
+          title: game?.title || "",
+          platform: game?.platform || "",
+          published: Boolean(entry?.published),
+          updatedAt: entry?.updatedAt || "",
+        };
+      });
+    });
+}
+
+function exportGameOfTheYearCsv() {
+  const records = gameOfTheYearCsvRecords();
+  downloadCsv(records, `gamelist-goty-${dateStamp()}.csv`);
+  showToast(`Exported ${records.length} GOTY rows.`);
+}
+
+async function importGameOfTheYearCsv() {
+  const file = await pickCsvFile();
+  if (!file) return;
+  try {
+    const rows = csvToObjects(await file.text());
+    if (!rows.length) {
+      showToast("No GOTY picks found in that CSV.", "error");
+      return;
+    }
+    if (!window.confirm(`Import GOTY picks from ${rows.length} CSV rows? This updates saved Games of the year picks.`)) return;
+    const imported = {};
+    rows.forEach((row) => {
+      const year = String(row.year || "").match(/\b(19|20)\d{2}\b/)?.[0];
+      const category = String(row.category || "").trim();
+      if (!year || !GAME_OF_YEAR_CATEGORIES.some(([key]) => key === category)) return;
+      const game = gamelistGameByCsvRow({ id: row.gameId, title: row.title, platform: row.platform });
+      imported[year] ||= { picks: {}, updatedAt: String(row.updatedAt || "") };
+      imported[year].picks[category] = game?.id || String(row.gameId || "");
+    });
+    const years = Object.keys(imported);
+    if (!years.length) {
+      showToast("No valid GOTY rows found in that CSV.", "error");
+      return;
+    }
+    const now = new Date().toISOString();
+    const nextGameOfTheYear = { ...(state.gamelistSettings.gameOfTheYear || {}) };
+    years.forEach((year) => {
+      const previous = nextGameOfTheYear[year]?.picks || {};
+      const picks = Object.fromEntries(GAME_OF_YEAR_CATEGORIES.map(([key]) => [key, imported[year].picks[key] || previous[key] || ""]));
+      nextGameOfTheYear[year] = {
+        picks,
+        published: gameOfTheYearComplete(picks),
+        updatedAt: imported[year].updatedAt || now,
+      };
+    });
+    state.gamelistSettings = { ...state.gamelistSettings, gameOfTheYear: nextGameOfTheYear };
+    localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));
+    await persistGamelistData(state.gamelistGames, state.gamelistSettings);
+    renderGamelistModules();
+    showToast(`Imported GOTY picks for ${years.length} years.`);
+  } catch (error) {
+    showToast(error?.message || "GOTY CSV import failed.", "error");
+  }
+}
+
+async function persistGamelistData(games, settings) {
+  const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
+  const data = await fetch("/api/sync", { cache: "no-store" }).then((response) => response.ok ? response.json() : { games: [], settings: state.gamelistSettings }).catch(() => ({ games: [], settings: state.gamelistSettings }));
+  const response = await fetch("/api/sync", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "x-edit-password": password },
+    body: JSON.stringify({ games, settings: settings || data.settings || state.gamelistSettings }),
+  });
+  if (!response.ok) throw new Error("Gamelist data could not be synced");
+}
+
+function gamelistGameById(id) {
+  return state.gamelistGames.find((game) => game.id === id && !game.deletedAt) || null;
+}
+
+function gamelistGameByCsvRow(row, games = state.gamelistGames) {
+  const id = String(row.id || "").trim();
+  if (id) {
+    const byId = games.find((game) => game.id === id && !game.deletedAt);
+    if (byId) return byId;
+  }
+  const title = normalizeTag(row.title);
+  const platform = normalizeTag(row.platform);
+  if (!title) return null;
+  return games.find((game) => !game.deletedAt && normalizeTag(game.title) === title && (!platform || normalizeTag(game.platform) === platform)) || null;
+}
+
+function gameOfTheYearComplete(picks = {}) {
+  return GAME_OF_YEAR_CATEGORIES.every(([key]) => Boolean(picks[key]));
+}
+
+function completionYear(game) {
+  const value = String(game.completedAt || game.finishedAt || "");
+  return value.match(/\b(19|20)\d{2}\b/)?.[0] || "";
+}
+
+function dateOnly(value) {
+  return String(value || "").slice(0, 10);
+}
+
+function normalizeTag(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function stringCompare(a = "", b = "") {
+  return String(a || "").localeCompare(String(b || ""), undefined, { numeric: true, sensitivity: "base" });
 }
 
 function downloadCsv(records, filename) {
@@ -2168,7 +2402,7 @@ async function saveLayout(event) {
   state.layout.hidden = LAYOUT_KEYS.filter((key) => !el.layoutList.querySelector(`[data-layout-visible][value="${key}"]`)?.checked);
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout));
   const stores = [...el.settingsStores.querySelectorAll("input:checked")].map((input) => input.value).filter((store) => STORE_OPTIONS.includes(store)).slice(0, MAX_PRICE_STORES);
-  state.gamelistSettings = { ...state.gamelistSettings, shelfDefaultOrder: el.settingsDefaultOrder.value, weekStart: normalizeWeekStart(el.settingsWeekStart?.value || state.gamelistSettings.weekStart), currency: el.settingsCurrency.value, region: el.settingsRegion.value, language: normalizeLanguage(el.settingsLanguage.value), psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false, hidePageSwitch: document.querySelector("#shelfSettingsHidePageSwitch")?.checked === true, forceCacheOnLoad: document.querySelector("#shelfSettingsForceCacheOnLoad")?.checked === true };
+  state.gamelistSettings = { ...state.gamelistSettings, shelfDefaultOrder: el.settingsDefaultOrder.value, weekStart: normalizeWeekStart(el.settingsWeekStart?.value || state.gamelistSettings.weekStart), currency: el.settingsCurrency.value, region: el.settingsRegion.value, language: normalizeLanguage(el.settingsLanguage.value), psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), twitchUser: el.settingsTwitchUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false, hidePageSwitch: document.querySelector("#shelfSettingsHidePageSwitch")?.checked === true, forceCacheOnLoad: document.querySelector("#shelfSettingsForceCacheOnLoad")?.checked === true };
   localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));
   applyShelfDefaultOrder(state.gamelistSettings.shelfDefaultOrder);
   await Promise.all([persistShelf(), persistGamelistSettings()]);

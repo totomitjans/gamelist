@@ -8233,7 +8233,7 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-csv-data {
   display: inline-grid;
-  width: min(460px, 100%);
+  width: min(520px, 100%);
 }
 
 .settings-csv-data .settings-data-card {
@@ -8249,7 +8249,7 @@ body.dialog-open .mobile-section-tabs {
 
 .settings-csv-row {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(150px, 190px);
+  grid-template-columns: minmax(210px, 1fr) minmax(150px, 190px);
   align-items: center;
   gap: 10px;
 }

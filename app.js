@@ -1238,7 +1238,7 @@ function renderSettingsDialog() {
     ...state.settings.pageOrder.map((key) => settingsLayoutItem(key, pageIndex.get(key) ?? 0)),
     `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${settingsThemeItem()}${settingsDefaultOrderItem()}${settingsWeekStartItem()}${settingsShelfSyncItem()}${settingsPageSwitchItem()}</div>`,
   ].join("");
-  document.querySelector("#settingsCsvData").innerHTML = settingsCsvDataItem("gamelist");
+  document.querySelector("#settingsCsvData").innerHTML = settingsCsvDataItem();
   if (el.settingsDevFeatures) el.settingsDevFeatures.innerHTML = settingsDevFeaturesItem("gamelist");
   el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `
     <label class="check-filter toggle-check settings-store-check">
@@ -1288,10 +1288,14 @@ function renderSettingsDialog() {
   });
   document.querySelector("[data-export-csv='gamelist']")?.addEventListener("click", exportGamelistCsv);
   document.querySelector("[data-import-csv='gamelist']")?.addEventListener("click", importGamelistCsv);
-  document.querySelector("[data-export-csv='yearly-stats']")?.addEventListener("click", exportYearlyStatsCsv);
-  document.querySelector("[data-import-csv='yearly-stats']")?.addEventListener("click", importYearlyStatsCsv);
+  document.querySelector("[data-export-csv='shelf']")?.addEventListener("click", exportShelfPhysicalCsv);
+  document.querySelector("[data-import-csv='shelf']")?.addEventListener("click", importShelfPhysicalCsv);
   document.querySelector("[data-export-csv='goty']")?.addEventListener("click", exportGameOfTheYearCsv);
   document.querySelector("[data-import-csv='goty']")?.addEventListener("click", importGameOfTheYearCsv);
+  document.querySelector("[data-export-csv='finished']")?.addEventListener("click", exportYearlyStatsCsv);
+  document.querySelector("[data-import-csv='finished']")?.addEventListener("click", importYearlyStatsCsv);
+  document.querySelector("[data-export-csv='yearly-stats']")?.addEventListener("click", exportYearlyStatsCsv);
+  document.querySelector("[data-import-csv='yearly-stats']")?.addEventListener("click", importYearlyStatsCsv);
   applyLanguage();
   syncStyledSelects(el.settingsDialog, { activeValue: null });
 }
@@ -1416,11 +1420,12 @@ function settingsPageSwitchItem() {
   `;
 }
 
-function settingsCsvDataItem(kind) {
+function settingsCsvDataItem() {
   const rows = [
-    [kind, "Games"],
-    ["yearly-stats", "Yearly statistics"],
+    ["gamelist", "Gamelist games"],
+    ["shelf", "Shelf physical games"],
     ["goty", "GOTY"],
+    ["finished", "Finished games"],
   ];
   return `
     <article class="settings-layout-card settings-data-card">
@@ -1460,7 +1465,7 @@ function settingsDevFeaturesItem(kind) {
   `;
 }
 
-const CSV_NUMERIC_FIELDS = new Set(["order", "lengthHours", "replayCount", "numericPrice", "price", "estimatedValue"]);
+const CSV_NUMERIC_FIELDS = new Set(["order", "lengthHours", "replayCount", "numericPrice", "price", "estimatedValue", "purchasePrice"]);
 
 function downloadCsv(records, filename) {
   const csv = recordsToCsv(records);
@@ -1595,6 +1600,114 @@ async function importGamelistCsv() {
   }
 }
 
+async function shelfPayloadForCsv() {
+  return fetch("/api/shelf", { cache: "no-store" })
+    .then((response) => response.ok ? response.json() : null)
+    .then((data) => ({
+      sourceGames: Array.isArray(data?.sourceGames) ? data.sourceGames : [],
+      games: Array.isArray(data?.games) ? data.games : [],
+      overrides: data?.overrides && typeof data.overrides === "object" ? data.overrides : {},
+      layout: data?.layout || null,
+      favoriteGameIds: Array.isArray(data?.favoriteGameIds) ? data.favoriteGameIds : [],
+    }))
+    .catch(() => ({ sourceGames: [], games: [], overrides: {}, layout: null, favoriteGameIds: [] }));
+}
+
+function shelfConditionValue(game, key) {
+  if (typeof game?.[key] === "boolean") return game[key];
+  const old = String(game?.ownership || "").toLowerCase();
+  if (key === "game") return true;
+  if (key === "box") return /cib|boxed|new/.test(old);
+  if (key === "manual") return /cib/.test(old);
+  if (key === "other") return /\+/.test(old);
+  if (key === "sealed") return /new|sealed/.test(old);
+  return false;
+}
+
+function shelfCsvRecord(game) {
+  const next = { ...game };
+  next.game = shelfConditionValue(next, "game");
+  next.manual = shelfConditionValue(next, "manual");
+  next.box = shelfConditionValue(next, "box");
+  next.other = shelfConditionValue(next, "other");
+  next.sealed = shelfConditionValue(next, "sealed");
+  delete next.ownership;
+  return next;
+}
+
+function normalizeShelfCsvGame(game) {
+  const next = { ...game };
+  const hasConditionColumns = ["game", "manual", "box", "other", "sealed"].some((key) => Object.prototype.hasOwnProperty.call(next, key));
+  if (hasConditionColumns) {
+    next.game = csvBoolean(next.game, true);
+    next.manual = csvBoolean(next.manual, false);
+    next.box = csvBoolean(next.box, false);
+    next.other = csvBoolean(next.other, false);
+    next.sealed = csvBoolean(next.sealed, false);
+  } else {
+    next.game = shelfConditionValue(next, "game");
+    next.manual = shelfConditionValue(next, "manual");
+    next.box = shelfConditionValue(next, "box");
+    next.other = shelfConditionValue(next, "other");
+    next.sealed = shelfConditionValue(next, "sealed");
+  }
+  delete next.ownership;
+  delete next.sourceRecord;
+  return next;
+}
+
+function csvBoolean(value, fallback = false) {
+  if (typeof value === "boolean") return value;
+  const text = String(value ?? "").trim().toLowerCase();
+  if (!text) return fallback;
+  if (["true", "1", "yes", "y", "on", "x", "checked"].includes(text)) return true;
+  if (["false", "0", "no", "n", "off", "unchecked"].includes(text)) return false;
+  return fallback;
+}
+
+async function exportShelfPhysicalCsv() {
+  const data = await shelfPayloadForCsv();
+  const records = [
+    ...data.sourceGames.map((game) => ({ ...shelfCsvRecord(game), sourceRecord: true })),
+    ...data.games.map((game) => ({ ...shelfCsvRecord(game), sourceRecord: false })),
+  ];
+  downloadCsv(records, `shelf-physical-games-${dateStamp()}.csv`);
+  showToast(`Exported ${records.length} shelf physical games.`);
+}
+
+async function importShelfPhysicalCsv() {
+  const file = await pickCsvFile();
+  if (!file) return;
+  try {
+    const rows = csvToObjects(await file.text());
+    if (!rows.length) {
+      showToast("No shelf physical games found in that CSV.", "error");
+      return;
+    }
+    if (!window.confirm(`Import ${rows.length} shelf physical games from CSV? This replaces the current Shelf physical games.`)) return;
+    const now = new Date().toISOString();
+    const next = await shelfPayloadForCsv();
+    next.sourceGames = [];
+    next.games = [];
+    next.overrides = {};
+    rows.forEach((row, index) => {
+      const game = normalizeShelfCsvGame({ ...row, id: row.id || csvImportedId("shelf", index), updatedAt: row.updatedAt || now });
+      if (row.sourceRecord === true) next.sourceGames.push(game);
+      else next.games.push(game);
+    });
+    const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
+    const response = await fetch("/api/shelf", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "x-edit-password": password },
+      body: JSON.stringify(next),
+    });
+    if (!response.ok) throw new Error("Shelf physical games could not be imported.");
+    showToast(`Imported ${next.sourceGames.length + next.games.length} shelf physical games.`);
+  } catch (error) {
+    showToast(error?.message || "Shelf physical games CSV import failed.", "error");
+  }
+}
+
 function yearlyStatsCsvRecords() {
   return state.games
     .filter((game) => !game.deletedAt && game.completedAt)
@@ -1620,8 +1733,8 @@ function yearlyStatsCsvRecords() {
 
 function exportYearlyStatsCsv() {
   const records = yearlyStatsCsvRecords();
-  downloadCsv(records, `gamelist-yearly-statistics-${dateStamp()}.csv`);
-  showToast(`Exported ${records.length} yearly statistic rows.`);
+  downloadCsv(records, `gamelist-finished-games-${dateStamp()}.csv`);
+  showToast(`Exported ${records.length} finished game rows.`);
 }
 
 async function importYearlyStatsCsv() {
@@ -1630,10 +1743,10 @@ async function importYearlyStatsCsv() {
   try {
     const rows = csvToObjects(await file.text());
     if (!rows.length) {
-      showToast("No yearly statistics found in that CSV.", "error");
+      showToast("No finished games found in that CSV.", "error");
       return;
     }
-    if (!window.confirm(`Import ${rows.length} yearly statistic rows? This updates matching games by id, or by title/platform.`)) return;
+    if (!window.confirm(`Import ${rows.length} finished game rows? This updates matching games by id, or by title/platform.`)) return;
     const now = new Date().toISOString();
     let changed = 0;
     rows.forEach((row) => {
@@ -1646,16 +1759,16 @@ async function importYearlyStatsCsv() {
       changed += 1;
     });
     if (!changed) {
-      showToast("No matching games found for that yearly statistics CSV.", "error");
+      showToast("No matching games found for that Finished games CSV.", "error");
       return;
     }
     state.games = normalizeGameRecords(state.games);
     persistLocal(false);
     await persistCloud();
     render();
-    showToast(`Imported yearly statistics for ${changed} games.`);
+    showToast(`Imported finished data for ${changed} games.`);
   } catch (error) {
-    showToast(error?.message || "Yearly statistics CSV import failed.", "error");
+    showToast(error?.message || "Finished games CSV import failed.", "error");
   }
 }
 
