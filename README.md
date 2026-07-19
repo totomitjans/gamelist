@@ -12,16 +12,16 @@ The app has two connected pages:
 
 Both pages share edit mode, themes, account settings, price-store settings, achievement integrations, and the same `GAMELIST` KV namespace. Shelf Sync can also send physical collection additions back into the main Gamelist flow.
 
-Made and designed by [Shabii](https://x.com/Shabii_exe) with the help of ChatGPT Codex.
+Made and designed by <img src="assets/shabii_logo.png" alt="Shabii" width="18" align="center"> [Shabii](https://x.com/Shabii_exe) with the help of ChatGPT Codex.
 
 ## Features
 
 - Cloud sync through Cloudflare Workers KV.
-- IGDB-powered lookup for covers, release dates, descriptions, genres, developers, publishers, trailers, and store links.
+- IGDB-powered lookup for covers, release dates, descriptions, genres, developers, publishers, trailers, store links, and price-search helpers.
 - Backlog, upcoming, available, currently playing, and finished-game boards.
 - Twitch stream preview in Currently Playing when a streamed game and Twitch username are configured.
 - Release calendar with preorder markers.
-- Physical Shelf library with multiple owners, regions, conditions, categories, prices, collection value, and linked Gamelist entries.
+- Physical Shelf library with multiple owners, regions, conditions, categories, selected-store prices, PriceCharting collection values, and linked Gamelist entries.
 - Shelf Showcase block for featured games, plus shared Currently Playing, Last Finished, Highlights, and Search modules.
 - PSN, Steam, and Xbox trophy/achievement dashboards.
 - Game of the Year tracking and poster export.
@@ -42,7 +42,7 @@ This is the main setup path. You do not need to download a ZIP or run terminal c
 #### Setup requirements
 
 - <img src="https://cdn.simpleicons.org/cloudflare/F38020" alt="Cloudflare" width="18" align="center"> A Cloudflare account
-- <img src="https://cdn.simpleicons.org/github/181717" alt="GitHub" width="18" align="center"> A GitHub account
+- <img src="https://cdn.simpleicons.org/github/D0D7DE" alt="GitHub" width="18" align="center"> A GitHub account
 - <img src="https://cdn.simpleicons.org/twitch/9146FF" alt="Twitch" width="18" align="center"> A Twitch account
 
 ### 1. Start from Cloudflare
@@ -240,6 +240,29 @@ GOOGLE_CALENDAR_ID
 6. Save settings.
 
 Those settings are stored in the Worker KV namespace.
+
+### Available store prices
+
+Store prices use your selected **region**, **currency**, and **selected shops** from Settings. You can choose up to five physical stores at once.
+
+Physical store price options:
+
+- <img src="assets/stores/amazon.ico" alt="Amazon" width="18" align="center"> Different Amazon regional prices from Amazon.es, Amazon.co.uk, or Amazon.com, etc .depending on the users selected prefered region.
+- <img src="https://cdn.simpleicons.org/ebay/E53238" alt="eBay" width="18" align="center"> eBay prices from different users listings.
+- <img src="assets/stores/game.ico" alt="GAME.es" width="18" align="center"> GAME.es prices, including second hand.
+- <img src="assets/stores/xtralife.ico" alt="Xtralife" width="18" align="center"> Xtralife prices.
+- <img src="assets/stores/retroisland.png" alt="Retro Island NY" width="18" align="center"> Retro Island NY prices.
+- <img src="https://www.google.com/s2/favicons?domain=gamestop.com&sz=32" alt="GameStop" width="18" align="center"> US GameStop prices, including second hand.
+- <img src="https://www.walmart.com/favicon.ico" alt="Walmart" width="18" align="center"> US Walmart prices.
+
+Digital games use the platform store automatically when the platform matches:
+
+- <img src="assets/sites/nintendo.png" alt="Nintendo" width="18" align="center"> Different Nintendo regional for Nintendo Switch / Switch 2 digital games.
+- <img src="assets/sites/playstation.png" alt="PlayStation" width="18" align="center"> Different PlayStation Store regional prices for PS4 / PS5 digital games .
+- <img src="assets/sites/steam.png" alt="Steam" width="18" align="center"> Different Steam regional prices.
+- <img src="assets/platforms/xbox.png" alt="Xbox" width="18" align="center"> Different regional Xbox Store or Xbox PC games.
+
+<img src="https://www.pricecharting.com/images/favicon.ico" alt="PriceCharting" width="18" align="center"> Shelf collection values also use PriceCharting data when a matching physical game from the collection, to track the average market value depending on the condition.
 
 ### Twitch stream preview
 
