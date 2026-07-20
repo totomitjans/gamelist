@@ -104,7 +104,7 @@ EDIT_PASSWORD
 
 `EDIT_PASSWORD` is the password you will type in the app to unlock **Edit mode** and change your site settings and theme.
 
-Use **Secret** for all integration keys/tokens. Do not put them in `wrangler.toml`, do not commit them to GitHub, and do not share them publicly.
+Use **Secret** for all integration keys/tokens. Do not share them publicly or add them as plain text.
 
 Now **continue** the setup until you reach **Recommended Integrations**. The next integrations are **required** to make it all work properly, but the recommended ones will help you improve your experience a bit more.
 
