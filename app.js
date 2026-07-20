@@ -583,6 +583,11 @@ function applySiteVersion(value = {}) {
 
 function logPageVersion(currentRepo = "") {
   const originalRepo = "https://github.com/ShabiiEXE/Gamelist";
+  const shabiiRepos = [
+    "https://github.com/Insomniac1985/gamelist",
+    "https://github.com/totomitjans/gamelist",
+    "https://gitlab.com/shabiimitjans/gamelist",
+  ];
   const currentRepoLine = repoUrlsMatch(currentRepo, originalRepo) ? "" : `\n  repo: ${currentRepo}`;
   console.log(String.raw`%c
     {{{{{{{{{{{     {{{{{{{{{{{{{{{{{{{{
@@ -601,7 +606,8 @@ function logPageVersion(currentRepo = "") {
 {{{{{{{{{{{        {{{{{{{{{{{{         
 %c
   ${consoleVersionLabel()}
-  original repo: ${originalRepo}${currentRepoLine}
+  original repo: ${originalRepo}
+  shabii repos: ${JSON.stringify(shabiiRepos, null, 2).replace(/\n/g, "\n  ")}${currentRepoLine}
 `, "color:#ff0039;font-weight:900;font-size:8px;line-height:1;", "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;");
 }
 
