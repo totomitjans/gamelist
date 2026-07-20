@@ -462,6 +462,7 @@ function logStatusLines(status, theme = "shabii", editorStatus = "NOT LOGGED IN"
   const headerStyle = "color:#67c5ab;font-weight:900;font-size:12px;line-height:1.35;";
   const labelStyle = "font-weight:700;";
   const apiStatus = (value) => Boolean(value) ? "online" : "offline";
+  const igdbApiStatus = (value) => status.IGDB_CLIENT_ID && status.IGDB_CLIENT_SECRET ? apiStatus(value) : "no api set";
   const accountApiStatus = (value, username, apiSet) => {
     const label = !apiSet
       ? "no api set"
@@ -476,7 +477,7 @@ function logStatusLines(status, theme = "shabii", editorStatus = "NOT LOGGED IN"
   const statusLines = [
     ...(theme !== "shabii" ? [["UPDATE", apiStatus(status.UPDATE)]] : []),
     ["EDITOR", String(editorStatus || "not logged in").toLowerCase()],
-    ["IGDB API", apiStatus(status.working?.IGDB)],
+    ["IGDB API", igdbApiStatus(status.working?.IGDB)],
     ["PRICECHARTING API", apiStatus(status.working?.PRICECHARTING)],
     ["PSN API", accountApiStatus(status.working?.PSN, state.settings.psnUser, status.PSN_NPSSO)],
     ["OPENXBL API", accountApiStatus(status.working?.XBOX, state.settings.microsoftUser, status.OPENXBL_API_KEY)],
