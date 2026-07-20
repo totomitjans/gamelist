@@ -118,7 +118,7 @@ async function verifyGitlabProject(project) {
     provider: "gitlab",
     name: project.path_with_namespace,
     url,
-    siteUrl: siteUrlFor("", readme, deployedUrl),
+    siteUrl: siteUrlFor(project.description, readme, deployedUrl),
     updatedAt: project.last_activity_at || "",
   };
 }
