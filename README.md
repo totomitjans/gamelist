@@ -254,29 +254,11 @@ GOOGLE_CALENDAR_ID
 
 Those settings are stored in the Worker KV namespace.
 
-### Persistent repo site links
+### Repo copy site links
 
-When you are logged in, the console can list public copies of this repo and link their deployed sites when known. Keep those site URLs in Cloudflare KV so repo updates do not replace them.
+When you are logged in, the console lists public copies of this repo that mention the original project in their README. Site links are discovered automatically from public GitHub or GitLab deployment metadata, the repo homepage field, or a public `workers.dev` link in the README.
 
-Create or edit this KV key in the same `GAMELIST` namespace:
-
-```text
-repo-copy-sites
-```
-
-Value:
-
-```json
-{
-  "https://github.com/Insomniac1985/gamelist": "https://gamelist.jono-part2.workers.dev/",
-  "https://github.com/totomitjans/gamelist": "https://example.workers.dev/",
-  "https://gitlab.com/shabiimitjans/gamelist": "https://gamelist.shabiimitjans.workers.dev/"
-}
-```
-
-After editing the KV value, open `/api/repo-copies?fresh=1` while logged in, or reload the site after a few minutes.
-
-Repos listed in `repo-copy-sites` are treated as trusted manual entries, so they still appear if GitHub or GitLab public search is rate-limited.
+The current deployment reports its own site URL from the request origin, so it does not need a `SITE_URL` variable in `wrangler.toml`.
 
 ### Available store prices data
 

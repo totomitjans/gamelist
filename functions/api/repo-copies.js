@@ -17,54 +17,28 @@ export async function onRequestGet({ request, env = {} }) {
   if (!await isEditorRequest(request, env)) return json({ error: "Unauthorized" }, 401);
   const fresh = new URL(request.url).searchParams.get("fresh") === "1";
   if (!fresh && repoCache && Date.now() < repoCache.expiresAt) return json(repoCache.value);
-  const siteUrls = await configuredSiteUrls(env);
-  const repos = await findRepoCopies(env, siteUrls);
+  const repos = await findRepoCopies(env);
   const value = { originalRepo: ORIGINAL_REPO, count: repos.length, repos, updatedAt: new Date().toISOString() };
   repoCache = { value, expiresAt: Date.now() + CACHE_MS };
   return json(value);
 }
 
-async function findRepoCopies(env = {}, siteUrls = {}) {
+async function findRepoCopies(env = {}) {
   const byUrl = new Map();
   const candidates = await Promise.allSettled([
-    findGithubCandidates(env, siteUrls),
-    findGitlabCandidates(siteUrls),
+    findGithubCandidates(env),
+    findGitlabCandidates(),
   ]);
   for (const result of candidates) {
     if (result.status !== "fulfilled") continue;
     for (const repo of result.value) byUrl.set(repo.url.toLowerCase(), repo);
   }
-  for (const repo of configuredRepos(siteUrls)) byUrl.set(repo.url.toLowerCase(), repo);
   return [...byUrl.values()]
     .filter((repo) => !repoUrlsMatch(repo.url, ORIGINAL_REPO))
     .sort((a, b) => a.url.localeCompare(b.url));
 }
 
-function configuredRepos(siteUrls = {}) {
-  return Object.entries(siteUrls)
-    .map(([repo, entry]) => {
-      const url = repoUrlFromKey(entry?.repoUrl || repo);
-      if (!url) return null;
-      return {
-        provider: url.includes("gitlab.com") ? "gitlab" : "github",
-        name: normalizeRepoUrl(url).replace(/^github\.com\//, "").replace(/^gitlab\.com\//, ""),
-        url,
-        siteUrl: entry?.siteUrl || "",
-        updatedAt: "",
-        configured: true,
-      };
-    })
-    .filter(Boolean);
-}
-
-function repoUrlFromKey(value) {
-  const cleaned = cleanUrl(value).replace(/\.git$/, "").replace(/\/$/, "");
-  const normalized = normalizeRepoUrl(value);
-  if (!/^github\.com\/[^/]+\/[^/]+$/.test(normalized) && !/^gitlab\.com\/[^/]+\/[^/]+$/.test(normalized)) return "";
-  return /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
-}
-
-async function findGithubCandidates(env = {}, siteUrls = {}) {
+async function findGithubCandidates(env = {}) {
   const token = String(env.GITHUB_WORKFLOW_TOKEN || env.GITHUB_TOKEN || "").trim();
   const headers = githubHeaders(token);
   const seeds = [
@@ -86,15 +60,16 @@ async function findGithubCandidates(env = {}, siteUrls = {}) {
   for (const repo of search?.items || []) {
     if (repo?.full_name) repos.set(repo.full_name, repo);
   }
-  const checked = await Promise.all([...repos.values()].map((repo) => verifyGithubRepo(repo, headers, siteUrls)));
+  const checked = await Promise.all([...repos.values()].map((repo) => verifyGithubRepo(repo, headers)));
   return checked.filter(Boolean);
 }
 
-async function verifyGithubRepo(repo, headers, siteUrls = {}) {
+async function verifyGithubRepo(repo, headers) {
   const fullName = String(repo.full_name || "");
-  const [contents, readme] = await Promise.all([
+  const [contents, readme, deployedUrl] = await Promise.all([
     githubJson(`${GITHUB_API}/repos/${fullName}/contents`, headers).catch(() => []),
     fetchText(`https://raw.githubusercontent.com/${fullName}/${repo.default_branch || "main"}/README.md`).catch(() => ""),
+    githubDeploymentUrl(fullName, headers),
   ]);
   if (!hasRequiredFiles(contents?.map((item) => item?.name))) return null;
   if (!mentionsOriginal(readme)) return null;
@@ -103,12 +78,12 @@ async function verifyGithubRepo(repo, headers, siteUrls = {}) {
     provider: "github",
     name: fullName,
     url,
-    siteUrl: siteUrlFor(url, repo.homepage, readme, siteUrls),
+    siteUrl: siteUrlFor(repo.homepage, readme, deployedUrl),
     updatedAt: repo.pushed_at || repo.updated_at || "",
   };
 }
 
-async function findGitlabCandidates(siteUrls = {}) {
+async function findGitlabCandidates() {
   const seeds = ["shabiimitjans/gamelist"];
   const projects = new Map();
   for (const path of seeds) {
@@ -125,15 +100,16 @@ async function findGitlabCandidates(siteUrls = {}) {
   for (const project of search || []) {
     if (project?.path_with_namespace) projects.set(project.path_with_namespace, project);
   }
-  const checked = await Promise.all([...projects.values()].map((project) => verifyGitlabProject(project, siteUrls)));
+  const checked = await Promise.all([...projects.values()].map((project) => verifyGitlabProject(project)));
   return checked.filter(Boolean);
 }
 
-async function verifyGitlabProject(project, siteUrls = {}) {
+async function verifyGitlabProject(project) {
   const id = encodeURIComponent(project.path_with_namespace);
-  const [tree, readme] = await Promise.all([
+  const [tree, readme, deployedUrl] = await Promise.all([
     fetchJson(`${GITLAB_API}/projects/${id}/repository/tree?per_page=100`).catch(() => []),
     fetchText(`https://gitlab.com/${project.path_with_namespace}/-/raw/${project.default_branch || "main"}/README.md`).catch(() => ""),
+    gitlabEnvironmentUrl(id),
   ]);
   if (!hasRequiredFiles(tree?.map((item) => item?.name))) return null;
   if (!mentionsOriginal(readme)) return null;
@@ -142,41 +118,9 @@ async function verifyGitlabProject(project, siteUrls = {}) {
     provider: "gitlab",
     name: project.path_with_namespace,
     url,
-    siteUrl: siteUrlFor(url, "", readme, siteUrls),
+    siteUrl: siteUrlFor("", readme, deployedUrl),
     updatedAt: project.last_activity_at || "",
   };
-}
-
-async function configuredSiteUrls(env = {}) {
-  const values = {};
-  Object.assign(values, normalizeSiteUrlMap(parseSiteUrlMap(env.REPO_COPY_SITE_URLS)));
-  if (env.GAMELIST?.get) {
-    const kvValue = await env.GAMELIST.get("repo-copy-sites", "json").catch(() => null);
-    Object.assign(values, normalizeSiteUrlMap(kvValue));
-  }
-  return values;
-}
-
-function parseSiteUrlMap(value) {
-  const text = String(value || "").trim();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch {
-    return Object.fromEntries(text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => line.split(/\s*=\s*/, 2))
-      .filter(([repo, site]) => repo && site));
-  }
-}
-
-function normalizeSiteUrlMap(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return Object.fromEntries(Object.entries(value)
-    .map(([repo, site]) => [normalizeRepoUrl(repo), { repoUrl: cleanUrl(repo), siteUrl: cleanUrl(site) }])
-    .filter(([repo, entry]) => repo && entry.siteUrl));
 }
 
 async function githubRepo(fullName, headers) {
@@ -185,6 +129,31 @@ async function githubRepo(fullName, headers) {
 
 async function gitlabProject(path) {
   return await fetchJson(`${GITLAB_API}/projects/${encodeURIComponent(path)}`).catch(() => null);
+}
+
+async function githubDeploymentUrl(fullName, headers) {
+  const deployments = await githubJson(`${GITHUB_API}/repos/${fullName}/deployments?per_page=10`, headers).catch(() => []);
+  for (const deployment of deployments || []) {
+    const direct = cleanUrl(deployment?.environment_url || deployment?.payload?.web_url || "");
+    if (isLikelySiteUrl(direct)) return direct;
+    const statusesUrl = deployment?.statuses_url;
+    if (!statusesUrl) continue;
+    const statuses = await githubJson(`${statusesUrl}?per_page=5`, headers).catch(() => []);
+    for (const status of statuses || []) {
+      const url = cleanUrl(status?.environment_url || status?.target_url || status?.log_url || "");
+      if (isLikelySiteUrl(url)) return url;
+    }
+  }
+  return "";
+}
+
+async function gitlabEnvironmentUrl(projectId) {
+  const environments = await fetchJson(`${GITLAB_API}/projects/${projectId}/environments?per_page=20`).catch(() => []);
+  for (const environment of environments || []) {
+    const url = cleanUrl(environment?.external_url || "");
+    if (isLikelySiteUrl(url)) return url;
+  }
+  return "";
 }
 
 function githubHeaders(token = "") {
@@ -232,9 +201,9 @@ function mentionsOriginal(text = "") {
   return README_MARKERS.some((marker) => text.includes(marker));
 }
 
-function siteUrlFor(repoUrl, homepage = "", readme = "", siteUrls = {}) {
-  const configured = siteUrls[normalizeRepoUrl(repoUrl)]?.siteUrl || "";
-  if (configured) return configured;
+function siteUrlFor(homepage = "", readme = "", deployedUrl = "") {
+  const deployed = cleanUrl(deployedUrl);
+  if (isLikelySiteUrl(deployed)) return deployed;
   const home = cleanUrl(homepage);
   if (isLikelySiteUrl(home)) return home;
   const urls = String(readme || "").match(/https?:\/\/[^\s)\]`"']+/g) || [];
