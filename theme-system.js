@@ -404,10 +404,7 @@ function applyOwnerStyle(ownerColors) {
         border-color: ${border} !important;
         box-shadow: 0 0 20px ${glow} !important;
       }
-      body:not(.shelf-page) .owner-color-card-${slug}:hover,
-      .shelf-page .game-card.digital-card.owner-color-card-${slug}:hover,
-      .shelf-page .completed-row.owner-color-card-${slug}:hover,
-      .shelf-page .playing-finished-game.owner-color-card-${slug}:hover {
+      .owner-color-card-${slug}:hover {
         border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important;
       }
       .playing-finished-game.owner-color-card-${slug} strong,
