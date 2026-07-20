@@ -24,7 +24,6 @@ async function integrationHealth(env, request) {
     checkPsn(env),
     checkXbox(env),
     checkSteam(env),
-    checkGooglePrivateKey(env),
     checkUpdateWorkflow(env, request),
   ]);
   const value = {
@@ -33,8 +32,7 @@ async function integrationHealth(env, request) {
     PSN: checks[2],
     XBOX: checks[3],
     STEAM: checks[4],
-    GOOGLE_PRIVATE_KEY_VALID: checks[5],
-    UPDATE: checks[6],
+    UPDATE: checks[5],
   };
   healthCache = { value, expiresAt: Date.now() + HEALTH_CACHE_MS };
   return value;
@@ -105,18 +103,6 @@ async function checkSteam(env) {
   url.searchParams.set("steamids", "76561197960435530");
   const response = await safeFetch(url);
   return Boolean(response?.ok);
-}
-
-async function checkGooglePrivateKey(env) {
-  const privateKey = String(env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n").trim();
-  if (!privateKey) return false;
-  try {
-    const binary = Uint8Array.from(atob(privateKey.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "")), (char) => char.charCodeAt(0));
-    await crypto.subtle.importKey("pkcs8", binary, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function checkUpdateWorkflow(env, request) {

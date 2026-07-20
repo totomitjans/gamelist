@@ -428,22 +428,21 @@ async function logSecretStatus(page) {
 }
 
 function logStatusLines(page, status) {
-  const lines = {
-    PSN_NPSSO: status.PSN_NPSSO,
-    OPENXBL_API_KEY: status.OPENXBL_API_KEY,
-    STEAM_API_KEY: status.STEAM_API_KEY,
-    IGDB_TWITCH: status.IGDB_TWITCH,
-    PRICECHARTING_TOKEN: status.PRICECHARTING_TOKEN,
-    GOOGLE_PRIVATE_KEY: status.GOOGLE_PRIVATE_KEY,
-    IGDB_WORKING: status.working?.IGDB,
-    PRICECHARTING_WORKING: status.working?.PRICECHARTING,
-    PSN_WORKING: status.working?.PSN,
-    XBOX_WORKING: status.working?.XBOX,
-    STEAM_WORKING: status.working?.STEAM,
-    GOOGLE_PRIVATE_KEY_VALID: status.working?.GOOGLE_PRIVATE_KEY_VALID,
-    UPDATE: status.UPDATE,
-  };
-  Object.entries(lines).forEach(([name, value]) => console.log(`[${page}] ${name}: ${Boolean(value)}`));
+  const log = (name, value) => console.log(`[${page}] ${name}: ${Boolean(value)}`);
+  log("UPDATE", status.UPDATE);
+  console.log("--------------------");
+  log("IGDB_TWITCH", status.IGDB_TWITCH);
+  log("PSN_NPSSO", status.PSN_NPSSO);
+  log("OPENXBL_API_KEY", status.OPENXBL_API_KEY);
+  log("STEAM_API_KEY", status.STEAM_API_KEY);
+  log("GOOGLE_PRIVATE_KEY", status.GOOGLE_PRIVATE_KEY);
+  log("PRICECHARTING_TOKEN", status.PRICECHARTING_TOKEN);
+  console.log("--------------------");
+  log("IGDB_WORKING", status.working?.IGDB);
+  log("PRICECHARTING_WORKING", status.working?.PRICECHARTING);
+  log("PSN_WORKING", status.working?.PSN);
+  log("XBOX_WORKING", status.working?.XBOX);
+  log("STEAM_WORKING", status.working?.STEAM);
 }
 
 function bindTextureParallax() {
