@@ -478,6 +478,7 @@ function logStatusLines(status, theme = "shabii", editorStatus = "NOT LOGGED IN"
   const statusLines = [
     ...(theme !== "shabii" ? [["UPDATE", apiStatus(status.UPDATE)]] : []),
     ["EDITOR", String(editorStatus || "not logged in").toLowerCase()],
+    ["GOTY", gotyAvailabilityStatus()],
     ["IGDB API", igdbApiStatus(status.working?.IGDB)],
     ["PRICECHARTING API", apiStatus(status.working?.PRICECHARTING)],
     ["PSN API", accountApiStatus(status.working?.PSN, state.settings.psnUser, status.PSN_NPSSO)],
@@ -509,8 +510,8 @@ function logConsoleBlock(title, rows, styles) {
 
 function consoleValueStyle(value) {
   const normalized = String(value || "").trim().toLowerCase();
-  if (["online", "true", "logged in"].includes(normalized)) return "color:#38d878;font-weight:900;";
-  if (["offline", "false"].includes(normalized)) return "color:#8b0000;font-weight:900;";
+  if (["offline", "false"].includes(normalized) || normalized.startsWith("available in ")) return "color:#8b0000;font-weight:900;";
+  if (["online", "true", "logged in"].includes(normalized) || normalized.startsWith("available")) return "color:#38d878;font-weight:900;";
   return "color:#ff9f1a;font-weight:900;";
 }
 
@@ -612,10 +613,20 @@ function applySiteVersion(value = {}) {
 
 function logPageVersion(currentRepo = "", repoCopies = []) {
   const originalRepo = "https://github.com/ShabiiEXE/Gamelist";
-  const currentRepoLine = repoUrlsMatch(currentRepo, originalRepo) ? "" : `\n  repo: ${currentRepo}`;
+  const currentRepoLine = repoUrlsMatch(currentRepo, originalRepo) ? "" : `\n%c  repo: ${currentRepo}`;
   const repoEntries = repoCopies.map(repoConsoleEntry);
   const repoStyles = repoEntries.flatMap((entry) => entry.styles);
-  const reposLine = repoEntries.length ? `\n  repos (${repoEntries.length}):\n${repoEntries.map((entry) => entry.text).join("\n")}` : "";
+  const reposLine = repoEntries.length ? `\n%c  repos (${repoEntries.length}):\n${repoEntries.map((entry) => entry.text).join("\n")}` : "";
+  const logoStyle = "color:#ff0039;font-weight:900;font-size:8px;line-height:1;";
+  const versionStyle = "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;";
+  const originalRepoStyle = "color:#67c5ab;font-weight:900;font-size:12px;line-height:1.35;";
+  const reposHeaderStyle = "color:#67c5ab;font-weight:900;font-size:12px;line-height:1.35;";
+  const currentRepoStyle = "color:#67c5ab;font-weight:900;line-height:1.35;";
+  const optionalStyles = [
+    ...(repoEntries.length ? [reposHeaderStyle] : []),
+    ...repoStyles,
+    ...(currentRepoLine ? [currentRepoStyle] : []),
+  ];
   console.log(String.raw`%c
     {{{{{{{{{{{     {{{{{{{{{{{{{{{{{{{{
    {{{{{{{{{{{       {{{{{{{{{{{{{{{{{{ 
@@ -633,19 +644,20 @@ function logPageVersion(currentRepo = "", repoCopies = []) {
 {{{{{{{{{{{        {{{{{{{{{{{{         
 %c
   ${consoleVersionLabel()}
-  original repo: ${originalRepo}${reposLine}${currentRepoLine}
-`, "color:#ff0039;font-weight:900;font-size:8px;line-height:1;", "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;", ...repoStyles);
+%c  original repo: ${originalRepo}${reposLine}${currentRepoLine}
+`, logoStyle, versionStyle, originalRepoStyle, ...optionalStyles);
 }
 
 function repoConsoleEntry(repo = {}, index = 0) {
   const url = String(repo.url || "").trim();
   const siteUrl = String(repo.siteUrl || "").trim();
-  const color = index % 2 ? "#ff0039" : "#67c5ab";
-  const style = `color:${color};font-weight:900;line-height:1.35;`;
+  const color = index % 2 ? "#9aa3b2" : "#ffffff";
+  const weight = index % 2 ? "400" : "900";
+  const style = `color:${color};font-weight:${weight};line-height:1.35;`;
   const emptyStyle = "color:#ffffff;font-weight:900;line-height:1.35;";
   if (!siteUrl) {
     return {
-      text: `%c  -site: %c-%c\n   repo: ${url || "-"}`,
+      text: `%c  -site: %c---%c\n   repo: ${url || "-"}`,
       styles: [style, emptyStyle, style],
     };
   }
@@ -2432,6 +2444,18 @@ function gameOfTheYearHoverInfo(game, className) {
 
 function gameOfTheYearVisible() {
   return state.settings.gotyAlwaysShow || isGameOfTheYearSeason();
+}
+
+function gotyAvailabilityStatus(date = new Date()) {
+  const year = currentGameOfTheYear(date);
+  const picked = gameOfTheYearComplete(state.settings.gameOfTheYear?.[year]?.picks || {}) ? "picked" : "not picked";
+  if (state.settings.gotyAlwaysShow) return `forced (${picked})`;
+  if (isGameOfTheYearSeason(date)) return `available (${picked})`;
+  const start = new Date(date.getFullYear(), 11, 1);
+  if (date > start) start.setFullYear(start.getFullYear() + 1);
+  const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const days = Math.max(1, Math.ceil((start - today) / 86400000));
+  return `available in ${days} ${days === 1 ? "day" : "days"}`;
 }
 
 function isGameOfTheYearSeason(date = new Date()) {
