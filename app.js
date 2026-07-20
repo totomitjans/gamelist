@@ -3953,17 +3953,17 @@ function renderAchievements(data = {}, steamData = state.steamActivity || emptyS
   renderPlayingSection();
   const panel = achievementPanelMarkup({ psn: { ...data, ...state.psnActivity }, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml });
   el.achievementPanel.innerHTML = panel.html;
-  el.achievementPanel.querySelector("[data-action='platinums']")?.addEventListener("click", openPlatinumDialog);
+  el.achievementPanel.querySelector("[data-action='platinums']")?.addEventListener("click", () => openPlatinumDialog());
   scheduleMobilePaintRefresh();
 }
 
 function openPlatinumDialog(year = null) {
   const platinums = platinumItems();
-  const requestedYear = year == null ? "" : String(year);
+  const requestedYear = typeof year === "string" || typeof year === "number" ? String(year) : "";
   const years = requestedYear && requestedYear !== "all"
     ? unique([requestedYear, ...platinumYears(platinums)]).sort((a, b) => b.localeCompare(a))
     : platinumYears(platinums);
-  if (year != null) state.platinumYear = String(year);
+  if (requestedYear) state.platinumYear = requestedYear;
   if (state.platinumYear !== "all" && !years.includes(state.platinumYear)) state.platinumYear = "all";
   renderPlatinumDialog(platinums, years);
   if (!el.platinumDialog.open) el.platinumDialog.showModal();
