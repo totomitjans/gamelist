@@ -254,12 +254,6 @@ GOOGLE_CALENDAR_ID
 
 Those settings are stored in the Worker KV namespace.
 
-### Repo copy site links
-
-When you are logged in, the console lists public copies of this repo that mention the original project in their README. Site links are discovered automatically from public GitHub or GitLab deployment metadata, the repo homepage field, or a public `workers.dev` link in the README.
-
-The current deployment reports its own site URL from the request origin, so it does not need a `SITE_URL` variable in `wrangler.toml`.
-
 ### Available store prices data
 
 Store prices use your selected **region**, **currency**, and **selected shops** from Settings. You can choose up to five physical stores at once.
