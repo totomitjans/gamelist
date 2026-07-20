@@ -3839,16 +3839,20 @@ function achievementProviderNeedsPairing(data = {}, username = "", apiSet) {
 function achievementSetupNotices(psnData = {}, steamData = {}, xboxData = {}) {
   const status = state.integrationStatus || {};
   return [
-    achievementProviderNeedsPairing(psnData, state.settings.psnUser, status.PSN_NPSSO)
+    achievementPanelNeedsSetup(psnData, state.settings.psnUser, status.PSN_NPSSO)
       ? ["Set up PSN", "https://ca.account.sony.com/api/v1/ssocookie"]
       : null,
-    achievementProviderNeedsPairing(xboxData, state.settings.microsoftUser, status.OPENXBL_API_KEY)
+    achievementPanelNeedsSetup(xboxData, state.settings.microsoftUser, status.OPENXBL_API_KEY)
       ? ["Set up Xbox", xboxData.sourceUrl || "https://www.xbox.com/"]
       : null,
-    achievementProviderNeedsPairing(steamData, state.settings.steamUser, status.STEAM_API_KEY)
+    achievementPanelNeedsSetup(steamData, state.settings.steamUser, status.STEAM_API_KEY)
       ? ["Set up Steam", steamData.sourceUrl || "https://steamcommunity.com/"]
       : null,
   ].filter(Boolean);
+}
+
+function achievementPanelNeedsSetup(data = {}, username = "", apiSet) {
+  return Boolean(String(username || "").trim()) && achievementProviderNeedsPairing(data, username, apiSet);
 }
 
 async function fetchXboxActivity(forceRefresh = state.settings.forceCacheOnLoad === true) {
@@ -6849,7 +6853,6 @@ function sectionRank(section) {
 function metaFor(game, options = {}) {
   const values = [];
   if (game.platform) values.push(platformBadge(game.platform, null, { title: game.title }));
-  if (game.platinum) values.push(completionPill(game));
   if (game.digital) values.push(`<span class="digital-pill">Digital</span>`);
   if (game.emulator) values.push(`<span class="emulator-pill">Emulator</span>`);
   if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
@@ -7422,7 +7425,6 @@ function completedBadges(game, options = {}) {
   const progress = achievementProgressForGame(game);
   return [
     game.platform ? platformBadge(game.platform, null, { title: game.title }) : "",
-    game.platinum ? completionPill(game) : "",
     game.digital ? `<span class="digital-pill">Digital</span>` : "",
     game.emulator ? `<span class="emulator-pill">Emulator</span>` : "",
     game.coop ? `<span class="coop-pill">Coop</span>` : "",
