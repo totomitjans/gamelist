@@ -2121,6 +2121,12 @@ button.achievement-kpi {
   letter-spacing: 0.1em;
 }
 
+.achievement-auth-separator {
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .achievement-games {
   grid-column: 1 / -1;
   display: grid;

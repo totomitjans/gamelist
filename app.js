@@ -3821,13 +3821,34 @@ function notifyAchievementProviderIssues(psnData = {}, steamData = {}, xboxData 
 }
 
 function achievementProviderIssue(data = {}, username = "", apiSet, authMessage, setupMessage) {
+  if (achievementProviderNeedsPairing(data, username, apiSet)) return setupMessage;
   const hasUser = Boolean(String(username || "").trim());
   const apiKnown = apiSet === true || apiSet === false;
   const hasApi = apiSet === true;
-  const needsPairing = apiKnown ? hasUser !== hasApi : hasUser && data.needsSetup;
-  if (needsPairing) return setupMessage;
   if (data.authError && hasUser && (!apiKnown || hasApi)) return authMessage;
   return "";
+}
+
+function achievementProviderNeedsPairing(data = {}, username = "", apiSet) {
+  const hasUser = Boolean(String(username || "").trim());
+  const apiKnown = apiSet === true || apiSet === false;
+  const hasApi = apiSet === true;
+  return apiKnown ? hasUser !== hasApi : hasUser && data.needsSetup;
+}
+
+function achievementSetupNotices(psnData = {}, steamData = {}, xboxData = {}) {
+  const status = state.integrationStatus || {};
+  return [
+    achievementProviderNeedsPairing(psnData, state.settings.psnUser, status.PSN_NPSSO)
+      ? ["Set up PSN", "https://ca.account.sony.com/api/v1/ssocookie"]
+      : null,
+    achievementProviderNeedsPairing(xboxData, state.settings.microsoftUser, status.OPENXBL_API_KEY)
+      ? ["Set up Xbox", xboxData.sourceUrl || "https://www.xbox.com/"]
+      : null,
+    achievementProviderNeedsPairing(steamData, state.settings.steamUser, status.STEAM_API_KEY)
+      ? ["Set up Steam", steamData.sourceUrl || "https://steamcommunity.com/"]
+      : null,
+  ].filter(Boolean);
 }
 
 async function fetchXboxActivity(forceRefresh = state.settings.forceCacheOnLoad === true) {
@@ -4056,7 +4077,17 @@ function renderAchievements(data = {}, steamData = state.steamActivity || emptyS
     sourceUrl: xboxData.sourceUrl || "",
   };
   renderPlayingSection();
-  const panel = achievementPanelMarkup({ psn: { ...data, ...state.psnActivity }, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml });
+  const panel = achievementPanelMarkup({
+    psn: { ...data, ...state.psnActivity },
+    steam: { ...steamData, ...state.steamActivity },
+    xbox: { ...xboxData, ...state.xboxActivity },
+    setupNotices: achievementSetupNotices(data, steamData, xboxData),
+    trophyIconHtml: trophyIcon(),
+    platformBadge,
+    platformLogo,
+    trophyTone,
+    escape: escapeHtml,
+  });
   el.achievementPanel.innerHTML = panel.html;
   el.achievementPanel.querySelector("[data-action='platinums']")?.addEventListener("click", () => openPlatinumDialog());
   scheduleMobilePaintRefresh();
