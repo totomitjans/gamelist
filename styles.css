@@ -1896,7 +1896,6 @@ button.achievement-kpi {
 .platinum-highlight:hover,
 .platinum-highlight:focus-visible,
 .platinum-highlight:active {
-  border-color: rgba(255, 255, 255, 0.16);
   background:
     radial-gradient(
       circle at 50% 28%,
@@ -6270,7 +6269,6 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .finished-stats-kpi.is-completed.is-clickable:hover,
 .finished-stats-kpi.is-completed.is-clickable:focus-visible {
-  border-color: rgba(255, 225, 101, 0.48);
   background: rgba(255, 225, 101, 0.12);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -7645,19 +7643,21 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
   border-color: rgba(247, 223, 105, 0.52);
 }
 
-.game-card:hover,
+body:not(.shelf-page) .game-card:hover,
+.shelf-page .game-card.digital-card:hover,
 .completed-row:hover,
 .playing-finished-game:hover {
   border-color: var(--accent) !important;
 }
 
-.game-card[class*="owner-color-card-"]:hover,
+body:not(.shelf-page) .game-card[class*="owner-color-card-"]:hover,
+.shelf-page .game-card.digital-card[class*="owner-color-card-"]:hover,
 .completed-row[class*="owner-color-card-"]:hover,
 .playing-finished-game[class*="owner-color-card-"]:hover {
   border-color: var(--accent) !important;
 }
 
-.game-row[class*="owner-color-card-"]:hover {
+body:not(.shelf-page) .game-row[class*="owner-color-card-"]:hover {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important;
 }
 
@@ -9836,7 +9836,6 @@ button.finished-stats-kpi.is-completed:hover,
 button.finished-stats-kpi.is-completed:focus-visible,
 body.theme-kash button.finished-stats-kpi.is-completed:hover,
 body.theme-kash button.finished-stats-kpi.is-completed:focus-visible {
-  border-color: rgba(255, 225, 101, 0.58) !important;
   color: #ffe985 !important;
   background: rgba(255, 225, 101, 0.14) !important;
   box-shadow:
