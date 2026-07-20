@@ -183,6 +183,7 @@ const state = {
   steamActivity: { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" },
   xboxActivity: { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" },
   achievementNoticeKey: "",
+  integrationStatus: null,
   steamOwnedAppIds: null,
   cardTrophies: {},
   platinumCoverCache: loadPlatinumCoverCache(),
@@ -398,7 +399,7 @@ init();
 async function init() {
   if (await checkSiteVersion()) return;
   const initialTheme = await window.__initialThemeReady?.catch(() => "shabii");
-  logConsoleInfo(initialTheme);
+  const consoleInfoPromise = logConsoleInfo(initialTheme);
   registerServiceWorker();
   syncDisplayMode();
   state.canEdit = await hasSharedEditorSession();
@@ -418,6 +419,7 @@ async function init() {
   if (cloudChanged) render();
   const requestedGame = new URLSearchParams(location.search).get("game");
   if (requestedGame && state.games.some((game) => game.id === requestedGame && !game.deletedAt)) openDetail(requestedGame);
+  await consoleInfoPromise;
   refreshAchievements();
   scheduleBackgroundRefreshes();
 }
@@ -430,6 +432,7 @@ async function logConsoleInfo(theme = "shabii") {
     ]);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const status = await response.json();
+    state.integrationStatus = status;
     const authStatus = await authResponse?.json().catch(() => ({}));
     const repoCopies = authStatus?.ok && isShabiiMainOwner() ? await fetchRepoCopies() : [];
     logPageVersion(status.CURRENT_REPO, repoCopies);
@@ -3805,15 +3808,26 @@ async function refreshAchievements() {
 
 function notifyAchievementProviderIssues(psnData = {}, steamData = {}, xboxData = {}) {
   if (!state.canEdit) return;
+  const status = state.integrationStatus || {};
   const issues = [
-    psnData.authError ? "PSN token needs refreshing." : psnData.needsSetup ? "PSN needs setup." : "",
-    steamData.authError ? "Steam achievements need attention." : steamData.needsSetup ? "Steam achievements need setup." : "",
-    xboxData.authError ? "Xbox achievements need attention." : xboxData.needsSetup ? "Xbox achievements need setup." : "",
+    achievementProviderIssue(psnData, state.settings.psnUser, status.PSN_NPSSO, "PSN token needs refreshing.", "PSN needs setup."),
+    achievementProviderIssue(steamData, state.settings.steamUser, status.STEAM_API_KEY, "Steam achievements need attention.", "Steam achievements need setup."),
+    achievementProviderIssue(xboxData, state.settings.microsoftUser, status.OPENXBL_API_KEY, "Xbox achievements need attention.", "Xbox achievements need setup."),
   ].filter(Boolean);
   const key = issues.join("|");
   if (!key || state.achievementNoticeKey === key) return;
   state.achievementNoticeKey = key;
   showToast(issues.join(" "), "error");
+}
+
+function achievementProviderIssue(data = {}, username = "", apiSet, authMessage, setupMessage) {
+  const hasUser = Boolean(String(username || "").trim());
+  const apiKnown = apiSet === true || apiSet === false;
+  const hasApi = apiSet === true;
+  const needsPairing = apiKnown ? hasUser !== hasApi : hasUser && data.needsSetup;
+  if (needsPairing) return setupMessage;
+  if (data.authError && hasUser && (!apiKnown || hasApi)) return authMessage;
+  return "";
 }
 
 async function fetchXboxActivity(forceRefresh = state.settings.forceCacheOnLoad === true) {
