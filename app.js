@@ -399,7 +399,11 @@ async function init() {
   logConsoleInfo(initialTheme);
   registerServiceWorker();
   syncDisplayMode();
-  if (!state.canEdit) state.canEdit = await hasSharedEditorSession();
+  state.canEdit = await hasSharedEditorSession();
+  if (!state.canEdit) {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(`${SESSION_KEY}:password`);
+  }
   document.body.classList.toggle("can-edit", state.canEdit);
   bindEvents();
   warmUiIcons();

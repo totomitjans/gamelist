@@ -5,6 +5,7 @@ workers_dev = true
 
 [vars]
 SHELF_ENABLED = "true"
+EDITOR_AUTH_SCOPE = "shabii-gamelist"
 
 [assets]
 directory = "."
@@ -23,6 +24,7 @@ workers_dev = true
 
 [env.github.vars]
 SHELF_ENABLED = "true"
+EDITOR_AUTH_SCOPE = "shabii-gamelist"
 
 [[env.github.kv_namespaces]]
 binding = "GAMELIST"
