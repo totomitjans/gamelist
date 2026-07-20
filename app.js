@@ -598,8 +598,9 @@ function applySiteVersion(value = {}) {
 function logPageVersion(currentRepo = "", repoCopies = []) {
   const originalRepo = "https://github.com/ShabiiEXE/Gamelist";
   const currentRepoLine = repoUrlsMatch(currentRepo, originalRepo) ? "" : `\n  repo: ${currentRepo}`;
-  const repoStyles = repoCopies.map((_, index) => `color:${index % 2 ? "#67c5ab" : "#ff0039"};font-weight:900;line-height:1.35;`);
-  const reposLine = repoCopies.length ? `\n  repos (${repoCopies.length}):\n${repoCopies.map((repo) => `%c${repoConsoleLine(repo)}`).join("\n")}` : "";
+  const repoEntries = repoCopies.map(repoConsoleEntry);
+  const repoStyles = repoEntries.flatMap((entry) => entry.styles);
+  const reposLine = repoEntries.length ? `\n  repos (${repoEntries.length}):\n${repoEntries.map((entry) => entry.text).join("\n")}` : "";
   console.log(String.raw`%c
     {{{{{{{{{{{     {{{{{{{{{{{{{{{{{{{{
    {{{{{{{{{{{       {{{{{{{{{{{{{{{{{{ 
@@ -621,10 +622,22 @@ function logPageVersion(currentRepo = "", repoCopies = []) {
 `, "color:#ff0039;font-weight:900;font-size:8px;line-height:1;", "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;", ...repoStyles);
 }
 
-function repoConsoleLine(repo = {}) {
+function repoConsoleEntry(repo = {}, index = 0) {
   const url = String(repo.url || "").trim();
   const siteUrl = String(repo.siteUrl || "").trim();
-  return `  -site: ${siteUrl || "-"}\n   repo: ${url || "-"}`;
+  const color = index % 2 ? "#ff0039" : "#67c5ab";
+  const style = `color:${color};font-weight:900;line-height:1.35;`;
+  const emptyStyle = "color:#ffffff;font-weight:900;line-height:1.35;";
+  if (!siteUrl) {
+    return {
+      text: `%c  -site: %c-%c\n   repo: ${url || "-"}`,
+      styles: [style, emptyStyle, style],
+    };
+  }
+  return {
+    text: `%c  -site: ${siteUrl}\n   repo: ${url || "-"}`,
+    styles: [style],
+  };
 }
 
 function repoUrlsMatch(left, right) {
