@@ -435,49 +435,50 @@ async function logConsoleInfo(theme = "shabii") {
 
 function logStatusLines(status, theme = "shabii", editorStatus = "NOT LOGGED IN") {
   const headerStyle = "color:#ff0039;font-weight:900;font-size:12px;line-height:1.35;";
-  const bodyStyle = "";
-  const apiLine = (name, value) => `${name}: ${Boolean(value) ? "ONLINE" : "OFFLINE"}`;
-  const accountApiLine = (name, value, username, apiSet) => {
+  const labelStyle = "font-weight:700;";
+  const valueStyle = "";
+  const apiStatus = (value) => Boolean(value) ? "online" : "offline";
+  const accountApiStatus = (value, username, apiSet) => {
     const label = !apiSet
-      ? "NO API SET"
+      ? "no api set"
       : !username
-        ? "NO USERNAME"
+        ? "no username"
         : Boolean(value)
-          ? "ONLINE"
-          : "OFFLINE";
-    return `${name}: ${label}`;
+          ? "online"
+          : "offline";
+    return label;
   };
-  const secretLine = (name, value) => `${name}: ${Boolean(value) ? "TRUE" : "FALSE"}`;
+  const secretStatus = (value) => Boolean(value) ? "true" : "false";
   const statusLines = [
-    ...(theme !== "shabii" ? [apiLine("UPDATE", status.UPDATE), "--------------------"] : []),
-    `EDITOR: ${editorStatus}`,
-    apiLine("IGDB API", status.working?.IGDB),
-    apiLine("PRICECHARTING API", status.working?.PRICECHARTING),
-    accountApiLine("PSN API", status.working?.PSN, state.settings.psnUser, status.PSN_NPSSO),
-    accountApiLine("OPENXBL API", status.working?.XBOX, state.settings.microsoftUser, status.OPENXBL_API_KEY),
-    accountApiLine("STEAM API", status.working?.STEAM, state.settings.steamUser, status.STEAM_API_KEY),
-    "--------------------",
+    ...(theme !== "shabii" ? [["UPDATE", apiStatus(status.UPDATE)]] : []),
+    ["EDITOR", String(editorStatus || "not logged in").toLowerCase()],
+    ["IGDB API", apiStatus(status.working?.IGDB)],
+    ["PRICECHARTING API", apiStatus(status.working?.PRICECHARTING)],
+    ["PSN API", accountApiStatus(status.working?.PSN, state.settings.psnUser, status.PSN_NPSSO)],
+    ["OPENXBL API", accountApiStatus(status.working?.XBOX, state.settings.microsoftUser, status.OPENXBL_API_KEY)],
+    ["STEAM API", accountApiStatus(status.working?.STEAM, state.settings.steamUser, status.STEAM_API_KEY)],
   ];
   const secretLines = [
-    secretLine("IGDB_CLIENT_ID", status.IGDB_CLIENT_ID),
-    secretLine("IGDB_CLIENT_SECRET", status.IGDB_CLIENT_SECRET),
-    secretLine("PSN_NPSSO", status.PSN_NPSSO),
-    secretLine("OPENXBL_API_KEY", status.OPENXBL_API_KEY),
-    secretLine("STEAM_API_KEY", status.STEAM_API_KEY),
-    secretLine("GOOGLE_PRIVATE_KEY", status.GOOGLE_PRIVATE_KEY),
-    secretLine("PRICECHARTING_TOKEN", status.PRICECHARTING_TOKEN),
+    ["IGDB_CLIENT_ID", secretStatus(status.IGDB_CLIENT_ID)],
+    ["IGDB_CLIENT_SECRET", secretStatus(status.IGDB_CLIENT_SECRET)],
+    ["PSN_NPSSO", secretStatus(status.PSN_NPSSO)],
+    ["OPENXBL_API_KEY", secretStatus(status.OPENXBL_API_KEY)],
+    ["STEAM_API_KEY", secretStatus(status.STEAM_API_KEY)],
+    ["GOOGLE_PRIVATE_KEY", secretStatus(status.GOOGLE_PRIVATE_KEY)],
+    ["PRICECHARTING_TOKEN", secretStatus(status.PRICECHARTING_TOKEN)],
   ];
-  console.log(
-    `%cSTATUS:\n%c${statusLines.filter((line) => line !== "--------------------").join("\n")}`,
-    headerStyle,
-    bodyStyle
-  );
-  console.log("--------------------");
-  console.log(
-    `%cSECRETS:\n%c${secretLines.join("\n")}`,
-    headerStyle,
-    bodyStyle
-  );
+  logConsoleBlock("STATUS:", statusLines, { headerStyle, labelStyle, valueStyle });
+  logConsoleBlock("SECRETS:", secretLines, { headerStyle, labelStyle, valueStyle });
+}
+
+function logConsoleBlock(title, rows, styles) {
+  const message = [`%c${title}`];
+  const args = [styles.headerStyle];
+  rows.forEach(([label, value]) => {
+    message.push(`\n%c${label}:%c ${value}`);
+    args.push(styles.labelStyle, styles.valueStyle);
+  });
+  console.log(message.join(""), ...args);
 }
 
 function bindTextureParallax() {
