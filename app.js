@@ -3865,16 +3865,18 @@ function achievementProviderNeedsPairing(data = {}, username = "", apiSet) {
 function achievementSetupNotices(psnData = {}, steamData = {}, xboxData = {}) {
   const status = state.integrationStatus || {};
   return [
-    achievementPanelNeedsSetup(psnData, state.settings.psnUser, status.PSN_NPSSO)
-      ? ["Set up PSN", "https://ca.account.sony.com/api/v1/ssocookie"]
-      : null,
-    achievementPanelNeedsSetup(xboxData, state.settings.microsoftUser, status.OPENXBL_API_KEY)
-      ? ["Set up Xbox", xboxData.sourceUrl || "https://www.xbox.com/"]
-      : null,
-    achievementPanelNeedsSetup(steamData, state.settings.steamUser, status.STEAM_API_KEY)
-      ? ["Set up Steam", steamData.sourceUrl || "https://steamcommunity.com/"]
-      : null,
+    achievementPanelNotice(psnData, state.settings.psnUser, status.PSN_NPSSO, "Set up PSN", "Refresh PSN token", "https://ca.account.sony.com/api/v1/ssocookie"),
+    achievementPanelNotice(xboxData, state.settings.microsoftUser, status.OPENXBL_API_KEY, "Set up Xbox", "Check Xbox setup", xboxData.sourceUrl || "https://www.xbox.com/"),
+    achievementPanelNotice(steamData, state.settings.steamUser, status.STEAM_API_KEY, "Set up Steam", "Check Steam setup", steamData.sourceUrl || "https://steamcommunity.com/"),
   ].filter(Boolean);
+}
+
+function achievementPanelNotice(data = {}, username = "", apiSet, setupLabel, authLabel, url) {
+  const hasUser = Boolean(String(username || "").trim());
+  if (!hasUser && apiSet === false) return null;
+  if (achievementProviderNeedsPairing(data, username, apiSet)) return [setupLabel, url];
+  if (data.authError && hasUser && apiSet !== false) return [authLabel, url];
+  return null;
 }
 
 function achievementPanelNeedsSetup(data = {}, username = "", apiSet) {
@@ -6262,7 +6264,7 @@ function cardFor(game, options = {}) {
   playDates.hidden = !playDates.innerHTML;
   card.querySelector(".chips").innerHTML = cardChipsFor(game).join("");
   const trophyStrip = card.querySelector(".card-trophies");
-  trophyStrip.innerHTML = game.playing && !releaseDialog ? cardTrophiesFor(game) : "";
+  trophyStrip.innerHTML = (game.playing || game.digital) && !releaseDialog ? cardTrophiesFor(game) : "";
   trophyStrip.hidden = !trophyStrip.innerHTML;
   trophyStrip.addEventListener("click", (event) => {
     if (event.target.closest("a")) {
@@ -7147,6 +7149,8 @@ function titleMatchParts(value) {
 
 function normalizeTitleRawPhrase(value) {
   return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
@@ -7406,7 +7410,7 @@ function updateCardTrophyStrips(gameId) {
   const game = getGame(gameId);
   if (!game) return;
   document.querySelectorAll(`.game-card[data-id="${CSS.escape(gameId)}"] .card-trophies`).forEach((node) => {
-    node.innerHTML = game.playing ? cardTrophiesFor(game) : "";
+    node.innerHTML = game.playing || game.digital ? cardTrophiesFor(game) : "";
     node.hidden = !node.innerHTML;
   });
   if (game.playing) schedulePlayingCardHeightSync();
@@ -7420,7 +7424,7 @@ function updateCardAchievementUi(gameId) {
     if (meta) meta.innerHTML = metaFor(game, { includePsn: !game.playing }).join("");
     const trophyStrip = card.querySelector(".card-trophies");
     if (trophyStrip) {
-      trophyStrip.innerHTML = game.playing ? cardTrophiesFor(game) : "";
+      trophyStrip.innerHTML = game.playing || game.digital ? cardTrophiesFor(game) : "";
       trophyStrip.hidden = !trophyStrip.innerHTML;
     }
   });
