@@ -305,7 +305,7 @@ When those are both set, Gamelist and Shelf add a Twitch preview as the first ca
 2. Click **Add Game**.
 3. Search by title or paste an IGDB game URL.
 4. Choose the place it should be in: Backlog, Upcoming, Available.
-5. Add platform, owners, preorder store, release date, store links, Steam App ID, trophy name, cover, and notes as needed.
+5. Add platform, owners, preorder store, release date, store links, cover, notes...
 6. Save.
 
 If Google Calendar is configured, adding a new preorder store to an upcoming/wanted game with a release date can create a preorder calendar event.
@@ -315,8 +315,8 @@ If Google Calendar is configured, adding a new preorder store to an upcoming/wan
 1. Click the **top handle** or drag it down to access the **Shelf**.
 2. Enter **Edit mode**.
 3. Click **Add Game**.
-4. Search by title, paste a PriceCharting url, paste a IGDB url or enter details manually.
-5. Set platform, region, owners, condition parts, collection value fields, publisher/developer, genre, cover, and notes.
+4. Search by title, paste a PriceCharting url, paste a IGDB url.
+5. Set platform, region, owners, condition, publisher/developer, genre, cover, notes...
 6. Save.
 
 New physical games can sync into the Gamelist as setup-needed backlog/new-addition entries when Shelf Sync is enabled.
