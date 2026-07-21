@@ -6994,17 +6994,29 @@ function xboxProgressForGame(game) {
   const earned = Number(cached?.earned ?? match.earned ?? 0);
   const total = Number(cached?.total ?? match.total ?? 0);
   if (!total) return null;
-  const progress = cached
-    ? Math.round((earned / Math.max(total, 1)) * 100)
-    : Number.isFinite(Number(match.progress)) ? Number(match.progress)
-    : Math.round((earned / Math.max(total, 1)) * 100);
+  const cachedProgress = clampedProgress(cached?.progress);
+  const summaryProgress = clampedProgress(match.progress);
+  const earnedProgress = Math.round((earned / Math.max(total, 1)) * 100);
+  const progress = cachedProgress ?? summaryProgress ?? earnedProgress;
   return {
     title: match.title || game.title,
     game: `${progress}%`,
     progress,
-    label: `${earned}/${total} earned`,
+    label: xboxProgressLabel(earned, total, progress),
     provider: "xbox",
   };
+}
+
+function clampedProgress(value) {
+  const progress = Number(value);
+  return Number.isFinite(progress) ? Math.max(0, Math.min(100, Math.round(progress))) : null;
+}
+
+function xboxProgressLabel(earned, total, progress) {
+  const inferredEarned = !earned && progress > 0 && progress < 100 && total
+    ? Math.round((progress / 100) * total)
+    : earned;
+  return `${inferredEarned}/${total} earned`;
 }
 
 function xboxAchievementCacheKey(xboxGame) {
@@ -7029,7 +7041,13 @@ function xboxAchievementCache(data, achievements, summary = null) {
   const summaryTotal = Number(summary?.total || 0);
   const earned = Math.max(detailEarned, summaryEarned);
   const total = Math.max(detailTotal, summaryTotal);
-  return { loading: false, achievements, trophies: achievements, earned, total };
+  const progressValues = [
+    clampedProgress(data.progress),
+    clampedProgress(summary?.progress),
+    total ? clampedProgress((earned / total) * 100) : null,
+  ].filter((value) => value !== null);
+  const progress = progressValues.length ? Math.max(...progressValues) : 0;
+  return { loading: false, achievements, trophies: achievements, earned, total, progress };
 }
 
 function steamAchievementCacheKey(game) {
@@ -7153,11 +7171,14 @@ function titleMatchParts(value) {
 
 function normalizeTitleRawPhrase(value) {
   return String(value || "")
+    .replace(/([a-zA-Z0-9])[''’‘ʼ`´]\s*s\b/g, "$1s")
+    .replace(/([a-zA-Z0-9])[''’‘ʼ`´](?=[a-zA-Z0-9])/g, "$1")
     .replace(/[™®©℠]/g, " ")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
+    .replace(/\b(?:tm|sm|registered|copyright)\b/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
     .replace(/\s+/g, " ");
@@ -7205,7 +7226,7 @@ function containsAllTitleTokens(haystack, needles) {
 }
 
 function psnExtraTitleTokens(localTokens, psnTokens) {
-  const allowedExtras = new Set(["ps3", "ps4", "ps5", "version", "edition", "trophies", "remastered", "remaster", "complete", "ultimate", "definitive", "premium", "xl"]);
+  const allowedExtras = new Set(["ps3", "ps4", "ps5", "xbox", "x360", "360", "series", "pc", "version", "edition", "trophies", "achievements", "remastered", "remaster", "complete", "ultimate", "definitive", "premium", "xl"]);
   return psnTokens.filter((token) => !localTokens.includes(token) && !allowedExtras.has(token));
 }
 
