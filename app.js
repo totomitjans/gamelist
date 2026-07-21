@@ -5627,11 +5627,12 @@ function statsMonthBars(games, counts) {
   const max = Math.max(1, ...counts.map((item) => item.count));
   return order.map((label, index) => {
     const count = byLabel.get(label) || 0;
+    const overlayTitle = fullMonthName(label);
     const monthGames = games
       .filter((game) => monthShortName(game.completedAt) === label)
       .sort((a, b) => String(a.completedAt || "").localeCompare(String(b.completedAt || "")) || stringCompare(a.title, b.title));
     const edgeClass = index === 0 ? " is-start-edge" : (index === order.length - 1 ? " is-end-edge" : "");
-    return `<div class="finished-stats-month${edgeClass}" title="${escapeHtml(`${label}: ${count}`)}" ${count ? `data-stats-overlay-title="${escapeHtml(label)}"` : ""}><span>${escapeHtml(label)}</span><em style="--month:${count / max};--platform-bar:${statsPlatformBar(monthGames)}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(monthGames)}</span>` : ""}</div>`;
+    return `<div class="finished-stats-month${edgeClass}" title="${escapeHtml(`${overlayTitle}: ${count}`)}" ${count ? `data-stats-overlay-title="${escapeHtml(overlayTitle)}"` : ""}><span>${escapeHtml(label)}</span><em style="--month:${count / max};--platform-bar:${statsPlatformBar(monthGames)}"></em><strong>${count}</strong>${count ? `<span class="finished-stats-breakdown">${statsGameList(monthGames)}</span>` : ""}</div>`;
   }).join("");
 }
 
@@ -5772,7 +5773,7 @@ function bindFinishedStatsMobileOverlays() {
       if (!breakdown?.innerHTML.trim()) return;
       event.preventDefault();
       event.stopPropagation();
-      openFinishedStatsMiniOverlay(node.dataset.statsOverlayTitle || "Stats", breakdown.innerHTML);
+      openFinishedStatsMiniOverlay(finishedStatsMiniTitle(node.dataset.statsOverlayTitle || "Stats"), breakdown.innerHTML);
     });
   });
 }
@@ -5886,6 +5887,11 @@ function openFinishedStatsMiniOverlay(title, content) {
   };
 }
 
+function finishedStatsMiniTitle(value) {
+  const title = String(value || "Stats").trim();
+  return fullMonthName(title);
+}
+
 function statsCompletedGameList(items) {
   return statsGameList(items.map((item) => ({
     id: item.gameId || item.id || item.title,
@@ -5973,6 +5979,24 @@ function gameStatsTags(game) {
 function monthShortName(value) {
   const date = new Date(`${dateOnly(value)}T00:00:00`);
   return Number.isNaN(date.getTime()) ? "Unknown" : new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);
+}
+
+function fullMonthName(value) {
+  const months = {
+    Jan: "January",
+    Feb: "February",
+    Mar: "March",
+    Apr: "April",
+    May: "May",
+    Jun: "June",
+    Jul: "July",
+    Aug: "August",
+    Sep: "September",
+    Oct: "October",
+    Nov: "November",
+    Dec: "December",
+  };
+  return months[value] || value || "Unknown";
 }
 
 function categoryStatsColor(index) {

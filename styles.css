@@ -7510,11 +7510,10 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .finished-stats-mini-head strong {
   min-width: 0;
   overflow: hidden;
-  color: var(--accent);
+  color: var(--accent-2);
   font-size: 13px;
   font-weight: 900;
   text-overflow: ellipsis;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
