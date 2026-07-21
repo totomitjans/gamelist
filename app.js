@@ -8470,7 +8470,7 @@ function playStationSearchUrl(query, region = state.settings.region) {
 }
 
 function xboxSearchUrl(query, region = state.settings.region) {
-  const locale = ({ US: "en-US", UK: "en-GB", IE: "en-IE", IT: "it-IT", FR: "fr-FR", PT: "pt-PT", JP: "ja-JP", MX: "es-MX" })[region] || "es-ES";
+  const locale = ({ US: "en-US", UK: "en-GB", IE: "en-ie", IT: "it-IT", FR: "fr-FR", PT: "pt-PT", JP: "ja-JP", MX: "es-MX" })[region] || "es-ES";
   return `https://www.xbox.com/${locale}/search?q=${query}`;
 }
 
