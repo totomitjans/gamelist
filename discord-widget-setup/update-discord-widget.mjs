@@ -21,7 +21,7 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const COVER_STATE_PATH = join(SCRIPT_DIR, ".discord-widget-cover-state.json");
 const FALLBACK_IMAGE = `${BASE_URL}/assets/Icon.png`;
 const STAT_IMAGES = {
-  playing: `${BASE_URL}/assets/discord/playing.png`,
+  completed: `${BASE_URL}/assets/discord/completed.png`,
   finished: `${BASE_URL}/assets/discord/finished.png`,
   backlog: `${BASE_URL}/assets/app-Icon.png`,
   shelf: `${BASE_URL}/assets/discord/shelf.png`,
@@ -147,8 +147,8 @@ async function buildWidgetData() {
         imageField("game_subtitle_3_image", subtitleIcons[2]),
         textField("game_subtitle_3", subtitles[2]),
         textField("game_subtitle_3_trophies", subtitleTrophies[2]),
-        textField("currently_playing_count", playing.length),
-        imageField("currently_playing_image", STAT_IMAGES.playing),
+        textField("currently_playing_count", completedSummary(completed)),
+        imageField("currently_playing_image", STAT_IMAGES.completed),
         textField("finished_this_year", finishedThisYear(completed)),
         imageField("finished_this_year_image", STAT_IMAGES.finished),
         textField("backlog_games", backlogCount(lists)),
@@ -229,6 +229,10 @@ function backlogCount(listsData) {
 function completedCount(completedData) {
   return Number(completedData.totalCompleted || 0)
     || (completedData.years || []).reduce((sum, year) => sum + Number(year.count || 0), 0);
+}
+
+function completedSummary(completedData) {
+  return `${completedCount(completedData)} (${finishedThisYear(completedData)} this year)`;
 }
 
 function finishedThisYear(completedData) {
