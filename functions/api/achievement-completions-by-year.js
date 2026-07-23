@@ -35,7 +35,13 @@ const PROVIDERS = [
 
 export async function onRequestGet({ request, env = {} }) {
   return cachedStats({ request, env, key: "achievement-completions-by-year", producer: async () => {
-    const platforms = await Promise.all(PROVIDERS.map((provider) => providerSummary(provider, request, env)));
+    const [providerPlatforms, localCompletions] = await Promise.all([
+      Promise.all(PROVIDERS.map((provider) => providerSummary(provider, request, env))),
+      localMarkedCompletions(env),
+    ]);
+    const platforms = localCompletions.length
+      ? [...providerPlatforms, platformFromLocalCompletions(localCompletions)]
+      : providerPlatforms;
     const completedGames = platforms.flatMap((provider) => provider.completedGames);
 
     return {
@@ -47,6 +53,33 @@ export async function onRequestGet({ request, env = {} }) {
       errors: platforms.filter((provider) => provider.error).map(({ platform, source, error }) => ({ platform, source, error })),
     };
   } });
+}
+
+async function localMarkedCompletions(env = {}) {
+  if (!env.GAMELIST) return [];
+  const data = await env.GAMELIST.get("gamelist-data", "json").catch(() => null);
+  return (Array.isArray(data?.games) ? data.games : [])
+    .filter((game) => !game.deletedAt && game.platinum)
+    .map((game) => ({
+      title: game.title || "Completed game",
+      cover: game.cover || "",
+      trophyName: "100% Complete",
+      earnedAt: game.completedAt || "",
+      rawEarnedAt: game.completedAt || game.updatedAt || "",
+      platform: game.platform || "",
+      source: "gamelist",
+      gameId: game.id || "",
+    }));
+}
+
+function platformFromLocalCompletions(completedGames) {
+  return {
+    source: "gamelist",
+    platform: "Gamelist",
+    completedGames,
+    completedGamesByYear: aggregateYears([{ completedGames }]),
+    totalCompletedGames: completedGames.length,
+  };
 }
 
 async function providerSummary(provider, request, env) {
