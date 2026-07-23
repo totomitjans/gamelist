@@ -21,7 +21,7 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const COVER_STATE_PATH = join(SCRIPT_DIR, ".discord-widget-cover-state.json");
 const FALLBACK_IMAGE = `${BASE_URL}/assets/Icon.png`;
 const STAT_IMAGES = {
-  playing: `${BASE_URL}/assets/Icon.png`,
+  playing: `${BASE_URL}/assets/discord/playing.png`,
   finished: `${BASE_URL}/assets/discord/finished.png`,
   backlog: `${BASE_URL}/assets/app-Icon.png`,
   shelf: `${BASE_URL}/assets/discord/shelf.png`,
