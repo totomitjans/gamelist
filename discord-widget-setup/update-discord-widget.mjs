@@ -125,8 +125,8 @@ async function buildWidgetData() {
   ]);
 
   const playing = playingGames(sync);
-  const selectedGames = randomGames(playing, 3);
-  const coverGame = await randomCoverGame(playing) || selectedGames[0] || null;
+  const coverGame = await randomCoverGame(playing);
+  const selectedGames = coverGame ? gamesStartingWith(playing, coverGame, 3) : randomGames(playing, 3);
   const trophyProgress = await Promise.all(selectedGames.map((game) => trophyProgressForGame(game, activity || {})));
   const subtitles = [0, 1, 2].map((index) => selectedGames[index]?.title || " ");
   const subtitleTrophies = [0, 1, 2].map((index) => trophyProgress[index] || " ");
@@ -189,6 +189,12 @@ function randomGames(games, count = games.length) {
     .sort((a, b) => a.sort - b.sort)
     .slice(0, count)
     .map(({ game }) => game);
+}
+
+function gamesStartingWith(games, firstGame, count) {
+  const firstKey = coverKey(firstGame);
+  const rest = games.filter((game) => coverKey(game) !== firstKey);
+  return [firstGame, ...randomGames(rest, count - 1)].slice(0, count);
 }
 
 async function randomCoverGame(games) {
@@ -397,6 +403,7 @@ async function validateAgainstWidgetConfig(appId, sampleData) {
 
   const specs = extractDynamicFields(configList);
   const sampleByName = new Map((sampleData.data?.dynamic || []).map((entry) => [entry.name, entry]));
+  const configNames = new Set(specs.map((spec) => spec.name));
   const errors = [];
   for (const spec of specs) {
     const entry = sampleByName.get(spec.name);
@@ -415,6 +422,13 @@ async function validateAgainstWidgetConfig(appId, sampleData) {
     errors.forEach((error) => console.error(`- ${error}`));
     console.error("Fix the Discord widget fields or this script's field list before applying.");
     process.exit(1);
+  }
+
+  const unusedGeneratedFields = [...sampleByName.keys()].filter((name) => !configNames.has(name));
+  if (unusedGeneratedFields.length) {
+    console.warn("These generated fields are not used by the published Discord widget config:");
+    unusedGeneratedFields.forEach((name) => console.warn(`- ${name}`));
+    console.warn("If one of those should appear in Discord, add it as a User Data field in the widget editor and publish again.");
   }
 
   console.log(`Validated ${specs.length} dynamic field(s) against Discord's widget config.`);
