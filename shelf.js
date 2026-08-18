@@ -31,12 +31,10 @@ const siteVersion = { version: "", updatedAt: "" };
 const MODULE_NAMES = { playing: "Currently playing", latestFinished: "Last finished", favorites: "Showcase", trophies: "Achievements", calendar: "Calendar", kpis: "Highlights", filters: "Search", library: "Shelf" };
 const PLATFORM_OPTIONS = [
   "Steam",
-  "Sega Game Gear", "Sega Genesis", "Sega Dreamcast",
-  "Game Boy", "Game Boy Color", "Nintendo Entertainment System", "Super Nintendo Entertainment System",
-  "Nintendo 64", "Nintendo GameCube", "Game Boy Advance", "Nintendo DS", "Nintendo Wii", "Nintendo Wii U", "Nintendo 3DS",
-  "Nintendo Switch", "Nintendo Switch 2",
+  "Game Gear", "Gen", "DC",
+  "GB", "GBC", "NES", "SNES", "N64", "GC", "GBA", "DS", "Wii", "Wii U", "3DS", "Switch", "Switch 2",
   "PS1", "PS2", "PS3", "PSP", "PSVita", "PS4", "PS5",
-  "Xbox", "Xbox 360", "Xbox One", "Xbox PC", "Xbox Series",
+  "Xbox", "X360", "XOne", "Xbox PC", "Xbox Series",
 ];
 const COUNTRY_OPTIONS = [
   ["Australia", "Australia"], ["China", "China"], ["Europe", "EU"], ["France", "France"], ["Germany", "Germany"],
@@ -352,8 +350,9 @@ function bindEvents() {
 }
 
 function rebuildGames() {
-  const source = state.sourceGames.map((game) => ({ ...game, ...(state.overrides[game.id] || {}), sourceRecord: true }));
-  state.games = [...source, ...state.additions.map((game) => ({ ...game, sourceRecord: false }))].filter((game) => !game.deletedAt);
+  const normalizeGame = (game) => ({ ...game, platform: canonicalShelfPlatform(game.platform || "") });
+  const source = state.sourceGames.map((game) => normalizeGame({ ...game, ...(state.overrides[game.id] || {}), sourceRecord: true }));
+  state.games = [...source, ...state.additions.map((game) => normalizeGame({ ...game, sourceRecord: false }))].filter((game) => !game.deletedAt);
 }
 
 function renderAll() {
@@ -509,7 +508,7 @@ function renderBrandVersionChip() {
   const shouldShow = state.canEdit && isShabiiOwner && Boolean(siteVersion.version);
   el.brandVersion.hidden = !shouldShow;
   el.brandVersion.textContent = shouldShow
-    ? `_${siteVersion.version.toLowerCase()}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    ? `${siteVersion.version.toLowerCase()}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
     : "Version -";
 }
 
@@ -878,6 +877,7 @@ function renderFilters() {
     state.filters.direction = "asc";
   }
   const visibleGames = visibleShelfGames();
+  if (state.filters.platform !== "all") state.filters.platform = canonicalShelfPlatform(state.filters.platform);
   const platforms = orderedPlatforms(uniqueSorted(visibleGames.map((game) => game.platform)));
   const countries = uniqueSorted(visibleGames.map((game) => game.country));
   const categories = uniqueSorted(visibleGames.flatMap((game) => [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).filter(Boolean)));
@@ -1039,7 +1039,7 @@ function renderLibrary() {
   state.filters.tab = tabs.includes(state.filters.tab) ? state.filters.tab : "shelf";
   const games = filteredGames();
   el.tabs.hidden = tabs.length < 2;
-  el.tabs.classList.toggle("sync-preorders-enabled", state.canEdit && state.gamelistSettings.syncPreorders === true);
+  el.tabs.classList.toggle("sync-preorders-enabled", state.canEdit && state.gamelistSettings.shelfSync !== false);
   el.tabs.classList.toggle("four-tabs", tabs.length === 4);
   el.tabs.dataset.activeTab = state.filters.tab;
   el.tabs.style.setProperty("--tab-count", String(tabs.length));
@@ -1100,10 +1100,10 @@ function shelfTabs(pendingCount = 0, preorderCount = syncedPreorderGames().lengt
 }
 
 function syncedPreorderGames() {
-  if (!state.canEdit || state.gamelistSettings.syncPreorders !== true) return [];
+  if (!state.canEdit || state.gamelistSettings.shelfSync === false) return [];
   return state.gamelistGames
     .filter((game) => !game.deletedAt && !game.completedAt && game.section === "upcoming" && game.preorderStore && (!isDigitalShelfGame(game) || state.gamelistSettings.shelfDigitalGames === true))
-    .map((game) => ({ ...game, preorderProjection: true, genre: (game.genres || []).join(", "), country: game.country || "", condition: "Preordered" }));
+    .map((game) => ({ ...game, platform: canonicalShelfPlatform(game.platform || ""), preorderProjection: true, genre: (game.genres || []).join(", "), country: game.country || "", condition: "Preordered" }));
 }
 
 function setShelfTab(tab) {
@@ -1948,7 +1948,8 @@ function renderLayoutEditor() {
   el.layoutList.className = "settings-layout";
   el.layoutList.innerHTML = [
     ...state.layout.order.map((key, index) => settingsLayoutCard(key, index)),
-    `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${themeSettingsButton(state.gamelistSettings, escapeHtml)}${settingsSelectCard("order", tt("Default order"), "shelfSettingsDefaultOrder", [{ value: "added", label: tt("Last added") }, { value: "title", label: tt("Name") }, { value: "platform", label: tt("Platform") }, { value: "region", label: tt("Region") }, { value: "value", label: tt("Value") }])}${settingsSelectCard("calendar", tt("Week starts"), "shelfSettingsWeekStart", WEEK_START_OPTIONS.map(([value, label]) => ({ value, label: tt(label) })))}${settingsShelfSyncCard()}${settingsShelfPricesCard()}${settingsPageSwitchCard()}</div>`,
+    settingsPageFeatureToggles(),
+    `<div class="settings-preference-separator" role="presentation"></div><div class="settings-preference-row">${themeSettingsButton(state.gamelistSettings, escapeHtml)}${settingsSelectCard("order", tt("Default order"), "shelfSettingsDefaultOrder", [{ value: "added", label: tt("Last added") }, { value: "title", label: tt("Name") }, { value: "platform", label: tt("Platform") }, { value: "region", label: tt("Region") }, { value: "value", label: tt("Value") }])}${settingsSelectCard("calendar", tt("Week starts"), "shelfSettingsWeekStart", WEEK_START_OPTIONS.map(([value, label]) => ({ value, label: tt(label) })))}${settingsShelfSyncCard()}${settingsPageSwitchCard()}</div>`,
   ].join("");
   document.querySelector("#shelfSettingsCsvData").innerHTML = settingsCsvDataCard();
   if (el.settingsDevFeatures) el.settingsDevFeatures.innerHTML = settingsDevFeaturesCard("shelf");
@@ -2013,12 +2014,12 @@ function normalizeWeekStart(value) {
   return WEEK_START_OPTIONS.some(([key]) => key === value) ? value : "monday";
 }
 
-function settingsShelfSyncCard() {
-  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>${escapeHtml(tt("Shelf Sync"))}</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Shelf Sync"))}"><input type="checkbox" id="shelfSettingsSync" ${state.gamelistSettings.shelfSync === false ? "" : "checked"}><span>${escapeHtml(tt("Enabled"))}</span></label></div></div></article>`;
+function settingsPageFeatureToggles() {
+  return `<div class="settings-page-toggle-row"><label class="check-filter toggle-check settings-visible-check settings-page-toggle" title="Digital Games"><input type="checkbox" id="shelfSettingsDigitalGames" ${state.gamelistSettings.shelfDigitalGames === true ? "checked" : ""}><span>Digital Games</span></label><label class="check-filter toggle-check settings-visible-check settings-page-toggle" title="${escapeHtml(tt("Show Prices"))}"><input type="checkbox" id="shelfSettingsShowPrices" ${state.gamelistSettings.shelfHidePrices ? "" : "checked"}><span>${escapeHtml(tt("Show Prices"))}</span></label></div>`;
 }
 
-function settingsShelfPricesCard() {
-  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>${escapeHtml(tt("Prices"))}</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Show Prices"))}"><input type="checkbox" id="shelfSettingsShowPrices" ${state.gamelistSettings.shelfHidePrices ? "" : "checked"}><span>${escapeHtml(tt("Show Prices"))}</span></label></div></div></article>`;
+function settingsShelfSyncCard() {
+  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>${escapeHtml(tt("Shelf Sync"))}</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Shelf Sync"))}"><input type="checkbox" id="shelfSettingsSync" ${state.gamelistSettings.shelfSync === false ? "" : "checked"}><span>${escapeHtml(tt("Enabled"))}</span></label></div></div></article>`;
 }
 
 function settingsPageSwitchCard() {
@@ -2042,7 +2043,7 @@ function settingsDevFeaturesCard(kind) {
     { href: "/api/shelf-price-audit", label: "Price audit" },
     { href: "/api/shelf-covers", label: "Mass cover add" },
   ].map((link) => `<a class="ghost-button settings-dev-link" href="${escapeHtml(link.href)}" target="_blank" rel="noreferrer" data-dev-feature="${escapeHtml(kind)}">${escapeHtml(tt(link.label))}</a>`).join("");
-  return `${links}<label class="check-filter toggle-check settings-visible-check settings-dev-toggle" title="Sync preorders"><input type="checkbox" id="shelfSettingsSyncPreorders" ${state.gamelistSettings.syncPreorders === true ? "checked" : ""}><span>Sync preorders</span></label><label class="check-filter toggle-check settings-visible-check settings-dev-toggle" title="Digital Games"><input type="checkbox" id="shelfSettingsDigitalGames" ${state.gamelistSettings.shelfDigitalGames === true ? "checked" : ""}><span>Digital Games</span></label><label class="check-filter toggle-check settings-visible-check settings-dev-toggle" title="${escapeHtml(tt("Force cache on page load"))}"><input type="checkbox" id="shelfSettingsForceCacheOnLoad" ${state.gamelistSettings.forceCacheOnLoad === true ? "checked" : ""}><span>${escapeHtml(tt("Force cache on page load"))}</span></label>`;
+  return `${links}<label class="check-filter toggle-check settings-visible-check settings-dev-toggle" title="${escapeHtml(tt("Force cache on page load"))}"><input type="checkbox" id="shelfSettingsForceCacheOnLoad" ${state.gamelistSettings.forceCacheOnLoad === true ? "checked" : ""}><span>${escapeHtml(tt("Force cache on page load"))}</span></label>`;
 }
 
 const CSV_NUMERIC_FIELDS = new Set(["order", "lengthHours", "replayCount", "numericPrice", "price", "estimatedValue", "purchasePrice"]);
@@ -2665,7 +2666,7 @@ async function saveLayout(event) {
   state.layout.hidden = LAYOUT_KEYS.filter((key) => !el.layoutList.querySelector(`[data-layout-visible][value="${key}"]`)?.checked);
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(state.layout));
   const stores = [...el.settingsStores.querySelectorAll("input:checked")].map((input) => input.value).filter((store) => STORE_OPTIONS.includes(store)).slice(0, MAX_PRICE_STORES);
-  state.gamelistSettings = { ...state.gamelistSettings, shelfDefaultOrder: el.settingsDefaultOrder.value, weekStart: normalizeWeekStart(el.settingsWeekStart?.value || state.gamelistSettings.weekStart), currency: el.settingsCurrency.value, region: el.settingsRegion.value, language: normalizeLanguage(el.settingsLanguage.value), psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), twitchUser: el.settingsTwitchUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false, hidePageSwitch: document.querySelector("#shelfSettingsHidePageSwitch")?.checked === true, syncPreorders: document.querySelector("#shelfSettingsSyncPreorders")?.checked === true, shelfDigitalGames: document.querySelector("#shelfSettingsDigitalGames")?.checked === true, forceCacheOnLoad: document.querySelector("#shelfSettingsForceCacheOnLoad")?.checked === true };
+  state.gamelistSettings = { ...state.gamelistSettings, shelfDefaultOrder: el.settingsDefaultOrder.value, weekStart: normalizeWeekStart(el.settingsWeekStart?.value || state.gamelistSettings.weekStart), currency: el.settingsCurrency.value, region: el.settingsRegion.value, language: normalizeLanguage(el.settingsLanguage.value), psnUser: el.settingsPsnUser.value.trim(), microsoftUser: el.settingsMicrosoftUser.value.trim(), steamUser: el.settingsSteamUser.value.trim(), twitchUser: el.settingsTwitchUser.value.trim(), defaultOwner: el.settingsDefaultOwner.value.trim(), stores, storeSettingsVersion: 2, shelfSync: document.querySelector("#shelfSettingsSync")?.checked !== false, shelfHidePrices: document.querySelector("#shelfSettingsShowPrices")?.checked === false, hidePageSwitch: document.querySelector("#shelfSettingsHidePageSwitch")?.checked === true, shelfDigitalGames: document.querySelector("#shelfSettingsDigitalGames")?.checked === true, forceCacheOnLoad: document.querySelector("#shelfSettingsForceCacheOnLoad")?.checked === true };
   localStorage.setItem("gamelist:settings:v1", JSON.stringify(state.gamelistSettings));
   applyShelfDefaultOrder(state.gamelistSettings.shelfDefaultOrder);
   await Promise.all([persistShelf(), persistGamelistSettings()]);
@@ -4031,6 +4032,9 @@ function platformDisplayName(value) {
     PS5: "Sony PlayStation 5",
     PSP: "Sony Playstation Portable",
     PSVita: "Sony Playstation Vita",
+    Switch: "Nintendo Switch",
+    "Switch 2": "Nintendo Switch 2",
+    "Game Gear": "Sega Game Gear",
     X360: "Xbox 360",
     XOne: "Xbox One",
     GBC: "Game Boy Color",
@@ -4082,6 +4086,7 @@ function canonicalShelfPlatform(value) {
     nintendo64: "N64", n64: "N64", nintendogamecube: "GC", gamecube: "GC", gc: "GC",
     nintendoentertainmentsystem: "NES", nes: "NES", supernintendo: "SNES", supernintendoentertainmentsystem: "SNES", snes: "SNES",
     nintendods: "DS", nds: "DS", ds: "DS", nintendo3ds: "3DS", n3ds: "3DS", "3ds": "3DS",
+    nintendowii: "Wii", wii: "Wii", nintendowiiu: "Wii U", wiiu: "Wii U",
     gameboyadvance: "GBA", gameboyadvanced: "GBA", gba: "GBA", gameboycolor: "GBC", gbc: "GBC", gameboy: "GB", gb: "GB",
     genesis: "Gen", megadrive: "Gen", segamegadrive: "Gen", segagenesis: "Gen", sega: "Sega",
     dreamcast: "DC", segadreamcast: "DC", dc: "DC", segacd: "Sega CD", saturn: "Saturn", segasaturn: "Saturn",
@@ -4113,8 +4118,8 @@ function shelfSortForDefault(value) { if (value === "time") return "added"; if (
 function applyShelfDefaultOrder(value) { state.filters.sort = shelfSortForDefault(value); state.filters.direction = ["added", "value"].includes(state.filters.sort) ? "desc" : "asc"; }
 function bestCollectionPlatform(platforms, fallback) {
   const value = platforms.map(normalize).join(" ");
-  if (value.includes("nintendo switch 2")) return "Nintendo Switch 2";
-  if (value.includes("nintendo switch")) return "Nintendo Switch";
+  if (value.includes("nintendo switch 2")) return "Switch 2";
+  if (value.includes("nintendo switch")) return "Switch";
   if (value.includes("playstation 5")) return "PS5";
   if (value.includes("playstation 4")) return "PS4";
   if (value.includes("playstation 3")) return "PS3";
@@ -4122,10 +4127,10 @@ function bestCollectionPlatform(platforms, fallback) {
   if (value.includes("playstation portable")) return "PSP";
   if (value.includes("playstation vita")) return "PSVita";
   if (value.includes("playstation")) return "PS1";
-  if (value.includes("nintendo 3ds")) return "Nintendo 3DS";
-  if (value.includes("nintendo ds")) return "Nintendo DS";
-  if (value.includes("nintendo 64")) return "Nintendo 64";
-  return fallback || "Nintendo Switch";
+  if (value.includes("nintendo 3ds")) return "3DS";
+  if (value.includes("nintendo ds")) return "DS";
+  if (value.includes("nintendo 64")) return "N64";
+  return canonicalShelfPlatform(fallback || "Switch");
 }
 function normalize(value) { return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
 function shortDescription(value, max = 260) { const text = String(value || "").trim(); return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text; }

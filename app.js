@@ -1636,10 +1636,6 @@ function settingsDevFeaturesItem(kind) {
     </a>
   `).join("");
   return `${links}
-    <label class="check-filter toggle-check settings-visible-check settings-dev-toggle" title="Sync preorders to Shelf">
-      <input type="checkbox" id="settingsSyncPreorders" ${state.settings.syncPreorders ? "checked" : ""}>
-      <span>Sync preorders</span>
-    </label>
     <label class="check-filter toggle-check settings-visible-check settings-dev-toggle" title="${escapeHtml(tt("Force cache on page load"))}">
       <input type="checkbox" id="settingsForceCacheOnLoad" ${state.settings.forceCacheOnLoad ? "checked" : ""}>
       <span>${escapeHtml(tt("Force cache on page load"))}</span>
@@ -2073,7 +2069,6 @@ async function saveSettingsFromForm(event) {
     hidePageSwitch: el.settingsLayoutList.querySelector("[data-hide-page-switch]")?.checked === true,
     weekStart: normalizeWeekStart(el.settingsLayoutList.querySelector("[data-week-start]")?.value || state.settings.weekStart),
     forceCacheOnLoad: document.querySelector("#settingsForceCacheOnLoad")?.checked === true,
-    syncPreorders: document.querySelector("#settingsSyncPreorders")?.checked === true,
     gotyAlwaysShow: document.querySelector("#settingsGotyAlwaysShow")?.checked === true,
   });
   persistLocalSettings();
@@ -4872,6 +4867,7 @@ function syncMobileSectionToResults() {
 
 function renderFilters() {
   const active = state.games.filter((game) => !game.deletedAt);
+  if (state.filters.platform !== "all") state.filters.platform = canonicalPlatform(state.filters.platform);
   const platforms = orderedPlatforms(unique(active.map((game) => platformFilterGroup(game.platform)).filter(Boolean)));
   const genres = unique(active.flatMap((game) => game.genres || []));
   fillSelect(el.platformFilter, ["all", ...platforms], state.filters.platform, tt("All platforms"));
@@ -5371,7 +5367,7 @@ function renderBrandVersionChip() {
   const shouldShow = state.canEdit && isShabiiOwner && Boolean(siteVersion.version);
   el.brandVersion.hidden = !shouldShow;
   el.brandVersion.textContent = shouldShow
-    ? `_${siteVersion.version.toLowerCase()}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
+    ? `${siteVersion.version.toLowerCase()}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
     : "Version -";
 }
 
@@ -8301,13 +8297,16 @@ function canonicalPlatform(value) {
   const text = String(value || "").trim();
   const normalized = normalizeTag(text);
   const aliases = {
+    sonyplaystation: "PS1",
     playstation: "PS1",
     playstation1: "PS1",
     psone: "PS1",
     psx: "PS1",
     ps1: "PS1",
+    sonyplaystation2: "PS2",
     playstation2: "PS2",
     ps2: "PS2",
+    sonyplaystation3: "PS3",
     playstation3: "PS3",
     ps3: "PS3",
     sonyplaystationportable: "PSP",
@@ -8406,9 +8405,12 @@ function platformDisplayName(platform) {
     PS2: "Sony PlayStation 2",
     PS3: "Sony PlayStation 3",
     PS4: "Sony PlayStation 4",
-    PS5: "Sony Playstation 5",
+    PS5: "Sony PlayStation 5",
     PSP: "Sony Playstation Portable",
     PSVita: "Sony Playstation Vita",
+    Switch: "Nintendo Switch",
+    "Switch 2": "Nintendo Switch 2",
+    "Game Gear": "Sega Game Gear",
     X360: "Xbox 360",
     XOne: "Xbox One",
     GBC: "Game Boy Color",
@@ -8959,7 +8961,7 @@ async function openEditor(id = "") {
   el.lookupInput.value = game.title || "";
   el.fields.id.value = game.id || "";
   el.fields.title.value = game.title || "";
-  el.fields.platform.value = game.platform || "";
+  el.fields.platform.value = platformDisplayName(game.platform || "");
   el.fields.dlc.checked = Boolean(game.dlc);
   el.fields.section.value = game.section === "new" ? "backlog" : game.section || "wanted";
   el.fields.releaseDate.value = game.releaseDate || "";
@@ -9533,7 +9535,7 @@ function applyLookup(result) {
   if (result.genres?.length) el.fields.genres.value = result.genres.join(", ");
   if (result.developer) el.fields.developer.value = result.developer;
   if (result.publisher) el.fields.publisher.value = result.publisher;
-  if (result.platform && !el.fields.platform.value) el.fields.platform.value = result.platform;
+  if (result.platform && !el.fields.platform.value) el.fields.platform.value = platformDisplayName(result.platform);
   syncEditFieldIcons();
   if (!el.fields.id.value && !el.fields.replayCount.value) {
     const replayCount = nextReplayCountForTitle(el.fields.title.value);
