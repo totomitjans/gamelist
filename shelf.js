@@ -117,6 +117,7 @@ const el = {
   clear: document.querySelector("#clearFilters"),
   login: document.querySelector("#loginButton"),
   addButton: document.querySelector("#addButton"),
+  searchButton: document.querySelector("#searchButton"),
   layoutButton: document.querySelector("#settingsButton"),
   syncButton: document.querySelector("#syncButton"),
   fetchPricesButton: document.querySelector("#fetchPricesButton"),
@@ -140,7 +141,7 @@ const el = {
   footerVersion: document.querySelector("#footerVersion"),
   footerCreditText: document.querySelector("#footerCreditText"),
   scrollTop: document.querySelector("#scrollTopButton"),
-  floatingActions: document.querySelector("#floatingEditActions"), floatingAdd: document.querySelector("#floatingAddButton"),
+  floatingActions: document.querySelector("#floatingEditActions"), floatingAdd: document.querySelector("#floatingAddButton"), floatingSearch: document.querySelector("#floatingSearchButton"),
   detailDialog: document.querySelector("#detailDialog"),
   detailClose: document.querySelector("#detailClose"),
   detailTitle: document.querySelector("#detailTitle"),
@@ -287,7 +288,9 @@ function bindEvents() {
   document.addEventListener("click", closePlatformLogoSelects);
   el.login.addEventListener("click", toggleEditMode);
   el.addButton.addEventListener("click", () => openEditor(null, { digital: state.filters.tab === "drive" }));
+  el.searchButton?.addEventListener("click", scrollToShelfSearch);
   el.floatingAdd.addEventListener("click", () => state.canEdit ? openEditor(null, { digital: state.filters.tab === "drive" }) : openAuth());
+  el.floatingSearch?.addEventListener("click", scrollToShelfSearch);
   el.layoutButton.addEventListener("click", openLayout);
   el.showcaseEdit.addEventListener("click", openShowcaseEditor);
   el.syncButton?.addEventListener("click", syncShelfNow);
@@ -502,6 +505,8 @@ function renderReleaseCalendar() {
     games: state.gamelistGames,
     offset: state.releaseCalendarOffset,
     weekStart: normalizeWeekStart(state.gamelistSettings.weekStart),
+    locale: currentLanguage(),
+    translate: tt,
     onShift: (value) => {
       state.releaseCalendarOffset += value;
       renderReleaseCalendar();
@@ -548,7 +553,7 @@ function renderChrome() {
   el.fetchPricesButton.innerHTML = `${currencyIcon()}<span class="button-label">${escapeHtml(tt("Fetch New Prices"))}</span>`;
   updateFetchPricesButtonStatus();
   el.login.innerHTML = state.canEdit
-    ? `<span class="button-label">${escapeHtml(tt("Stop Editing"))}</span><span class="button-icon" aria-hidden="true"><svg class="exit-icon" viewBox="0 0 24 24"><path d="M10 5H6.8A2.8 2.8 0 0 0 4 7.8v8.4A2.8 2.8 0 0 0 6.8 19H10"></path><path d="M14 8l4 4-4 4"></path><path d="M8 12h10"></path></svg></span>`
+    ? `<span class="button-icon" aria-hidden="true"><svg class="exit-icon" viewBox="0 0 24 24"><path d="M10 5H6.8A2.8 2.8 0 0 0 4 7.8v8.4A2.8 2.8 0 0 0 6.8 19H10"></path><path d="M14 8l4 4-4 4"></path><path d="M8 12h10"></path></svg></span>`
     : `<svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="M13.5 6.5l4 4"></path></svg>`;
   el.login.title = state.canEdit ? tt("Stop Editing") : tt("Edit");
   el.login.setAttribute("aria-label", el.login.title);
@@ -560,7 +565,7 @@ function renderChrome() {
   el.footerVersion.textContent = siteVersion.version
     ? `${siteVersion.version}.${formatFooterShortDate(siteVersion.updatedAt) || "--.--"}`
     : "Version -";
-  if (el.footerCreditText) el.footerCreditText.textContent = state.gamelistSettings.shelfDigitalGames === true ? "Shelf/Drive by Shabii" : "Shelf by Shabii";
+  if (el.footerCreditText) el.footerCreditText.textContent = state.gamelistSettings.shelfDigitalGames === true ? tt("Shelf/Drive by Shabii") : tt("Shelf by Shabii");
   renderBrandVersionChip();
   updateFloatingActions();
 }
@@ -622,6 +627,9 @@ function tt(key, values) {
 
 function applyLanguage() {
   applyDocumentTranslations(currentLanguage());
+  if (el.playingTitle) el.playingTitle.textContent = tt("Currently playing");
+  const latestFinishedTitle = el.playingFinished?.querySelector(".achievement-subtitle");
+  if (latestFinishedTitle) latestFinishedTitle.textContent = tt("Last finished games");
 }
 
 function initPagePullTransition({ targetLabel, targetUrl }) {
@@ -899,6 +907,11 @@ function scrollToShelfLibrary() {
   el.shelf.scrollTo?.({ top: 0, left: 0, behavior: "smooth" });
 }
 
+function scrollToShelfSearch() {
+  document.querySelector(".shelf-toolbar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.requestAnimationFrame(() => el.search?.focus({ preventScroll: true }));
+}
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -917,7 +930,7 @@ function renderStats() {
     [new Set(collectionGames.map((game) => game.platform)).size, driveSelected ? "Digital platforms" : "Platforms", "stat-available"],
     ...(!driveSelected && shelfPricesVisible() ? [[valueText, "Estimated physical", "stat-done"]] : []),
   ];
-  el.stats.innerHTML = rows.map(([valueText, label, className, action]) => `<div class="stat glass ${className}${action ? " stat-action" : ""}"${action ? ` data-stat-action="${escapeHtml(action)}" role="button" tabindex="0"` : ""}><strong>${escapeHtml(valueText)}</strong><span>${escapeHtml(label)}</span></div>`).join("");
+  el.stats.innerHTML = rows.map(([valueText, label, className, action]) => `<div class="stat glass ${className}${action ? " stat-action" : ""}"${action ? ` data-stat-action="${escapeHtml(action)}" role="button" tabindex="0"` : ""}><strong>${escapeHtml(valueText)}</strong><span>${escapeHtml(tt(label))}</span></div>`).join("");
 }
 
 function handleStatsAction(event) {
@@ -946,7 +959,7 @@ function renderFilters() {
   const categories = uniqueSorted(visibleGames.flatMap((game) => [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).filter(Boolean)));
   el.platform.innerHTML = `<option value="all">${escapeHtml(tt("All platforms"))}</option>${platforms.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(platformDisplayName(value))}</option>`).join("")}`;
   el.region.innerHTML = `<option value="all">${escapeHtml(tt("All regions"))}</option>${countries.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(regionName(value))}</option>`).join("")}`;
-  el.category.innerHTML = `<option value="all">${escapeHtml(tt("All categories"))}</option>${categories.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
+  el.category.innerHTML = `<option value="all">${escapeHtml(tt("All categories"))}</option>${categories.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(tt(value))}</option>`).join("")}`;
   el.platform.value = state.filters.platform;
   el.region.value = state.filters.region;
   el.condition.value = state.filters.condition;
@@ -1109,14 +1122,14 @@ function renderLibrary() {
   el.tabs.style.setProperty("--compact-tab-count", String(Math.max(1, tabs.length - 1)));
   el.tabs.style.setProperty("--tab-width", `calc((100% - 18px) / ${tabs.length})`);
   el.tabs.style.setProperty("--tab-index", String(tabs.indexOf(state.filters.tab)));
-  el.tabs.innerHTML = tabs.map((tab) => `<button class="${state.filters.tab === tab ? "active" : ""}" data-shelf-tab="${tab}" type="button"><span class="label">${tab === "shelf" ? "Shelf" : tab === "drive" ? "Drive" : tab === "preorders" ? `<span class="preorder-tab-text">Preorders</span><span class="preorder-tab-icon">${shoppingBagIcon()}</span>` : "New additions"}</span>${tab === "preorders" ? `<span class="count">${preorderCount}</span>` : tab === "new" ? `<span class="count">${pendingCount}</span>` : ""}</button>`).join("");
+  el.tabs.innerHTML = tabs.map((tab) => `<button class="${state.filters.tab === tab ? "active" : ""}" data-shelf-tab="${tab}" type="button"><span class="label">${tab === "shelf" ? escapeHtml(tt("Shelf")) : tab === "drive" ? escapeHtml(tt("Drive")) : tab === "preorders" ? `<span class="preorder-tab-text">${escapeHtml(tt("Preorders"))}</span><span class="preorder-tab-icon">${shoppingBagIcon()}</span>` : escapeHtml(tt("New additions"))}</span>${tab === "preorders" ? `<span class="count">${preorderCount}</span>` : tab === "new" ? `<span class="count">${pendingCount}</span>` : ""}</button>`).join("");
   requestAnimationFrame(syncShelfTabIndicator);
   if (state.filters.tab === "preorders") {
     el.count.innerHTML = shelfPreorderCountPill(games);
   } else {
-    el.count.textContent = `${games.length} ${games.length === 1 ? "game" : "games"}`;
+    el.count.textContent = tt("{count} {item}", { count: games.length, item: games.length === 1 ? tt("game") : tt("games") });
   }
-  el.libraryTitle.textContent = state.filters.tab === "preorders" ? "Preorders" : state.filters.tab === "new" ? "New additions" : state.filters.tab === "drive" ? "Drive" : "Shelf";
+  el.libraryTitle.textContent = state.filters.tab === "preorders" ? tt("Preorders") : state.filters.tab === "new" ? tt("New additions") : state.filters.tab === "drive" ? tt("Drive") : tt("Shelf");
   el.shelf.classList.toggle("list-view", state.viewMode === "list");
   el.shelf.classList.toggle("preorders-view", state.filters.tab === "preorders");
   el.shelf.innerHTML = "";
@@ -1276,7 +1289,7 @@ function gameCard(game, options = {}) {
   titleOwners.hidden = true;
   const edit = card.querySelector(".edit-action");
   if (preorderProjection) edit.dataset.action = "edit-preorder"; else edit.dataset.action = "edit";
-  const studioText = studio || game.genre || (digitalGame ? "Digital edition" : "Physical edition");
+  const studioText = studio || game.genre || tt(digitalGame ? "Digital edition" : "Physical edition");
   card.querySelector(".studio-line").innerHTML = `${visibleOwners.map(ownerBadge).join("")}<span>${escapeHtml(studioText)}</span>`;
   card.querySelector(".meta").innerHTML = preorderProjection
     ? `${platformBadge(game.platform, { title: game.title })}${mediaFormatBadge(game)}${dlcBadge(game)}${entitlementBadge(game)}${preorderPlaytimePill(game)}`
@@ -1287,7 +1300,8 @@ function gameCard(game, options = {}) {
   else playDates.remove();
   card.querySelector(".chips").innerHTML = tags.map((tag) => `<span class="chip genre">${escapeHtml(tag)}</span>`).join("");
   card.querySelector(".card-trophies").remove();
-  card.querySelector(".card-actions").innerHTML = preorderProjection ? `<button class="ghost-button editor-only" data-action="show-preorder-prices" type="button">Prices</button><button class="ghost-button editor-only" data-action="accept-preorder" type="button">Got it</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete-preorder" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>` : isPendingCollectionGame(game) ? `<button class="primary-button add-collection-action editor-only" data-action="add-collection" type="button">Add to Collection</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>` : `<button class="ghost-button shelf-add-backlog-action editor-only" data-action="add-backlog" type="button">Add to Backlog</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="Delete" aria-label="Delete">${trashIcon()}</button>`;
+  const deleteLabel = escapeHtml(tt("Delete"));
+  card.querySelector(".card-actions").innerHTML = preorderProjection ? `<button class="ghost-button editor-only" data-action="show-preorder-prices" type="button">${escapeHtml(tt("Prices"))}</button><button class="ghost-button editor-only" data-action="accept-preorder" type="button">${escapeHtml(tt("Got it"))}</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete-preorder" type="button" title="${deleteLabel}" aria-label="${deleteLabel}">${trashIcon()}</button>` : isPendingCollectionGame(game) ? `<button class="primary-button add-collection-action editor-only" data-action="add-collection" type="button">${escapeHtml(tt("Add to Collection"))}</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="${deleteLabel}" aria-label="${deleteLabel}">${trashIcon()}</button>` : `<button class="ghost-button shelf-add-backlog-action editor-only" data-action="add-backlog" type="button">${escapeHtml(tt("Add to Backlog"))}</button><button class="danger-button icon-only-button shelf-card-delete-action editor-only" data-action="delete" type="button" title="${deleteLabel}" aria-label="${deleteLabel}">${trashIcon()}</button>`;
   const prices = card.querySelector(".prices");
   if (preorderProjection && priceProvidersForGame(game).length) {
     prices.style.setProperty("--price-columns", priceProvidersForGame(game).length);
@@ -1353,7 +1367,7 @@ function shelfPreorderCountPill(games) {
   const summary = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], undefined, { sensitivity: "base" }));
   const rows = summary.map(([store, count]) => `<span><strong>${escapeHtml(store)}</strong><em>${count}</em></span>`).join("");
   const title = summary.map(([store, count]) => `${store}: ${count}`).join("\n");
-  return `<span class="preorder-count-pill preorder-count-tooltip" tabindex="0" title="${escapeHtml(title)}">${shoppingBagIcon()}${games.length} preordered<span class="preorder-store-list" role="tooltip">${rows}</span></span>`;
+  return `<span class="preorder-count-pill preorder-count-tooltip" tabindex="0" title="${escapeHtml(title)}">${shoppingBagIcon()}${escapeHtml(tt("{count} preordered", { count: games.length }))}<span class="preorder-store-list" role="tooltip">${rows}</span></span>`;
 }
 
 function visibleShelfCardOwners(owners = []) {
@@ -1375,7 +1389,7 @@ function projectionOwnerCardClass(game) {
   return owners.map(ownerCardColorClass).join(" ");
 }
 
-function conditionBadge(condition) { const tone = condition === "Complete +" ? "complete-plus" : normalize(condition).replace(/ /g, "-"); return `<span class="condition-pill condition-${tone}"><img src="assets/platforms/disk.png" alt="" width="18" height="18"><span>${escapeHtml(condition)}</span></span>`; }
+function conditionBadge(condition) { const tone = condition === "Complete +" ? "complete-plus" : normalize(condition).replace(/ /g, "-"); return `<span class="condition-pill condition-${tone}"><img src="assets/platforms/disk.png" alt="" width="18" height="18"><span>${escapeHtml(tt(condition))}</span></span>`; }
 
 function handleShelfClick(event) {
   const card = event.target.closest("[data-id]");
@@ -1433,7 +1447,7 @@ function openDetails(game) {
   el.detailDescription.hidden = !game.description;
   el.detailPricePanel.classList.remove("is-collapsed");
   el.detailPriceToggle.setAttribute("aria-expanded", "true");
-  el.detailCondition.innerHTML = ["game", "manual", "box", "other", "sealed"].map((key) => `<label class="check-filter toggle-check detail-condition-check condition-${key}"><input type="checkbox" ${conditionValue(game, key) ? "checked" : ""} disabled><span>${escapeHtml(key[0].toUpperCase() + key.slice(1))}</span></label>`).join("");
+  el.detailCondition.innerHTML = ["game", "manual", "box", "other", "sealed"].map((key) => `<label class="check-filter toggle-check detail-condition-check condition-${key}"><input type="checkbox" ${conditionValue(game, key) ? "checked" : ""} disabled><span>${escapeHtml(tt(key[0].toUpperCase() + key.slice(1)))}</span></label>`).join("");
   el.detailConditionPanel.hidden = Boolean(game._gamelistProjection || digitalGame);
   const links = websiteLinks(game);
   el.detailLinks.innerHTML = storeLinkButtons(game, links);
@@ -1483,7 +1497,7 @@ function openEditor(game = null, options = {}) {
   el.fields.igdbUrl.value = values.igdbUrl || links.igdb;
   Object.entries(el.conditionFields).forEach(([key, input]) => { input.checked = conditionValue(values, key); });
   syncConditionInputs();
-  el.addForm.querySelector(".modal-head h2").textContent = game?.pendingCollection ? "Add to Collection" : game ? "Edit Game" : digitalMode ? "Add Digital Game" : "Add Game";
+  el.addForm.querySelector(".modal-head h2").textContent = tt(game?.pendingCollection ? "Add to Collection" : game ? "Edit Game" : digitalMode ? "Add Digital Game" : "Add Game");
   el.addForm.querySelectorAll("button[type='submit']").forEach((button) => { button.textContent = game?.pendingCollection ? "Add to Collection" : game ? "Save" : digitalMode ? "Add to Drive" : "Add to Shelf"; });
   el.editDelete.hidden = !game;
   syncStyledSelects(el.addDialog, { activeValue: null });
@@ -1495,9 +1509,9 @@ function syncShelfDigitalEditorMode(digitalMode) {
   el.addForm.classList.toggle("digital-game-editor", digitalMode);
   el.addForm.dataset.digital = digitalMode ? "true" : "false";
   el.fields.country.required = !digitalMode;
-  el.lookupInput.placeholder = digitalMode ? "Game name" : "Game name or PriceCharting page";
+  el.lookupInput.placeholder = tt(digitalMode ? "Game name" : "Game name or PriceCharting page");
   const game = state.games.find((item) => item.id === state.editingId);
-  el.addForm.querySelector(".modal-head h2").textContent = game?.pendingCollection ? "Add to Collection" : game ? "Edit Game" : digitalMode ? "Add Digital Game" : "Add Game";
+  el.addForm.querySelector(".modal-head h2").textContent = tt(game?.pendingCollection ? "Add to Collection" : game ? "Edit Game" : digitalMode ? "Add Digital Game" : "Add Game");
   el.addForm.querySelectorAll("button[type='submit']").forEach((button) => { button.textContent = game?.pendingCollection ? "Add to Collection" : game ? "Save" : digitalMode ? "Add to Drive" : "Add to Shelf"; });
   syncShelfEntitlementEditor();
 }
@@ -1517,7 +1531,7 @@ async function lookupGame() {
   el.lookupButton.title = "Fetching game information";
   el.lookupResults.classList.remove("loaded");
   const digitalMode = el.digitalInput.checked;
-  el.lookupResults.innerHTML = `<div class="empty">${digitalMode ? "Searching IGDB…" : "Searching game data and PriceCharting editions…"}</div>`;
+  el.lookupResults.innerHTML = `<div class="empty">${escapeHtml(tt(digitalMode ? "Searching IGDB…" : "Searching game data and PriceCharting editions…"))}</div>`;
   el.lookupResults.classList.add("loaded");
   try {
     if (digitalMode) {
@@ -1530,7 +1544,7 @@ async function lookupGame() {
     const directUrl = priceChartingPageUrl(query);
     if (directUrl) {
       const physical = await fetchPhysicalMetadata(el.fields.title.value.trim(), { url: directUrl });
-      if (!physical) throw new Error("PriceCharting edition unavailable");
+      if (!physical) throw new Error(tt("PriceCharting edition unavailable"));
       el.fields.platform.value = bestCollectionPlatform([physical.consoleName], el.fields.platform.value);
       applyPriceChartingRegion(physical.consoleName);
       applyPhysicalMetadata(physical);
@@ -2580,9 +2594,9 @@ function renderShowcaseFilters() {
   const platforms = orderedPlatforms(uniqueSorted(games.map((game) => game.platform)));
   const countries = uniqueSorted(games.map((game) => game.country));
   const categories = uniqueSorted(games.flatMap((game) => [...String(game.genre || "").split(","), ...(game.genres || [])].map((value) => value.trim()).filter(Boolean)));
-  el.showcasePlatform.innerHTML = `<option value="all">All platforms</option>${platforms.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(platformDisplayName(value))}</option>`).join("")}`;
+  el.showcasePlatform.innerHTML = `<option value="all">${escapeHtml(tt("All platforms"))}</option>${platforms.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(platformDisplayName(value))}</option>`).join("")}`;
   el.showcaseRegion.innerHTML = `<option value="all">All regions</option>${countries.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(regionName(value))}</option>`).join("")}`;
-  el.showcaseCategory.innerHTML = `<option value="all">All categories</option>${categories.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
+  el.showcaseCategory.innerHTML = `<option value="all">${escapeHtml(tt("All categories"))}</option>${categories.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(tt(value))}</option>`).join("")}`;
   el.showcasePlatform.value = state.showcaseFilters.platform;
   el.showcaseRegion.value = state.showcaseFilters.region;
   el.showcaseCategory.value = state.showcaseFilters.category;
@@ -2650,7 +2664,8 @@ function visibleShelfTags(game, values = []) {
   const importedFromGamelist = game?.source === "gamelist" || Boolean(game?.gamelistId) || String(game?.id || "").startsWith("gamelist-");
   return values
     .map((value) => String(value || "").trim())
-    .filter((value, index, list) => value && normalize(value) !== "game" && !(importedFromGamelist && normalize(value) === "gamelist") && list.indexOf(value) === index);
+    .filter((value, index, list) => value && normalize(value) !== "game" && !(importedFromGamelist && normalize(value) === "gamelist") && list.indexOf(value) === index)
+    .map((value) => tt(value));
 }
 
 function syncShowcaseDirectionButton() {
@@ -3037,11 +3052,11 @@ function gamelistProjectionCard(game, options = {}) {
 }
 
 function currentlyPlayingTitle(games) {
-  return games.length && games.every((game) => game.stream) ? "Currently streaming" : "Currently playing";
+  return tt(games.length && games.every((game) => game.stream) ? "Currently streaming" : "Currently playing");
 }
 
 function playingCountText(count) {
-  return `Playing ${count} ${count === 1 ? "game" : "games"}`;
+  return tt("Playing {count} {item}", { count, item: tt(count === 1 ? "game" : "games") });
 }
 function projectionMeta(game, options = {}) { const release = options.includeRelease === false ? "" : activityReleaseStatus(game, { includePast: Boolean(options.includePast) }); return `${platformBadge(game.platform, { title: game.title })}${options.includeProgress ? shelfProgressPill(game) : ""}${mediaFormatBadge(game)}${dlcBadge(game)}${entitlementBadge(game)}${game.emulator ? `<span class="emulator-pill">Emulator</span>` : ""}${game.lengthHours ? timeBadgeMarkup(game.lengthHours, game.hltbUrl || game.howLongToBeatUrl || `https://howlongtobeat.com/?q=${encodeURIComponent(game.title)}`, escapeHtml) : ""}${game.stream ? `<span class="stream-pill">Stream</span>` : ""}${release ? releaseStatusPill(release) : ""}${game.coop ? `<span class="coop-pill">Coop</span>` : ""}${game.replayCount ? `<span class="replay-pill">Replay ${escapeHtml(game.replayCount)}</span>` : ""}`; }
 
@@ -3086,8 +3101,8 @@ function downloadBadgeIcon() {
 }
 function projectionChips(game, options = {}) {
   return [
-    options.includePreorder === false || !game.preorderStore ? "" : chip(`Preordered: ${game.preorderStore}`, "accent"),
-    ...(game.genres || []).slice(0, 4).map((tag) => chip(tag, "genre")),
+    options.includePreorder === false || !game.preorderStore ? "" : chip(tt("Preordered: {store}", { store: game.preorderStore }), "accent"),
+    ...(game.genres || []).slice(0, 4).map((tag) => chip(tt(tag), "genre")),
   ].join("");
 }
 function chip(label, type = "") {
@@ -3097,7 +3112,7 @@ function releaseStatusPill(value) {
   const text = String(value || "").trim();
   const match = text.match(/^(Released|Releases)\s+(.+)$/i);
   if (!match) return `<span class="release-pill">${escapeHtml(text)}</span>`;
-  const label = match[1].toLowerCase() === "released" ? "Released" : "Releases";
+  const label = match[1].toLowerCase() === "released" ? tt("Released") : tt("Releases");
   const date = formatShortDate(match[2]) || match[2];
   return `<span class="release-pill history-date-pill"><small class="release-date-label"><span>${label}</span>${calendarMiniIcon()}</small><strong>${escapeHtml(date)}</strong></span>`;
 }
@@ -3105,7 +3120,7 @@ function releaseStatusPill(value) {
 function shelfReleaseDatePill(game, label) {
   const text = String(game?.releaseText || "").trim() || (game?.releaseDate ? formatDate(game.releaseDate) : "");
   if (!text) return "";
-  return `<span class="release-pill history-date-pill"><small class="release-date-label"><span>${escapeHtml(label)}</span>${calendarMiniIcon()}</small><strong>${escapeHtml(text)}</strong></span>`;
+  return `<span class="release-pill history-date-pill"><small class="release-date-label"><span>${escapeHtml(tt(label))}</span>${calendarMiniIcon()}</small><strong>${escapeHtml(text)}</strong></span>`;
 }
 
 function calendarMiniIcon() {
@@ -3167,7 +3182,7 @@ function activityProgressSummary(game) {
 function shelfProgressBadge(summary, options = {}) {
   if (!summary || summary.progress == null) return "";
   const className = ["psn-progress-pill", options.className || ""].filter(Boolean).join(" ");
-  const label = !options.compact && Number.isFinite(Number(summary.earned)) && Number.isFinite(Number(summary.total)) ? `${Number(summary.earned)}/${Number(summary.total)} earned` : "";
+  const label = !options.compact && Number.isFinite(Number(summary.earned)) && Number.isFinite(Number(summary.total)) ? tt("{earned}/{total} earned", { earned: Number(summary.earned), total: Number(summary.total) }) : "";
   return `<span class="${className}">${options.includeIcon === false ? "" : trophyIcon()}<em style="--progress:${summary.progress}%"></em><strong>${summary.progress}%</strong>${label ? `<span>${options.separator ? "<b>·</b>" : ""}${escapeHtml(label)}</span>` : ""}</span>`;
 }
 function shelfProgressPill(game) {
@@ -3185,7 +3200,7 @@ function shelfCardTrophies(game, options = {}) {
     const progress = activityProgressSummary(game);
     if (!earned.length && !progress) return "";
     const tone = ["steam", "pc"].includes(normalize(shortPlatform(game.platform))) ? "steam" : "";
-    return `<div class="card-trophy-head trophy-gold">${trophyIcon()}<span>${label.plural === "trophies" ? "Trophies" : "Achievements"}</span>${shelfProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress", separator: !options.compactProgress, compact: options.compactProgress })}</div>${earned.length ? `<div class="card-trophy-list">${earned.map((item) => `<a class="card-trophy trophy-${tone || trophyTone(item.type || item.rarity)}" href="${escapeHtml(item.url || (shortPlatform(game.platform).toLowerCase().includes("xbox") ? state.xboxActivity.sourceUrl : state.steamActivity.sourceUrl) || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml([item.title, item.earnedAt].filter(Boolean).join(" · "))}"><img src="${escapeHtml(item.icon || platformLogo(game.platform))}" alt=""><span>${escapeHtml(item.title || label.single)}</span>${item.earnedAt ? `<small class="card-trophy-meta">${escapeHtml(item.earnedAt)}</small>` : ""}</a>`).join("")}</div>` : ""}`;
+    return `<div class="card-trophy-head trophy-gold">${trophyIcon()}<span>${escapeHtml(tt(label.plural === "trophies" ? "TROPHIES" : "ACHIEVEMENTS"))}</span>${shelfProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress", separator: !options.compactProgress, compact: options.compactProgress })}</div>${earned.length ? `<div class="card-trophy-list">${earned.map((item) => `<a class="card-trophy trophy-${tone || trophyTone(item.type || item.rarity)}" href="${escapeHtml(item.url || (shortPlatform(game.platform).toLowerCase().includes("xbox") ? state.xboxActivity.sourceUrl : state.steamActivity.sourceUrl) || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml([item.title, item.earnedAt].filter(Boolean).join(" · "))}"><img src="${escapeHtml(item.icon || platformLogo(game.platform))}" alt=""><span>${escapeHtml(item.title || label.single)}</span>${item.earnedAt ? `<small class="card-trophy-meta">${escapeHtml(item.earnedAt)}</small>` : ""}</a>`).join("")}</div>` : ""}`;
   }
   const remote = activityGameFor(game);
   const cacheKey = remote?.npCommunicationId || remote?.id || "";
@@ -3197,7 +3212,7 @@ function shelfCardTrophies(game, options = {}) {
   if (!trophies.length && cached?.loading) return `<div class="card-trophy-head trophy-gold">${trophyIcon()}<span>Loading trophies...</span></div>`;
   if (!trophies.length) return "";
   const progress = activityProgressSummary(game);
-  return `<div class="card-trophy-head trophy-gold">${trophyIcon()}<span>Trophies</span>${shelfProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress", separator: !options.compactProgress, compact: options.compactProgress })}</div><div class="card-trophy-list">${trophies.map((item) => `<a class="card-trophy trophy-${trophyTone(item.type || item.rarity)}" href="${escapeHtml(item.url || state.trophyActivity?.sourceUrl || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml([item.title, item.earnedAt].filter(Boolean).join(" · "))}"><img src="${escapeHtml(item.icon || platformLogo("PS5"))}" alt=""><span>${escapeHtml(item.title || "Trophy")}</span>${item.earnedAt ? `<small class="card-trophy-meta">${escapeHtml(item.earnedAt)}</small>` : ""}</a>`).join("")}</div>`;
+  return `<div class="card-trophy-head trophy-gold">${trophyIcon()}<span>${escapeHtml(tt("TROPHIES"))}</span>${shelfProgressBadge(progress, { includeIcon: false, className: "card-trophy-progress", separator: !options.compactProgress, compact: options.compactProgress })}</div><div class="card-trophy-list">${trophies.map((item) => `<a class="card-trophy trophy-${trophyTone(item.type || item.rarity)}" href="${escapeHtml(item.url || state.trophyActivity?.sourceUrl || "#")}" target="_blank" rel="noreferrer" title="${escapeHtml([item.title, item.earnedAt].filter(Boolean).join(" · "))}"><img src="${escapeHtml(item.icon || platformLogo("PS5"))}" alt=""><span>${escapeHtml(item.title || "Trophy")}</span>${item.earnedAt ? `<small class="card-trophy-meta">${escapeHtml(item.earnedAt)}</small>` : ""}</a>`).join("")}</div>`;
 }
 
 function achievementKindForPlatform(platform) {
@@ -3227,7 +3242,7 @@ async function loadGamelistDetailTrophies(game) {
   if (!game?.playing && shelfIsSteamAchievementGame(game)) return;
   const external = externalActivityFor(game);
   if (external) {
-    if (external.loading) { el.detailTrophies.hidden = false; el.detailTrophyTitle.textContent = "ACHIEVEMENTS"; el.detailTrophyPercent.innerHTML = ""; el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned achievements...</div>`; return; }
+    if (external.loading) { el.detailTrophies.hidden = false; el.detailTrophyTitle.textContent = tt("ACHIEVEMENTS"); el.detailTrophyPercent.innerHTML = ""; el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">${escapeHtml(tt("Loading earned achievements..."))}</div>`; return; }
     renderGamelistDetailTrophies(game, external.achievements, external.earned, external.total, "ACHIEVEMENTS");
     return;
   }
@@ -3256,7 +3271,7 @@ async function loadGamelistDetailTrophies(game) {
     return;
   }
   el.detailTrophies.hidden = false;
-  el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">Loading earned trophies...</div>`;
+  el.detailTrophyList.innerHTML = `<div class="detail-trophy-empty">${escapeHtml(tt("Loading earned trophies..."))}</div>`;
   try {
     const params = achievementParams({ id, service: remote.npServiceName || "trophy", user: state.gamelistSettings.psnUser || "" });
     const response = await fetch(`/api/trophies?${params}`);
@@ -3298,7 +3313,7 @@ function renderGamelistDetailTrophyList() {
   el.detailTrophyDirection.title = state.gamelistDetailTrophyDirection === "asc" ? "Sort ascending" : "Sort descending";
   el.detailTrophyDirection.setAttribute("aria-label", el.detailTrophyDirection.title);
   const tone = ["steam", "pc"].includes(normalize(shortPlatform(game?.platform))) ? "steam" : "";
-  el.detailTrophyList.innerHTML = trophies.length ? trophies.map((item) => `<article class="detail-trophy-card trophy-${tone || trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game?.platform || "PS5"))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("") : `<div class="detail-trophy-empty">No ${state.gamelistDetailTrophyKind === "TROPHIES" ? "trophies" : "achievements"} found for this game yet.</div>`;
+  el.detailTrophyList.innerHTML = trophies.length ? trophies.map((item) => `<article class="detail-trophy-card trophy-${tone || trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game?.platform || "PS5"))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("") : `<div class="detail-trophy-empty">No ${state.gamelistDetailTrophyKind === "TROPHIES" ? "trophies" : "achievements"} found for this game yet.</div>`;
 }
 function externalActivityFor(game) {
   const platform = normalize(shortPlatform(game.platform)); const title = game.trophyName || game.title;
@@ -3341,10 +3356,10 @@ async function refreshShelfPsnTrophiesInBackground(game, remote, cacheKey, mode)
     }
     const progress = total ? Math.round((earned / total) * 100) : 0;
     el.detailTrophies.hidden = false;
-    el.detailTrophyTitle.textContent = "TROPHIES";
+    el.detailTrophyTitle.textContent = tt("TROPHIES");
     el.detailTrophyCount.textContent = "";
     el.detailTrophyPercent.innerHTML = total ? shelfProgressBadge({ progress, earned, total }, { includeIcon: false, separator: true }) : "";
-    el.detailTrophyList.innerHTML = trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
+    el.detailTrophyList.innerHTML = trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
   } catch {
     // Cached trophy data is already visible; background refresh is best-effort.
   }
@@ -3393,7 +3408,7 @@ async function loadTrophyActivity() {
     state.trophyActivity = cached.psn || null;
     state.steamActivity = cached.steam || { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
     state.xboxActivity = cached.xbox || { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
-    const panel = achievementPanelMarkup({ psn: state.trophyActivity || {}, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml });
+    const panel = achievementPanelMarkup({ psn: state.trophyActivity || {}, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml, translate: tt });
     el.trophyCard.innerHTML = panel.html;
     el.trophyCard.querySelector("[data-action='platinums']")?.addEventListener("click", openCompletedGames);
     updateAllShelfTrophyStrips();
@@ -3413,7 +3428,7 @@ async function loadTrophyActivity() {
     state.xboxActivity = xboxResult.status === "fulfilled" ? xboxResult.value : { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" };
     notifyAchievementProviderIssues(state.trophyActivity || {}, state.steamActivity, state.xboxActivity);
     writeAchievementCache(cacheKey, { psn: state.trophyActivity, steam: state.steamActivity, xbox: state.xboxActivity });
-    const panel = achievementPanelMarkup({ psn: state.trophyActivity || {}, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml });
+    const panel = achievementPanelMarkup({ psn: state.trophyActivity || {}, steam: state.steamActivity, xbox: state.xboxActivity, trophyIconHtml: trophyIcon(), platformBadge, platformLogo, trophyTone, escape: escapeHtml, translate: tt });
     el.trophyCard.innerHTML = panel.html;
     el.trophyCard.querySelector("[data-action='platinums']")?.addEventListener("click", openCompletedGames);
     updateAllShelfTrophyStrips();
@@ -3447,7 +3462,7 @@ async function fetchShelfXboxActivity(forceRefresh = state.gamelistSettings.forc
   if (!response.ok || data.error || data.authError) return { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: data.sourceUrl || "https://www.xbox.com/", authError: Boolean(data.authError || data.error || !response.ok), error: data.error || "" };
   return { achievements: data.achievements || [], games: data.games || [], completed: data.completed || [], totalEarned: Number(data.totalEarned || 0), sourceUrl: data.sourceUrl || "" };
 }
-function achievementParams(values = {}, forceRefresh = state.gamelistSettings.forceCacheOnLoad === true) { const params = new URLSearchParams(values); if (forceRefresh) params.set("fresh", String(Date.now())); return params; }
+function achievementParams(values = {}, forceRefresh = state.gamelistSettings.forceCacheOnLoad === true) { const params = new URLSearchParams(values); params.set("lang", currentLanguage()); if (forceRefresh) params.set("fresh", String(Date.now())); return params; }
 function achievementSettingsKey(settings = state.gamelistSettings) { return [String(settings.psnUser || "").trim(), String(settings.steamUser || "").trim(), String(settings.microsoftUser || "").trim()].join("|"); }
 function readAchievementCache(key) { try { const cached = JSON.parse(localStorage.getItem(ACHIEVEMENT_CACHE_KEY) || "{}"); if (!cached?.updatedAt || (Date.now() - Number(cached.updatedAt)) > ACHIEVEMENT_CACHE_TTL_MS) return null; if (cached?.key === key && hasAchievementProviderIssue(cached.data)) { localStorage.removeItem(ACHIEVEMENT_CACHE_KEY); return null; } return cached?.key === key && cached.data ? cached.data : null; } catch { return null; } }
 function writeAchievementCache(key, data) { try { if (hasAchievementProviderIssue(data)) { const cached = JSON.parse(localStorage.getItem(ACHIEVEMENT_CACHE_KEY) || "{}"); if (cached?.key === key) localStorage.removeItem(ACHIEVEMENT_CACHE_KEY); return; } localStorage.setItem(ACHIEVEMENT_CACHE_KEY, JSON.stringify({ key, data, updatedAt: Date.now() })); } catch {} }
@@ -3467,7 +3482,8 @@ async function hydrateCompletedCovers(items) {
   await Promise.all(missing.map(async (item) => {
     const key = normalize(item.title);
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(item.title)}`);
+      const params = new URLSearchParams({ q: item.title, lang: currentLanguage() });
+      const response = await fetch(`/api/search?${params}`);
       const data = response.ok ? await response.json() : { results: [] };
       const result = (data.results || [])[0];
       state.completedCoverCache[key] = result?.cover ? coverUrl(result.cover) : "__missing";
@@ -3483,16 +3499,24 @@ function renderCompletedGames(items) {
   if (state.completedPlatform !== "all" && !platforms.includes(state.completedPlatform)) state.completedPlatform = "all";
   const direction = state.completedDirection === "asc" ? 1 : -1;
   const visible = items.filter((item) => (state.completedYear === "all" || completedYearFor(item) === state.completedYear) && (state.completedPlatform === "all" || completedPlatformFor(item.platform) === state.completedPlatform)).sort((a, b) => state.completedSort === "name" ? direction * a.title.localeCompare(b.title) : direction * ((Date.parse(a.rawEarnedAt || a.earnedAt || 0) || 0) - (Date.parse(b.rawEarnedAt || b.earnedAt || 0) || 0)));
-  el.completedTitle.innerHTML = `${trophyIcon()} <span>COMPLETED</span>`;
-  el.completedCount.textContent = `${visible.length} completed`;
-  el.completedYear.innerHTML = `<option value="all">All</option>${years.map((year) => `<option value="${year}">${year}</option>`).join("")}`;
+  el.completedTitle.innerHTML = `${trophyIcon()} <span>${escapeHtml(tt("COMPLETED"))}</span>`;
+  el.completedCount.textContent = tt("{count} completed", { count: visible.length });
+  el.completedYear.innerHTML = `<option value="all">${escapeHtml(tt("All"))}</option>${years.map((year) => `<option value="${year}">${year}</option>`).join("")}`;
   el.completedYear.value = state.completedYear;
-  el.completedPlatform.innerHTML = `<option value="all">All</option>${platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platformDisplayName(platform))}</option>`).join("")}`;
+  el.completedPlatform.innerHTML = `<option value="all">${escapeHtml(tt("All"))}</option>${platforms.map((platform) => `<option value="${escapeHtml(platform)}">${escapeHtml(platformDisplayName(platform))}</option>`).join("")}`;
   el.completedPlatform.value = state.completedPlatform;
   el.completedSort.value = state.completedSort;
+  el.completedDialog.querySelector(".platinum-year-select > span").textContent = tt("Year");
+  el.completedDialog.querySelector(".platinum-platform-select > span").textContent = tt("Platform");
+  el.completedDialog.querySelector(".platinum-order-label > span").textContent = tt("Order");
+  [...el.completedSort.options].forEach((option) => { option.textContent = tt(option.value === "time" ? "Time" : "Name"); });
   el.completedDirection.innerHTML = sortArrowIcon(state.completedDirection === "desc");
+  el.completedDirection.title = tt(state.completedDirection === "desc" ? "Sort descending" : "Sort ascending");
+  el.completedDirection.setAttribute("aria-label", el.completedDirection.title);
   el.completedDirection.classList.toggle("desc", state.completedDirection === "desc");
   syncViewModeButton(el.completedView, state.completedView, { gridIcon, linesIcon });
+  el.completedView.title = tt(state.completedView === "list" ? "List view" : "Grid view");
+  el.completedView.setAttribute("aria-label", el.completedView.title);
   syncStyledSelects(el.completedDialog, { activeValue: null });
   el.completedList.classList.toggle("list-view", state.completedView === "list");
   el.completedList.innerHTML = visible.map(completedCard).join("") || `<div class="empty">No completed games tracked yet.</div>`;
@@ -3893,7 +3917,7 @@ function renderPriceDetails(game) {
   const currency = game.priceCurrency || "USD";
   const identifiers = [["UPC", game.upc], ["SKU", game.sku], ["ASIN", game.asin], ["eBay ID", game.epid]].filter(([, value]) => value);
   const productUrl = game.collectionProductUrl || priceChartingPageUrl(game.pricechartingId);
-  const priceMarkup = rows.length ? `<div class="collection-price-grid">${rows.map(([label, value]) => productUrl ? `<a href="${escapeHtml(productUrl)}" target="_blank" rel="noreferrer"><small>${label}</small><strong>${formatMoney(value, currency)}</strong></a>` : `<span><small>${label}</small><strong>${formatMoney(value, currency)}</strong></span>`).join("")}</div>` : `<span class="muted">No collection value fetched yet.</span>`;
+  const priceMarkup = rows.length ? `<div class="collection-price-grid">${rows.map(([label, value]) => productUrl ? `<a href="${escapeHtml(productUrl)}" target="_blank" rel="noreferrer"><small>${escapeHtml(tt(label))}</small><strong>${formatMoney(value, currency)}</strong></a>` : `<span><small>${escapeHtml(tt(label))}</small><strong>${formatMoney(value, currency)}</strong></span>`).join("")}</div>` : `<span class="muted">${escapeHtml(tt("No collection value fetched yet."))}</span>`;
   const identifierMarkup = identifiers.length ? `<div class="collection-product-meta">${identifiers.map(([label, value]) => `<span><small>${label}</small><strong>${escapeHtml(value)}</strong></span>`).join("")}</div>` : "";
   el.detailPriceSummary.innerHTML = `${priceMarkup}${identifierMarkup}`;
   const collectionValue = collectionValueFor(game);
@@ -3905,8 +3929,8 @@ function renderPriceDetails(game) {
 }
 function syncFetchValueButton(label = "Fetch value") {
   el.fetchValue.innerHTML = currencyIcon();
-  el.fetchValue.title = label;
-  el.fetchValue.setAttribute("aria-label", label);
+  el.fetchValue.title = tt(label);
+  el.fetchValue.setAttribute("aria-label", tt(label));
 }
 function toggleCollectionValuePanel() {
   const collapsed = el.detailPricePanel.classList.toggle("is-collapsed");
@@ -3937,8 +3961,8 @@ async function fetchCollectionValue() {
     if (!data.error && response.ok) renderPriceDetails(game);
     renderSavedStorePrices(game);
     renderStats();
-    showToast(response.ok && !data.error ? "Collection value updated." : "Store prices checked.");
-  } catch (error) { el.detailPriceSummary.innerHTML = `<span class="auth-error">${escapeHtml(error?.message || "Collection value is unavailable.")}</span>`; showToast("Collection value is unavailable.", "error"); } finally { el.fetchValue.disabled = false; syncFetchValueButton(); }
+    showToast(tt(response.ok && !data.error ? "Collection value updated." : "Store prices checked."));
+  } catch (error) { el.detailPriceSummary.innerHTML = `<span class="auth-error">${escapeHtml(error?.message || tt("Collection value is unavailable."))}</span>`; showToast(tt("Collection value is unavailable."), "error"); } finally { el.fetchValue.disabled = false; syncFetchValueButton(); }
 }
 
 function applyCollectionPrice(game, data) {
@@ -3974,11 +3998,11 @@ async function loadShelfTrophies(game) {
   const external = externalActivityFor(game);
   if (external) {
     el.detailTrophies.hidden = false;
-    el.detailTrophyTitle.textContent = "ACHIEVEMENTS";
+    el.detailTrophyTitle.textContent = tt("ACHIEVEMENTS");
     el.detailTrophyCount.textContent = "";
     const progress = external.total ? Math.round((external.earned / external.total) * 100) : 0;
     el.detailTrophyPercent.innerHTML = external.total ? shelfProgressBadge({ progress, earned: external.earned, total: external.total }, { includeIcon: false, separator: true }) : "";
-    el.detailTrophyList.innerHTML = external.achievements.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game.platform))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
+    el.detailTrophyList.innerHTML = external.achievements.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || platformLogo(game.platform))}" alt=""><div><strong>${escapeHtml(item.title || "Achievement")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
     return;
   }
   const match = activityGameFor(game);
@@ -3989,10 +4013,10 @@ async function loadShelfTrophies(game) {
       .sort((a, b) => Date.parse(b.rawEarnedAt || b.earnedAt || 0) - Date.parse(a.rawEarnedAt || a.earnedAt || 0));
     if (recent.length) {
       el.detailTrophies.hidden = false;
-      el.detailTrophyTitle.textContent = "TROPHIES";
+      el.detailTrophyTitle.textContent = tt("TROPHIES");
       el.detailTrophyCount.textContent = "";
       el.detailTrophyPercent.innerHTML = "";
-      el.detailTrophyList.innerHTML = recent.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
+      el.detailTrophyList.innerHTML = recent.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
       return;
     }
     el.detailTrophies.hidden = true;
@@ -4008,10 +4032,10 @@ async function loadShelfTrophies(game) {
     const total = Number(cached.total ?? cachedTrophies.length);
     const progress = total ? Math.round((earned / total) * 100) : 0;
     el.detailTrophies.hidden = false;
-    el.detailTrophyTitle.textContent = "TROPHIES";
+    el.detailTrophyTitle.textContent = tt("TROPHIES");
     el.detailTrophyCount.textContent = "";
     el.detailTrophyPercent.innerHTML = total ? shelfProgressBadge({ progress, earned, total }, { includeIcon: false, separator: true }) : "";
-    el.detailTrophyList.innerHTML = cachedTrophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
+    el.detailTrophyList.innerHTML = cachedTrophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
     refreshShelfPsnTrophiesInBackground(game, match, id, "shelf");
     return;
   }
@@ -4020,17 +4044,17 @@ async function loadShelfTrophies(game) {
     .sort((a, b) => Date.parse(b.rawEarnedAt || b.earnedAt || 0) - Date.parse(a.rawEarnedAt || a.earnedAt || 0));
   if (activityTrophies.length) {
     el.detailTrophies.hidden = false;
-    el.detailTrophyTitle.textContent = "TROPHIES";
+    el.detailTrophyTitle.textContent = tt("TROPHIES");
     el.detailTrophyCount.textContent = "";
     el.detailTrophyPercent.innerHTML = "";
-    el.detailTrophyList.innerHTML = activityTrophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || "Earned" : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
+    el.detailTrophyList.innerHTML = activityTrophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type || item.rarity)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title || "Trophy")}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join("");
     refreshShelfPsnTrophiesInBackground(game, match, id, "shelf");
     return;
   }
-  el.detailTrophyTitle.textContent = "TROPHIES";
+  el.detailTrophyTitle.textContent = tt("TROPHIES");
   el.detailTrophyPercent.innerHTML = "";
   el.detailTrophies.hidden = false; el.detailTrophyList.innerHTML = `<span>Loading trophies…</span>`;
-  try { const params = achievementParams({ id, service: match.npServiceName || "trophy", user: state.gamelistSettings.psnUser || "" }); const response = await fetch(`/api/trophies?${params}`); const data = await response.json(); const trophies = data.trophies || []; const earned = trophies.filter((item) => item.earned).length; const total = trophies.length; const progress = total ? Math.round((earned / total) * 100) : 0; state.cardTrophies[id] = { loading: false, allTrophies: trophies, trophies: trophies.filter((item) => item.earned).sort((a, b) => Date.parse(b.rawEarnedAt || b.earnedAt || 0) - Date.parse(a.rawEarnedAt || a.earnedAt || 0)).slice(0, 3), earned, total }; refreshShelfProjectedActivity(game); el.detailTrophyCount.textContent = ""; el.detailTrophyPercent.innerHTML = total ? shelfProgressBadge({ progress, earned, total }, { includeIcon: false, separator: true }) : ""; el.detailTrophyList.innerHTML = trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml([item.earned ? item.earnedAt : "Missing", item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join(""); } catch { el.detailTrophies.hidden = true; }
+  try { const params = achievementParams({ id, service: match.npServiceName || "trophy", user: state.gamelistSettings.psnUser || "" }); const response = await fetch(`/api/trophies?${params}`); const data = await response.json(); const trophies = data.trophies || []; const earned = trophies.filter((item) => item.earned).length; const total = trophies.length; const progress = total ? Math.round((earned / total) * 100) : 0; state.cardTrophies[id] = { loading: false, allTrophies: trophies, trophies: trophies.filter((item) => item.earned).sort((a, b) => Date.parse(b.rawEarnedAt || b.earnedAt || 0) - Date.parse(a.rawEarnedAt || a.earnedAt || 0)).slice(0, 3), earned, total }; refreshShelfProjectedActivity(game); el.detailTrophyCount.textContent = ""; el.detailTrophyPercent.innerHTML = total ? shelfProgressBadge({ progress, earned, total }, { includeIcon: false, separator: true }) : ""; el.detailTrophyList.innerHTML = trophies.map((item) => `<article class="detail-trophy-card trophy-${trophyTone(item.type)} ${item.earned ? "earned" : "missing"}"><img src="${escapeHtml(item.icon || "assets/platforms/playstation.png")}" alt=""><div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml([item.earned ? item.earnedAt || tt("Earned") : tt("Missing"), item.rarity].filter(Boolean).join(" · "))}</span>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}</div></article>`).join(""); } catch { el.detailTrophies.hidden = true; }
 }
 
 function shelfTrophyLookupGame(game) {
@@ -4301,6 +4325,6 @@ function shortDescription(value, max = 260) { const text = String(value || "").t
 function formatDate(value) { return formatPillDate(value) || "Jun 22, 2026"; }
 function formatShortDate(value) { return formatPillDate(value); }
 function formatLongDate(value) { return formatPillDate(value); }
-function formatPillDate(value) { const date = String(value || "").match(/\d{4}-\d{2}-\d{2}/)?.[0]; if (!date) return ""; const parsed = new Date(`${date}T00:00:00`); return Number.isNaN(parsed.getTime()) ? "" : new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(parsed); }
+function formatPillDate(value) { const date = String(value || "").match(/\d{4}-\d{2}-\d{2}/)?.[0]; if (!date) return ""; const parsed = new Date(`${date}T00:00:00`); return Number.isNaN(parsed.getTime()) ? "" : new Intl.DateTimeFormat(currentLanguage(), { month: "short", day: "2-digit", year: "numeric" }).format(parsed); }
 function escapeCss(value) { return String(value).replace(/["'()\\]/g, "\\$&"); }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]); }

@@ -171,16 +171,16 @@ export function achievementCardMarkup({ index, tone, href, game, title, icon, me
   return `<a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escape(tone)}" href="${escape(href || "#")}" ${href && href !== "#" ? `target="_blank" rel="noreferrer"` : ""}${localGame ? ` data-achievement-game="${escape(localGame)}"` : ""}><img class="achievement-icon" src="${escape(icon)}" alt=""><div><strong>${escape(title)}</strong>${game ? `<span class="achievement-game-name">${escape(game)}</span>` : ""}<span class="achievement-card-meta playing-finished-tags">${meta}</span></div></a>`;
 }
 
-export function achievementDashboardMarkup({ completedCount, completedBreakdown = "", trophyTotal, trophyBreakdown = "", level, levelLabel, counts, sourceUrl, trophyIconHtml, barHeight, escape }) {
+export function achievementDashboardMarkup({ completedCount, completedBreakdown = "", trophyTotal, trophyBreakdown = "", level, levelLabel, counts, sourceUrl, trophyIconHtml, barHeight, escape, completedLabel = "COMPLETED", trophiesLabel = "TROPHIES" }) {
   const levelCard = levelLabel ? `<a class="achievement-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(level))}</strong><span>${levelLabel}</span></a>` : "";
   const rarityGraph = `<div class="rarity-graph" aria-label="Trophy rarity graph">${counts.map(([type, count]) => {
     const value = Number(count) || 0;
     return `<span class="rarity-bar rarity-${escape(type.toLowerCase())} ${value ? "" : "rarity-zero"}" title="${escape(`${type}: ${value}`)}"><em style="--bar:${barHeight(value, counts)}%"></em><small>${escape(type)}</small>${value ? `<strong>${escape(String(value))}</strong>` : ""}</span>`;
   }).join("")}</div>`;
-  return `<div class="achievement-summary ${levelLabel ? "" : "achievement-summary-no-level"}"><button class="achievement-kpi platinum-highlight ${completedCount ? "has-platinum" : ""}" type="button" data-action="platinums"><strong class="kpi-with-icon">${trophyIconHtml}${escape(String(completedCount))}</strong><span>COMPLETED</span>${completedBreakdown}</button><a class="achievement-kpi trophy-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(trophyTotal))}</strong><span>TROPHIES</span>${trophyBreakdown}</a>${levelCard}${rarityGraph}</div>`;
+  return `<div class="achievement-summary ${levelLabel ? "" : "achievement-summary-no-level"}"><button class="achievement-kpi platinum-highlight ${completedCount ? "has-platinum" : ""}" type="button" data-action="platinums"><strong class="kpi-with-icon">${trophyIconHtml}${escape(String(completedCount))}</strong><span>${escape(completedLabel)}</span>${completedBreakdown}</button><a class="achievement-kpi trophy-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(trophyTotal))}</strong><span>${escape(trophiesLabel)}</span>${trophyBreakdown}</a>${levelCard}${rarityGraph}</div>`;
 }
 
-export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, setupNotices, trophyIconHtml, platformBadge, platformLogo, trophyTone, escape }) {
+export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, setupNotices, trophyIconHtml, platformBadge, platformLogo, trophyTone, escape, translate = (value) => value }) {
   const sourceUrl = psn.sourceUrl || "https://www.playstation.com/";
   const authErrorUrl = "https://ca.account.sony.com/api/v1/ssocookie";
   const fallbackUrl = psn.authError ? authErrorUrl : sourceUrl;
@@ -216,7 +216,7 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, setupN
           : "No recent achievement activity found yet.";
     return {
       sourceUrl,
-      html: `${authNotice}<a class="achievement-fallback" href="${escape(fallbackUrl)}" target="_blank" rel="noreferrer"><span class="achievement-fallback-logo" aria-hidden="true"></span><div><strong>Achievement activity</strong><span>${escape(fallbackText)}</span></div></a>`,
+      html: `${authNotice}<a class="achievement-fallback" href="${escape(fallbackUrl)}" target="_blank" rel="noreferrer"><span class="achievement-fallback-logo" aria-hidden="true"></span><div><strong>${escape(translate("Achievement activity"))}</strong><span>${escape(fallbackText)}</span></div></a>`,
     };
   }
   const trophies = psn.summary?.trophies || {};
@@ -237,12 +237,13 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, setupN
     level: psnLevel,
     levelLabel: psnLevel ? "PSN LEVEL" : "",
     counts, sourceUrl, trophyIconHtml, barHeight: sharedTrophyBarHeight, escape,
+    completedLabel: translate("COMPLETED"), trophiesLabel: translate("TROPHIES"),
   });
   const cards = achievements.map((item, index) => {
     const platform = item.source === "steam" ? "Steam" : String(item.platform || (item.source === "xbox" ? "Xbox" : "PlayStation")).trim() || "PlayStation";
-    return achievementCardMarkup({ index, tone: item.source === "steam" ? "steam" : trophyTone(item.rarity), href: item.url || sourceUrl, game: item.game || "", title: item.title || (item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"), icon: item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"), meta: `${platformBadge(platform)}${item.earnedAt ? `<span class="achievement-earned-date">${escape(item.earnedAt)}</span>` : ""}`, escape });
+    return achievementCardMarkup({ index, tone: item.source === "steam" ? "steam" : trophyTone(item.rarity), href: item.url || sourceUrl, game: item.game || "", title: item.title || translate(item.source === "steam" ? "Achievement unlocked" : "Trophy unlocked"), icon: item.icon || platformLogo(item.source === "steam" ? "Steam" : item.source === "xbox" ? "Xbox" : "PS5"), meta: `${platformBadge(platform)}${item.earnedAt ? `<span class="achievement-earned-date">${escape(item.earnedAt)}</span>` : ""}`, escape });
   }).join("");
-  const subtitle = "Lastest achievements";
+  const subtitle = translate("Latest achievements");
   return { sourceUrl, html: `${dashboard}${authNotice}<span class="achievement-subtitle trophy-subtitle">${escape(subtitle)}</span>${cards}` };
 }
 
@@ -252,7 +253,8 @@ export function mountReleaseCalendar(container, options = {}) {
   const releases = releaseGamesByDate(options.games || []);
   const today = localDateKey(new Date());
   const weekStart = normalizedWeekStart(options.weekStart);
-  container.innerHTML = releaseCalendarMarkup(months, releases, today, weekStart);
+  const translate = typeof options.translate === "function" ? options.translate : (value) => value;
+  container.innerHTML = releaseCalendarMarkup(months, releases, today, weekStart, { translate, locale: options.locale });
   container.querySelectorAll("[data-calendar-shift]").forEach((button) => {
     button.addEventListener("click", () => options.onShift?.(Number(button.dataset.calendarShift || 0)));
   });
@@ -279,18 +281,19 @@ export function releaseGamesByDate(games = []) {
   return groups;
 }
 
-function releaseCalendarMarkup(months, releases, today, weekStart) {
+function releaseCalendarMarkup(months, releases, today, weekStart, options = {}) {
+  const translate = options.translate || ((value) => value);
   return `
     <div class="release-calendar-head">
       <div class="release-calendar-actions">
-        <button class="ghost-button calendar-today-action" type="button" data-calendar-today>Today</button>
-        <button class="icon-button" type="button" data-calendar-shift="-1" title="Previous month" aria-label="Previous month">←</button>
-        <button class="icon-button" type="button" data-calendar-shift="1" title="Next month" aria-label="Next month">→</button>
+        <button class="ghost-button calendar-today-action" type="button" data-calendar-today>${escapeHtml(translate("Today"))}</button>
+        <button class="icon-button" type="button" data-calendar-shift="-1" title="${escapeHtml(translate("Previous month"))}" aria-label="${escapeHtml(translate("Previous month"))}">←</button>
+        <button class="icon-button" type="button" data-calendar-shift="1" title="${escapeHtml(translate("Next month"))}" aria-label="${escapeHtml(translate("Next month"))}">→</button>
       </div>
     </div>
     <div class="release-months-frame glass">
       <div class="release-months">
-        ${months.map((month) => releaseMonthMarkup(month, releases, today, weekStart)).join("")}
+        ${months.map((month) => releaseMonthMarkup(month, releases, today, weekStart, options)).join("")}
       </div>
     </div>
   `;
@@ -303,7 +306,8 @@ function releaseCalendarMonths(count, offset = 0) {
   return Array.from({ length: count }, (_, index) => new Date(start.getFullYear(), start.getMonth() + offset + index, 1));
 }
 
-function releaseMonthMarkup(monthDate, releases, today, weekStart) {
+function releaseMonthMarkup(monthDate, releases, today, weekStart, options = {}) {
+  const translate = options.translate || ((value) => value);
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();
   const totalDays = new Date(year, month + 1, 0).getDate();
@@ -329,7 +333,7 @@ function releaseMonthMarkup(monthDate, releases, today, weekStart) {
         ${games.length ? "" : "disabled"}
       >
         <span>${day}</span>
-        ${games.length > 1 ? `<em>${games.length}</em>` : ""}
+        ${games.length > 1 ? `<em title="${escapeHtml(translate("{count} releases").replace("{count}", games.length))}">${games.length}</em>` : ""}
       </button>
     `);
   }
@@ -339,11 +343,11 @@ function releaseMonthMarkup(monthDate, releases, today, weekStart) {
   return `
     <article class="release-month">
       <header>
-        <strong>${escapeHtml(monthName(monthDate))}</strong>
+        <strong>${escapeHtml(capitalize(monthName(monthDate, options.locale)))}</strong>
         <span>${year}</span>
       </header>
       <div class="release-weekdays" aria-hidden="true">
-        ${weekdayLabels(weekStart).map((label) => `<span>${label}</span>`).join("")}
+        ${weekdayLabels(weekStart).map(([key, label]) => `<span>${escapeHtml(weekdayShortLabel(key, label, options.locale, translate))}</span>`).join("")}
       </div>
       <div class="release-days">${cells.join("")}</div>
     </article>
@@ -372,11 +376,23 @@ function weekdayIndex(date, weekStart) {
 
 function weekdayLabels(weekStart) {
   const startIndex = WEEKDAYS.findIndex(([key]) => key === normalizedWeekStart(weekStart));
-  return [...WEEKDAYS.slice(startIndex), ...WEEKDAYS.slice(0, startIndex)].map(([, label]) => label);
+  return [...WEEKDAYS.slice(startIndex), ...WEEKDAYS.slice(0, startIndex)];
 }
 
-function monthName(date) {
-  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(date);
+function weekdayShortLabel(key, fallback, locale, translate) {
+  if (String(locale || "").toLowerCase().startsWith("es")) {
+    return { monday: "L", tuesday: "M", wednesday: "X", thursday: "J", friday: "V", saturday: "S", sunday: "D" }[key] || fallback;
+  }
+  return translate(fallback);
+}
+
+function monthName(date, locale = undefined) {
+  return new Intl.DateTimeFormat(locale || undefined, { month: "long" }).format(date);
+}
+
+function capitalize(value) {
+  const text = String(value || "");
+  return text ? `${text.charAt(0).toLocaleUpperCase()}${text.slice(1)}` : text;
 }
 
 function localDateKey(date) {
@@ -638,7 +654,7 @@ export function activityReleaseStatus(game, { includePast = false, now = new Dat
 export function formatFooterDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long" }).format(date);
+  return capitalize(new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long" }).format(date));
 }
 
 export function formatFooterDateTime(value) {

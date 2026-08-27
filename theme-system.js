@@ -28,7 +28,8 @@ const DEFAULT_THEME = {
   accentFont: "",
   gamelistIcon: "",
   shelfIcon: "",
-  appIcon: "",
+  appIcon: "assets/app-Icon.png",
+  appIconMonochrome: "assets/app-Icon-monochrome.png",
   ownerColors: [],
 };
 
@@ -44,6 +45,7 @@ const PRESETS = {
     shelfIcon: "assets/kh_icon.png",
     gamelistIcon: "assets/kh_icon.png",
     appIcon: "assets/kh_app-icon.png",
+    appIconMonochrome: "assets/kh_app-icon-monochrome.png",
     bigLogo: true,
   },
 };
@@ -73,6 +75,7 @@ export function normalizeThemeSettings(settings = {}) {
     gamelistIcon: safeImage(raw.gamelistIcon),
     shelfIcon: safeImage(raw.shelfIcon),
     appIcon: safeImage(raw.appIcon),
+    appIconMonochrome: safeImage(raw.appIconMonochrome),
     ownerColors: ownerColors
       .map((item) => ({ name: cleanOwnerName(item?.name), color: hexColor(item?.color, "") }))
       .filter((item) => item.name && item.color)
@@ -84,14 +87,15 @@ export function resolveSiteTheme(settings = {}, page = "gamelist") {
   const theme = normalizeThemeSettings(settings);
   const owner = cleanOwnerName(settings.defaultOwner) || "Owner";
   const isShelf = page === "shelf";
+  const isSpanish = String(settings.language || "").toLowerCase().startsWith("es");
   const mainColor = theme.mainColorReset ? DEFAULT_THEME.mainColor : theme.mainColor;
   const accentColor = theme.accentColorReset ? DEFAULT_THEME.accentColor : theme.accentColor;
   const accent3 = theme.accent3 || DEFAULT_THEME.accent3;
   return {
     ...theme,
     owner,
-    title: `${owner}'s ${isShelf ? "Shelf" : "Gamelist"}`,
-    shortName: isShelf ? "Shelf" : "Gamelist",
+    title: isSpanish ? `${isShelf ? "Estantería" : "Juegos"} de ${owner}` : `${owner}'s ${isShelf ? "Shelf" : "Gamelist"}`,
+    shortName: isSpanish ? (isShelf ? "Estantería" : "Juegos") : (isShelf ? "Shelf" : "Gamelist"),
     mainColor,
     accentColor,
     accent3,
@@ -167,8 +171,22 @@ export function themedManifestUrl(theme) {
     display: "standalone",
     background_color: theme.mode === "light" ? "#f3f4f8" : "#0a0b0f",
     theme_color: theme.mainColor,
-    icons: [{ src: absoluteAsset(theme.appIcon), sizes: "400x400", type: "image/png", purpose: "any maskable" }],
+    icons: [
+      {
+        src: absoluteAsset(theme.appIcon),
+        sizes: "400x400",
+        type: "image/png",
+        purpose: "any maskable",
+      },
+      {
+        src: absoluteAsset(theme.appIconMonochrome),
+        sizes: "400x400",
+        type: "image/png",
+        purpose: "monochrome",
+      },
+    ],
   };
+
   return `data:application/manifest+json,${encodeURIComponent(JSON.stringify(manifest))}`;
 }
 
