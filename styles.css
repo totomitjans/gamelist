@@ -3154,8 +3154,8 @@ body.dialog-open .floating-edit-actions {
   z-index: 12;
   display: grid;
   grid-template-columns:
-    minmax(240px, 1fr) 132px minmax(190px, 210px) minmax(150px, 165px)
-    132px var(--toolbar-control-height);
+    minmax(280px, 1fr) 132px minmax(190px, 210px) minmax(150px, 165px)
+    minmax(180px, 220px) var(--toolbar-control-height);
   gap: 10px;
   padding: 12px;
   border-radius: 8px;
@@ -6053,6 +6053,13 @@ a.time-pill {
 
 .preorder-chip {
   gap: 5px;
+}
+
+.preferred-preorder-chip {
+  color: #f7df69;
+  background: rgba(247, 223, 105, 0.14);
+  border-color: rgba(247, 223, 105, 0.34);
+  font-weight: 780;
 }
 
 .preorder-chip .shopping-bag-icon {

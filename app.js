@@ -2092,7 +2092,7 @@ function gameOfTheYearCsvRecords() {
         return {
           year,
           category,
-          label,
+          label: tt(label),
           order: index + 1,
           gameId: picks[category] || "",
           title: game?.title || "",
@@ -2315,13 +2315,14 @@ function renderGameOfTheYear() {
     el.gotyStatsButton.setAttribute("aria-label", `Stats for ${year}`);
   }
   el.gotyGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label], index) => {
+    const labelText = tt(label);
     const game = gameById(picks[key]);
     if (!game || !candidateIds.has(game.id)) return "";
     const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
     const edgeClass = index >= GAME_OF_YEAR_CATEGORIES.length - 2 ? "goty-card-edge-right" : index === 0 ? "goty-card-edge-left" : "";
     return `
-      <button class="goty-card ${edgeClass}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`${label}: ${game.title}`)}">
-        <span class="goty-category">${escapeHtml(label)}</span>
+      <button class="goty-card ${edgeClass}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`${labelText}: ${game.title}`)}">
+        <span class="goty-category">${escapeHtml(labelText)}</span>
         <span class="goty-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"></span>
         ${gameOfTheYearHoverInfo(game, "goty-hover-info")}
       </button>
@@ -2380,6 +2381,7 @@ function renderGameOfTheYearPicker(games, picks) {
   hideGameOfTheYearTitleOverlay();
   const pickedIds = new Set(Object.values(picks).filter(Boolean));
   el.gotyPickerGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => {
+    const labelText = tt(label);
     const selectedId = picks[key] || "";
     const pickedElsewhere = new Set([...pickedIds].filter((id) => id !== selectedId));
     const selectedGame = games.find((game) => game.id === selectedId);
@@ -2387,7 +2389,7 @@ function renderGameOfTheYearPicker(games, picks) {
     return `
     <section class="goty-picker-field" data-goty-category="${escapeHtml(key)}">
       <div class="goty-picker-head">
-        <span class="goty-picker-category">${escapeHtml(label)}</span>
+        <span class="goty-picker-category">${escapeHtml(labelText)}</span>
         <strong>${selectedGame ? escapeHtml(selectedGame.title) : ""}</strong>
         <div class="goty-picker-navs">
           <button class="icon-button playing-slider-button goty-choice-nav" type="button" data-goty-scroll="-1" title="Previous games" aria-label="Previous games">${gotyPickerArrowIcon("left")}</button>
@@ -2672,7 +2674,7 @@ async function gameOfTheYearExportHtml(year = state.gotyYear) {
   const picks = state.settings.gameOfTheYear?.[year]?.picks || {};
   if (!gameOfTheYearComplete(picks)) return "";
   const owner = cleanOwnerLabel(state.settings.defaultOwner) || DEFAULT_SETTINGS.defaultOwner;
-  const rows = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => ({ label, game: gameById(picks[key]) })).filter((item) => item.game);
+  const rows = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => ({ label: tt(label), game: gameById(picks[key]) })).filter((item) => item.game);
   const statsGames = gameOfTheYearCandidateGames(year);
   const theme = normalizeThemeSettings(state.settings);
   const assetRows = await Promise.all(rows.map(async (row) => ({
@@ -5372,7 +5374,7 @@ function rowCoreStats(game) {
     game.lengthHours ? timeBadge(game.lengthHours, hltbUrlFor(game)) : "",
     game.stream ? streamBadge() : "",
     release ? releaseStatusPill(release) : "",
-    game.preorderStore ? preorderChip(game.preorderStore) : "",
+    game.preorderStore ? preorderChip(game.preorderStore) : (game.preferredStore ? preferredPreorderChip(game.preferredStore) : ""),
     ...gameStatuses(game).map(statusBadge),
     game.replayCount ? replayBadge(game.replayCount) : "",
     progress ? psnProgressBadge(progress) : "",
@@ -5381,7 +5383,6 @@ function rowCoreStats(game) {
 
 function rowTags(game) {
   const chips = [];
-  if (game.preferredStore) chips.push(chip(`Buy: ${game.preferredStore}`));
   (game.genres || []).slice(0, 4).forEach((genre) => chips.push(chip(genre, "genre")));
   return chips;
 }
@@ -6934,7 +6935,7 @@ function openDetail(id, options = {}) {
   el.detailStudio.hidden = !el.detailStudio.innerHTML;
   el.detailMeta.innerHTML = metaFor(game, { includePsn: false, includeOwners: false }).join("");
   bindDetailShelfSearch(game);
-  el.detailDates.innerHTML = playDatesFor(game, { includePastRelease: true }).join("");
+  el.detailDates.innerHTML = playDatesFor(game, { includePastRelease: true, includePreorder: true }).join("");
   el.detailDates.hidden = !el.detailDates.innerHTML;
   el.detailChips.innerHTML = chipsFor(game).join("");
   el.detailStoreLinks.innerHTML = storeLinksFor(game);
@@ -7100,7 +7101,7 @@ async function renderDetailTrophies(game) {
 async function renderDetailSteamAchievements(game) {
   const appId = steamAppIdFor(game);
   const steamUser = state.settings.steamUser || "";
-  if (!appId || (state.steamOwnedAppIds && !state.steamOwnedAppIds.has(appId))) {
+  if (!game?.playing || !appId || (state.steamOwnedAppIds && !state.steamOwnedAppIds.has(appId))) {
     state.detailTrophyRequest = "";
     state.detailTrophiesData = [];
     state.detailTrophyProvider = "steam";
@@ -7968,6 +7969,7 @@ function playDatesFor(game, options = {}) {
   const release = options.includeRelease === false ? "" : releaseStatus(game, { includePast: options.includePastRelease });
   if (release) values.push(releaseStatusPill(release));
   if (options.includePreorder && game.preorderStore) values.push(preorderChip(game.preorderStore));
+  else if (options.includePreorder && game.preferredStore) values.push(preferredPreorderChip(game.preferredStore));
   if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatDate(game.startedAt))}</strong></span>`);
   if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>Finished</small><strong>${escapeHtml(formatDate(game.completedAt))}</strong></span>`);
   const finishTime = finishHoursText(game);
@@ -7997,11 +7999,7 @@ function compareGames(a, b, section) {
     return direction * (addedTimeValue(a) - addedTimeValue(b) || stringCompare(a.title, b.title));
   }
   if (state.filters.sort === "time" && section === "upcoming") {
-    const aRelease = releaseSortValue(a);
-    const bRelease = releaseSortValue(b);
-    if (!Number.isFinite(aRelease)) return Number.isFinite(bRelease) ? 1 : direction * stringCompare(a.title, b.title);
-    if (!Number.isFinite(bRelease)) return -1;
-    return direction * ((aRelease - bRelease) || stringCompare(a.title, b.title));
+    return compareReleaseSort(a, b, direction);
   }
   if (state.filters.sort === "time" || state.filters.sort === "playtime") {
     return direction * (((a.lengthHours ?? Number.POSITIVE_INFINITY) - (b.lengthHours ?? Number.POSITIVE_INFINITY))
@@ -8015,11 +8013,34 @@ function compareStreamFirst(a, b) {
 }
 
 function compareReleaseDates(a, b) {
-  return releaseSortValue(a) - releaseSortValue(b);
+  return compareReleaseSort(a, b, 1);
 }
 
-function releaseSortValue(game) {
-  return game.releaseDate ? new Date(`${game.releaseDate}T00:00:00`).getTime() : Number.POSITIVE_INFINITY;
+function compareReleaseSort(a, b, direction = 1) {
+  const aRelease = releaseSortKey(a);
+  const bRelease = releaseSortKey(b);
+  if (aRelease.vague !== bRelease.vague) return aRelease.vague ? 1 : -1;
+  if (aRelease.group !== bRelease.group) return aRelease.group - bRelease.group;
+  return direction * ((aRelease.time - bRelease.time) || stringCompare(aRelease.text, bRelease.text) || stringCompare(a.title, b.title));
+}
+
+function releaseSortKey(game) {
+  const date = dateOnly(game?.releaseDate);
+  if (date) {
+    const time = new Date(`${date}T00:00:00`).getTime();
+    if (Number.isFinite(time)) return { group: 0, time, text: date, vague: releaseTextStartsUnknown(game.releaseText) };
+  }
+  const text = String(game?.releaseText || "").trim();
+  return {
+    group: text ? 1 : 2,
+    time: Number.POSITIVE_INFINITY,
+    text,
+    vague: releaseTextStartsUnknown(text),
+  };
+}
+
+function releaseTextStartsUnknown(value) {
+  return /^\?+/.test(String(value || "").trim());
 }
 
 function stringCompare(a = "", b = "") {
@@ -8423,21 +8444,22 @@ function timeBadge(hours, url = "") {
 
 function chipsFor(game) {
   const chips = [];
-  if (game.preorderStore) chips.push(preorderChip(game.preorderStore));
-  if (game.preferredStore) chips.push(chip(`Buy: ${game.preferredStore}`));
   (game.genres || []).slice(0, 4).forEach((genre) => chips.push(chip(genre, "genre")));
   return chips;
 }
 
 function cardChipsFor(game) {
   const chips = [];
-  if (game.preferredStore) chips.push(chip(`Buy: ${game.preferredStore}`));
   (game.genres || []).slice(0, 4).forEach((genre) => chips.push(chip(genre, "genre")));
   return chips;
 }
 
 function preorderChip(store) {
   return `<span class="chip accent preorder-chip" title="${escapeHtml(`Preordered: ${store}`)}">${shoppingBagIcon()}${escapeHtml(store)}</span>`;
+}
+
+function preferredPreorderChip(store) {
+  return `<span class="chip preferred-preorder-chip" title="${escapeHtml(`Preferred preorder store: ${store}`)}">Preferred: ${escapeHtml(store)}</span>`;
 }
 
 function chip(label, type = "") {
@@ -9103,6 +9125,7 @@ function dateOnly(value) {
   if (typeof value === "string") {
     const iso = value.match(/\d{4}-\d{2}-\d{2}/);
     if (iso) return iso[0];
+    return "";
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -9129,6 +9152,7 @@ function syncNewGameUpcomingSection() {
 function shouldCreatePreorderCalendarEvent(existing, game) {
   return Boolean(game?.preorderStore)
     && !existing?.preorderStore
+    && !String(game.releaseText || "").trim()
     && validReleaseDate(game.releaseDate);
 }
 
@@ -9811,14 +9835,15 @@ async function normalizeGameBeforeSave(game) {
 }
 
 async function refreshUnreleasedGamesOnOpen() {
-  const games = state.games.filter((game) => !game.deletedAt && !game.completedAt && (
-    shouldRefreshRelease(game)
-    || shouldMoveReleasedToAvailable(game)
+  const moveGames = state.games.filter((game) => !game.deletedAt && !game.completedAt && (
+    shouldMoveReleasedToAvailable(game)
     || shouldMoveUnreleasedToUpcoming(game)
   ));
+  const refreshGames = state.games.filter((game) => !game.deletedAt && !game.completedAt && shouldRefreshRelease(game) && !moveGames.includes(game)).slice(0, 25);
+  const games = [...moveGames, ...refreshGames];
   if (!games.length) return;
   let changed = false;
-  for (const game of games.slice(0, 25)) {
+  for (const game of games) {
     try {
       let localChanged = false;
       if (shouldMoveReleasedToAvailable(game)) {
@@ -10021,12 +10046,14 @@ async function lookupFirstResult(title) {
 async function fetchSearchResults(query) {
   const normalized = String(query || "").trim();
   if (!normalized) return [];
-  const cacheKey = normalized.toLocaleLowerCase();
+  const language = currentLanguage();
+  const cacheKey = `${language}:${normalized.toLocaleLowerCase()}`;
   const now = Date.now();
   const cached = searchCache.get(cacheKey);
   if (cached && (now - cached.timestamp) < SEARCH_CACHE_TTL) return cached.results;
   if (searchInflight.has(cacheKey)) return searchInflight.get(cacheKey);
-  const request = fetch(`/api/search?q=${encodeURIComponent(normalized)}`)
+  const params = new URLSearchParams({ q: normalized, lang: language });
+  const request = fetch(`/api/search?${params}`)
     .then(async (response) => {
       if (!response.ok) return [];
       const data = await response.json();
