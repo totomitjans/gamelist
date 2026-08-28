@@ -4802,6 +4802,7 @@ body.theme-kash
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 7px;
+  margin-top: 7px;
 }
 
 .playing-section .card-guide-row .guide-button {
@@ -5643,7 +5644,11 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   overflow: hidden;
   border: 1px solid #f6d66a;
   border-radius: 7px;
-  background: linear-gradient(145deg, rgba(255, 226, 113, 0.38), rgba(201, 148, 32, 0.24));
+  background: linear-gradient(
+    145deg,
+    rgba(255, 226, 113, 0.38),
+    rgba(201, 148, 32, 0.24)
+  );
   box-shadow: 0 3px 14px rgba(218, 166, 39, 0.26);
 }
 
@@ -6548,6 +6553,13 @@ body.dialog-open .floating-search-button {
 
 .backlog-action .back-icon {
   display: none;
+}
+
+@media (min-width: 761px) {
+  .playing-card .complete-action .check-icon,
+  .playing-card .backlog-action .back-icon {
+    display: block;
+  }
 }
 
 body.can-edit #loginButton .pause-icon {
@@ -11486,7 +11498,9 @@ body.theme-kash
 }
 
 #gameDialog.show-psplus-check .collection-form-grid > .psplus-check,
-#gameDialog.show-games-with-gold-check .collection-form-grid > .games-with-gold-check {
+#gameDialog.show-games-with-gold-check
+  .collection-form-grid
+  > .games-with-gold-check {
   display: inline-flex;
   grid-column: span 4;
   min-width: 0;
@@ -11494,7 +11508,9 @@ body.theme-kash
 }
 
 #gameDialog.show-psplus-check .collection-form-grid > .entitlement-grid-spacer,
-#gameDialog.show-games-with-gold-check .collection-form-grid > .entitlement-grid-spacer {
+#gameDialog.show-games-with-gold-check
+  .collection-form-grid
+  > .entitlement-grid-spacer {
   display: block;
   grid-column: span 8;
 }
@@ -12165,7 +12181,9 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   #gameDialog .collection-form-grid > .digital-check,
   #gameDialog .collection-form-grid > .dlc-check,
   #gameDialog.show-psplus-check .collection-form-grid > .psplus-check,
-  #gameDialog.show-games-with-gold-check .collection-form-grid > .games-with-gold-check {
+  #gameDialog.show-games-with-gold-check
+    .collection-form-grid
+    > .games-with-gold-check {
     grid-column: 1 / -1 !important;
     justify-self: stretch;
     width: auto;
@@ -12178,8 +12196,12 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
     overflow-wrap: anywhere;
   }
 
-  #gameDialog.show-psplus-check .collection-form-grid > .entitlement-grid-spacer,
-  #gameDialog.show-games-with-gold-check .collection-form-grid > .entitlement-grid-spacer {
+  #gameDialog.show-psplus-check
+    .collection-form-grid
+    > .entitlement-grid-spacer,
+  #gameDialog.show-games-with-gold-check
+    .collection-form-grid
+    > .entitlement-grid-spacer {
     display: none;
   }
 
@@ -12281,22 +12303,39 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
     min-height: 0;
   }
 
-  .playing-section .cover-button {
-    align-self: start;
-    width: 112px;
-    height: 146px;
-    max-height: none;
-  }
-
   .playing-section .game-card {
-    grid-template-columns: 112px minmax(0, 1fr);
-    flex-basis: calc(100vw - 54px);
-    grid-template-rows: max-content;
+    grid-template-columns: minmax(0, 190px) 82px minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr) auto;
+    flex-basis: calc(100vw - 42px);
     height: var(--mobile-playing-card-height, auto);
     min-height: var(--mobile-playing-card-height, 0);
     align-items: start;
-    padding: 11px;
-    gap: 11px;
+    padding: 10px;
+    gap: 1px 7px;
+  }
+
+  .playing-section
+    .game-card.playing-card:not(:has(.card-trophies:not([hidden]))) {
+    grid-template-columns: 1fr;
+  }
+
+  .playing-section .cover-button {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    justify-self: start;
+    width: min(100%, 190px);
+    height: auto;
+    aspect-ratio: 104 / 142;
+    max-height: 260px;
+    min-height: 0;
+  }
+
+  .playing-section
+    .game-card.playing-card:not(:has(.card-trophies:not([hidden])))
+    .cover-button {
+    width: min(100%, 204px);
+    max-height: 278px;
   }
 
   .twitch-preview-card {
@@ -12391,28 +12430,92 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
     height: 24px;
   }
 
+  .playing-section .game-card.playing-card .game-main {
+    display: contents;
+  }
+
+  .playing-section
+    .game-card.playing-card
+    :is(
+      .title-line,
+      .studio-line,
+      .meta,
+      .play-dates,
+      .card-guide-row,
+      .card-trophies,
+      .card-actions
+    ) {
+    position: relative;
+    z-index: 1;
+    margin-top: 35px;
+  }
+
   .playing-section .game-main {
     min-height: 0;
     justify-content: flex-start;
+  }
+
+  .playing-section .game-card.playing-card .title-line {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: 2px;
+    padding-right: 0;
+    position: static;
   }
 
   .playing-section .game-card h3 {
     max-width: none;
     overflow-wrap: anywhere;
     hyphens: auto;
-    font-size: clamp(17px, 5.8vw, 23px);
-    line-height: 1.05;
+    font-size: clamp(23px, 7.8vw, 34px);
+    line-height: 0.98;
+  }
+
+  .playing-section .game-card.playing-card .edit-action {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 3;
+  }
+
+  .playing-section .game-card.playing-card .studio-line {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: -6px;
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .playing-section .game-card.playing-card .meta {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin-top: 1px;
+    gap: 2px;
   }
 
   .playing-section .game-card.playing-card .play-dates {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    display: flex;
+    gap: 2px;
+    margin-top: 1px;
+  }
+
+  .playing-section .game-card.playing-card .card-guide-row {
+    grid-column: 1 / -1;
+    grid-row: 6;
+    margin: 1px 0 0;
+  }
+
+  .playing-section .game-card.playing-card .chips {
     display: none;
   }
 
   .playing-section .card-trophy-head {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-    margin-bottom: 5px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px;
+    margin-bottom: 3px;
     font-size: 10px;
     white-space: nowrap;
   }
@@ -12430,16 +12533,17 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   }
 
   .playing-section .card-trophy-progress {
-    flex: 0 0 auto;
-    min-height: 18px !important;
-    margin-left: 5px;
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 17px !important;
+    margin-left: 0;
     padding: 1px 6px;
     gap: 3px;
     font-size: 9px;
   }
 
   .playing-section .card-trophy-progress em {
-    width: 24px;
+    width: 100%;
   }
 
   .playing-section .card-trophy-progress strong {
@@ -12447,12 +12551,16 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   }
 
   .playing-section .card-trophies {
-    margin-top: 14px;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    align-self: start;
+    margin-top: 0;
   }
 
   .playing-section .card-trophy-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: 1fr;
+    gap: 3px;
   }
 
   .playing-section .card-trophies[hidden] {
@@ -12461,21 +12569,29 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
 
   .playing-section .card-trophy {
     grid-template-columns: 1fr;
-    gap: 4px;
-    min-height: 58px;
+    gap: 3px;
+    min-height: 60px;
     padding: 4px;
-    text-align: center;
+    text-align: left;
   }
 
   .playing-section .card-trophy img {
-    width: 22px;
-    height: 22px;
-    margin: 0 auto;
+    width: 24px;
+    height: 24px;
+    margin: 0;
   }
 
   .playing-section .card-trophy span {
+    text-align: left;
     font-size: 9px;
     line-height: 1.1;
+  }
+
+  .playing-section .game-card.playing-card .card-actions {
+    grid-column: 1 / -1;
+    grid-row: 8;
+    align-self: end;
+    margin-top: 3px;
   }
 
   .playing-panel {
@@ -12785,21 +12901,47 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   }
 
   .playing-card .card-actions {
-    grid-template-columns: minmax(0, 1fr) 42px 42px 42px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) 36px 36px;
+    gap: 5px;
   }
 
   .playing-card .backlog-action {
-    width: 42px;
-    min-width: 42px;
-    padding: 0;
+    width: auto;
+    min-width: 0;
+    padding: 0 7px;
   }
 
   .playing-card .backlog-action .back-icon {
     display: block;
   }
 
+  .playing-card .complete-action .check-icon + .action-label,
   .playing-card .backlog-action .action-label {
-    display: none;
+    display: inline;
+  }
+
+  .playing-card .card-actions button {
+    min-height: 32px;
+    height: 32px;
+    padding-block: 0;
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .playing-card .card-actions .icon-only-button,
+  .playing-card .trophy-action {
+    width: 36px;
+    min-width: 36px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+  }
+
+  .playing-card
+    .card-actions
+    :is(.check-icon, .back-icon, .trophy-icon, .trash-icon) {
+    width: 16px;
+    height: 16px;
   }
 
   .detail-modal {
@@ -12968,18 +13110,33 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   }
 
   .playing-section .card-guide-row {
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
   }
 
   .playing-section .card-guide-row .guide-button {
-    width: 38px;
-    min-width: 38px;
-    min-height: 34px;
-    padding: 6px;
+    justify-content: flex-start;
+    width: auto;
+    min-width: 0;
+    min-height: 28px;
+    padding: 4px 7px;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .playing-section .card-guide-row .guide-button img {
+    width: 14px;
+    height: 14px;
   }
 
   .playing-section .card-guide-row .guide-button span {
-    display: none;
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .stats {
