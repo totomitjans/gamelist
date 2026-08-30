@@ -3624,6 +3624,7 @@ body.dialog-open .floating-edit-actions {
 .primary-button:hover,
 .icon-button:hover,
 .danger-button:hover,
+.star-rating .star-clear:hover,
 .direction-toggle:hover,
 .check-filter:hover {
   border-color: color-mix(in srgb, var(--accent) 48%, transparent);
@@ -5015,6 +5016,7 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
 }
 
 .cover-button img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -11345,16 +11347,86 @@ body.theme-kash
   margin-top: 14px;
 }
 
-.detail-guides[hidden] {
+.detail-guides[hidden],
+.detail-rating[hidden] {
   display: none;
 }
 
-.detail-guides h3 {
+.detail-guides h3,
+.detail-rating h3 {
   margin: 0;
   color: var(--accent-2);
   font-size: 13px;
   font-weight: 850;
   text-transform: uppercase;
+}
+
+.detail-rating {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.detail-rating-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.detail-rating-row {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.detail-rating-row > span {
+  display: block;
+  margin-bottom: 0;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 740;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.detail-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0 10px;
+  color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+.detail-stars span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 22px;
+  line-height: 0;
+}
+
+.detail-rating-row[data-rating-value="1"] .detail-stars span[data-star="1"],
+.detail-rating-row[data-rating-value="2"] .detail-stars span[data-star="1"],
+.detail-rating-row[data-rating-value="2"] .detail-stars span[data-star="2"],
+.detail-rating-row[data-rating-value="3"] .detail-stars span[data-star="1"],
+.detail-rating-row[data-rating-value="3"] .detail-stars span[data-star="2"],
+.detail-rating-row[data-rating-value="3"] .detail-stars span[data-star="3"],
+.detail-rating-row[data-rating-value="4"] .detail-stars span[data-star="1"],
+.detail-rating-row[data-rating-value="4"] .detail-stars span[data-star="2"],
+.detail-rating-row[data-rating-value="4"] .detail-stars span[data-star="3"],
+.detail-rating-row[data-rating-value="4"] .detail-stars span[data-star="4"],
+.detail-rating-row[data-rating-value="5"] .detail-stars span[data-star] {
+  color: var(--accent);
+}
+
+.detail-rating-row[data-rating-value="5"] .detail-stars span {
+  color: #ffe985;
 }
 
 .guide-links {
@@ -11619,6 +11691,175 @@ body.theme-kash
 .playing-form-grid > label.playing-achievements-check {
   grid-column: span 1;
   padding-inline: 8px;
+}
+
+.playing-form-grid > .rating-section {
+  grid-column: 1 / -1;
+}
+
+.rating-section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 10px;
+}
+
+.rating-section h3,
+.rating-section h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.finish-rating-section {
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.finish-rating-section h3 {
+  color: var(--accent-2);
+}
+
+.game-rating-grid,
+.finish-rating-grid {
+  display: grid;
+  gap: 10px 12px;
+}
+
+.game-rating-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.finish-rating-grid {
+  grid-template-columns: 1fr;
+}
+
+.finish-rating-grid .rating-row {
+  grid-column: 1 / -1;
+}
+
+.rating-row {
+  display: grid;
+  grid-column: span 2;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.rating-row legend {
+  display: block;
+  margin-bottom: 6px;
+  padding: 0;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 740;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.star-rating {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+.star-rating input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.star-rating label {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 23px;
+  line-height: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  transition:
+    color 120ms ease,
+    transform 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.star-rating label:hover,
+.star-rating input:focus-visible + label {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.star-rating label:hover {
+  transform: translateY(-1px);
+}
+
+.rating-row[data-rating-value="1"] label[data-star="1"],
+.rating-row[data-rating-value="2"] label[data-star="1"],
+.rating-row[data-rating-value="2"] label[data-star="2"],
+.rating-row[data-rating-value="3"] label[data-star="1"],
+.rating-row[data-rating-value="3"] label[data-star="2"],
+.rating-row[data-rating-value="3"] label[data-star="3"],
+.rating-row[data-rating-value="4"] label[data-star="1"],
+.rating-row[data-rating-value="4"] label[data-star="2"],
+.rating-row[data-rating-value="4"] label[data-star="3"],
+.rating-row[data-rating-value="4"] label[data-star="4"],
+.rating-row[data-rating-value="5"] label[data-star="1"],
+.rating-row[data-rating-value="5"] label[data-star="2"],
+.rating-row[data-rating-value="5"] label[data-star="3"],
+.rating-row[data-rating-value="5"] label[data-star="4"],
+.rating-row[data-rating-value="5"] label[data-star="5"] {
+  color: var(--accent);
+}
+
+.rating-row[data-rating-value="5"] label[data-star] {
+  color: #ffe985;
+}
+
+.star-rating .star-clear {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  color: var(--danger);
+  background: rgba(255, 111, 133, 0.1);
+  border: 1px solid rgba(255, 111, 133, 0.24);
+  border-radius: 7px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.star-rating .star-clear:hover {
+  color: #ffffff;
+}
+
+.rating-row[data-rating-value="0"] .star-clear {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.star-rating .star-clear .trash-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
 }
 
 .playing-achievements-check .achievement-check-icon {
@@ -12217,6 +12458,24 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   .playing-form-grid > label:nth-child(-n + 3),
   .playing-form-grid > label:nth-child(n + 4) {
     grid-column: 1 / -1;
+  }
+
+  .game-rating-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finish-rating-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rating-row {
+    grid-template-columns: 1fr;
+    grid-column: 1 / -1;
+    align-items: start;
+  }
+
+  .rating-row legend {
+    float: none;
   }
 
   .form-grid-spacer {
@@ -12853,6 +13112,39 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
     contain: none;
   }
 
+  body.mobile-app-mode .game-card.has-art::before,
+  body.mobile-app-mode .platinum-art-layer {
+    display: none;
+  }
+
+  body.mobile-app-mode .cover-button,
+  body.mobile-app-mode .game-row-cover-wrap,
+  body.mobile-app-mode .completed-cover,
+  body.mobile-app-mode .achievement-icon,
+  body.mobile-app-mode .platinum-cover-preview,
+  body.mobile-app-mode .favorite-cover-card,
+  body.mobile-app-mode .showcase-picker-cover {
+    transform: none !important;
+    -webkit-transform: none !important;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    isolation: isolate;
+  }
+
+  body.mobile-app-mode .cover-button img,
+  body.mobile-app-mode .game-row-cover,
+  body.mobile-app-mode .game-row-cover-preview,
+  body.mobile-app-mode .completed-cover,
+  body.mobile-app-mode .achievement-icon,
+  body.mobile-app-mode .platinum-cover-preview,
+  body.mobile-app-mode .favorite-cover-card > img,
+  body.mobile-app-mode .showcase-picker-cover > img {
+    transform: none !important;
+    -webkit-transform: none !important;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
   body.mobile-app-mode .stats,
   body.mobile-app-mode .achievement-panel,
   body.mobile-app-mode .playing-section .card-list,
@@ -12860,7 +13152,7 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked {
   body.mobile-app-mode .game-card,
   body.mobile-app-mode .stat,
   body.mobile-app-mode .achievement-card {
-    transform: translateZ(0);
+    transform: none;
     backface-visibility: hidden;
   }
 
