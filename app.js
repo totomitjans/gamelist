@@ -1461,7 +1461,19 @@ function normalizeGameOfTheYear(value = {}) {
 }
 
 function gameOfTheYearComplete(picks = {}) {
-  return GAME_OF_YEAR_CATEGORIES.every(([key]) => Boolean(picks[key]));
+  return gameOfTheYearCategoriesComplete(picks, GAME_OF_YEAR_CATEGORIES);
+}
+
+function gameOfTheYearCategoriesComplete(picks = {}, categories = GAME_OF_YEAR_CATEGORIES) {
+  return categories.every(([key]) => Boolean(picks[key]));
+}
+
+function gameOfTheYearCategoriesValid(picks = {}, categories = GAME_OF_YEAR_CATEGORIES, games = []) {
+  const gameMap = new Map((Array.isArray(games) ? games : []).map((game) => [game.id, game]));
+  return categories.every(([key]) => {
+    const game = gameMap.get(picks[key]);
+    return Boolean(game) && gameOfTheYearGameAllowedForCategory(game, key);
+  });
 }
 
 async function persistCloud() {
@@ -2215,7 +2227,7 @@ function gameOfTheYearCsvRecords() {
     .sort(([a], [b]) => b.localeCompare(a))
     .flatMap(([year, entry]) => {
       const picks = entry?.picks || {};
-      return GAME_OF_YEAR_CATEGORIES.map(([category, label], index) => {
+      return gameOfTheYearCategoriesForYear(year).map(([category, label], index) => {
         const game = gameById(picks[category]);
         return {
           year,
@@ -2225,7 +2237,7 @@ function gameOfTheYearCsvRecords() {
           gameId: picks[category] || "",
           title: game?.title || "",
           platform: game?.platform || "",
-          published: Boolean(entry?.published),
+          published: gameOfTheYearCategoriesValid(picks, gameOfTheYearCategoriesForYear(year), gameOfTheYearCandidateGames(year)),
           updatedAt: entry?.updatedAt || "",
         };
       });
@@ -2267,13 +2279,21 @@ async function importGameOfTheYearCsv() {
     years.forEach((year) => {
       const previous = nextGameOfTheYear[year]?.picks || {};
       const picks = Object.fromEntries(GAME_OF_YEAR_CATEGORIES.map(([key]) => [key, imported[year].picks[key] || previous[key] || ""]));
+      const candidates = gameOfTheYearCandidateGames(year);
+      const categories = gameOfTheYearCategoriesForYear(year, candidates);
       nextGameOfTheYear[year] = {
         picks,
-        published: gameOfTheYearComplete(picks),
+        published: gameOfTheYearCategoriesValid(picks, categories, candidates),
         updatedAt: imported[year].updatedAt || now,
       };
     });
     state.settings = normalizeSettings({ ...state.settings, gameOfTheYear: nextGameOfTheYear });
+    years.forEach((year) => {
+      if (state.settings.gameOfTheYear?.[year]) {
+        const candidates = gameOfTheYearCandidateGames(year);
+        state.settings.gameOfTheYear[year].published = gameOfTheYearCategoriesValid(state.settings.gameOfTheYear[year].picks, gameOfTheYearCategoriesForYear(year, candidates), candidates);
+      }
+    });
     persistLocalSettings();
     await persistCloud();
     render();
@@ -2416,6 +2436,7 @@ function renderGameOfTheYear() {
   const entry = state.settings.gameOfTheYear?.[year] || {};
   const picks = entry.picks || {};
   const candidates = gameOfTheYearCandidateGames(year);
+  const categories = gameOfTheYearCategoriesForYear(year, candidates);
   const candidateIds = new Set(candidates.map((game) => game.id));
   el.gotySection.hidden = false;
   const sectionTitle = window.matchMedia("(max-width: 520px)").matches ? `My GOTYs ${year}` : `My Games of the year ${year}`;
@@ -2432,7 +2453,7 @@ function renderGameOfTheYear() {
   el.gotyEditButton.innerHTML = pencilIcon();
   el.gotyEditButton.title = "Edit";
   el.gotyEditButton.setAttribute("aria-label", "Edit");
-  el.gotySaveButton.hidden = !gameOfTheYearComplete(picks);
+  el.gotySaveButton.hidden = !gameOfTheYearCategoriesValid(picks, categories, candidates);
   el.gotySaveButton.innerHTML = downloadIcon();
   el.gotySaveButton.title = "Download";
   el.gotySaveButton.setAttribute("aria-label", "Download");
@@ -2442,12 +2463,12 @@ function renderGameOfTheYear() {
     el.gotyStatsButton.title = "Stats";
     el.gotyStatsButton.setAttribute("aria-label", `Stats for ${year}`);
   }
-  el.gotyGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label], index) => {
+  el.gotyGrid.innerHTML = categories.map(([key, label], index) => {
     const labelText = tt(label);
     const game = gameById(picks[key]);
-    if (!game || !candidateIds.has(game.id)) return "";
+    if (!game || !candidateIds.has(game.id) || !gameOfTheYearGameAllowedForCategory(game, key)) return "";
     const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
-    const edgeClass = index >= GAME_OF_YEAR_CATEGORIES.length - 2 ? "goty-card-edge-right" : index === 0 ? "goty-card-edge-left" : "";
+    const edgeClass = index >= categories.length - 2 ? "goty-card-edge-right" : index === 0 ? "goty-card-edge-left" : "";
     return `
       <button class="goty-card ${edgeClass}" type="button" data-id="${escapeHtml(game.id)}" aria-label="${escapeHtml(`${labelText}: ${game.title}`)}">
         <span class="goty-category">${escapeHtml(labelText)}</span>
@@ -2464,8 +2485,9 @@ function renderGameOfTheYear() {
 function maybePromptGameOfTheYear() {
   if (!state.canEdit || state.gotyPromptShown || !gameOfTheYearVisible()) return;
   const year = currentGameOfTheYear();
-  if (gameOfTheYearComplete(state.settings.gameOfTheYear?.[year]?.picks || {})) return;
-  if (!gameOfTheYearCandidateGames(year).length) return;
+  const candidates = gameOfTheYearCandidateGames(year);
+  if (!candidates.length) return;
+  if (gameOfTheYearCategoriesValid(state.settings.gameOfTheYear?.[year]?.picks || {}, gameOfTheYearCategoriesForYear(year, candidates), candidates)) return;
   state.gotyPromptShown = true;
   window.setTimeout(() => showGameOfTheYearCallout(year), 300);
 }
@@ -2480,9 +2502,15 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
   state.gotyYear = String(year);
   el.gotyForm.dataset.gotyYear = String(year);
   const entry = state.settings.gameOfTheYear?.[year] || {};
-  const picks = { ...(entry.picks || {}) };
+  const picks = options.autoPick ? gameOfTheYearAutoPicks(year, games, entry.picks || {}) : { ...(entry.picks || {}) };
   const dialogTitle = window.matchMedia("(max-width: 520px)").matches ? `GOTYs ${year}` : `Games of the year ${year}`;
   el.gotyDialogTitle.innerHTML = `${trophyIcon()} <span>${escapeHtml(dialogTitle)}</span>`;
+  const copy = el.gotyForm.querySelector(".goty-dialog-copy");
+  if (copy) {
+    copy.textContent = options.autoPick && gameOfTheYearAutofillUsesRatings(games)
+      ? "This is your guessed games, feel free to modify them for every category to make it your own."
+      : "Choose one finished game for every category.";
+  }
   if (el.gotyPickerOrder) {
     state.gotyPickerOrder = state.gotyPickerOrder || gotyOrderForDefault(state.settings.defaultOrder);
     el.gotyPickerOrder.value = state.gotyPickerOrder;
@@ -2505,15 +2533,93 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
   return true;
 }
 
+async function openGameOfTheYearDialogWithAutofillLoading(year = currentGameOfTheYear(), options = {}) {
+  const candidates = gameOfTheYearCandidateGames(year);
+  if (!options.autoPick || !gameOfTheYearAutofillUsesRatings(candidates)) {
+    return openGameOfTheYearDialog(year, options);
+  }
+  await showGameOfTheYearAutofillLoading(candidates);
+  return openGameOfTheYearDialog(year, options);
+}
+
+function gameOfTheYearAutofillUsesRatings(games = []) {
+  return games.some((game) => ratingScoreValue(game) != null || normalizeGameRatings(game?.ratings).soundtrack > 0);
+}
+
+function showGameOfTheYearAutofillLoading(games = []) {
+  document.querySelector(".goty-loading-overlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.className = "goty-loading-overlay";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  const messages = [
+    "Calculating your Games of the year...",
+    "Comparing your ratings...",
+    "Finding the strongest contenders...",
+    "Gotta go fast!",
+    "Checking category fit...",
+    "Let's go!",
+    "Preparing your picks...",
+  ];
+  const flightGames = sortedGameOfTheYearChoices(games).slice(0, 24);
+  const flightMarkup = flightGames.map((game, index) => {
+    const angle = (index / Math.max(1, flightGames.length)) * Math.PI * 2 - Math.PI / 2;
+    const radiusX = 180 + (index % 3) * 24;
+    const radiusY = 88 + (index % 4) * 8;
+    const ringX = Math.cos(angle) * (58 + (index % 2) * 8);
+    const ringY = Math.sin(angle) * (30 + (index % 3) * 5);
+    const fromX = Math.cos(angle) * radiusX;
+    const fromY = Math.min(Math.sin(angle) * radiusY, 44);
+    const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
+    return `<span class="goty-loading-game" style="--from-x:${fromX.toFixed(1)}px;--from-y:${fromY.toFixed(1)}px;--ring-x:${ringX.toFixed(1)}px;--ring-y:${ringY.toFixed(1)}px;--delay:${(index * 90).toFixed(0)}ms"><img src="${escapeHtml(cover)}" alt=""></span>`;
+  }).join("");
+  overlay.innerHTML = `
+    <div class="goty-loading-window" aria-label="${escapeHtml(messages[0])}">
+      <span class="goty-loading-flight" aria-hidden="true">${flightMarkup}</span>
+      <span class="goty-loading-icon" aria-hidden="true">${trophyIcon()}</span>
+      <strong>${escapeHtml(messages[0])}</strong>
+      <em class="goty-loading-bar" aria-hidden="true"></em>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const text = overlay.querySelector("strong");
+  const windowNode = overlay.querySelector(".goty-loading-window");
+  let index = 0;
+  const timer = window.setInterval(() => {
+    index = (index + 1) % messages.length;
+    if (text) text.textContent = messages[index];
+    if (windowNode) windowNode.setAttribute("aria-label", messages[index]);
+  }, 820);
+  requestAnimationFrame(() => overlay.classList.add("visible"));
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      window.clearInterval(timer);
+      overlay.classList.remove("visible");
+      window.setTimeout(() => {
+        overlay.remove();
+        resolve();
+      }, 240);
+    }, 3800);
+  });
+}
+
 function renderGameOfTheYearPicker(games, picks) {
   hideGameOfTheYearTitleOverlay();
-  const pickedIds = new Set(Object.values(picks).filter(Boolean));
-  el.gotyPickerGrid.innerHTML = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => {
+  const year = el.gotyForm.dataset.gotyYear || currentGameOfTheYear();
+  const categories = gameOfTheYearCategoriesForYear(year, games);
+  const allowRepeats = games.length < 6;
+  const activeKeys = new Set(categories.map(([key]) => key));
+  const pickedIds = new Set(categories.map(([key]) => {
+    const game = games.find((item) => item.id === picks[key]);
+    return game && gameOfTheYearGameAllowedForCategory(game, key) ? game.id : "";
+  }).filter(Boolean));
+  el.gotyPickerGrid.innerHTML = categories.map(([key, label]) => {
     const labelText = tt(label);
     const selectedId = picks[key] || "";
-    const pickedElsewhere = new Set([...pickedIds].filter((id) => id !== selectedId));
-    const selectedGame = games.find((game) => game.id === selectedId);
-    const choices = games.filter((game) => game.id !== selectedId);
+    const pickedElsewhere = allowRepeats ? new Set() : new Set([...pickedIds].filter((id) => id !== selectedId));
+    const categoryGames = gameOfTheYearChoicesForCategory(key, games);
+    const selectedGame = categoryGames.find((game) => game.id === selectedId);
+    const choices = categoryGames.filter((game) => game.id !== selectedId);
     return `
     <section class="goty-picker-field" data-goty-category="${escapeHtml(key)}">
       <div class="goty-picker-head">
@@ -2538,6 +2644,7 @@ function renderGameOfTheYearPicker(games, picks) {
       if (button.disabled || button.classList.contains("is-unavailable")) return;
       const field = button.closest(".goty-picker-field");
       const category = field.dataset.gotyCategory;
+      if (!activeKeys.has(category)) return;
       const gameId = button.dataset.gameId || "";
       picks[category] = picks[category] === gameId ? "" : gameId;
       renderGameOfTheYearPicker(games, picks);
@@ -2605,7 +2712,9 @@ async function saveGameOfTheYearFromForm(event) {
   event.preventDefault();
   const year = el.gotyForm.dataset.gotyYear || currentGameOfTheYear();
   const picks = currentGameOfTheYearDraftPicks();
-  if (!gameOfTheYearComplete(picks)) {
+  const candidates = gameOfTheYearCandidateGames(year);
+  const categories = gameOfTheYearCategoriesForYear(year, candidates);
+  if (!gameOfTheYearCategoriesValid(picks, categories, candidates)) {
     showToast("Choose a game for every category.", "error");
     return;
   }
@@ -2616,6 +2725,9 @@ async function saveGameOfTheYearFromForm(event) {
       [year]: { picks, published: true, updatedAt: new Date().toISOString() },
     },
   });
+  if (state.settings.gameOfTheYear?.[year]) {
+    state.settings.gameOfTheYear[year].published = true;
+  }
   state.gotyYear = year;
   persistLocalSettings();
   await persistCloud();
@@ -2659,11 +2771,17 @@ function showGameOfTheYearCallout(year) {
     <button class="primary-button" type="button" data-goty-callout-action="choose">Choose now</button>
     <button class="icon-button" type="button" data-goty-callout-action="dismiss" title="Dismiss" aria-label="Dismiss">×</button>
   `;
-  callout.querySelector("[data-goty-callout-action='choose']")?.addEventListener("click", (event) => {
+  callout.querySelector("[data-goty-callout-action='choose']")?.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    const opened = openGameOfTheYearDialog(year, { force: true });
-    if (opened) callout.classList.remove("visible");
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const opened = await openGameOfTheYearDialogWithAutofillLoading(year, { force: true, autoPick: true });
+      if (opened) callout.classList.remove("visible");
+    } finally {
+      if (button.isConnected) button.disabled = false;
+    }
   });
   callout.querySelector("[data-goty-callout-action='dismiss']")?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -2740,7 +2858,8 @@ function gameOfTheYearVisible() {
 
 function gotyAvailabilityStatus(date = new Date()) {
   const year = currentGameOfTheYear(date);
-  const picked = gameOfTheYearComplete(state.settings.gameOfTheYear?.[year]?.picks || {}) ? "picked" : "not picked";
+  const candidates = gameOfTheYearCandidateGames(year);
+  const picked = gameOfTheYearCategoriesValid(state.settings.gameOfTheYear?.[year]?.picks || {}, gameOfTheYearCategoriesForYear(year, candidates), candidates) ? "picked" : "not picked";
   if (state.settings.gotyAlwaysShow) return `forced (${picked})`;
   if (isGameOfTheYearSeason(date)) return `available (${picked})`;
   const start = new Date(date.getFullYear(), 11, 1);
@@ -2762,13 +2881,90 @@ function currentGameOfTheYear(date = new Date()) {
 
 function gameOfTheYearYears() {
   return Object.entries(state.settings.gameOfTheYear || {})
-    .filter(([, entry]) => gameOfTheYearComplete(entry?.picks || {}))
+    .filter(([year, entry]) => {
+      const candidates = gameOfTheYearCandidateGames(year);
+      return gameOfTheYearCategoriesValid(entry?.picks || {}, gameOfTheYearCategoriesForYear(year, candidates), candidates);
+    })
     .map(([year]) => year)
     .sort((a, b) => b.localeCompare(a));
 }
 
 function gameById(id) {
   return state.games.find((game) => game.id === id && !game.deletedAt) || null;
+}
+
+function gameOfTheYearCategoriesForYear(year, games = gameOfTheYearCandidateGames(year)) {
+  const playedGames = Array.isArray(games) ? games : [];
+  const hasSingleplayer = playedGames.some((game) => gameOfTheYearGameAllowedForCategory(game, "singleplayer"));
+  const hasMultiplayer = playedGames.some((game) => gameOfTheYearGameAllowedForCategory(game, "multiplayer"));
+  const hasIndie = playedGames.some(gameHasIndieTag);
+  const hasDisappointment = playedGames.length > 5;
+  return GAME_OF_YEAR_CATEGORIES.filter(([key]) => {
+    if (key === "singleplayer") return hasSingleplayer;
+    if (key === "multiplayer") return hasMultiplayer;
+    if (key === "indie") return hasIndie;
+    if (key === "disappointment") return hasDisappointment;
+    return true;
+  });
+}
+
+function gameOfTheYearChoicesForCategory(category, games = []) {
+  return games.filter((game) => gameOfTheYearGameAllowedForCategory(game, category));
+}
+
+function gameOfTheYearGameAllowedForCategory(game, category) {
+  if (category === "singleplayer") return !game?.multiplayer && !game?.coop;
+  if (category === "multiplayer") return Boolean(game?.multiplayer || game?.coop);
+  if (category === "indie") return gameHasIndieTag(game);
+  return true;
+}
+
+function gameHasIndieTag(game) {
+  return [...(game?.genres || []), ...(game?.tags || []), ...(game?.statuses || [])]
+    .some((label) => normalizeTag(label) === "indie");
+}
+
+function gameOfTheYearAutoPicks(year, games = gameOfTheYearCandidateGames(year), previousPicks = {}) {
+  const categories = gameOfTheYearCategoriesForYear(year, games);
+  const allowRepeats = games.length < 6;
+  const picks = { ...previousPicks };
+  const usedIds = new Set();
+  categories.forEach(([key]) => {
+    const current = games.find((game) => game.id === picks[key]);
+    if (current && gameOfTheYearGameAllowedForCategory(current, key) && (allowRepeats || !usedIds.has(current.id))) {
+      usedIds.add(current.id);
+      return;
+    }
+    picks[key] = "";
+  });
+  categories.forEach(([key]) => {
+    if (picks[key]) return;
+    const choice = gameOfTheYearBestRatedChoice(key, games, allowRepeats ? new Set() : usedIds);
+    if (!choice) return;
+    picks[key] = choice.id;
+    usedIds.add(choice.id);
+  });
+  return picks;
+}
+
+function gameOfTheYearBestRatedChoice(category, games = [], usedIds = new Set()) {
+  const choices = gameOfTheYearChoicesForCategory(category, games)
+    .filter((game) => !usedIds.has(game.id));
+  const sorted = choices.sort((a, b) => {
+    const scoreA = gameOfTheYearCategoryRatingValue(a, category);
+    const scoreB = gameOfTheYearCategoryRatingValue(b, category);
+    return scoreB - scoreA
+      || gameOfTheYearTimeValue(b) - gameOfTheYearTimeValue(a)
+      || stringCompare(a.title, b.title);
+  });
+  return sorted[0] || null;
+}
+
+function gameOfTheYearCategoryRatingValue(game, category) {
+  const ratings = normalizeGameRatings(game?.ratings);
+  if (category === "soundtrack") return ratings.soundtrack ? ratings.soundtrack * 2 : ratingScoreValue(game) || 0;
+  if (category === "disappointment") return -(ratingScoreValue(game) ?? 10);
+  return ratingScoreValue(game) || 0;
 }
 
 async function downloadGameOfTheYearImage() {
@@ -2800,10 +2996,11 @@ async function maybeRenderGameOfTheYearExportPreview() {
 
 async function gameOfTheYearExportHtml(year = state.gotyYear) {
   const picks = state.settings.gameOfTheYear?.[year]?.picks || {};
-  if (!gameOfTheYearComplete(picks)) return "";
-  const owner = cleanOwnerLabel(state.settings.defaultOwner) || DEFAULT_SETTINGS.defaultOwner;
-  const rows = GAME_OF_YEAR_CATEGORIES.map(([key, label]) => ({ label: tt(label), game: gameById(picks[key]) })).filter((item) => item.game);
   const statsGames = gameOfTheYearCandidateGames(year);
+  const categories = gameOfTheYearCategoriesForYear(year, statsGames);
+  if (!gameOfTheYearCategoriesValid(picks, categories, statsGames)) return "";
+  const owner = cleanOwnerLabel(state.settings.defaultOwner) || DEFAULT_SETTINGS.defaultOwner;
+  const rows = categories.map(([key, label]) => ({ label: tt(label), game: gameById(picks[key]), key })).filter((item) => item.game && gameOfTheYearGameAllowedForCategory(item.game, item.key));
   const theme = normalizeThemeSettings(state.settings);
   const assetRows = await Promise.all(rows.map(async (row) => ({
     ...row,
@@ -2834,13 +3031,29 @@ function gameOfTheYearExportMarkup({ owner, year, rows, statsGames, theme, logo,
     </header>
     ${gameOfTheYearExportTopStatsMarkup(year, statsGames)}
     <main class="goty-export-grid">
-      ${rows.slice(0, 4).map((row, index) => gameOfTheYearExportCard({ ...row, index })).join("")}
-      ${gameOfTheYearExportPlatformChartMarkup(statsGames)}
-      ${rows.slice(4).map((row, offset) => gameOfTheYearExportCard({ ...row, index: offset + 4 })).join("")}
+      ${gameOfTheYearExportGridItems(rows, statsGames)}
     </main>
     ${gameOfTheYearExportBottomStatsMarkup(statsGames, year)}
     <footer>${footerLines.map((line) => `<span>${escapeHtml(line)}</span>`).join("")}</footer>
   </div>`;
+}
+
+function gameOfTheYearExportGridItems(rows = [], statsGames = []) {
+  const shifted = rows.length < GAME_OF_YEAR_CATEGORIES.length;
+  if (!shifted) {
+    return `
+      ${rows.slice(0, 4).map((row, index) => gameOfTheYearExportCard({ ...row, index })).join("")}
+      ${gameOfTheYearExportPlatformChartMarkup(statsGames)}
+      ${rows.slice(4).map((row, offset) => gameOfTheYearExportCard({ ...row, index: offset + 4 })).join("")}
+    `;
+  }
+  const topRows = rows.slice(0, 3);
+  const bottomRows = rows.slice(3);
+  return `
+    ${topRows.map((row, index) => gameOfTheYearExportCard({ ...row, index, gridColumn: index + 2, gridRow: 1 })).join("")}
+    ${gameOfTheYearExportPlatformChartMarkup(statsGames)}
+    ${bottomRows.map((row, index) => gameOfTheYearExportCard({ ...row, index: index + 3, gridColumn: index + 2, gridRow: 2 })).join("")}
+  `;
 }
 
 function gameOfTheYearExportFooterLines(twitchUrl, siteUrl) {
@@ -2955,7 +3168,7 @@ function gameOfTheYearExportMonthCounts(games, year = "") {
   });
 }
 
-function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
+function gameOfTheYearExportCard({ label, game, coverSrc, index, gridColumn = "", gridRow = "" }) {
   const cover = coverSrc || "";
   const progress = achievementProgressForGame(game);
   const progressCount = progress ? canvasProgressCount(progress.label) : "";
@@ -2966,8 +3179,9 @@ function gameOfTheYearExportCard({ label, game, coverSrc, index }) {
     ...String(game.genres || "").split(","),
     ...(Array.isArray(game.tags) ? game.tags : []),
   ].map((tag) => tag.trim()).filter(Boolean).slice(0, 2);
+  const positionStyle = [gridColumn ? `grid-column:${gridColumn}` : "", gridRow ? `grid-row:${gridRow}` : ""].filter(Boolean).join(";");
   return `
-    <div class="goty-export-item ${index >= 4 ? "is-bottom" : ""} ${index === 4 ? "is-bottom-start" : ""}">
+    <div class="goty-export-item ${index >= 4 ? "is-bottom" : ""} ${index === 4 ? "is-bottom-start" : ""}"${positionStyle ? ` style="${escapeHtml(positionStyle)}"` : ""}>
       <strong class="goty-export-category">${escapeHtml(label)}</strong>
       <article class="goty-export-card">
         ${cover ? `<img class="goty-export-card-bg" src="${escapeHtml(cover)}" alt="" />` : ""}
@@ -6653,11 +6867,11 @@ function historyRangeText(game) {
 }
 
 function finishedDateText(game) {
-  return [finishHoursText(game) || finishedDurationText(game.startedAt, game.completedAt), formatLongDate(game.completedAt)].filter(Boolean).join(" · ");
+  return [finishHoursText(game), formatLongDate(game.completedAt)].filter(Boolean).join(" · ");
 }
 
 function completedDurationLine(game) {
-  const duration = finishHoursText(game) || finishedDurationText(game.startedAt, game.completedAt);
+  const duration = finishHoursText(game);
   return duration ? `<span class="completed-duration">${escapeHtml(duration)}</span>` : "";
 }
 
@@ -8113,8 +8327,7 @@ function playDatesFor(game, options = {}) {
   if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>${escapeHtml(tt("Started"))}</small><strong>${escapeHtml(formatDate(game.startedAt))}</strong></span>`);
   if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>${escapeHtml(tt("Finished"))}</small><strong>${escapeHtml(formatDate(game.completedAt))}</strong></span>`);
   const finishTime = finishHoursText(game);
-  const duration = finishTime || finishedDurationText(game.startedAt, game.completedAt);
-  if (duration) values.push(playTimeHistoryPill(duration, finishHoursValue(game.finishHours)));
+  if (finishTime) values.push(playTimeHistoryPill(finishTime, finishHoursValue(game.finishHours)));
   return values;
 }
 
@@ -8919,6 +9132,7 @@ function normalizeGameRecord(game) {
   normalized.hltbUrl = normalizeGuideUrl(normalized.hltbUrl || normalized.howLongToBeatUrl || "");
   normalized.trailerUrl = String(normalized.trailerUrl || "");
   normalized.trailerUrlRemoved = Boolean(normalized.trailerUrlRemoved);
+  normalized.releaseRefreshLocked = Boolean(normalized.releaseRefreshLocked);
   normalized.storeLinks = normalizeStoreLinks(normalized.storeLinks);
   normalized.steamAppId = cleanSteamAppId(normalized.steamAppId) || steamAppIdFromUrl(normalized.storeLinks.steam);
   normalized.owners = ownerTags(normalized);
@@ -9626,6 +9840,7 @@ function blankGame() {
     section: "wanted",
     releaseDate: "",
     releaseText: "",
+    releaseRefreshLocked: false,
     lengthHours: null,
     finishHours: 0,
     ratings: normalizeGameRatings(),
@@ -9690,6 +9905,26 @@ async function saveCurrentFormGame() {
   const startedAt = el.fields.startedAt.value || (playing && !existing?.playing && !existing?.startedAt ? todayDate() : "");
   const trailerUrl = el.fields.trailerUrl.value.trim();
   const trailerUrlRemoved = !trailerUrl && Boolean(existing?.trailerUrl || existing?.trailerUrlRemoved);
+  const releaseDate = el.fields.releaseDate.value;
+  const releaseText = el.fields.releaseText.value.trim();
+  const preorderStore = el.fields.preorderStore.value.trim();
+  const releaseTime = releaseDate ? new Date(`${releaseDate}T00:00:00`).getTime() : NaN;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const manualUpcomingPastRelease = section === "upcoming"
+    && !preorderStore
+    && Number.isFinite(releaseTime)
+    && releaseTime <= today.getTime();
+  const releaseRefreshLocked = Boolean(existing) && (
+    manualUpcomingPastRelease
+    || (
+      section === "upcoming"
+      && !preorderStore
+      && !releaseDate
+      && !releaseText
+      && Boolean(existing.releaseDate || existing.releaseText || existing.releaseRefreshLocked)
+    )
+  );
   const editedAt = new Date().toISOString();
   const game = {
     ...(existing || blankGame()),
@@ -9701,14 +9936,15 @@ async function saveCurrentFormGame() {
     psPlus: (el.fields.digital.checked || el.fields.dlc.checked) && ["PS3", "PS4", "PS5"].includes(canonicalPlatform(el.fields.platform.value)) && el.fields.psPlus.checked,
     gamesWithGold: (el.fields.digital.checked || el.fields.dlc.checked) && ["X360", "XOne"].includes(canonicalPlatform(el.fields.platform.value)) && el.fields.gamesWithGold.checked,
     section,
-    releaseDate: el.fields.releaseDate.value,
-    releaseText: el.fields.releaseText.value.trim(),
+    releaseDate,
+    releaseText,
+    releaseRefreshLocked,
     lengthHours: el.fields.length.value ? Number(el.fields.length.value) : null,
     finishHours: finishHoursValue(el.fields.finishHours.value),
     ratings: ratingInputsValue(el.playingRatingGrid),
     startedAt,
     completedAt: effectiveCompletedAt,
-    preorderStore: el.fields.preorderStore.value.trim(),
+    preorderStore,
     preferredStore: el.fields.preferredStore.value.trim(),
     owners: ownerInputValues(el.fields.owners.value),
     statuses: listFrom(el.fields.statuses.value).map(canonicalStatus).filter(Boolean),
@@ -10199,7 +10435,7 @@ async function normalizeGameBeforeSave(game) {
   try {
     const result = await lookupFirstResult(game.igdbUrl || game.title);
     if (!result) return;
-    if (!game.releaseDate && !game.releaseText) {
+    if (!game.releaseRefreshLocked && !game.releaseDate && !game.releaseText) {
       game.releaseDate = result.releaseDate || "";
       game.releaseText = result.releaseDate ? "" : (result.releaseText || "");
     }
@@ -10282,6 +10518,7 @@ async function refreshUnreleasedGamesOnOpen() {
 }
 
 function shouldMoveReleasedToAvailable(game) {
+  if (game.releaseRefreshLocked) return false;
   if (game.section !== "upcoming" || game.preorderStore) return false;
   if (!game.releaseDate) return false;
   const releaseTime = new Date(`${game.releaseDate}T00:00:00`).getTime();
@@ -10291,6 +10528,7 @@ function shouldMoveReleasedToAvailable(game) {
 }
 
 function shouldMoveUnreleasedToUpcoming(game) {
+  if (game.releaseRefreshLocked) return false;
   if (game.section !== "wanted" || game.preorderStore) return false;
   if (!game.releaseDate) return false;
   const releaseTime = new Date(`${game.releaseDate}T00:00:00`).getTime();
@@ -10379,7 +10617,7 @@ function applyFetchedGameData(game, result, options = {}) {
   } else {
     setIfEmpty("description", result.description);
   }
-  if (!game.releaseDate && !game.releaseText) {
+  if (!game.releaseRefreshLocked && !game.releaseDate && !game.releaseText) {
     game.releaseDate = result.releaseDate || "";
     game.releaseText = result.releaseDate ? "" : (result.releaseText || "");
     if (game.releaseDate || game.releaseText) changed = true;
@@ -10418,6 +10656,7 @@ function mergeStoreLinks(game, links) {
 }
 
 function shouldRefreshRelease(game) {
+  if (game.releaseRefreshLocked) return false;
   if (game.section !== "upcoming") return false;
   if (!game.releaseDate) return true;
   return new Date(`${game.releaseDate}T00:00:00`) > new Date();
