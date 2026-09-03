@@ -127,7 +127,9 @@ const UI_ICON_URLS = [
   "/assets/sites/wikipedia.ico",
   "/assets/stores/amazon.ico",
   "/assets/stores/game.ico",
+  "/assets/stores/limited-run-games.png",
   "/assets/stores/retroisland.png",
+  "/assets/stores/square-enix-store.svg",
   "/assets/stores/xtralife.ico",
 ];
 const MANUAL_GAME_COVER_OVERRIDES = {
@@ -994,7 +996,12 @@ function bindEvents() {
     syncStoreInputIcon(el.fields.preorderStore, el.preorderStoreFieldIcon);
     syncNewGameUpcomingSection();
   });
+  el.fields.preorderStore.addEventListener("change", () => {
+    syncStoreInputIcon(el.fields.preorderStore, el.preorderStoreFieldIcon);
+    syncNewGameUpcomingSection();
+  });
   el.fields.preferredStore.addEventListener("input", () => syncStoreInputIcon(el.fields.preferredStore, el.preferredStoreFieldIcon));
+  el.fields.preferredStore.addEventListener("change", () => syncStoreInputIcon(el.fields.preferredStore, el.preferredStoreFieldIcon));
   el.fields.digital.addEventListener("change", () => { syncDialogPriceVisibility(); syncGamelistEntitlementEditor(); });
   el.fields.dlc.addEventListener("change", syncDlcDigital);
   el.fields.coop?.addEventListener("change", () => {
@@ -9653,11 +9660,14 @@ function xboxSearchUrl(query, region = state.settings.region) {
 }
 
 function storeIcon(store) {
+  const normalizedStore = normalizeTag(store);
   if (store.startsWith("Amazon")) return "assets/stores/amazon.ico";
   if (store === "eBay") return "https://www.ebay.com/favicon.ico";
   if (store === "Xtralife") return "assets/stores/xtralife.ico";
   if (store === "GAME.es") return "assets/stores/game.ico";
   if (store === "Retro Island NY") return "assets/stores/retroisland.png";
+  if (normalizedStore === "limitedrun" || normalizedStore === "limitedrungames" || normalizedStore === "lrg") return "assets/stores/limited-run-games.png";
+  if (normalizedStore === "squareenix" || normalizedStore === "squareenixstore") return "assets/stores/square-enix-store.svg";
   if (store === "GameStop") return "https://www.gamestop.com/favicon.ico";
   if (store === "Walmart") return "https://www.walmart.com/favicon.ico";
   if (store.startsWith("Nintendo")) return "assets/sites/nintendo.png";
@@ -9683,7 +9693,7 @@ function syncPlatformInputIcon() {
 
 function syncStoreInputIcon(input, slot) {
   const store = knownStoreIconName(input?.value);
-  setLeadingFieldIcon(slot, store ? storeIcon(store) : "", store);
+  setLeadingFieldIcon(slot, store ? storeIcon(store) : "", store, store === "Square Enix Store" ? "store-logo-wide" : "");
 }
 
 function knownStoreIconName(value) {
@@ -9697,6 +9707,8 @@ function knownStoreIconName(value) {
   if (normalized === "game" || normalized === "game es") return "GAME.es";
   if (normalized === "xtralife" || normalized === "xtra life") return "Xtralife";
   if (normalized === "retro island" || normalized === "retro island ny") return "Retro Island NY";
+  if (normalized === "limitedrun" || normalized === "limitedrungames" || normalized === "lrg") return "Limited Run";
+  if (normalized === "squareenix" || normalized === "squareenixstore" || normalized === "sqex" || normalized === "sqexstore") return "Square Enix Store";
   if (normalized === "gamestop" || normalized === "game stop") return "GameStop";
   if (normalized === "walmart" || normalized === "wallmart") return "Walmart";
   if (normalized.startsWith("nintendo")) return "Nintendo";
@@ -9713,8 +9725,9 @@ function setLeadingFieldIcon(slot, icon, title = "", extraClass = "") {
   slot.dataset.baseClass = baseClasses.join(" ");
   slot.className = unique([...baseClasses, ...String(extraClass || "").split(/\s+/).filter(Boolean)]).join(" ");
   wrapper.classList.toggle("has-icon", Boolean(icon));
+  wrapper.classList.toggle("has-wide-icon", Boolean(icon && extraClass.includes("store-logo-wide")));
   slot.title = icon ? title : "";
-  slot.innerHTML = icon ? `<img src="${escapeHtml(icon)}" alt="" width="18" height="18" decoding="async">` : "";
+  slot.innerHTML = icon ? `<img src="${escapeHtml(icon)}" alt="" decoding="async">` : "";
 }
 
 function releaseStatus(game, options = {}) {
@@ -9841,6 +9854,8 @@ async function openEditor(id = "") {
   el.fields.cover.value = game.cover || "";
   if (el.fields.notes) el.fields.notes.value = game.notes || "";
   syncEditFieldIcons();
+  requestAnimationFrame(syncEditFieldIcons);
+  window.setTimeout(syncEditFieldIcons, 0);
   syncGamelistEntitlementEditor();
   syncDialogPriceVisibility();
   syncStyledSelect(el.fields.section, { activeValue: null });
