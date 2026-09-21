@@ -14,7 +14,7 @@ const WEEKDAYS = [
 
 export function createGameCardShell(doc = document) {
   const template = doc.createElement("template");
-  template.innerHTML = `<article class="game-card glass" draggable="false"><div class="card-trailer" aria-hidden="true"></div><button class="icon-button trailer-toggle" type="button" title="Pause trailer" aria-label="Pause trailer" hidden></button><button class="cover-button" type="button"><img alt=""></button><div class="game-main"><div class="title-line"><div class="title-wrap"><h3></h3><div class="title-owners"></div></div><button class="icon-button edit-action" type="button" title="Edit" aria-label="Edit"><svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="M13.5 6.5l4 4"></path></svg></button></div><div class="studio-line"></div><div class="meta"></div><div class="play-dates"></div><div class="chips"></div><div class="card-trophies"></div><div class="card-actions"><button class="ghost-button price-refresh-action" type="button">Prices</button><button class="ghost-button bought-action" type="button">Got it</button><button class="primary-button complete-action" type="button">Finished</button><button class="ghost-button backlog-action" type="button" title="Backlog" aria-label="Move back to backlog"><svg class="back-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 4 12l6 6"></path><path d="M4 12h10a6 6 0 0 1 6 6"></path></svg><span class="action-label">Backlog</span></button><button class="ghost-button trophy-action" type="button" title="Completed" aria-label="Completed"><svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path><path d="M8 6H5a3 3 0 0 0 3 3"></path><path d="M16 6h3a3 3 0 0 1-3 3"></path><path d="M12 12v4"></path><path d="M9 20h6"></path><path d="M10 16h4v4h-4z"></path></svg></button><button class="danger-button icon-only-button delete-action" type="button" title="Delete" aria-label="Delete"><svg class="trash-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg></button></div></div><p class="notes"></p><div class="prices"></div></article>`;
+  template.innerHTML = `<article class="game-card glass" draggable="false"><div class="card-trailer" aria-hidden="true"></div><button class="icon-button trailer-toggle" type="button" title="Pause trailer" aria-label="Pause trailer" hidden></button><button class="cover-button" type="button"><img alt=""></button><div class="game-main"><div class="title-line"><div class="title-wrap"><h3></h3><div class="title-owners"></div></div><button class="icon-button edit-action" type="button" title="Edit" aria-label="Edit"><svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="M13.5 6.5l4 4"></path></svg></button></div><div class="studio-line"></div><div class="meta"></div><div class="play-dates"></div><div class="chips"></div><div class="card-trophies"></div><div class="card-actions"><button class="primary-button bought-action" type="button">Backlog</button><button class="primary-button complete-action" type="button">Finished</button><button class="ghost-button backlog-action" type="button" title="Backlog" aria-label="Move back to backlog"><svg class="back-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 4 12l6 6"></path><path d="M4 12h10a6 6 0 0 1 6 6"></path></svg><span class="action-label">Backlog</span></button><button class="ghost-button trophy-action" type="button" title="Completed" aria-label="Completed"><svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path><path d="M8 6H5a3 3 0 0 0 3 3"></path><path d="M16 6h3a3 3 0 0 1-3 3"></path><path d="M12 12v4"></path><path d="M9 20h6"></path><path d="M10 16h4v4h-4z"></path></svg></button><button class="ghost-button icon-only-button price-refresh-action" type="button" title="Prices" aria-label="Prices"></button><button class="danger-button icon-only-button delete-action" type="button" title="Delete" aria-label="Delete"><svg class="trash-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg></button></div></div><p class="notes"></p><div class="prices"></div></article>`;
   return template.content.firstElementChild;
 }
 
@@ -171,12 +171,12 @@ export function achievementCardMarkup({ index, tone, href, game, title, icon, me
   return `<a class="achievement-card ${index === 0 ? "latest" : ""} trophy-${escape(tone)}" href="${escape(href || "#")}" ${href && href !== "#" ? `target="_blank" rel="noreferrer"` : ""}${localGame ? ` data-achievement-game="${escape(localGame)}"` : ""}><img class="achievement-icon" src="${escape(icon)}" alt=""><div><strong>${escape(title)}</strong>${game ? `<span class="achievement-game-name">${escape(game)}</span>` : ""}<span class="achievement-card-meta playing-finished-tags">${meta}</span></div></a>`;
 }
 
-export function achievementDashboardMarkup({ completedCount, completedBreakdown = "", trophyTotal, trophyBreakdown = "", level, levelLabel, counts, sourceUrl, trophyIconHtml, barHeight, escape, completedLabel = "COMPLETED", trophiesLabel = "TROPHIES" }) {
+export function achievementDashboardMarkup({ completedCount, completedBreakdown = "", trophyTotal, trophyBreakdown = "", level, levelLabel, counts, sourceUrl, trophyIconHtml, barHeight, escape, completedLabel = "COMPLETED", trophiesLabel = "TROPHIES", showRarityGraph = true }) {
   const levelCard = levelLabel ? `<a class="achievement-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(level))}</strong><span>${levelLabel}</span></a>` : "";
-  const rarityGraph = `<div class="rarity-graph" aria-label="Trophy rarity graph">${counts.map(([type, count]) => {
+  const rarityGraph = showRarityGraph ? `<div class="rarity-graph" aria-label="Trophy rarity graph">${counts.map(([type, count]) => {
     const value = Number(count) || 0;
     return `<span class="rarity-bar rarity-${escape(type.toLowerCase())} ${value ? "" : "rarity-zero"}" title="${escape(`${type}: ${value}`)}"><em style="--bar:${barHeight(value, counts)}%"></em><small>${escape(type)}</small>${value ? `<strong>${escape(String(value))}</strong>` : ""}</span>`;
-  }).join("")}</div>`;
+  }).join("")}</div>` : "";
   return `<div class="achievement-summary ${levelLabel ? "" : "achievement-summary-no-level"}"><button class="achievement-kpi platinum-highlight ${completedCount ? "has-platinum" : ""}" type="button" data-action="platinums"><strong class="kpi-with-icon">${trophyIconHtml}${escape(String(completedCount))}</strong><span>${escape(completedLabel)}</span>${completedBreakdown}</button><a class="achievement-kpi trophy-kpi" href="${escape(sourceUrl)}" target="_blank" rel="noreferrer"><strong>${escape(String(trophyTotal))}</strong><span>${escape(trophiesLabel)}</span>${trophyBreakdown}</a>${levelCard}${rarityGraph}</div>`;
 }
 
@@ -220,6 +220,7 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, setupN
     };
   }
   const trophies = psn.summary?.trophies || {};
+  const psnSummaryLoaded = Boolean(psn.summary);
   const psnCompleted = Number(trophies.platinum || 0);
   const pcCompleted = Number(steam.completed?.length || 0);
   const xboxCompleted = Number(xbox.completed?.length || 0);
@@ -238,6 +239,7 @@ export function achievementPanelMarkup({ psn = {}, steam = {}, xbox = {}, setupN
     levelLabel: psnLevel ? "PSN LEVEL" : "",
     counts, sourceUrl, trophyIconHtml, barHeight: sharedTrophyBarHeight, escape,
     completedLabel: translate("COMPLETED"), trophiesLabel: translate("TROPHIES"),
+    showRarityGraph: psnSummaryLoaded,
   });
   const cards = achievements.map((item, index) => {
     const platform = item.source === "steam" ? "Steam" : String(item.platform || (item.source === "xbox" ? "Xbox" : "PlayStation")).trim() || "PlayStation";
