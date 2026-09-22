@@ -2945,8 +2945,8 @@ h3 {
 }
 
 .stat-done {
-  --stat-color: #ff9ed2;
-  --stat-glow: rgba(255, 158, 210, 0.26);
+  --stat-color: var(--finished-accent);
+  --stat-glow: color-mix(in srgb, var(--finished-accent) 26%, transparent);
 }
 
 #shelfStats .stat-digital {
@@ -7095,6 +7095,15 @@ body.can-edit #loginButton .pause-icon {
     0 12px 28px rgba(255, 225, 101, 0.18);
 }
 
+.playing-completed-action .action-label {
+  color: #ffe985;
+}
+
+.playing-completed-action:hover .action-label,
+.playing-completed-action.active .action-label {
+  color: #101114;
+}
+
 .pencil-icon {
   width: 18px;
   height: 18px;
@@ -7411,6 +7420,27 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   line-height: 1;
 }
 
+.finished-stats-kpi.is-finished {
+  border-color: color-mix(in srgb, var(--finished-accent) 48%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px color-mix(in srgb, var(--finished-accent) 10%, transparent),
+    0 14px 34px color-mix(in srgb, var(--finished-accent) 16%, transparent);
+}
+
+.finished-stats-kpi.is-finished strong {
+  color: var(--finished-accent);
+}
+
+.finished-stats-kpi.is-finished:hover,
+.finished-stats-kpi.is-finished:focus-visible {
+  background: color-mix(in srgb, var(--finished-accent) 16%, rgba(255, 255, 255, 0.04));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 3px color-mix(in srgb, var(--finished-accent) 14%, transparent),
+    0 14px 34px color-mix(in srgb, var(--finished-accent) 18%, transparent);
+}
+
 .finished-stats-kpi.is-completed strong {
   color: #ffe985;
 }
@@ -7558,6 +7588,15 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .finished-stats-release-kpi.is-played {
   --stat-color: #ff9ed2;
+}
+
+.finished-stats-release-kpi.is-finished {
+  --stat-color: var(--finished-accent);
+  border-color: color-mix(in srgb, var(--finished-accent) 44%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px color-mix(in srgb, var(--finished-accent) 9%, transparent),
+    0 12px 28px color-mix(in srgb, var(--finished-accent) 14%, transparent);
 }
 
 .finished-stats-release-kpi strong {
@@ -13999,11 +14038,11 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   #releaseDialog
     .release-dialog-list
     .card-actions
-    :is(.complete-action, .bought-action, .backlog-action),
+    :is(.complete-action, .bought-action, .backlog-action, .delete-action),
   #shelfReleaseDialog
     .release-dialog-list
     .card-actions
-    :is(.complete-action, .bought-action, .backlog-action) {
+    :is(.complete-action, .bought-action, .backlog-action, .delete-action) {
     width: 42px;
     min-width: 42px;
     height: 42px;
@@ -14081,21 +14120,24 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
     .card-actions
     :is(.play-icon, .back-icon, .forward-icon) {
     display: block;
-    width: 14px;
-    height: 14px;
-    flex: 0 0 14px;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
     stroke-width: 2.7;
   }
 
   .playing-card .card-actions {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) 36px 36px;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr) 36px;
     gap: 5px;
   }
 
   .playing-card .backlog-action {
-    width: auto;
-    min-width: 0;
-    padding: 0 7px;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+    gap: 0;
   }
 
   .playing-card .backlog-action .back-icon {
@@ -14103,8 +14145,12 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   }
 
   .playing-card .complete-action .check-icon + .action-label,
-  .playing-card .backlog-action .action-label {
+  .playing-card .playing-completed-action .action-label {
     display: inline;
+  }
+
+  .playing-card .backlog-action .action-label {
+    display: none;
   }
 
   .playing-card .card-actions button {
@@ -14116,12 +14162,21 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   }
 
   .playing-card .card-actions .icon-only-button,
-  .playing-card .trophy-action {
+  .playing-card .trophy-action:not(.playing-completed-action) {
     width: 36px;
     min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+  }
+
+  .playing-card .playing-completed-action {
+    width: auto;
+    min-width: 0;
     height: 32px;
     min-height: 32px;
-    padding: 0;
+    padding: 0 7px;
+    gap: 5px;
   }
 
   .playing-card
