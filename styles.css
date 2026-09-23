@@ -7350,6 +7350,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .completed-stats-button,
 .completed-stream-toggle,
+.playing-stream-toggle,
 .goty-stats-button {
   width: 34px;
   height: 34px;
@@ -7358,15 +7359,65 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   border-radius: 7px;
 }
 
-.completed-stream-toggle .stream-play-icon {
-  width: 17px;
-  height: 17px;
+.completed-stream-toggle .stream-play-icon,
+.playing-stream-toggle .stream-play-icon,
+.completed-stream-toggle .stream-play-off-icon,
+.playing-stream-toggle .stream-play-off-icon,
+.completed-stream-toggle .stream-all-icon,
+.playing-stream-toggle .stream-all-icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  overflow: visible;
 }
 
-.completed-stream-toggle.active {
+.completed-stream-toggle.is-all-games,
+.playing-stream-toggle.is-all-games {
+  color: #ffffff;
+}
+
+.completed-stream-toggle.active,
+.playing-stream-toggle.active {
   color: #d7b8ff;
   border-color: rgba(170, 120, 255, 0.52);
   background: rgba(126, 71, 204, 0.18);
+}
+
+.completed-stream-toggle.is-non-stream,
+.playing-stream-toggle.is-non-stream {
+  color: var(--muted);
+  border-color: rgba(225, 230, 240, 0.28);
+  background: rgba(225, 230, 240, 0.08);
+}
+
+.completed-stream-toggle.is-non-stream .stream-play-off-icon,
+.playing-stream-toggle.is-non-stream .stream-play-off-icon {
+  color: #ffffff;
+}
+
+.completed-stream-toggle .stream-play-off-triangle,
+.playing-stream-toggle .stream-play-off-triangle {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.completed-stream-toggle .stream-play-off-slash,
+.playing-stream-toggle .stream-play-off-slash {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.completed-stream-toggle .gamelist-filter-icon,
+.playing-stream-toggle .gamelist-filter-icon {
+  background: #ffffff;
+  -webkit-mask: url("assets/Icon.png") center / contain no-repeat;
+  mask: url("assets/Icon.png") center / contain no-repeat;
 }
 
 .finished-stats-dialog {
@@ -12445,20 +12496,23 @@ body.theme-kash
 
 .game-rating-grid,
 .finish-rating-grid {
+  --rating-star-size: 31px;
+  --rating-star-gap: 9px;
+  --rating-star-width: calc((var(--rating-star-size) * 5) + (var(--rating-star-gap) * 4));
+  --rating-hitbox-height: 40px;
   display: grid;
-  gap: 10px 12px;
+  gap: 14px 18px;
 }
 
 .game-rating-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .finish-rating-grid {
-  grid-template-columns: 1fr;
-}
-
-.finish-rating-grid .rating-row {
-  grid-column: 1 / -1;
+  --rating-star-size: 29px;
+  --rating-star-gap: 8px;
+  --rating-hitbox-height: 38px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .rating-row {
@@ -12471,6 +12525,11 @@ body.theme-kash
   border: 0;
   background: transparent;
   --rating-active-color: var(--accent);
+}
+
+.game-rating-grid .rating-row,
+.finish-rating-grid .rating-row {
+  grid-column: auto;
 }
 
 .rating-row legend {
@@ -12488,9 +12547,12 @@ body.theme-kash
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 44px;
+  justify-content: flex-start;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
   padding: 0 10px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -12510,10 +12572,10 @@ body.theme-kash
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 7px;
-  min-width: 161px;
+  gap: var(--rating-star-gap, 7px);
+  min-width: var(--rating-star-width, 161px);
   color: rgba(255, 255, 255, 0.22);
-  font-size: 25px;
+  font-size: var(--rating-star-size, 25px);
   line-height: 1;
   white-space: nowrap;
 }
@@ -12551,8 +12613,8 @@ body.theme-kash
   left: 10px;
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  width: 161px;
-  height: 34px;
+  width: var(--rating-star-width, 161px);
+  height: var(--rating-hitbox-height, 34px);
   transform: translateY(-50%);
 }
 
@@ -12575,7 +12637,8 @@ body.theme-kash
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-left: auto;
+  margin-left: 0;
+  flex: 0 0 auto;
 }
 
 .rating-step-button {
