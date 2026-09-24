@@ -23,6 +23,7 @@ const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY
 const CURRENCY_OPTIONS = ["EUR", "USD", "GBP", "JPY"];
 const REGION_OPTIONS = ["ES", "IT", "IE", "FR", "PT", "JP", "MX", "US", "UK"];
 const MAX_PRICE_STORES = 5;
+const COOP_ACCENT = "#bdf279";
 const GAME_OF_YEAR_CATEGORIES = [
   ["fun", "MOST FUN"],
   ["singleplayer", "FAVORITE SINGLEPLAYER"],
@@ -843,7 +844,8 @@ function bindEvents() {
     requestAnimationFrame(updateAllRowTitleOverflow);
     scheduleFocusedPlayingTrailerUpdate();
     requestAnimationFrame(renderMobileTabs);
-    requestAnimationFrame(updatePlayingCountText);
+    requestAnimationFrame(() => updatePlayingCountText());
+    requestAnimationFrame(renderCompletedStreamToggle);
   }, { passive: true });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) pauseAllPlayingTrailers();
@@ -1018,8 +1020,14 @@ function bindEvents() {
   el.fields.coop?.addEventListener("change", () => {
     if (el.fields.coop.checked && el.fields.multiplayer) el.fields.multiplayer.checked = true;
   });
+  el.fields.multiplayer?.addEventListener("change", () => {
+    if (!el.fields.multiplayer.checked && el.fields.coop) el.fields.coop.checked = false;
+  });
   el.finishCoopInput?.addEventListener("change", () => {
     if (el.finishCoopInput.checked && el.finishMultiplayerInput) el.finishMultiplayerInput.checked = true;
+  });
+  el.finishMultiplayerInput?.addEventListener("change", () => {
+    if (!el.finishMultiplayerInput.checked && el.finishCoopInput) el.finishCoopInput.checked = false;
   });
   el.fields.replayCount.addEventListener("input", syncReplaySection);
   el.form.addEventListener("submit", saveFromForm);
@@ -2478,7 +2486,7 @@ function visiblePlayingGames() {
   let games = activeGames().filter((game) => game.playing);
   if (!state.canEdit && state.settings.hideNonStreamPlaying) games = games.filter((game) => game.stream);
   const filteredGames = games.filter((game) => streamFilterModeMatches(game, state.completedStreamMode));
-  return filteredGames.length || normalizeStreamFilterMode(state.completedStreamMode) !== "nonstream" ? filteredGames : games;
+  return filteredGames.length || normalizeStreamFilterMode(state.completedStreamMode) === "all" ? filteredGames : games;
 }
 
 function finishedStreamFilterMatches(game) {
@@ -2524,8 +2532,7 @@ function finishedStatsBaseGames() {
 function renderCompletedStreamToggle() {
   renderStreamFilterToggle(el.playingStreamToggleButton, { hidden: !hasStreamGameInLog() });
   if (!el.completedStreamToggleButton) return;
-  const hasStream = state.games.some((game) => !game.deletedAt && game.completedAt && game.stream);
-  renderStreamFilterToggle(el.completedStreamToggleButton, { hidden: !hasStream });
+  renderStreamFilterToggle(el.completedStreamToggleButton, { hidden: !hasStreamGameInLog() });
 }
 
 function hasStreamGameInLog() {
@@ -2540,8 +2547,15 @@ function renderStreamFilterToggle(button, { hidden = false } = {}) {
   button.classList.toggle("is-all-games", mode === "all");
   button.classList.toggle("is-non-stream", mode === "nonstream");
   button.innerHTML = mode === "all" ? allGamesIcon() : mode === "stream" ? streamPlayIcon() : streamPlayOffIcon();
-  button.title = tt("Filter between stream and non-stream games");
-  button.setAttribute("aria-label", button.title);
+  const tooltip = tt("Filter between stream and non-stream games");
+  if (window.matchMedia("(min-width: 761px)").matches) {
+    button.removeAttribute("title");
+    button.dataset.tooltip = tooltip;
+  } else {
+    button.setAttribute("title", tooltip);
+    button.removeAttribute("data-tooltip");
+  }
+  button.setAttribute("aria-label", tooltip);
   button.setAttribute("aria-pressed", mode === "all" ? "false" : "true");
 }
 
@@ -3363,6 +3377,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
   const bodyFont = canvasBodyFont();
   return `
     .goty-export-poster {
+      --coop-accent: ${COOP_ACCENT};
       position: relative;
       box-sizing: border-box;
       width: 1920px;
@@ -3485,7 +3500,7 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       color: #ff9ed2;
     }
     .goty-export-coop-kpi strong {
-      color: #79f2ce;
+      color: var(--coop-accent);
     }
     .goty-export-coop-kpi .coop-icon {
       width: 24px;
@@ -3788,9 +3803,9 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       border-color: rgba(255, 255, 255, 0.07);
     }
     .goty-export-coop {
-      color: #79f2ce;
-      border-color: rgba(121,242,206,.38);
-      background: rgba(121,242,206,.1);
+      color: var(--coop-accent);
+      border-color: color-mix(in srgb, var(--coop-accent) 38%, transparent);
+      background: color-mix(in srgb, var(--coop-accent) 10%, transparent);
     }
     .goty-export-stream {
       color: #bf94ff;
@@ -6885,8 +6900,6 @@ function platformStatsColor(platform, index = 0) {
 function sortedCompletedGames(games) {
   const direction = state.filters.direction === "asc" ? 1 : -1;
   return [...games].sort((a, b) => {
-    const streamSort = compareStreamFirst(a, b);
-    if (streamSort) return streamSort;
     if (state.filters.sort === "title") {
       return direction * (stringCompare(a.title, b.title) || String(b.completedAt).localeCompare(String(a.completedAt)));
     }
@@ -7191,7 +7204,7 @@ function cardFor(game, options = {}) {
     includeCalendarState: releaseDialog,
   }).join("");
   const playDates = card.querySelector(".play-dates");
-  playDates.innerHTML = playDatesFor(game, { includePastRelease: Boolean(options.includePastRelease), includeRelease: !releaseDialog, includePreorder: true }).join("");
+  playDates.innerHTML = playDatesFor(game, { includePastRelease: Boolean(options.includePastRelease), includeRelease: !releaseDialog, includePreorder: true, includeCalendarState: releaseDialog }).join("");
   playDates.hidden = !playDates.innerHTML;
   card.querySelector(".chips").innerHTML = cardChipsFor(game).join("");
   const trophyStrip = card.querySelector(".card-trophies");
@@ -7922,11 +7935,6 @@ function metaFor(game, options = {}) {
   if (game.lengthHours) values.push(timeBadge(game.lengthHours, hltbUrlFor(game)));
   if (game.stream) values.push(streamBadge());
   gameStatuses(game).forEach((status) => values.push(statusBadge(status)));
-  if (options.includeCalendarState) {
-    if (game.platinum) values.push(calendarStateBadge("Completed", "completed", trophyIcon()));
-    else if (game.completedAt) values.push(calendarStateBadge("Finished", "finished"));
-    else if (game.section === "backlog") values.push(calendarStateBadge("Backlog", "backlog"));
-  }
   const progress = achievementProgressForGame(game);
   if (options.includePsn !== false && progress) values.push(psnProgressBadge(progress));
   if (game.replayCount) values.push(replayBadge(game.replayCount));
@@ -8569,9 +8577,18 @@ function playDatesFor(game, options = {}) {
   else if (options.includePreorder && game.preferredStore) values.push(preferredPreorderChip(game.preferredStore));
   if (game.startedAt) values.push(`<span class="history-pill history-date-pill"><small>${escapeHtml(tt("Started"))}</small><strong>${escapeHtml(formatDate(game.startedAt))}</strong></span>`);
   if (game.completedAt) values.push(`<span class="history-pill history-date-pill"><small>${escapeHtml(tt("Finished"))}</small><strong>${escapeHtml(formatDate(game.completedAt))}</strong></span>`);
+  if (options.includeCalendarState) values.push(calendarStateForGame(game));
   const finishTime = finishHoursText(game);
   if (finishTime) values.push(playTimeHistoryPill(finishTime, finishHoursValue(game.finishHours)));
   return values;
+}
+
+function calendarStateForGame(game) {
+  if (game.playing) return calendarStateBadge("Playing", "finished");
+  if (game.platinum) return calendarStateBadge("Completed", "completed", trophyIcon());
+  if (game.completedAt) return calendarStateBadge("Finished", "finished");
+  if (game.section === "backlog") return calendarStateBadge("Backlog", "backlog");
+  return "";
 }
 
 function playTimeHistoryPill(duration, hours) {
@@ -8715,11 +8732,11 @@ function calendarStateBadge(label, tone, icon = "") {
 }
 
 function coopBadge() {
-  return `<span class="coop-pill">${coopIcon()}<span>${escapeHtml(tt("CoOp"))}</span></span>`;
+  return `<span class="coop-pill" title="${escapeHtml(tt("CoOp"))}" aria-label="${escapeHtml(tt("CoOp"))}">${coopIcon()}</span>`;
 }
 
 function multiplayerBadge() {
-  return `<span class="multiplayer-pill" title="${escapeHtml(tt("Multiplayer"))}" aria-label="${escapeHtml(tt("Multiplayer"))}">${coopIcon()}</span>`;
+  return `<span class="multiplayer-pill" title="${escapeHtml(tt("Multiplayer"))}" aria-label="${escapeHtml(tt("Multiplayer"))}">${onlineGlobeIcon()}</span>`;
 }
 
 function streamBadge() {
@@ -8727,19 +8744,27 @@ function streamBadge() {
 }
 
 function streamPlayIcon() {
-  return `<svg class="stream-play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5L8 5.5Z"></path></svg>`;
+  return `<svg class="stream-play-icon twitch-filter-icon" viewBox="0 0 24 24" aria-hidden="true">${twitchLogoPath()}</svg>`;
 }
 
 function streamPlayOffIcon() {
-  return `<svg class="stream-play-off-icon" viewBox="0 0 13 13" aria-hidden="true"><path class="stream-play-off-triangle" d="M4.6 2.9v7l6-3.5-6-3.5Z"></path><line class="stream-play-off-slash" x1="9.9" y1="4.1" x2="12.3" y2="2.6"></line><line class="stream-play-off-slash" x1=".7" y1="9.5" x2="2.9" y2="8.2"></line></svg>`;
+  return `<svg class="stream-play-off-icon twitch-filter-icon" viewBox="0 0 24 24" aria-hidden="true">${twitchLogoPath()}<path class="stream-play-off-slash-cut" d="M2 22 22 2"></path><path class="stream-play-off-slash" d="M2 22 22 2"></path></svg>`;
 }
 
 function allGamesIcon() {
   return `<img class="stream-all-icon gamelist-filter-icon" src="assets/Icon.png" alt="" aria-hidden="true" decoding="async">`;
 }
 
+function twitchLogoPath() {
+  return `<path class="twitch-filter-logo-path" d="M6 0 1.7 4.3v15.4h5.1V24l4.3-4.3h3.4l7.8-7.7V0H6Zm14.6 11.1-3.4 3.4h-3.5l-3 3v-3H6.9V1.7h13.7v9.4ZM18 4.7v5.1h-1.7V4.7H18Zm-4.7 0v5.1h-1.7V4.7h1.7Z"></path>`;
+}
+
 function coopIcon() {
   return `<svg class="coop-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><circle cx="16" cy="8" r="3"></circle><path d="M2.8 19c.4-4 2.1-6 5.2-6s4.8 2 5.2 6"></path><path d="M10.8 19c.4-4 2.1-6 5.2-6s4.8 2 5.2 6"></path></svg>`;
+}
+
+function onlineGlobeIcon() {
+  return `<svg class="online-globe-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M4 12h16"></path><path d="M12 4c2.1 2.2 3.2 4.8 3.2 8s-1.1 5.8-3.2 8"></path><path d="M12 4c-2.1 2.2-3.2 4.8-3.2 8s1.1 5.8 3.2 8"></path></svg>`;
 }
 
 function alertTagIcon() {

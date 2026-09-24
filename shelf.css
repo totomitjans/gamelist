@@ -183,10 +183,9 @@ body.mobile-app-mode.shelf-page .backdrop {
 }
 
 .shelf-toolbar {
-  grid-template-columns: minmax(
-      180px,
-      1.25fr
-    ) 220px 142px 142px 170px 150px 42px;
+  grid-template-columns:
+    minmax(180px, 1.25fr)
+    220px 142px 142px 170px 150px 42px;
 }
 
 .shelf-page .detail-cover {
@@ -1670,8 +1669,12 @@ textarea {
 }
 
 .condition-editor legend {
-  margin-bottom: 7px;
-  color: var(--muted);
+  margin: 0 0 7px;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.15;
+  text-transform: uppercase;
 }
 .condition-editor input {
   accent-color: var(--accent);
@@ -1715,6 +1718,17 @@ textarea {
   gap: 11px;
   margin-top: 14px;
 }
+
+.detail-guides,
+.detail-condition {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-guides[hidden] {
+  display: none;
+}
+
 .detail-section-toggle {
   display: grid;
   flex: 1;
@@ -1774,9 +1788,17 @@ textarea {
 .detail-price-panel.is-collapsed .detail-price-content {
   display: none;
 }
-.detail-guide-panel h3 {
+.detail-guides h3,
+.detail-condition h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 15px;
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 850;
+  text-transform: uppercase;
+  height: 16px;
 }
 .detail-store-price-panel {
   margin-top: 8px;
@@ -1791,6 +1813,12 @@ textarea {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+.collection-price-grid:has(> :nth-child(2):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.collection-price-grid > :only-child {
+  grid-column: 1 / -1;
 }
 .collection-price-grid span,
 .collection-price-grid a {
@@ -2410,12 +2438,16 @@ textarea {
   }
   .condition-grid .condition-sealed {
     grid-column: 1 / -1;
-    justify-self: center;
-    width: calc((100% - 8px) / 2);
+    justify-self: stretch;
+    width: 100%;
   }
   .shelf-dialog .detail-trophy-list,
   .collection-price-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  .collection-price-grid > :only-child,
+  .collection-price-grid > :nth-child(3):last-child {
+    grid-column: 1 / -1;
   }
   .detail-store-prices {
     --price-columns: 2;
