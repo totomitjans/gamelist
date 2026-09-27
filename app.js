@@ -249,6 +249,7 @@ const state = {
   platinumViewMode: localStorage.getItem(PLATINUM_VIEW_MODE_KEY) === "list" ? "list" : "grid",
   releaseCalendarOffset: 0,
   finishedStatsStreamMode: "all",
+  finishedStatsTopMode: "time",
   detailTrophyRequest: "",
   detailReturnToHistory: false,
   detailGameId: "",
@@ -334,6 +335,12 @@ const el = {
   gotyCloseButton: document.querySelector("#gotyCloseButton"),
   gotyPickerOrder: document.querySelector("#gotyPickerOrder"),
   gotyPickerGrid: document.querySelector("#gotyPickerGrid"),
+  gotyStatsPreviewDialog: document.querySelector("#gotyStatsPreviewDialog"),
+  gotyStatsPreviewCloseButton: document.querySelector("#gotyStatsPreviewCloseButton"),
+  gotyStatsPreviewContinueButton: document.querySelector("#gotyStatsPreviewContinueButton"),
+  gotyStatsPreviewBrow: document.querySelector("#gotyStatsPreviewBrow"),
+  gotyStatsPreviewTitle: document.querySelector("#gotyStatsPreviewTitle"),
+  gotyStatsPreviewBody: document.querySelector("#gotyStatsPreviewBody"),
   platinumDialog: document.querySelector("#platinumDialog"),
   finishedStatsDialog: document.querySelector("#finishedStatsDialog"),
   finishedStatsCloseButton: document.querySelector("#finishedStatsCloseButton"),
@@ -962,6 +969,16 @@ function bindEvents() {
   });
   el.gotyDialog?.addEventListener("close", syncScrollLock);
   el.gotyForm?.addEventListener("submit", saveGameOfTheYearFromForm);
+  el.gotyStatsPreviewCloseButton?.addEventListener("click", () => el.gotyStatsPreviewDialog.close());
+  el.gotyStatsPreviewDialog?.addEventListener("click", (event) => {
+    if (event.target === el.gotyStatsPreviewDialog) el.gotyStatsPreviewDialog.close();
+  });
+  el.gotyStatsPreviewDialog?.addEventListener("close", syncScrollLock);
+  el.gotyStatsPreviewContinueButton?.addEventListener("click", () => {
+    const year = el.gotyStatsPreviewDialog?.dataset.gotyYear || currentGameOfTheYear();
+    el.gotyStatsPreviewDialog?.close();
+    openGameOfTheYearDialog(year, { force: true, autoPick: true, skipStatsPreview: true });
+  });
   el.footerDataUpdate?.addEventListener("click", clearSiteCachesAndReload);
   el.footerVersion?.addEventListener("click", clearSiteCachesAndReload);
   el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
@@ -2460,7 +2477,7 @@ function renderModeToggle(button, mode) {
 }
 
 function syncScrollLock() {
-  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open || el.releaseDialog.open || el.platinumDialog.open || Boolean(el.finishedStatsDialog?.open) || Boolean(el.gotyDialog?.open) || Boolean(el.settingsDialog?.open) || Boolean(el.authDialog?.open) || Boolean(el.finishTimeDialog?.open));
+  document.body.classList.toggle("dialog-open", el.dialog.open || el.detailDialog.open || el.historyDialog.open || el.releaseDialog.open || el.platinumDialog.open || Boolean(el.finishedStatsDialog?.open) || Boolean(el.gotyDialog?.open) || Boolean(el.gotyStatsPreviewDialog?.open) || Boolean(el.settingsDialog?.open) || Boolean(el.authDialog?.open) || Boolean(el.finishTimeDialog?.open));
   if (document.body.classList.contains("dialog-open")) pauseAllPlayingTrailers();
   else scheduleFocusedPlayingTrailerUpdate();
   updateScrollTopButton();
@@ -2642,11 +2659,11 @@ function renderGameOfTheYear() {
   syncStyledSelect(el.gotyYearSelect, { activeValue: null });
   if (el.gotyYearCount) {
     const count = candidates.length;
-    const playtime = formatPlaytimeTotal(totalPlaytimeHours(candidates));
-    el.gotyYearCount.innerHTML = `
-      <span class="goty-year-kpi"><strong>${escapeHtml(String(count))}</strong><span>${escapeHtml(tt("Games played"))}</span></span>
-      ${playtime ? `<span class="goty-year-kpi"><strong>${escapeHtml(playtime)}</strong><span>${escapeHtml(tt("Total year playtime"))}</span></span>` : ""}
-    `;
+    const playtime = formatPlaytimeTotal(totalPlaytimeHours(candidates)).toLowerCase();
+    el.gotyYearCount.textContent = [
+      tt("{count} games played", { count }),
+      playtime ? tt("{playtime} total year playtime", { playtime }) : "",
+    ].filter(Boolean).join(" · ");
   }
   const canEditCurrent = state.canEdit && year === currentGameOfTheYear();
   el.gotyEditButton.hidden = !canEditCurrent;
@@ -2708,7 +2725,7 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
   const copy = el.gotyForm.querySelector(".goty-dialog-copy");
   if (copy) {
     copy.textContent = options.autoPick && gameOfTheYearAutofillUsesRatings(games)
-      ? tt("This is your guessed games, feel free to modify them for every category to make it your own.")
+      ? tt("We guessed your picks. Review each category and change anything you want.")
       : tt("Choose one finished game for every category.");
   }
   if (el.gotyPickerOrder) {
@@ -2739,7 +2756,146 @@ async function openGameOfTheYearDialogWithAutofillLoading(year = currentGameOfTh
     return openGameOfTheYearDialog(year, options);
   }
   await showGameOfTheYearAutofillLoading(candidates);
+  if (!options.skipStatsPreview && shouldShowGameOfTheYearStatsPreview(candidates)) {
+    return openGameOfTheYearStatsPreview(year, options);
+  }
   return openGameOfTheYearDialog(year, options);
+}
+
+function shouldShowGameOfTheYearStatsPreview(games = []) {
+  return gameOfTheYearPlaytimeGames(games).length >= 5;
+}
+
+function gameOfTheYearPlaytimeGames(games = []) {
+  return [...games]
+    .filter((game) => statsPlaytimeHours(game) > 0)
+    .sort((a, b) => statsPlaytimeHours(b) - statsPlaytimeHours(a) || stringCompare(a.title, b.title));
+}
+
+function openGameOfTheYearStatsPreview(year = currentGameOfTheYear(), options = {}) {
+  const games = gameOfTheYearCandidateGames(year);
+  const playtimeGames = gameOfTheYearPlaytimeGames(games);
+  if (playtimeGames.length < 5) return openGameOfTheYearDialog(year, options);
+  state.gotyYear = String(year);
+  el.gotyStatsPreviewDialog.dataset.gotyYear = String(year);
+  el.gotyStatsPreviewBrow.textContent = tt("Before your picks");
+  el.gotyStatsPreviewTitle.innerHTML = `${trophyIcon()} <span>${escapeHtml(tt("Your {year} games", { year }))}</span>`;
+  el.gotyStatsPreviewBody.innerHTML = gameOfTheYearStatsPreviewMarkup(year, games, playtimeGames);
+  el.gotyStatsPreviewContinueButton.textContent = tt("See your games of the year");
+  bindGameOfTheYearStatsPreviewCarousel();
+  try {
+    if (!el.gotyStatsPreviewDialog.open) el.gotyStatsPreviewDialog.showModal();
+  } catch (error) {
+    try {
+      if (!el.gotyStatsPreviewDialog.open) el.gotyStatsPreviewDialog.show();
+    } catch (fallbackError) {
+      console.error("Unable to open Games of the year stats preview", fallbackError || error);
+      return openGameOfTheYearDialog(year, options);
+    }
+  }
+  syncScrollLock();
+  return true;
+}
+
+function gameOfTheYearStatsPreviewMarkup(year, games = [], playtimeGames = gameOfTheYearPlaytimeGames(games)) {
+  const platforms = countBy(games, statsPlatformLabel);
+  const tags = countTags(games);
+  const totalPlaytime = totalPlaytimeHours(games);
+  const completed = finishedStatsCompleted(String(year));
+  const coopGames = games.filter((game) => game.coop);
+  const kpis = [
+    statsKpiCard(tt("Games played"), games.length, statsGameList(games), { tone: "finished" }),
+    totalPlaytime ? statsKpiCard(tt("Total year playtime"), formatPlaytimeTotal(totalPlaytime), statsPlaytimeGameList(playtimeGames), { tone: "playtime", valueHtml: playtimeKpiValue(totalPlaytime) }) : "",
+    completed.length ? statsKpiCard(tt("Completed games"), completed.length, statsCompletedGameList(completed), { tone: "completed", icon: trophyIcon() }) : "",
+    coopGames.length ? statsKpiCard(tt("CoOp games"), coopGames.length, statsGameList(coopGames), { tone: "coop", icon: coopIcon() }) : "",
+  ].filter(Boolean);
+  return `
+    <section class="goty-stats-preview-playtime">
+      <div class="goty-stats-preview-section-head">
+        <h3>${escapeHtml(tt("Games by playtime"))}</h3>
+        <div class="goty-stats-preview-navs">
+          <button class="icon-button playing-slider-button goty-stats-preview-nav" type="button" data-goty-preview-scroll="-1" title="${escapeHtml(tt("Previous games"))}" aria-label="${escapeHtml(tt("Previous games"))}">${gotyPickerArrowIcon("left")}</button>
+          <button class="icon-button playing-slider-button goty-stats-preview-nav" type="button" data-goty-preview-scroll="1" title="${escapeHtml(tt("Next games"))}" aria-label="${escapeHtml(tt("Next games"))}">${gotyPickerArrowIcon("right")}</button>
+        </div>
+      </div>
+      <div class="goty-stats-preview-strip">
+        <div class="goty-stats-preview-list">${playtimeGames.map(gameOfTheYearStatsPreviewCard).join("")}</div>
+      </div>
+    </section>
+    <section class="finished-stats-kpis ${kpis.length === 3 ? "is-grid-3" : ""}">${kpis.join("")}</section>
+    <section class="finished-stats-charts goty-stats-preview-charts">
+      ${statsDonutCard(tt("Platform breakdown"), platforms, "platform", platforms.length, games)}
+      ${statsDonutCard(tt("Categories"), tags, "category", Math.min(6, tags.length), games)}
+    </section>
+    <section class="finished-stats-months">
+      <h3>${escapeHtml(tt("Graph by month"))}</h3>
+      <div class="finished-stats-period-grid">${gameOfTheYearStatsPreviewMonthBars(games, year)}</div>
+    </section>
+  `;
+}
+
+function gameOfTheYearStatsPreviewCard(game) {
+  const cover = coverDisplayUrl(game.cover || "") || platformLogo(game.platform || "PS5");
+  const hours = statsPlaytimeHours(game);
+  const playModeBadge = game.coop ? coopBadge() : (game.multiplayer ? multiplayerBadge() : "");
+  return `
+    <article class="goty-stats-preview-card">
+      <span class="goty-choice-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy" decoding="async"></span>
+      <span class="goty-choice-title">
+        <strong data-full-title="${escapeHtml(game.title)}">${escapeHtml(game.title)}</strong>
+        <span class="goty-stats-preview-badges">${platformBadge(game.platform)}${ratingScoreBadge(game)}</span>
+        <span class="goty-stats-preview-time-row"><span class="goty-stats-preview-time" style="${escapeHtml(timePillStyle(hours))}">${clockIcon()}<span>${escapeHtml(formatPlaytimeTotal(hours))}</span></span>${playModeBadge}</span>
+      </span>
+    </article>
+  `;
+}
+
+function gameOfTheYearStatsPreviewMonthBars(games = [], year = "") {
+  const order = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const counts = new Map();
+  games.forEach((game) => {
+    const label = monthShortName(game.completedAt || game.startedAt || game.updatedAt || game.createdAt);
+    if (!label || label === "Unknown") return;
+    const bucket = counts.get(label) || [];
+    bucket.push(game);
+    counts.set(label, bucket);
+  });
+  const max = Math.max(1, ...order.map((label) => counts.get(label)?.length || 0));
+  return order.map((label, index) => {
+    const monthGames = counts.get(label) || [];
+    const activeGames = statsGamesActiveInMonth(games, label, year);
+    const edgeClass = index === 0 ? " is-start-edge" : (index === order.length - 1 ? " is-end-edge" : "");
+    const displayGames = activeGames.length ? activeGames : monthGames;
+    return `<div class="finished-stats-month${edgeClass}" title="${escapeHtml(`${fullMonthName(label)}: ${monthGames.length}`)}" ${displayGames.length ? `data-stats-overlay-title="${escapeHtml(fullMonthName(label))}"` : ""}><span>${escapeHtml(tt(label))}</span><em style="--month:${monthGames.length / max};--platform-bar:${statsPlatformBar(displayGames)}"></em><strong>${monthGames.length}</strong>${displayGames.length ? `<span class="finished-stats-breakdown">${statsGameList(displayGames)}</span>` : ""}</div>`;
+  }).join("");
+}
+
+function bindGameOfTheYearStatsPreviewCarousel() {
+  const list = el.gotyStatsPreviewBody.querySelector(".goty-stats-preview-list");
+  const strip = el.gotyStatsPreviewBody.querySelector(".goty-stats-preview-strip");
+  const update = () => {
+    const maxScroll = Math.max(0, (list?.scrollWidth || 0) - (list?.clientWidth || 0) - 1);
+    const hasOverflow = maxScroll > 2;
+    strip?.classList.toggle("no-overflow", !hasOverflow);
+    strip?.classList.toggle("at-start", !hasOverflow || list.scrollLeft <= 2);
+    strip?.classList.toggle("at-end", !hasOverflow || list.scrollLeft >= maxScroll);
+    el.gotyStatsPreviewBody.querySelectorAll(".goty-stats-preview-nav").forEach((button) => {
+      const direction = Number(button.dataset.gotyPreviewScroll || 1);
+      button.disabled = !hasOverflow || (direction < 0 ? list.scrollLeft <= 2 : list.scrollLeft >= maxScroll);
+    });
+  };
+  el.gotyStatsPreviewBody.querySelectorAll(".goty-stats-preview-nav").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!list) return;
+      const card = list.querySelector(".goty-stats-preview-card");
+      const gap = Number.parseFloat(getComputedStyle(list).columnGap) || 0;
+      const step = card ? card.getBoundingClientRect().width + gap : list.clientWidth;
+      list.scrollBy({ left: Number(button.dataset.gotyPreviewScroll || 1) * step, behavior: "smooth" });
+      window.setTimeout(update, 220);
+    });
+  });
+  list?.addEventListener("scroll", update, { passive: true });
+  update();
 }
 
 function gameOfTheYearAutofillUsesRatings(games = []) {
@@ -3204,10 +3360,20 @@ async function gameOfTheYearExportHtml(year = state.gotyYear) {
     ...row,
     coverSrc: await exportImageDataUrl(coverDisplayUrl(row.game.cover || ""), platformLogo(row.game.platform || "PS5")),
   })));
-  const logo = await exportImageDataUrl(document.querySelector(".brand-mark")?.src || THEMES.shabii.icon, THEMES.shabii.icon);
+  const logo = await gameOfTheYearExportLogoDataUrl(theme);
   const background = await exportImageDataUrl(theme.backgroundImage || "", theme.mode === "light" ? "assets/backdrop_light.png" : "assets/backdrop.png");
   const twitchUrl = twitchChannelUrl(state.settings.twitchUser);
   return gameOfTheYearExportMarkup({ owner, year, rows: assetRows, statsGames, theme, logo, background, twitchUrl });
+}
+
+async function gameOfTheYearExportLogoDataUrl(theme) {
+  const defaultLogo = THEMES.shabii.icon;
+  if (theme.gamelistIcon) return await exportImageDataUrl(theme.gamelistIcon, defaultLogo);
+  if (theme.mainColorReset === false) {
+    return await tintExportImageDataUrl(defaultLogo, theme.gradientColor || theme.mainColor || THEMES.shabii.themeColor)
+      || await exportImageDataUrl(defaultLogo, defaultLogo);
+  }
+  return await exportImageDataUrl(defaultLogo, defaultLogo);
 }
 
 function gameOfTheYearExportMarkup({ owner, year, rows, statsGames, theme, logo, background, twitchUrl = "" }) {
@@ -3563,14 +3729,17 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
       color: #ffe985;
     }
     .goty-export-playtime-kpi strong {
+      min-width: 0;
+      overflow: hidden;
       color: ${accent};
-      gap: 4px;
+      gap: 3px;
+      white-space: nowrap;
     }
     .goty-export-playtime-kpi .clock-icon {
-      width: 30px;
-      height: 30px;
-      flex: 0 0 auto;
-      margin-right: 3px;
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      margin-right: 2px;
       fill: none;
       stroke: currentColor;
       stroke-width: 2;
@@ -3579,15 +3748,18 @@ function gameOfTheYearExportCss({ theme, main, accent, gradient, bg, glowPrimary
     }
     .goty-export-playtime-kpi .playtime-kpi-value {
       display: inline;
+      flex: 0 1 auto;
+      min-width: 0;
       color: ${accent};
-      font: 900 40px/1 ${bodyFont};
+      font: 900 34px/1 ${bodyFont};
     }
     .goty-export-playtime-kpi .playtime-kpi-unit {
       align-self: flex-end;
+      flex: 0 0 auto;
       margin-bottom: 3px;
       display: inline;
       color: ${accent};
-      font-size: 27px;
+      font-size: 22px;
       font-weight: 900;
       line-height: 1;
     }
@@ -4301,6 +4473,39 @@ async function imageToDataUrl(src) {
   } catch {
     return "";
   }
+}
+
+async function tintExportImageDataUrl(src, color) {
+  const fill = normalizeHexColor(color);
+  if (!fill) return "";
+  const dataUrl = await exportImageDataUrl(src, src);
+  if (!dataUrl) return "";
+  return await new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth || image.width;
+        canvas.height = image.naturalHeight || image.height;
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        context.globalCompositeOperation = "source-in";
+        context.fillStyle = fill;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve("");
+      }
+    };
+    image.onerror = () => resolve("");
+    image.src = dataUrl;
+  });
+}
+
+function normalizeHexColor(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^#?([0-9a-fA-F]{6})$/);
+  return match ? `#${match[1]}` : "";
 }
 
 async function drawGameOfTheYearImage(ctx, { owner, year, rows, logo, theme, background, withCovers }) {
@@ -6297,6 +6502,7 @@ function renderFinishedStatsDialog(year = "all", { preserveAll = true } = {}) {
   el.finishedStatsBody.querySelector("[data-stats-action='completed']")?.addEventListener("click", () => {
     openPlatinumDialog(scope);
   });
+  bindFinishedStatsTopGamesCarousel(scope);
   bindFinishedStatsDesktopOverlays();
   bindFinishedStatsMobileOverlays();
 }
@@ -6345,9 +6551,10 @@ function finishedStatsMarkup(year, games, completed) {
   const playtimeGames = finishedGames.filter((game) => statsPlaytimeHours(game) > 0);
   const playtimeHours = totalPlaytimeHours(finishedGames);
   const playtimeTotal = formatPlaytimeTotal(playtimeHours);
+  const showPlaytimeKpi = shouldShowFinishedStatsPlaytimeKpi(year) && playtimeTotal;
   const kpiCards = [
     statsKpiCard(tt("Finished games"), finishedGames.length, showYearlyDetail ? statsGameList(finishedGames) : "", { tone: "finished" }),
-    playtimeTotal ? statsKpiCard(tt("Total year playtime"), playtimeTotal, showYearlyDetail ? statsPlaytimeGameList(playtimeGames) : "", { tone: "playtime", valueHtml: playtimeKpiValue(playtimeHours) }) : "",
+    showPlaytimeKpi ? statsKpiCard(tt("Total year playtime"), playtimeTotal, statsPlaytimeGameList(playtimeGames), { tone: "playtime", valueHtml: playtimeKpiValue(playtimeHours) }) : "",
     expansions.length ? statsKpiCard(tt("Expansions finished"), expansions.length, statsGameList(expansions), { tone: "finished" }) : "",
     statsKpiCard(tt("Completed games"), completed.length, showYearlyDetail ? statsCompletedGameList(completed) : "", { action: "completed", tone: "completed", icon: trophyIcon() }),
     streamed.length ? statsKpiCard(tt("Streamed games"), streamed.length, showYearlyDetail ? statsGameList(streamed) : "", { tone: "streamed" }) : "",
@@ -6358,6 +6565,7 @@ function finishedStatsMarkup(year, games, completed) {
   const kpiLayoutClass = kpiCards.length > 5 ? " is-grid-3" : "";
   return `
     <div class="finished-stats-kpis${kpiLayoutClass}">${cards}</div>
+    ${showPlaytimeKpi ? finishedStatsTopGamesCarouselMarkup(finishedGames, state.finishedStatsTopMode) : ""}
     <div class="finished-stats-charts ${allYears ? "is-all" : ""}">
       ${statsDonutCard(tt("Platforms"), platforms, "platform", 5, finishedGames)}
       ${statsDonutCard(tt("Categories"), tags, "category", 5, finishedGames)}
@@ -6371,6 +6579,53 @@ function finishedStatsMarkup(year, games, completed) {
     </section>
     ${games.length ? "" : `<div class="empty">${escapeHtml(tt("No finished games{year}.", { year: year === "all" ? "" : ` ${tt("in {year}", { year })}` }))}</div>`}
   `;
+}
+
+
+function finishedStatsTopGamesCarouselMarkup(games = [], mode = "time") {
+  const normalizedMode = mode === "grade" ? "grade" : "time";
+  const topGames = finishedStatsTopGames(games, normalizedMode).slice(0, 5);
+  if (!topGames.length) return "";
+  return `
+    <section class="goty-stats-preview-playtime finished-stats-top-games" data-stats-top-games>
+      <div class="goty-stats-preview-section-head finished-stats-top-games-head">
+        <h3>${escapeHtml(tt("Top games of the year"))}</h3>
+        <div class="finished-stats-top-controls">
+          <label class="finished-stats-top-select">
+            <select data-stats-top-mode aria-label="${escapeHtml(tt("Top games order"))}">
+              <option value="time" ${normalizedMode === "time" ? "selected" : ""}>${escapeHtml(tt("Time"))}</option>
+              <option value="grade" ${normalizedMode === "grade" ? "selected" : ""}>${escapeHtml(tt("Grade"))}</option>
+            </select>
+          </label>
+          <div class="goty-stats-preview-navs">
+            <button class="icon-button playing-slider-button finished-stats-playtime-nav" type="button" data-finished-playtime-scroll="-1" title="${escapeHtml(tt("Previous games"))}" aria-label="${escapeHtml(tt("Previous games"))}">${gotyPickerArrowIcon("left")}</button>
+            <button class="icon-button playing-slider-button finished-stats-playtime-nav" type="button" data-finished-playtime-scroll="1" title="${escapeHtml(tt("Next games"))}" aria-label="${escapeHtml(tt("Next games"))}">${gotyPickerArrowIcon("right")}</button>
+          </div>
+        </div>
+      </div>
+      <div class="goty-stats-preview-strip finished-stats-playtime-strip">
+        <div class="goty-stats-preview-list finished-stats-playtime-list">${topGames.map(gameOfTheYearStatsPreviewCard).join("")}</div>
+      </div>
+    </section>
+  `;
+}
+
+function finishedStatsTopGames(games = [], mode = "time") {
+  if (mode === "grade") {
+    return [...games]
+      .filter((game) => ratingScoreValue(game) != null)
+      .sort((a, b) => (ratingScoreValue(b) || 0) - (ratingScoreValue(a) || 0) || statsPlaytimeHours(b) - statsPlaytimeHours(a) || stringCompare(a.title, b.title));
+  }
+  return gameOfTheYearPlaytimeGames(games);
+}
+
+function shouldShowFinishedStatsPlaytimeKpi(year) {
+  const value = String(year || "all");
+  if (value === "all") return false;
+  const selectedYear = Number.parseInt(value, 10);
+  const currentYear = new Date().getFullYear();
+  if (Number.isFinite(selectedYear) && selectedYear < currentYear) return true;
+  return state.settings.gotyAlwaysShow || isGameOfTheYearSeason();
 }
 
 function statsKpiCard(label, value, detail = "", options = {}) {
@@ -6802,13 +7057,14 @@ function statsGameList(games) {
   }).join("");
 }
 
-function statsPlaytimeGameList(games) {
+function statsPlaytimeGameList(games, limit = Infinity) {
   return [...games]
     .filter((game) => statsPlaytimeHours(game) > 0)
     .sort((a, b) => statsPlaytimeHours(b) - statsPlaytimeHours(a) || stringCompare(a.title, b.title))
+    .slice(0, Number.isFinite(limit) ? limit : undefined)
     .map((game) => {
       const ownerTitleClass = ownerTitleClasses(visibleOwnerTags(game));
-      return `<span class="finished-stats-game-row finished-stats-playtime-row"><b class="${escapeHtml(ownerTitleClass)}">${escapeHtml(game.title)}</b><em>${escapeHtml(formatPlaytimeTotal(statsPlaytimeHours(game)))}</em></span>`;
+      return `<span class="finished-stats-game-row finished-stats-playtime-row"><b class="${escapeHtml(ownerTitleClass)}">${escapeHtml(game.title)}</b>${game.platform ? platformBadge(game.platform) : ""}<em>${escapeHtml(formatPlaytimeTotal(statsPlaytimeHours(game)))}</em></span>`;
     })
     .join("");
 }
@@ -6855,6 +7111,39 @@ function hexColorParts(color) {
 
 function statsPlatformLabel(game) {
   return canonicalPlatform(game.platform) || game.platform || "Unknown";
+}
+
+function bindFinishedStatsTopGamesCarousel(scope = "all") {
+  const select = el.finishedStatsBody.querySelector("[data-stats-top-mode]");
+  select?.addEventListener("change", () => {
+    state.finishedStatsTopMode = select.value === "grade" ? "grade" : "time";
+    renderFinishedStatsDialog(scope);
+  });
+  const list = el.finishedStatsBody.querySelector(".finished-stats-playtime-list");
+  const strip = el.finishedStatsBody.querySelector(".finished-stats-playtime-strip");
+  if (!list || !strip) return;
+  const update = () => {
+    const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth - 1);
+    const hasOverflow = maxScroll > 2;
+    strip.classList.toggle("no-overflow", !hasOverflow);
+    strip.classList.toggle("at-start", !hasOverflow || list.scrollLeft <= 2);
+    strip.classList.toggle("at-end", !hasOverflow || list.scrollLeft >= maxScroll);
+    el.finishedStatsBody.querySelectorAll(".finished-stats-playtime-nav").forEach((button) => {
+      const direction = Number(button.dataset.finishedPlaytimeScroll || 1);
+      button.disabled = !hasOverflow || (direction < 0 ? list.scrollLeft <= 2 : list.scrollLeft >= maxScroll);
+    });
+  };
+  el.finishedStatsBody.querySelectorAll(".finished-stats-playtime-nav").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = list.querySelector(".goty-stats-preview-card");
+      const gap = Number.parseFloat(getComputedStyle(list).columnGap) || 0;
+      const step = card ? card.getBoundingClientRect().width + gap : list.clientWidth;
+      list.scrollBy({ left: Number(button.dataset.finishedPlaytimeScroll || 1) * step, behavior: "smooth" });
+      window.setTimeout(update, 220);
+    });
+  });
+  list.addEventListener("scroll", update, { passive: true });
+  update();
 }
 
 function bindFinishedStatsMobileOverlays() {
@@ -7329,8 +7618,7 @@ function completedDurationLine(game, extraClass = "") {
   const duration = finishHoursText(game);
   if (!duration) return "";
   const className = `completed-duration${game?.platinum ? " completed-duration-gold" : ""}${extraClass}`;
-  const style = timePillStyle(finishHoursValue(game?.finishHours));
-  return `<span class="${className}" style="${escapeHtml(style)}">${clockIcon()}<span>${escapeHtml(duration)}</span></span>`;
+  return `<span class="${className}">${clockIcon()}<span>${escapeHtml(duration)}</span></span>`;
 }
 
 function finishHoursValue(value) {
@@ -7798,7 +8086,9 @@ function openDetail(id, options = {}) {
   el.detailStudio.hidden = !el.detailStudio.innerHTML;
   el.detailMeta.innerHTML = metaFor(game, { includePsn: false, includeOwners: false }).join("");
   bindDetailShelfSearch(game);
-  el.detailDates.innerHTML = playDatesFor(game, { includePastRelease: true, includePreorder: true }).join("");
+  const detailDates = playDatesFor(game, { includePastRelease: true, includePreorder: true });
+  if (game.playing) detailDates.push(calendarStateForGame(game));
+  el.detailDates.innerHTML = detailDates.join("");
   el.detailDates.hidden = !el.detailDates.innerHTML;
   el.detailChips.innerHTML = chipsFor(game).join("");
   el.detailStoreLinks.innerHTML = storeLinksFor(game);
