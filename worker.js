@@ -28,8 +28,10 @@ import * as twitchPreview from "./functions/api/twitch-preview.js";
 import * as xboxAchievements from "./functions/api/xbox-achievements.js";
 import * as nintendoPlaytime from "./functions/api/nintendo-playtime.js";
 import * as psnAccount from "./functions/api/psn-account.js";
+import * as steamAccount from "./functions/api/steam-account.js";
 import * as steamLogin from "./functions/api/steam-login.js";
 import * as xboxLogin from "./functions/api/xbox-login.js";
+import * as xboxAccount from "./functions/api/xbox-account.js";
 import * as xboxTrophiesByYear from "./functions/api/xbox-trophies-by-year.js";
 
 const routes = {
@@ -50,8 +52,10 @@ const routes = {
   "/api/secret-status": secretStatus,
   "/api/nintendo-playtime": nintendoPlaytime,
   "/api/psn-account": psnAccount,
+  "/api/steam-account": steamAccount,
   "/api/steam-login": steamLogin,
   "/api/xbox-login": xboxLogin,
+  "/api/xbox-account": xboxAccount,
   "/api/shelf": shelf,
   "/api/shelf-covers": shelfCovers,
   "/api/shelf-games-platforms": shelfGamesPlatforms,
