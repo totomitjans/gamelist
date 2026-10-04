@@ -108,7 +108,7 @@ EDIT_PASSWORD
 
 `EDIT_PASSWORD` is the password you will type in the app to unlock **Edit mode** and change your site settings and theme.
 
-Add personal platform accounts through **Settings** in Gamelist. Do not add personal PlayStation, Steam, or Nintendo account credentials as Cloudflare secrets. Use Cloudflare secrets for the integration app and service keys called out below.
+Add personal platform accounts and IGDB credentials through **Settings** in Gamelist. Use Cloudflare secrets only for service keys that still require them, as listed below.
 
 Now **continue** the setup until you reach **Recommended Integrations**. The next integrations are **required** to make it all work properly, but the recommended ones will help you improve your experience a bit more.
 
@@ -128,17 +128,10 @@ IGDB authentication uses Twitch developer credentials:
 9. Set client type as **Confidential**.
 10. Create the app.
 11. Click the manage button on the Application you just created.
-12. Copy the **Client ID** and create a new **Cloudflare secret**:
-
-```text
-IGDB_CLIENT_ID
-```
-
-13. Click generate new secret and copy the **Client Secret** and create another **Cloudflare secret**:
-
-```text
-IGDB_CLIENT_SECRET
-```
+12. Copy the **Client ID**.
+13. Click **Generate New Secret** and copy the **Client Secret**.
+14. In Gamelist, enter **Edit mode**, open **Settings** scroll down to **Accounts**, and choose **Log in to Twitch Developer Console** to reveal the credential fields.
+15. Paste the **Client ID** and **Client Secret** into Settings, then choose **Verify and connect IGDB**. Gamelist verifies the credentials and stores them encrypted.
 
 ### 4. Set up the automatic website updates/patches
 
@@ -191,10 +184,10 @@ Platform accounts are connected in **Edit mode → Settings → Accounts**. The 
 
 1. Enter **Edit mode** and open **Settings**.
 2. Go to the **Accounts** section.
-3. Choose **Log in with PlayStation**, then open the token page from Settings and copy the `npsso` value.
-4. Paste the value in Settings, enter your PlayStation online ID, and confirm the connection.
+3. Choose **Log in with PlayStation** then **Open PSN Token page**, and copy the full JSON response containing `npsso` and `expires_in`.
+4. Paste the response in Settings, enter your PlayStation online ID, and confirm the connection.
 
-The token is stored encrypted and expires after 60 days. Reconnect it from Settings when it expires.
+The token is stored encrypted, and Settings shows the remaining time from the pasted `expires_in` value. Reconnect it when it expires.
 
 ### <img src="assets/platforms/steam.png" alt="Steam" width="22" align="center"> Steam Achievements
 
@@ -207,25 +200,17 @@ Make sure the account's game details and library visibility are set to **Public*
 ### <img src="assets/platforms/xbox.png" alt="Xbox" width="22" align="center"> Xbox Achievements
 
 Xbox 360, Xbox One, Xbox Series and Xbox PC games can show achievements through OpenXBL.
-1.Register on [OpenXBL](https://xbl.io/), create a personal API key in the dashboard, then add it as a Cloudflare secret:
 
-```text
-OPENXBL_API_KEY
-```
-
-2. For the **Log in with Xbox** button in Settings, create an OpenXBL app and set its callback URL to `https://your-site.example/api/xbox-login`. Add its app key as a Cloudflare secret:
-
-```text
-OPENXBL_APP_KEY
-```
-
-3. Set your **Xbox account** inside the app: enter **Edit mode**, open **Settings**, and fill the **Microsoft account** field with an Xbox gamertag, or use **Log in with Xbox** to fill it automatically. The existing `OPENXBL_API_KEY` is still used for achievements.
+1. Enter **Edit mode** and open **Settings**.
+2. Go to the **Accounts** section.
+3. Choose **Open OpenXBL API keys**, sign in to [OpenXBL](https://xbl.io/), create a personal API key, and copy it.
+4. Paste the key into the OpenXBL API key field, and wait for Gamelist to verify it and identify your Xbox account.
 
 ### <img src="assets/sites/nintendo.png" alt="Nintendo" width="22" align="center"> Nintendo Account
 
 1. Enter **Edit mode** and open **Settings**.
 2. Go to the **Accounts** section.
-3. Choose **Log in with Nintendo**, select your account, then copy the link address from **Select this person**.
+3. Choose **Log in with Nintendo**, sign in, then Copy the link address from **Select this person** for the account you want to select.
 4. Paste the copied link into Settings to finish connecting.
 
 ### <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/960px-Google_Calendar_icon_%282020%29.svg.png" alt="Google Calendar" width="22" align="center"> Google Calendar Preorder Events (ADVANCED)

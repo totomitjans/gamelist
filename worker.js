@@ -3,6 +3,7 @@ import * as achievements from "./functions/api/achievements.js";
 import * as calendar from "./functions/api/calendar.js";
 import * as collectionPrice from "./functions/api/collection-price.js";
 import * as cover from "./functions/api/cover.js";
+import * as igdbAccount from "./functions/api/igdb-account.js";
 import * as gamelistMassAdd from "./functions/api/gamelist-mass-add.js";
 import * as gamelistMetadata from "./functions/api/gamelist-metadata.js";
 import * as achievementCompletionsByYear from "./functions/api/achievement-completions-by-year.js";
@@ -30,7 +31,6 @@ import * as nintendoPlaytime from "./functions/api/nintendo-playtime.js";
 import * as psnAccount from "./functions/api/psn-account.js";
 import * as steamAccount from "./functions/api/steam-account.js";
 import * as steamLogin from "./functions/api/steam-login.js";
-import * as xboxLogin from "./functions/api/xbox-login.js";
 import * as xboxAccount from "./functions/api/xbox-account.js";
 import * as xboxTrophiesByYear from "./functions/api/xbox-trophies-by-year.js";
 
@@ -41,6 +41,7 @@ const routes = {
   "/api/calendar": calendar,
   "/api/collection-price": collectionPrice,
   "/api/cover": cover,
+  "/api/igdb-account": igdbAccount,
   "/api/completed-games-by-year": completedGamesByYear,
   "/api/gamelist-games-by-list": gamelistGamesByList,
   "/api/gamelist-mass-add": gamelistMassAdd,
@@ -54,7 +55,6 @@ const routes = {
   "/api/psn-account": psnAccount,
   "/api/steam-account": steamAccount,
   "/api/steam-login": steamLogin,
-  "/api/xbox-login": xboxLogin,
   "/api/xbox-account": xboxAccount,
   "/api/shelf": shelf,
   "/api/shelf-covers": shelfCovers,
