@@ -206,13 +206,14 @@
           <div class="favorite-cover-row" id="favoriteGames"></div>
         </section>
         <section class="achievement-section shelf-trophy-module" data-module="trophies" hidden>
-          <div class="column-head"><div><h2 data-i18n="Achievements">Achievements</h2></div><button class="icon-button completed-stats-button achievement-stats-button" id="shelfAchievementStatsButton" type="button" title="Stats" aria-label="Achievement stats" data-i18n-title="Stats" data-i18n-aria-label="Achievement stats"><svg class="graph-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-4"></path></svg></button></div>
+          <div class="column-head"><div><h2 data-i18n="Achievements">Achievements</h2></div></div>
           <div id="shelfTrophyCard" class="achievement-panel glass"></div>
         </section>
         <section class="calendar-section hero" data-module="calendar">
           <div class="release-calendar" id="shelfReleaseCalendar" aria-label="Upcoming release calendar"></div>
         </section>
         <section class="highlights-section" data-module="kpis">
+          <div class="column-head shelf-stats-launch-row"><button class="icon-button completed-stats-button" id="shelfStatsButton" type="button" title="Shelf statistics" aria-label="Shelf statistics"><svg class="graph-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-4"></path></svg></button></div>
           <div class="stats" id="shelfStats" aria-live="polite"></div>
         </section>
 
@@ -341,6 +342,7 @@
             <label class="shelf-region-field"><span data-i18n="Region">Region</span><span class="icon-input shelf-edit-icon-input"><select id="countryInput" required></select></span></label>
             <label class="shelf-dlc-field check-filter toggle-check"><input id="dlcInput" type="checkbox"><span data-i18n="DLC">DLC</span></label>
             <label class="shelf-release-field"><span data-i18n="Release Date">Release Date</span><input id="releaseDateInput" type="date"></label>
+            <label class="shelf-addition-field"><span data-i18n="Addition Date">Addition Date</span><input id="additionDateInput" type="date"></label>
             <label class="shelf-entitlement-field shelf-psplus-field check-filter toggle-check"><input id="psPlusInput" type="checkbox"><span>PlayStation Plus</span></label>
             <label class="shelf-entitlement-field shelf-games-with-gold-field check-filter toggle-check"><input id="gamesWithGoldInput" type="checkbox"><span data-i18n="Games with Gold">Games with Gold</span></label>
             <label class="shelf-value-field"><span data-i18n="Estimated Value">Estimated Value</span><input id="priceInput" inputmode="decimal" placeholder="0.00"></label>
@@ -406,12 +408,12 @@
           <h3 data-i18n="Page">Page</h3>
           <div class="settings-layout" id="layoutList" aria-label="Page order"></div>
         </section>
+        <section class="settings-section settings-accounts-section" data-shelf-accounts>
+          <h3>Accounts</h3>
+          <div id="shelfAccountsMount"></div>
+        </section>
         <p class="eyebrow settings-detail-title" data-i18n="Details">Details</p>
         <section class="settings-grid settings-detail-grid">
-          <label class="settings-account-field"><span data-i18n="PlayStation account">PlayStation account</span><input id="shelfSettingsPsnUser" autocomplete="off" placeholder="PlayStation online ID" data-i18n-placeholder="PlayStation online ID"></label>
-          <label class="settings-account-field"><span data-i18n="Microsoft account">Microsoft account</span><input id="shelfSettingsMicrosoftUser" autocomplete="off" placeholder="Xbox gamertag or XUID" data-i18n-placeholder="Xbox gamertag or XUID"></label>
-          <label class="settings-account-field"><span data-i18n="Steam account">Steam account</span><input id="shelfSettingsSteamUser" autocomplete="off" placeholder="SteamID64, profile URL, or vanity name" data-i18n-placeholder="SteamID64, profile URL, or vanity name"></label>
-          <label class="settings-account-field"><span data-i18n="Twitch account">Twitch account</span><input id="shelfSettingsTwitchUser" autocomplete="off" placeholder="Twitch username" data-i18n-placeholder="Twitch username"></label>
           <label class="settings-detail-compact"><span data-i18n="Default owner">Default owner</span><input id="shelfSettingsDefaultOwner" autocomplete="off"></label>
           <label class="settings-detail-compact"><span data-i18n="Currency">Currency</span><select id="shelfSettingsCurrency"><option value="EUR">EUR</option><option value="USD">USD</option><option value="GBP">GBP</option><option value="JPY">JPY</option></select></label>
           <label class="settings-detail-compact"><span data-i18n="Region">Region</span><select id="shelfSettingsRegion"><option value="ES" data-i18n="Spain">Spain</option><option value="IT" data-i18n="Italy">Italy</option><option value="IE" data-i18n="Ireland">Ireland</option><option value="FR" data-i18n="France">France</option><option value="PT" data-i18n="Portugal">Portugal</option><option value="JP" data-i18n="Japan">Japan</option><option value="MX" data-i18n="Mexico">Mexico</option><option value="US">US</option><option value="UK">UK</option></select></label>
@@ -476,8 +478,21 @@
     </dialog>
 
     <dialog id="shelfStatsDialog" class="shelf-stats-dialog">
-      <article class="shelf-stats-modal">
-        <iframe id="shelfStatsFrame" title="Gamelist statistics"></iframe>
+      <article class="finished-stats-modal shelf-stats-modal glass">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow" id="shelfStatsBrow">YEARLY STATISTICS</p>
+            <h2 id="shelfStatsTitle">Shelf statistics</h2>
+          </div>
+          <button class="icon-button" id="shelfStatsCloseButton" type="button" title="Close" aria-label="Close">×</button>
+        </div>
+        <div class="shelf-stats-controls">
+          <label class="finished-stats-year-picker">
+            <span>Year</span>
+            <select id="shelfStatsYearSelect" aria-label="Statistics year"></select>
+          </label>
+        </div>
+        <div class="finished-stats-body shelf-stats-body" id="shelfStatsBody"></div>
       </article>
     </dialog>
 

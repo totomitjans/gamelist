@@ -1,6 +1,9 @@
 import { normalizeSearchText, createGameCardShell, bindActivityCardParallax, mountActivitySlider, mountTwitchPreview, mountReleaseCalendar, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, activityTrailerFrameMarkup, preloadPausedActivityTrailers, activityReleaseStatus, activityCoverOverride, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime, formatFooterShortDate, confirmGameDelete } from "./activity-ui.js";
 import { applySiteTheme, normalizeThemeSettings, openThemeEditor, ownerCardColorClass, ownerColorClass, themeSettingsButton } from "./theme-system.js";
 import { applyDocumentTranslations, languageOptions, normalizeLanguage, t } from "./i18n.js";
+import { accountSettingsMarkup } from "./account-settings-ui.js";
+
+document.querySelector("#settingsAccountsMount").innerHTML = accountSettingsMarkup();
 
 mountActivitySlider(document.querySelector("#playingSection"), { title: "playingTitle", count: "playingCount", streamToggle: "playingStreamToggleButton", previous: "playingPrevButton", next: "playingNextButton", list: "playingList", dataSection: "playing", finished: "playingFinished", finishedList: "playingFinishedList" });
 
@@ -2626,7 +2629,7 @@ function settingsPrioritizeFinishedStreamItem() {
   return `
     <article class="settings-layout-card settings-sync-card" data-layout-key="prioritize-finished-stream">
       <div class="settings-wire wire-finished" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="settings-theme-select">
+      <div class="settings-theme-select settings-stream-filter-priority">
         <span>${escapeHtml(tt("Stream Filter priority"))}</span>
         <div class="settings-check-field">
           <select class="settings-stream-priority-select" data-stream-filter-priority aria-label="${escapeHtml(tt("Stream Filter priority"))}">

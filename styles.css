@@ -240,6 +240,17 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (max-width: 760px) {
+  html {
+    overflow-x: clip;
+  }
+
+  *::-webkit-scrollbar:horizontal {
+    display: none;
+    height: 0;
+  }
+}
+
 @media (hover: none), (pointer: coarse) {
   *:not(input):not(textarea) {
     -webkit-touch-callout: none;
@@ -2642,6 +2653,10 @@ html.stats-embed #finishedStatsDialog::backdrop {
 
 .achievement-summary-no-level {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.achievement-summary-two-card {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .achievement-kpi,
@@ -11142,6 +11157,11 @@ body.dialog-open .mobile-section-tabs {
   translate: none;
 }
 
+.settings-stream-filter-priority .platform-logo-select,
+.settings-stream-filter-priority .platform-logo-button {
+  transform: none;
+  translate: none;
+}
 .settings-theme-edit-button {
   display: inline-flex;
   align-items: center;
@@ -11161,7 +11181,6 @@ body.dialog-open .mobile-section-tabs {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.32);
   box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 22%, transparent);
 }
-
 .settings-theme-edit-button span {
   display: inline-flex;
   align-items: center;
@@ -11175,7 +11194,6 @@ body.dialog-open .mobile-section-tabs {
   line-height: 1;
   text-align: center;
 }
-
 .settings-theme-edit-button:hover {
   color: #ffffff;
   border-color: color-mix(in srgb, var(--accent) 62%, #ffffff);
@@ -12481,6 +12499,7 @@ html.theme-light .shelf-card-delete-action:hover {
 
 .settings-provider-page-button {
   font-size: 15px;
+  text-decoration: none;
 }
 
 .settings-nintendo-controls {

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gamelist-cache-v594";
+const CACHE_VERSION = "gamelist-cache-v605";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const MEDIA_CACHE = `${CACHE_VERSION}:media`;
 const STATIC_ASSETS = [
@@ -13,6 +13,8 @@ const STATIC_ASSETS = [
   "/shelf.html",
   "/shelf.css",
   "/shelf.js",
+  "/shelf-accounts.js",
+  "/account-settings-ui.js",
   "/assets/backdrop.png",
   "/assets/backdrop_light.png",
   "/assets/Icon.png",
