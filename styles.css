@@ -271,6 +271,7 @@ body {
     monospace;
 }
 
+html:has(dialog[open]),
 body.dialog-open {
   overflow: hidden;
 }
@@ -1288,7 +1289,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 
 .goty-hover-info small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 750;
   line-height: 1.15;
   text-align: center;
@@ -5768,6 +5769,16 @@ body.theme-kash
   gap: 5px;
 }
 
+.playing-section .playing-state-pill {
+  align-self: center;
+  color: var(--accent-2);
+  border-color: color-mix(in srgb, var(--accent-2) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-2) 12%, rgba(12, 14, 19, 0.72));
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .card-trophies {
   width: 100%;
   margin-top: 10px;
@@ -7065,12 +7076,185 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
   box-shadow: 0 0 12px var(--time-glow);
 }
 
+.playtime-date-pill.live-playtime-pill::before {
+  top: 4px;
+  bottom: auto;
+  height: 10px;
+  min-height: 0;
+  animation: live-playtime-bar-up 1.25s linear infinite;
+  background: linear-gradient(180deg, var(--time-light-solid, var(--time-light)), var(--time-dark-solid, var(--time-dark)));
+}
+
+.playtime-date-pill.live-playtime-pill {
+  overflow: visible;
+  --live-time-fill-current: color-mix(in srgb, var(--time-color-solid, var(--time-color)) 12%, rgba(255, 255, 255, 0.08));
+  --live-time-fill-estimate: color-mix(in srgb, var(--time-estimate-color-solid, var(--time-estimate-color, var(--time-color))) 12%, rgba(255, 255, 255, 0.08));
+  --live-time-glow-current: color-mix(in srgb, var(--time-color-solid, var(--time-color)) 72%, transparent);
+  --live-time-glow-estimate: color-mix(in srgb, var(--time-estimate-color-solid, var(--time-estimate-color, var(--time-color))) 72%, transparent);
+  z-index: 2;
+  width: 78px;
+  flex: 0 0 78px;
+  border-color: color-mix(in srgb, var(--time-color-solid, var(--time-color)) 46%, rgba(255, 255, 255, 0.16));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--time-color-solid, var(--time-color)) 22%, rgba(255, 255, 255, 0.08)),
+      rgba(255, 255, 255, 0.07)
+    ),
+    rgba(255, 255, 255, 0.055);
+  transition: width 240ms ease, flex-basis 240ms ease, box-shadow 240ms ease;
+}
+
+.playtime-date-pill.live-playtime-pill::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(125deg, var(--time-color-solid, var(--time-color)), var(--time-estimate-color-solid, var(--time-estimate-color, var(--time-color))));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.playtime-date-pill.live-playtime-pill .live-playtime-expanded {
+  position: absolute;
+  left: 15px;
+  bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(5px);
+  transition: opacity 180ms ease, transform 240ms ease;
+  pointer-events: none;
+}
+
+.live-playtime-current {
+  color: var(--time-color-solid, var(--time-color));
+}
+
+.live-playtime-estimate {
+  color: var(--time-estimate-color-solid, var(--time-estimate-color, var(--time-color)));
+}
+
+.playtime-date-pill.live-playtime-pill.is-expanded {
+  width: max-content;
+  min-width: 78px;
+  flex-basis: auto;
+  padding-right: 9px;
+  border-color: transparent;
+  background-color: rgba(255, 255, 255, 0.055);
+  background-image:
+    linear-gradient(
+      125deg,
+      var(--live-time-fill-current),
+      var(--live-time-fill-estimate)
+    );
+  background-origin: padding-box;
+  background-clip: padding-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    -8px 0 20px -8px var(--live-time-glow-current),
+    8px 0 20px -8px var(--live-time-glow-estimate),
+    0 0 18px color-mix(in srgb, var(--time-glow) 45%, transparent);
+}
+
+.playtime-date-pill.live-playtime-pill.is-expanded::after {
+  opacity: 1;
+}
+
+.playtime-date-pill.live-playtime-pill.is-expanded strong {
+  display: none;
+}
+
+.playtime-date-pill.live-playtime-pill.is-expanded .live-playtime-expanded {
+  position: static;
+  margin-top: 2px;
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: hover) {
+  :is(.game-card.playing-card:hover .live-playtime-pill, .detail-modal:hover .live-playtime-pill) {
+    width: max-content;
+    min-width: 78px;
+    flex-basis: auto;
+    padding-right: 9px;
+    border-color: transparent;
+    background-color: rgba(255, 255, 255, 0.055);
+    background-image:
+      linear-gradient(
+        125deg,
+        var(--live-time-fill-current),
+        var(--live-time-fill-estimate)
+      );
+    background-origin: padding-box;
+    background-clip: padding-box;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      -8px 0 20px -8px var(--live-time-glow-current),
+      8px 0 20px -8px var(--live-time-glow-estimate),
+      0 0 18px color-mix(in srgb, var(--time-glow) 45%, transparent);
+  }
+
+  :is(.game-card.playing-card:hover .live-playtime-pill, .detail-modal:hover .live-playtime-pill)::after {
+    opacity: 1;
+  }
+
+  :is(.game-card.playing-card:hover .live-playtime-pill, .detail-modal:hover .live-playtime-pill) strong {
+    display: none;
+  }
+
+  :is(.game-card.playing-card:hover .live-playtime-pill, .detail-modal:hover .live-playtime-pill) .live-playtime-expanded {
+    position: static;
+    margin-top: 2px;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes live-playtime-bar-up {
+  0% { opacity: 0; transform: translateY(14px); }
+  10% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playtime-date-pill.live-playtime-pill::before {
+    top: 50%;
+    animation: none;
+    transform: translateY(-50%);
+  }
+
+  .playtime-date-pill.live-playtime-pill {
+    transition: none;
+  }
+
+  .playtime-date-pill.live-playtime-pill .live-playtime-expanded {
+    transition: none;
+  }
+}
+
 .playtime-date-pill strong {
   color: var(--time-color);
 }
 
 .playtime-date-pill small {
   color: var(--time-color);
+}
+
+.playtime-date-pill.live-playtime-pill strong,
+.playtime-date-pill.live-playtime-pill small {
+  color: var(--time-color-solid, var(--time-color));
 }
 
 .time-pill {
@@ -10395,7 +10579,12 @@ dialog {
   width: min(420px, calc(100vw - 24px));
 }
 
+dialog[open] {
+  overscroll-behavior: contain;
+}
+
 dialog::backdrop {
+  touch-action: none;
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
 }
@@ -10545,6 +10734,7 @@ body.dialog-open .mobile-section-tabs {
 }
 
 .detail-modal {
+  overscroll-behavior: contain;
   position: relative;
   display: grid;
   grid-template-columns: minmax(170px, 260px) minmax(0, 1fr);

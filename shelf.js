@@ -1,4 +1,4 @@
-import { normalizeSearchText, createGameCardShell, bindActivityCardParallax, mountActivitySlider, mountTwitchPreview, mountReleaseCalendar, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, preloadPausedActivityTrailers, syncFocusedActivityTrailer, activityReleaseStatus, activityCoverOverride, activityLocalGameForTitle, activityTitleMatchScore, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime, formatFooterShortDate, confirmGameDelete } from "./activity-ui.js";
+import { normalizeSearchText, bindModalTouchGuard, createGameCardShell, bindActivityCardParallax, mountActivitySlider, mountTwitchPreview, mountReleaseCalendar, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, preloadPausedActivityTrailers, syncFocusedActivityTrailer, activityReleaseStatus, activityCoverOverride, activityLocalGameForTitle, activityTitleMatchScore, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime, formatFooterShortDate, confirmGameDelete } from "./activity-ui.js";
 import { applySiteTheme, normalizeThemeSettings, openThemeEditor, ownerCardColorClass, ownerColorClass, themeSettingsButton } from "./theme-system.js";
 import { applyDocumentTranslations, languageOptions, normalizeLanguage, t } from "./i18n.js";
 import { initShelfAccounts } from "./shelf-accounts.js";
@@ -110,6 +110,7 @@ const state = {
   xboxActivity: { achievements: [], games: [], completed: [], totalEarned: 0, sourceUrl: "" },
   achievementNoticeKey: "",
   cardTrophies: {},
+  cardPlaytime: {},
   canEdit: sessionStorage.getItem(SESSION_KEY) === "true",
   editingId: "",
   lookupResults: [],
@@ -285,6 +286,8 @@ async function init() {
   rebuildGames();
   applyShelfSearchFromUrl();
   renderAll();
+  void refreshShelfPlayingCardPlaytime();
+  window.setInterval(refreshShelfPlayingCardPlaytime, 5 * 60 * 1000);
   maybeShowUpdatesPopup();
 }
 
@@ -300,6 +303,7 @@ function applyShelfSearchFromUrl() {
 function loadSharedSettings() { try { return JSON.parse(localStorage.getItem("gamelist:settings:v1") || "{}"); } catch { return {}; } }
 
 function bindEvents() {
+  bindModalTouchGuard();
   syncStyledSelect(el.detailTrophySort);
   el.brandLink?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -352,6 +356,7 @@ function bindEvents() {
   document.addEventListener("focusin", handleSelectOverflowTitle);
   document.addEventListener("pointerout", handleSelectOverflowLeave);
   document.addEventListener("focusout", handleSelectOverflowLeave);
+  document.addEventListener("click", toggleShelfLivePlaytimePill, true);
 
   el.shelf.addEventListener("click", handleShelfClick);
   el.shelf.addEventListener("keydown", (event) => { if (event.key !== "Enter" && event.key !== " ") return; const card = event.target.closest("[data-id]"); if (!card || event.target.closest("button, a, input")) return; event.preventDefault(); const game = shelfDisplayedGameById(card.dataset.id); if (game) game.preorderProjection ? openGamelistDetails(game) : openDetails(game); });
@@ -3591,7 +3596,7 @@ function removeLocalStorageItem(key) {
 function isStorageQuotaError(error) {
   return error?.name === "QuotaExceededError" || error?.code === 22 || error?.code === 1014;
 }
-function bindTextureParallax() { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; let frame = 0; window.addEventListener("pointermove", (event) => { if (frame) return; frame = requestAnimationFrame(() => { frame = 0; const x = ((event.clientX / window.innerWidth) - .5) * -14; const y = ((event.clientY / window.innerHeight) - .5) * -14; document.documentElement.style.setProperty("--grid-x", `${x.toFixed(2)}px`); document.documentElement.style.setProperty("--grid-y", `${y.toFixed(2)}px`); }); }, { passive: true }); }
+function bindTextureParallax() { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; let frame = 0; window.addEventListener("pointermove", (event) => { if (event.pointerType === "touch" || frame) return; frame = requestAnimationFrame(() => { frame = 0; const x = ((event.clientX / window.innerWidth) - .5) * -14; const y = ((event.clientY / window.innerHeight) - .5) * -14; document.documentElement.style.setProperty("--grid-x", `${x.toFixed(2)}px`); document.documentElement.style.setProperty("--grid-y", `${y.toFixed(2)}px`); }); }, { passive: true }); }
 function renderGamelistModules() {
   const playing = state.gamelistGames.filter((game) => game.playing && !game.deletedAt).sort(comparePlayingGames);
   const finished = state.gamelistGames.filter((game) => game.completedAt && !game.deletedAt).sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || String(a.title || "").localeCompare(String(b.title || ""), undefined, { sensitivity: "base" })).slice(0, 10);
@@ -3630,7 +3635,12 @@ function openGamelistDetails(sourceGame) {
   el.detailStudio.innerHTML = `${visibleOwners.map(ownerBadge).join("")}${detailStudio ? `<span>${escapeHtml(detailStudio)}</span>` : ""}`;
   el.detailStudio.hidden = !el.detailStudio.textContent;
   el.detailMeta.innerHTML = `${platformBadge(game.platform, { title: game.title })}${mediaFormatBadge(game)}${dlcBadge(game)}${entitlementBadge(game)}${preorderPlaytimePill(game)}`;
-  el.detailDates.innerHTML = `${shelfReleaseDatePill(game, "Releases")}`;
+  el.detailDates.innerHTML = [
+    shelfReleaseDatePill(game, "Releases"),
+    game.startedAt ? `<span class="history-pill history-date-pill"><small>${escapeHtml(tt("Started"))}</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>` : "",
+    game.playing && state.cardPlaytime[game.id] ? shelfLivePlaytimePill(game, state.cardPlaytime[game.id]) : "",
+    game.playing ? shelfCalendarStateBadge(game) : "",
+  ].join("");
   el.detailDates.hidden = !el.detailDates.innerHTML;
   el.detailChips.innerHTML = `${game.preorderStore ? preorderProjectionChip(game.preorderStore) : ""}${(game.genres || []).slice(0, 4).map((genre) => `<span class="chip genre">${escapeHtml(genre)}</span>`).join("")}`;
   el.detailCover.src = cover;
@@ -3643,7 +3653,7 @@ function openGamelistDetails(sourceGame) {
   el.detailPricePanel.classList.remove("is-collapsed");
   el.detailPriceToggle.setAttribute("aria-expanded", "true");
   el.detailLinks.innerHTML = activityStoreLinks(game);
-  const priceProviders = priceProvidersForGame(game);
+  const priceProviders = game.playing ? [] : priceProvidersForGame(game);
   el.detailStorePrices.style.setProperty("--price-columns", priceProviders.length || 1);
   el.detailStorePrices.innerHTML = priceProviders.length ? pricesFor(game) : "";
   el.detailStorePricePanel.hidden = !priceProviders.length;
@@ -3698,15 +3708,21 @@ function gamelistProjectionCard(game, options = {}) {
   titleOwners.hidden = !titleOwners.innerHTML;
   card.querySelector(".edit-action").classList.remove("editor-only");
   const studioLine = card.querySelector(".studio-line"); studioLine.textContent = studio; studioLine.hidden = !studio;
-  card.querySelector(".meta").innerHTML = projectionMeta(game, { includePast: isReleaseDialog, includeProgress: neutralReleaseCard, includeRelease: !isReleaseDialog, includeCalendarState: isReleaseDialog });
+  card.querySelector(".meta").innerHTML = projectionMeta(game, { includePast: isReleaseDialog, includeProgress: neutralReleaseCard, includeRelease: !isReleaseDialog, includeCalendarState: isReleaseDialog && !game.playing });
   const dates = card.querySelector(".play-dates");
   dates.innerHTML = [
     game.startedAt && !neutralReleaseCard ? `<span class="history-pill history-date-pill"><small>Started</small><strong>${escapeHtml(formatShortDate(game.startedAt))}</strong></span>` : "",
+    game.playing && !neutralReleaseCard && state.cardPlaytime[game.id] ? shelfLivePlaytimePill(game, state.cardPlaytime[game.id]) : "",
     isReleaseDialog && game.preorderStore ? preorderProjectionChip(game.preorderStore) : "",
   ].join("");
   dates.hidden = !dates.innerHTML;
   card.querySelector(".chips").innerHTML = projectionChips(game, { includePreorder: !isReleaseDialog });
-  const trophies = card.querySelector(".card-trophies"); trophies.innerHTML = isReleaseDialog ? "" : shelfCardTrophies(game, { compactProgress: true }); trophies.hidden = !trophies.innerHTML;
+  const trophies = card.querySelector(".card-trophies");
+  const guideLinks = state.canEdit && game.playing && !isReleaseDialog ? activityGuideLinks(game) : [];
+  const guideRow = guideLinks.length ? `<div class="guide-links card-guide-row">${guideLinks.join("")}</div>` : "";
+  if (guideRow) dates.insertAdjacentHTML("afterend", guideRow);
+  trophies.innerHTML = isReleaseDialog ? "" : shelfCardTrophies(game, { compactProgress: true });
+  trophies.hidden = !trophies.innerHTML;
   card.querySelector(".card-actions").remove();
   const prices = card.querySelector(".prices");
   if (isReleaseDialog) {
@@ -3764,10 +3780,135 @@ function currentlyPlayingTitle(games) {
 function playingCountText(count) {
   return tt("Playing {count} {item}", { count, item: tt(count === 1 ? "game" : "games") });
 }
+
+async function refreshShelfPlayingCardPlaytime() {
+  if (document.hidden) return;
+  const games = state.gamelistGames.filter((game) => game.playing && !game.deletedAt);
+  await Promise.all(games.map(async (game) => {
+    const hours = await linkedShelfPlaytimeHours(game);
+    if (!Number.isFinite(hours) || hours <= 0) return;
+    const value = Math.ceil(hours);
+    state.cardPlaytime[game.id] = value;
+    const label = shelfLivePlaytimeComparison(game, value);
+    const dateContainers = [...document.querySelectorAll(`.game-card[data-gamelist-id="${CSS.escape(game.id)}"] .play-dates`)];
+    if (el.detailDialog.open && el.detailDialog.dataset.projection === "true" && el.detailDialog.dataset.id === game.id) dateContainers.push(el.detailDates);
+    dateContainers.forEach((dates) => {
+      let pill = dates.querySelector(".live-playtime-pill");
+      if (!pill) {
+        dates.insertAdjacentHTML("beforeend", shelfLivePlaytimePill(game, value));
+        pill = dates.querySelector(".live-playtime-pill");
+      }
+      pill.style.cssText = shelfLivePlaytimePillStyle(game, value);
+      pill.querySelector("strong").textContent = `${value} ${value === 1 ? "HR" : "HRS"}`;
+      pill.querySelector(".live-playtime-expanded").innerHTML = shelfLivePlaytimeExpandedMarkup(game, value);
+      pill.dataset.comparison = label;
+      pill.removeAttribute("title");
+      pill.setAttribute("aria-label", label);
+      pill.querySelector("strong").textContent = `${value} ${value === 1 ? "HR" : "HRS"}`;
+      dates.hidden = false;
+    });
+  }));
+}
+
+async function linkedShelfPlaytimeHours(game) {
+  try {
+    const platform = shortPlatform(game.platform || "").toLowerCase();
+    if (["switch", "switch 2"].includes(platform)) {
+      const params = new URLSearchParams({ title: game.title || "", platform: shortPlatform(game.platform) });
+      const response = await fetch(`/api/nintendo-playtime?${params}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const hours = Number((await response.json()).playtimeHours);
+      return Number.isFinite(hours) && hours > 0 ? hours : null;
+    }
+    if ((platform === "pc" || platform.includes("steam")) && state.gamelistSettings.steamUser) {
+      const appId = steamAppIdForShelfGame(game);
+      if (!appId) return null;
+      const params = achievementParams({ owned: "1" });
+      params.set("user", state.gamelistSettings.steamUser);
+      const response = await fetch(`/api/steam-achievements?${params}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const match = (data.ownedGames || []).find((item) => String(item.appId).replace(/\D/g, "") === appId);
+      const minutes = Number(match?.playtimeForever);
+      return Number.isFinite(minutes) && minutes > 0 ? minutes / 60 : null;
+    }
+    if (/^ps[3-5]$/.test(platform) && state.gamelistSettings.psnUser) {
+      const params = achievementParams({ playtime: "1" });
+      params.set("user", state.gamelistSettings.psnUser);
+      const response = await fetch(`/api/achievements?${params}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const played = (data.playedGames || [])
+        .map((item) => ({ item, score: activityTitleMatchScore(game.trophyName || game.title, item.title || "") }))
+        .filter(({ item, score }) => score >= 75 && (!item.platform || String(item.platform).toLowerCase().includes(platform)))
+        .sort((a, b) => b.score - a.score)[0]?.item;
+      const duration = String(played?.playDuration || "").match(/^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i);
+      if (!duration) return null;
+      return (Number(duration[1]) || 0) * 24 + (Number(duration[2]) || 0) + (Number(duration[3]) || 0) / 60 + (Number(duration[4]) || 0) / 3600;
+    }
+    if (platform.includes("xbox") || ["xone", "x360"].includes(platform)) {
+      const match = (state.xboxActivity.games || [])
+        .map((item) => ({ item, score: activityTitleMatchScore(game.trophyName || game.title, item.title || item.name || "") }))
+        .filter(({ item, score }) => score >= 75 && item.titleId)
+        .sort((a, b) => b.score - a.score)[0]?.item;
+      if (!match?.titleId || !state.gamelistSettings.microsoftUser) return null;
+      const params = achievementParams({ playtime: "1", titleId: match.titleId });
+      params.set("user", state.gamelistSettings.microsoftUser);
+      const response = await fetch(`/api/xbox-achievements?${params}`, { cache: "no-store" });
+      if (!response.ok) return null;
+      const hours = Number((await response.json()).playtimeHours);
+      return Number.isFinite(hours) && hours > 0 ? hours : null;
+    }
+  } catch {}
+  return null;
+}
+
+function shelfLivePlaytimePill(game, hours) {
+  const label = shelfLivePlaytimeComparison(game, hours);
+  return `<span class="history-pill history-date-pill playtime-date-pill live-playtime-pill" style="${shelfLivePlaytimePillStyle(game, hours)}" data-comparison="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" aria-expanded="false"><small>${escapeHtml(tt("Play Time"))}</small><strong>${hours} ${hours === 1 ? "HR" : "HRS"}</strong><span class="live-playtime-expanded">${shelfLivePlaytimeExpandedMarkup(game, hours)}</span></span>`;
+}
+
+function toggleShelfLivePlaytimePill(event) {
+  if (!window.matchMedia("(hover: none)").matches) return;
+  const pill = event.target?.closest?.(".live-playtime-pill");
+  if (!pill) return;
+  event.stopPropagation();
+  pill.classList.add("is-tap-controlled");
+  const expanded = pill.classList.toggle("is-expanded");
+  pill.setAttribute("aria-expanded", String(expanded));
+}
+
+function shelfLivePlaytimeExpandedMarkup(game, hours) {
+  const current = `${hours} ${hours === 1 ? "HR" : "HRS"}`;
+  const estimate = Math.ceil(Number(game?.lengthHours));
+  return estimate > 0
+    ? `<span class="live-playtime-current">${current}</span><span class="live-playtime-estimate">OF ${estimate} HRS</span>`
+    : `<span class="live-playtime-current">${current} PLAYED</span>`;
+}
+
+function shelfLivePlaytimePillStyle(game, hours) {
+  const estimate = Number(game?.lengthHours);
+  const estimateHours = Number.isFinite(estimate) && estimate > 0 ? estimate : hours;
+  const actualHue = Math.round(132 - (132 * Math.max(0, Math.min(1, (Number(hours) - 7) / 53))));
+  const estimateHue = Math.round(132 - (132 * Math.max(0, Math.min(1, (estimateHours - 7) / 53))));
+  return `${shelfTimePillStyle(hours)};--time-color-solid:hsl(${actualHue}, 88%, 56%);--time-light-solid:hsl(${Math.min(140, actualHue + 10)}, 94%, 72%);--time-dark-solid:hsl(${Math.max(0, actualHue - 8)}, 82%, 39%);--time-estimate-color:hsl(${estimateHue}, 88%, 56%);--time-estimate-color-solid:hsl(${estimateHue}, 88%, 56%)`;
+}
+
+function shelfLivePlaytimeComparison(game, hours) {
+  const estimate = Math.ceil(Number(game?.lengthHours));
+  return estimate > 0 ? `${hours} HRS OUT OF ${estimate} HRS` : `${hours} ${hours === 1 ? "HR" : "HRS"} PLAYED`;
+}
+
+function shelfTimePillStyle(hours) {
+  const clamped = Math.max(0, Math.min(1, (Number(hours) - 7) / 53));
+  const hue = Math.round(132 - (132 * clamped));
+  return `--time-color:hsl(${hue}, 88%, 56%);--time-light:hsl(${Math.min(140, hue + 10)}, 94%, 72%);--time-dark:hsl(${Math.max(0, hue - 8)}, 82%, 39%);--time-glow:hsla(${hue}, 88%, 56%, 0.34)`;
+}
+
 function projectionMeta(game, options = {}) {
   const release = options.includeRelease === false ? "" : activityReleaseStatus(game, { includePast: Boolean(options.includePast) });
   const calendarState = options.includeCalendarState ? shelfCalendarStateBadge(game) : "";
-  return `${platformBadge(game.platform, { title: game.title })}${options.includeProgress ? shelfProgressPill(game) : ""}${mediaFormatBadge(game)}${dlcBadge(game)}${entitlementBadge(game)}${calendarState}${game.emulator ? `<span class="emulator-pill">${escapeHtml(tt("Emulator"))}</span>` : ""}${game.lengthHours ? timeBadgeMarkup(game.lengthHours, game.hltbUrl || game.howLongToBeatUrl || `https://howlongtobeat.com/?q=${encodeURIComponent(game.title)}`, escapeHtml) : ""}${game.stream ? streamBadge() : ""}${release ? releaseStatusPill(release) : ""}${game.coop ? coopBadge() : ""}${game.multiplayer && !game.coop ? multiplayerBadge() : ""}${game.replayCount ? `<span class="replay-pill">Replay ${escapeHtml(game.replayCount)}</span>` : ""}`;
+  return `${platformBadge(game.platform, { title: game.title })}${options.includeProgress ? shelfProgressPill(game) : ""}${mediaFormatBadge(game)}${dlcBadge(game)}${entitlementBadge(game)}${calendarState}${game.emulator ? `<span class="emulator-pill">${escapeHtml(tt("Emulator"))}</span>` : ""}${game.lengthHours && !game.playing ? timeBadgeMarkup(game.lengthHours, game.hltbUrl || game.howLongToBeatUrl || `https://howlongtobeat.com/?q=${encodeURIComponent(game.title)}`, escapeHtml) : ""}${game.stream ? streamBadge() : ""}${release ? releaseStatusPill(release) : ""}${game.coop ? coopBadge() : ""}${game.multiplayer && !game.coop ? multiplayerBadge() : ""}${game.replayCount ? `<span class="replay-pill">Replay ${escapeHtml(game.replayCount)}</span>` : ""}`;
 }
 
 function mediaFormatBadge(game) {
