@@ -2501,6 +2501,11 @@ textarea {
 }
 
 @media (max-width: 760px) {
+  .shelf-page .calendar-section.hero {
+    min-height: 0;
+    padding: 0 0 8px;
+  }
+
   #addDialog .lookup-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 44px;
@@ -2661,7 +2666,7 @@ textarea {
     height: var(--toolbar-control-height);
   }
   .shelf-tabs {
-    top: calc(25px + var(--pull-ui-offset, 0px));
+    top: calc(6px + var(--pull-ui-offset, 0px));
     margin: 12px 0 16px;
   }
 

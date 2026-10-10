@@ -99,7 +99,11 @@ export function resolveSiteTheme(settings = {}, page = "gamelist") {
     mainColor,
     accentColor,
     accent3,
-    icon: theme[isShelf ? "shelfIcon" : "gamelistIcon"] || defaultThemeIcon(isShelf ? "shelf" : "gamelist", mainColor, theme.mainColorReset),
+    // Kash's brand marks are chosen by the configured username, not by a
+    // theme preset or any legacy custom image values.
+    icon: owner.toLowerCase() === "kash"
+      ? PRESETS.kash[isShelf ? "shelfIcon" : "gamelistIcon"]
+      : (theme[isShelf ? "shelfIcon" : "gamelistIcon"] || defaultThemeIcon(isShelf ? "shelf" : "gamelist", mainColor, theme.mainColorReset)),
     appIcon: theme.appIcon || defaultThemeIcon("app", mainColor, theme.mainColorReset),
   };
 }
@@ -204,6 +208,52 @@ export function themeSettingsButton(settings, escapeHtml = htmlEscape, translate
   `;
 }
 
+export function themeSettingsContent(settings = {}, translate = identityTranslate) {
+  const draft = normalizeThemeSettings(settings);
+  const ownerRows = draft.ownerColors.length ? draft.ownerColors : [{ name: "", color: "#ff9ed2" }];
+  return `
+    <div class="theme-inline-content">
+      <section class="theme-editor-grid">
+        ${colorField("mainColor", "Main color", draft.mainColor, false, false, "theme-main-color", translate)}
+        ${colorField("accentColor", "Accent color", draft.accentColor, false, false, "theme-accent-color", translate)}
+        ${colorField("gradientColor", "Gradient color", draft.gradientColor, false, false, "theme-gradient-color", translate)}
+        ${colorField("extraColor", "Extra color", draft.extraColor, false, false, "theme-extra-color", translate)}
+        <div class="theme-editor-row theme-selects-row">
+          <label class="settings-detail-compact theme-mode-field"><span>${htmlEscape(translate("Theme"))}</span><select name="mode"><option value="dark" ${draft.mode === "dark" ? "selected" : ""}>${htmlEscape(translate("Dark"))}</option><option value="light" ${draft.mode === "light" ? "selected" : ""}>${htmlEscape(translate("Light (WIP)"))}</option></select></label>
+          <label class="settings-detail-compact theme-font-field"><span>${htmlEscape(translate("Title font"))}</span><select name="accentFont" style="font-family:&quot;${htmlEscape(FONT_OPTIONS.find((font) => font.value === draft.accentFont)?.family || "Cascadia Code")}&quot;">${FONT_OPTIONS.map((font) => `<option value="${htmlEscape(font.value)}" style="font-family:&quot;${htmlEscape(font.family)}&quot;" ${draft.accentFont === font.value ? "selected" : ""}>${htmlEscape(font.label)}</option>`).join("")}</select></label>
+        </div>
+        <div class="theme-editor-row theme-controls-row">
+          <label class="check-filter toggle-check theme-check"><input name="bigLogo" type="checkbox" ${draft.bigLogo ? "checked" : ""}><span>${htmlEscape(translate("Big logo"))}</span></label>
+          <label class="check-filter toggle-check theme-check"><input name="gradient" type="checkbox" ${draft.gradient ? "checked" : ""}><span>${htmlEscape(translate("Gradient titles"))}</span></label>
+          <label class="check-filter toggle-check theme-check"><input name="uppercaseTitles" type="checkbox" ${draft.uppercaseTitles ? "checked" : ""}><span>${htmlEscape(translate("Uppercase Titles"))}</span></label>
+          <label class="check-filter toggle-check theme-check"><input name="disableGlow" type="checkbox" ${draft.disableGlow ? "" : "checked"}><span>${htmlEscape(translate("Background glows"))}</span></label>
+        </div>
+        <div class="theme-editor-row theme-glow-row" ${draft.disableGlow ? "hidden" : ""}>
+          <label class="settings-detail-compact"><span>${htmlEscape(translate("Background Glow 1"))}</span>${glowSelect("glowPrimary", draft.glowPrimary, translate)}</label>
+          <label class="settings-detail-compact"><span>${htmlEscape(translate("Background Glow 2"))}</span>${glowSelect("glowSecondary", draft.glowSecondary, translate)}</label>
+        </div>
+      </section>
+      <section class="settings-section">
+        <h3 class="theme-owner-colors-title">${htmlEscape(translate("Custom Owner Colors"))}</h3>
+        <div class="theme-owner-table">
+          <div class="theme-owner-head"><span>${htmlEscape(translate("Owner"))}</span><span>${htmlEscape(translate("Main color"))}</span><span></span><span></span></div>
+          <div data-owner-rows>${ownerRows.map((owner) => ownerRow(owner, translate)).join("")}</div>
+          <button class="ghost-button theme-owner-add-button" type="button" data-owner-add><span>${htmlEscape(translate("Add owner color"))}</span><span class="button-icon" aria-hidden="true"><svg class="plus-icon" viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span></button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+export function bindThemeSettingsContent(root, translate = identityTranslate) {
+  bindThemeEditorControls(root, translate);
+}
+
+export function readThemeSettingsContent(root, settings = {}) {
+  const draft = normalizeThemeSettings(settings);
+  return normalizeThemeSettings({ ...settings, customTheme: readThemeForm(root, draft) });
+}
+
 export function openThemeEditor({ settings = {}, onSave, page = "gamelist", translate = identityTranslate }) {
   const dialog = ensureThemeDialog();
   const draft = structuredCloneSafe(normalizeThemeSettings(settings));
@@ -244,34 +294,27 @@ function renderThemeDialog(dialog, draft, settings, page, onSave, translate = id
         ${colorField("accentColor", "Accent color", draft.accentColor, false, false, "theme-accent-color", translate)}
         ${colorField("gradientColor", "Gradient color", draft.gradientColor, false, false, "theme-gradient-color", translate)}
         ${colorField("extraColor", "Extra color", draft.extraColor, false, false, "theme-extra-color", translate)}
-        <div class="theme-editor-row theme-controls-row">
+        <div class="theme-editor-row theme-selects-row">
           <label class="settings-detail-compact theme-mode-field"><span>${htmlEscape(translate("Theme"))}</span><select name="mode"><option value="dark" ${draft.mode === "dark" ? "selected" : ""}>${htmlEscape(translate("Dark"))}</option><option value="light" ${draft.mode === "light" ? "selected" : ""}>${htmlEscape(translate("Light (WIP)"))}</option></select></label>
           <label class="settings-detail-compact theme-font-field"><span>${htmlEscape(translate("Title font"))}</span><select name="accentFont" style="font-family:&quot;${htmlEscape(FONT_OPTIONS.find((font) => font.value === draft.accentFont)?.family || "Cascadia Code")}&quot;">${FONT_OPTIONS.map((font) => `<option value="${htmlEscape(font.value)}" style="font-family:&quot;${htmlEscape(font.family)}&quot;" ${draft.accentFont === font.value ? "selected" : ""}>${htmlEscape(font.label)}</option>`).join("")}</select></label>
+        </div>
+        <div class="theme-editor-row theme-controls-row">
+          <label class="check-filter toggle-check theme-check"><input name="bigLogo" type="checkbox" ${draft.bigLogo ? "checked" : ""}><span>${htmlEscape(translate("Big logo"))}</span></label>
           <label class="check-filter toggle-check theme-check"><input name="gradient" type="checkbox" ${draft.gradient ? "checked" : ""}><span>${htmlEscape(translate("Gradient titles"))}</span></label>
           <label class="check-filter toggle-check theme-check"><input name="uppercaseTitles" type="checkbox" ${draft.uppercaseTitles ? "checked" : ""}><span>${htmlEscape(translate("Uppercase Titles"))}</span></label>
           <label class="check-filter toggle-check theme-check"><input name="disableGlow" type="checkbox" ${draft.disableGlow ? "" : "checked"}><span>${htmlEscape(translate("Background glows"))}</span></label>
         </div>
         <div class="theme-editor-row theme-glow-row" ${draft.disableGlow ? "hidden" : ""}>
-          <label class="settings-detail-compact"><span>${htmlEscape(translate("Glow 1"))}</span>${glowSelect("glowPrimary", draft.glowPrimary, translate)}</label>
-          <label class="settings-detail-compact"><span>${htmlEscape(translate("Glow 2"))}</span>${glowSelect("glowSecondary", draft.glowSecondary, translate)}</label>
-        </div>
-        <div class="theme-editor-separator" role="presentation"></div>
-        <div class="theme-editor-row theme-icon-row">
-          ${imageField("gamelistIcon", "Gamelist icon", draft.gamelistIcon, translate)}
-          ${imageField("shelfIcon", "Shelf icon", draft.shelfIcon, translate)}
-        </div>
-        <label class="check-filter toggle-check theme-check theme-big-logo-row"><input name="bigLogo" type="checkbox" ${draft.bigLogo ? "checked" : ""}><span>${htmlEscape(translate("Big logo"))}</span></label>
-        <div class="theme-editor-row theme-media-row">
-          ${imageField("appIcon", "Game app icon", draft.appIcon, translate)}
-          ${imageField("backgroundImage", "Custom Background", draft.backgroundImage, translate)}
+          <label class="settings-detail-compact"><span>${htmlEscape(translate("Background Glow 1"))}</span>${glowSelect("glowPrimary", draft.glowPrimary, translate)}</label>
+          <label class="settings-detail-compact"><span>${htmlEscape(translate("Background Glow 2"))}</span>${glowSelect("glowSecondary", draft.glowSecondary, translate)}</label>
         </div>
       </section>
       <section class="settings-section">
-        <h3>${htmlEscape(translate("Custom Owner Colors"))}</h3>
+        <h3 class="theme-owner-colors-title">${htmlEscape(translate("Custom Owner Colors"))}</h3>
         <div class="theme-owner-table">
-          <div class="theme-owner-head"><span>${htmlEscape(translate("Owner"))}</span><span>${htmlEscape(translate("Main color"))}</span><span>${htmlEscape(translate("Pick"))}</span><span></span></div>
+          <div class="theme-owner-head"><span>${htmlEscape(translate("Owner"))}</span><span>${htmlEscape(translate("Main color"))}</span><span></span><span></span></div>
           <div data-owner-rows>${ownerRows.map((owner) => ownerRow(owner, translate)).join("")}</div>
-          <button class="ghost-button" type="button" data-owner-add>${htmlEscape(translate("Add owner color"))}</button>
+          <button class="ghost-button theme-owner-add-button" type="button" data-owner-add><span>${htmlEscape(translate("Add owner color"))}</span><span class="button-icon" aria-hidden="true"><svg class="plus-icon" viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span></button>
         </div>
       </section>
       <div class="modal-actions"><button class="primary-button" type="submit">${htmlEscape(translate("Save"))}</button></div>
@@ -279,34 +322,74 @@ function renderThemeDialog(dialog, draft, settings, page, onSave, translate = id
   `;
   const form = dialog.querySelector("form");
   dialog.querySelector("[data-theme-close]")?.addEventListener("click", () => dialog.close());
-  form.querySelector("[name='accentFont']")?.addEventListener("change", (event) => {
-    event.currentTarget.style.fontFamily = `"${FONT_OPTIONS.find((font) => font.value === event.currentTarget.value)?.family || "Cascadia Code"}"`;
-  });
-  form.querySelector("[name='disableGlow']")?.addEventListener("change", (event) => {
-    form.querySelector(".theme-glow-row")?.toggleAttribute("hidden", !event.currentTarget.checked);
-  });
-  form.querySelector("[data-owner-add]")?.addEventListener("click", () => {
-    const rows = form.querySelector("[data-owner-rows]");
-    rows.insertAdjacentHTML("beforeend", ownerRow({ name: "", color: "#79f2ce" }, translate));
-  });
-  form.addEventListener("click", (event) => {
-    const remove = event.target.closest("[data-owner-remove]");
-    if (remove) remove.closest(".theme-owner-row")?.remove();
-  });
-  form.querySelectorAll("[data-image-input]").forEach((input) => {
-    input.addEventListener("change", async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const compressed = await compressImageFile(file, input.dataset.imageInput === "backgroundImage" ? 1800 : 512);
-      const text = form.querySelector(`[name="${input.dataset.imageInput}"]`);
-      if (text) text.value = compressed;
-    });
-  });
+  bindThemeEditorControls(form, translate);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const nextTheme = normalizeThemeSettings({ ...settings, customTheme: readThemeForm(form, draft) });
     await onSave?.({ ...settings, theme: "custom", customTheme: nextTheme });
     dialog.close();
+  });
+}
+
+function bindThemeEditorControls(root, translate) {
+  root.querySelector("[name='accentFont']")?.addEventListener("change", (event) => {
+    event.currentTarget.style.fontFamily = `"${FONT_OPTIONS.find((font) => font.value === event.currentTarget.value)?.family || "Cascadia Code"}"`;
+  });
+  root.querySelector("[name='disableGlow']")?.addEventListener("change", (event) => {
+    root.querySelector(".theme-glow-row")?.toggleAttribute("hidden", !event.currentTarget.checked);
+  });
+  root.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-glow-trigger]");
+    const option = event.target.closest("[data-glow-option]");
+    if (option) {
+      const picker = option.closest("[data-glow-select]");
+      const source = option.dataset.glowOption;
+      const value = picker?.querySelector("[data-glow-value]");
+      if (picker && value) {
+        value.value = source;
+        picker.querySelector("[data-glow-current]").textContent = option.querySelector("[data-glow-option-label]").textContent;
+        picker.querySelectorAll("[data-glow-option]").forEach((item) => item.setAttribute("aria-checked", String(item === option)));
+        picker.querySelector("[data-glow-options]").hidden = true;
+        picker.classList.remove("is-open");
+        picker.querySelector("[data-glow-trigger]").setAttribute("aria-expanded", "false");
+        updateGlowPickerColors(root);
+      }
+      return;
+    }
+    if (trigger) {
+      const picker = trigger.closest("[data-glow-select]");
+      const options = picker?.querySelector("[data-glow-options]");
+      if (!picker || !options) return;
+      root.querySelectorAll("[data-glow-options]").forEach((list) => {
+        if (list !== options) {
+          list.hidden = true;
+          list.closest("[data-glow-select]")?.classList.remove("is-open");
+        }
+      });
+      options.hidden = !options.hidden;
+      picker.classList.toggle("is-open", !options.hidden);
+      trigger.setAttribute("aria-expanded", String(!options.hidden));
+      return;
+    }
+    root.querySelectorAll("[data-glow-options]").forEach((list) => {
+      list.hidden = true;
+      list.closest("[data-glow-select]")?.classList.remove("is-open");
+    });
+    root.querySelectorAll("[data-glow-trigger]").forEach((button) => button.setAttribute("aria-expanded", "false"));
+  });
+  root.addEventListener("input", (event) => {
+    if (["mainColor", "accentColor", "gradientColor", "extraColor"].includes(event.target.name)) updateGlowPickerColors(root);
+  });
+  root.addEventListener("change", (event) => {
+    if (event.target.matches("[data-color-for]")) updateGlowPickerColors(root);
+  });
+  updateGlowPickerColors(root);
+  root.querySelector("[data-owner-add]")?.addEventListener("click", () => {
+    root.querySelector("[data-owner-rows]")?.insertAdjacentHTML("beforeend", ownerRow({ name: "", color: "#79f2ce" }, translate));
+  });
+  root.addEventListener("click", (event) => {
+    const remove = event.target.closest("[data-owner-remove]");
+    if (remove) remove.closest(".theme-owner-row")?.remove();
   });
 }
 
@@ -326,17 +409,24 @@ function glowSelect(name, value, translate = identityTranslate) {
     ["gradient", "Gradient"],
     ["extra", "Extra Color"],
   ];
-  return `<select name="${name}">${options.map(([source, label]) => `<option value="${source}" ${value === source ? "selected" : ""}>${htmlEscape(translate(label))}</option>`).join("")}</select>`;
+  const selected = options.find(([source]) => source === value) || options[0];
+  return `<div class="theme-glow-select" data-glow-select><input type="hidden" name="${name}" data-glow-value value="${selected[0]}"><button class="theme-glow-trigger" type="button" data-glow-trigger aria-haspopup="true" aria-expanded="false"><span class="theme-glow-swatch" data-glow-current-swatch aria-hidden="true"></span><span data-glow-current>${htmlEscape(translate(selected[1]))}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg></button><div class="theme-glow-options" data-glow-options hidden>${options.map(([source, label]) => `<button class="theme-glow-option" type="button" role="menuitemradio" aria-checked="${source === selected[0]}" data-glow-option="${source}"><span class="theme-glow-swatch" data-glow-swatch aria-hidden="true"></span><span data-glow-option-label>${htmlEscape(translate(label))}</span></button>`).join("")}</div></div>`;
 }
 
-function imageField(name, label, value, translate = identityTranslate) {
-  return `
-    <label class="settings-detail-compact theme-image-field">
-      <span>${htmlEscape(translate(label))}</span>
-      <input name="${name}" value="${htmlEscape(value || "")}" placeholder="${htmlEscape(translate("Upload or paste URL"))}">
-      <input type="file" accept="image/*" data-image-input="${name}">
-    </label>
-  `;
+function updateGlowPickerColors(root) {
+  const colors = {
+    main: root.querySelector("[name='mainColor']")?.value || "#ff0039",
+    accent: root.querySelector("[name='accentColor']")?.value || "#79f2ce",
+    gradient: root.querySelector("[name='gradientColor']")?.value || "#ff00a2",
+    extra: root.querySelector("[name='extraColor']")?.value || "#3300ff",
+  };
+  root.querySelectorAll("[data-glow-select]").forEach((picker) => {
+    const color = colors[picker.querySelector("[data-glow-value]")?.value] || colors.main;
+    picker.querySelector("[data-glow-current-swatch]").style.backgroundColor = color;
+    picker.querySelectorAll("[data-glow-swatch]").forEach((swatch) => {
+      swatch.style.backgroundColor = colors[swatch.closest("[data-glow-option]")?.dataset.glowOption] || colors.main;
+    });
+  });
 }
 
 function ownerRow(owner, translate = identityTranslate) {
@@ -351,53 +441,31 @@ function ownerRow(owner, translate = identityTranslate) {
 }
 
 function readThemeForm(form, draft) {
-  const value = (name) => form.elements[name]?.value || "";
+  const field = (name) => form.querySelector(`[name="${name}"]`);
+  const value = (name) => field(name)?.value || "";
+  const checked = (name) => Boolean(field(name)?.checked);
   const ownerNames = [...form.querySelectorAll("[name='ownerName']")];
   const ownerColors = [...form.querySelectorAll("[name='ownerColor']")];
   return normalizeThemeSettings({
     customTheme: {
       ...draft,
       mainColor: normalizeHex(value("mainColor")) || draft.mainColor,
-      mainColorReset: Boolean(form.elements.mainColorReset?.checked),
-      gradient: Boolean(form.elements.gradient?.checked),
-      uppercaseTitles: Boolean(form.elements.uppercaseTitles?.checked),
+      mainColorReset: checked("mainColorReset"),
+      gradient: checked("gradient"),
+      uppercaseTitles: checked("uppercaseTitles"),
       gradientColor: normalizeHex(value("gradientColor")) || draft.gradientColor,
       accentColor: normalizeHex(value("accentColor")) || draft.accentColor,
-      accentColorReset: Boolean(form.elements.accentColorReset?.checked),
+      accentColorReset: checked("accentColorReset"),
       extraColor: normalizeHex(value("extraColor")) || draft.extraColor,
       mode: value("mode") === "light" ? "light" : "dark",
-      disableGlow: !Boolean(form.elements.disableGlow?.checked),
+      disableGlow: !checked("disableGlow"),
       glowPrimary: value("glowPrimary") || draft.glowPrimary,
       glowSecondary: value("glowSecondary") || draft.glowSecondary,
-      bigLogo: Boolean(form.elements.bigLogo?.checked),
+      bigLogo: checked("bigLogo"),
       accentFont: value("accentFont"),
-      backgroundImage: value("backgroundImage"),
-      gamelistIcon: value("gamelistIcon"),
-      shelfIcon: value("shelfIcon"),
-      appIcon: value("appIcon"),
       ownerColors: ownerNames.map((input, index) => ({ name: input.value, color: ownerColors[index]?.value || "" })),
     },
   });
-}
-
-async function compressImageFile(file, maxSize) {
-  const url = URL.createObjectURL(file);
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-    const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/webp", maxSize > 600 ? 0.76 : 0.82);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 
 function applyOwnerStyle(ownerColors) {

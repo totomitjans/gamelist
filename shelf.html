@@ -35,7 +35,8 @@
             if (theme.mainColorReset !== false) return themes[fallbackKey].icon;
             try { return localStorage.getItem(`gamelist:tinted-icon:shelf:${main}`) || themes[fallbackKey].icon; } catch { return themes[fallbackKey].icon; }
           };
-          return { title: `${owner}'s Shelf`, icon: theme.shelfIcon || defaultIcon(), color: main, accent, gradient, extra, glow1: mix(source(theme.glowPrimary), .22), glow2: mix(source(theme.glowSecondary || "accent"), .14), background: theme.backgroundImage || "", font: fonts[theme.accentFont] || "Cascadia Code", fontKey: theme.accentFont || "", mode: theme.mode === "light" ? "light" : "dark", disableGlow: Boolean(theme.disableGlow), gradientOn: Boolean(theme.gradient), uppercaseTitles: Boolean(theme.uppercaseTitles), bigLogo: fallbackKey === "kash" || Boolean(theme.bigLogo) };
+          const icon = owner.toLowerCase() === "kash" ? themes.kash.icon : (theme.shelfIcon || defaultIcon());
+          return { title: `${owner}'s Shelf`, icon, color: main, accent, gradient, extra, glow1: mix(source(theme.glowPrimary), .22), glow2: mix(source(theme.glowSecondary || "accent"), .14), background: theme.backgroundImage || "", font: fonts[theme.accentFont] || "Cascadia Code", fontKey: theme.accentFont || "", mode: theme.mode === "light" ? "light" : "dark", disableGlow: Boolean(theme.disableGlow), gradientOn: Boolean(theme.gradient), uppercaseTitles: Boolean(theme.uppercaseTitles), bigLogo: fallbackKey === "kash" || Boolean(theme.bigLogo) };
         };
         const apply = (key, settings = {}) => {
           const themeKey = themes[key] ? key : "shabii";
@@ -303,7 +304,7 @@
             <section class="detail-condition" id="detailConditionPanel"><h3 data-i18n="Collection condition">Collection condition</h3><div class="condition-grid" id="detailCondition"></div></section>
             <section class="detail-price-panel" id="detailPricePanel"><div class="detail-section-head"><button class="detail-section-toggle" id="detailPriceToggle" type="button" aria-expanded="true" aria-controls="detailPriceContent"><span data-i18n="Collection value">Collection value</span><strong id="detailPriceHeadline"></strong></button><button class="icon-button detail-fetch-value-button editor-only" id="fetchValueButton" type="button" title="Fetch value" aria-label="Fetch value" data-i18n-title="Fetch value" data-i18n-aria-label="Fetch value"><svg class="euro-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5.5A7 7 0 0 0 8.2 7.1 7.4 7.4 0 0 0 7 12a7.4 7.4 0 0 0 1.2 4.9A7 7 0 0 0 19 18.5"></path><path d="M4 10h10"></path><path d="M4 14h10"></path></svg></button></div><div class="detail-price-content" id="detailPriceContent"><div id="detailPriceSummary"></div><svg id="detailPriceGraph" class="price-history-graph" viewBox="0 0 600 150" role="img" aria-label="Collection value history" data-i18n-aria-label="Collection value history"></svg></div></section>
             <section class="detail-store-price-panel" id="detailStorePricePanel"><div class="prices detail-prices detail-store-prices" id="detailStorePrices"></div></section>
-            <section class="detail-trophies" id="shelfDetailTrophies" hidden><div class="detail-trophies-head"><h3><svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path><path d="M8 6H5a3 3 0 0 0 3 3"></path><path d="M16 6h3a3 3 0 0 1-3 3"></path><path d="M12 12v4"></path><path d="M9 20h6"></path><path d="M10 16h4v4h-4z"></path></svg><span id="shelfTrophyTitle">TROPHIES</span></h3><div class="detail-trophy-tools"><span id="shelfTrophyCount"></span><span class="detail-trophy-percent" id="shelfTrophyPercent"></span><select id="shelfTrophySort" aria-label="Sort trophies" data-i18n-aria-label="Sort trophies"><option value="order" data-i18n="Order">Order</option><option value="name" data-i18n="Name">Name</option><option value="completed" data-i18n="Completed">Completed</option></select><button class="direction-toggle" id="shelfTrophyDirection" type="button" title="Sort ascending" aria-label="Sort ascending">↑</button></div></div><div class="detail-trophy-scroller"><div class="detail-trophy-list" id="shelfTrophyList"></div></div></section>
+            <section class="detail-trophies" id="shelfDetailTrophies" hidden><div class="detail-trophies-head"><h3><svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path><path d="M8 6H5a3 3 0 0 0 3 3"></path><path d="M16 6h3a3 3 0 0 1-3 3"></path><path d="M12 12v4"></path><path d="M9 20h6"></path><path d="M10 16h4v4h-4z"></path></svg><span id="shelfTrophyTitle">TROPHIES</span></h3><div class="detail-trophy-tools"><span id="shelfTrophyCount"></span><span class="detail-trophy-percent" id="shelfTrophyPercent"></span><select id="shelfTrophySort" aria-label="Sort trophies" data-i18n-aria-label="Sort trophies"><option value="order" data-i18n="Order">Order</option><option value="name" data-i18n="Name">Name</option><option value="completed" data-i18n="Completed">Completed</option></select><button class="direction-toggle" id="shelfTrophyDirection" type="button" title="Sort ascending" aria-label="Sort ascending"><svg class="sort-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"></path></svg></button></div></div><div class="detail-trophy-scroller"><div class="detail-trophy-list" id="shelfTrophyList"></div></div></section>
           </div>
       </article>
     </dialog>
@@ -395,45 +396,65 @@
       </form>
     </dialog>
 
+    <dialog id="editorUnsavedDialog" class="unsaved-edit-dialog">
+      <article class="auth-modal glass unsaved-edit-modal">
+        <div class="modal-head">
+          <div><p class="eyebrow">Shelf editor</p><h2>Are you sure?</h2></div>
+          <button class="icon-button" type="button" data-editor-unsaved-cancel aria-label="Return to editing">×</button>
+        </div>
+        <p class="unsaved-edit-copy">You have unsaved changes.</p>
+        <div class="modal-actions unsaved-edit-actions">
+          <button class="ghost-button" type="button" data-editor-unsaved-save>Close and save</button>
+          <button class="primary-button" type="button" data-editor-unsaved-discard>Close without saving</button>
+        </div>
+      </article>
+    </dialog>
+
     <dialog id="layoutDialog" class="settings-dialog">
       <form class="settings-modal glass" id="layoutForm">
         <div class="modal-head">
-          <div><p class="eyebrow" data-i18n="Shelf settings">Shelf settings</p><h2 data-i18n="Settings">Settings</h2></div>
+          <div><p class="eyebrow" id="layoutDialogEyebrow">Shelf settings</p><h2 class="settings-main-heading"><span id="layoutDialogTitle">Settings</span><button class="settings-main-back-title" id="layoutDialogBackTitle" type="button" data-shelf-settings-back aria-label="Go back" hidden><span class="settings-main-title-current"><svg class="settings-main-back-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span id="layoutDialogSectionTitle"></span></span><span class="settings-main-title-hover"><svg class="settings-main-back-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Go back</span></button></h2></div>
           <div class="modal-head-actions">
             <button class="primary-button modal-head-save" type="submit" data-i18n="Save">Save</button>
             <button class="icon-button" id="layoutClose" type="button" title="Close" aria-label="Close">×</button>
           </div>
         </div>
-        <section class="settings-section">
-          <h3 data-i18n="Page">Page</h3>
-          <div class="settings-layout" id="layoutList" aria-label="Page order"></div>
+        <div class="settings-home" id="shelfSettingsHome">
+          <p class="settings-home-copy">Choose what you’d like to manage.</p>
+          <div class="settings-category-grid">
+            <button class="settings-category-card" type="button" data-shelf-settings-panel="design"><span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="M13.5 6.5l4 4"/><path d="M13 20h7"/></svg></span><span class="settings-category-text"><strong>Page design</strong><small>Layout, appearance, and preferences</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span></button>
+            <button class="settings-category-card" type="button" data-shelf-settings-panel="accounts"><span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="7" r="4"/><path d="M3 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2M19 8v6m3-3h-6"/></svg></span><span class="settings-category-text"><strong>Accounts</strong><small>Connected services and sign out</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span></button>
+            <button class="settings-category-card" type="button" data-shelf-settings-panel="data"><span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg></span><span class="settings-category-text"><strong>Your Data</strong><small>Import and export your collections</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span></button>
+            <button class="settings-category-card" type="button" data-shelf-settings-panel="dev"><span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 5-6 7 6 7M16 5l6 7-6 7M14 3l-4 18"/></svg></span><span class="settings-category-text"><strong>Dev Features</strong><small>Tools and experimental features</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span></button>
+          </div>
+          <section class="settings-dev-home" id="shelfSettingsDevHome" hidden><h3>Dev Features</h3><div class="settings-dev-links" id="shelfSettingsDevHomeLinks"></div></section>
+        </div>
+        <section class="settings-window-panel" data-shelf-settings-window="design" hidden>
+          <section class="settings-section"><h3>Page Layout</h3><div class="settings-layout" id="layoutList" aria-label="Page order"></div></section>
+          <section class="settings-section"><h3>Details</h3>
+            <div class="settings-grid settings-detail-grid">
+              <div class="settings-preference-row" id="shelfSettingsPreferencesBeforeCurrency"></div>
+              <label class="settings-detail-compact"><span data-i18n="Currency">Currency</span><select id="shelfSettingsCurrency"><option value="EUR">EUR</option><option value="USD">USD</option><option value="GBP">GBP</option><option value="JPY">JPY</option></select></label>
+              <label class="settings-detail-compact"><span data-i18n="Region">Region</span><select id="shelfSettingsRegion"><option value="ES" data-flag="assets/flags/es.svg" data-i18n="Spain">Spain</option><option value="IT" data-flag="assets/flags/it.svg" data-i18n="Italy">Italy</option><option value="IE" data-flag="assets/flags/ie.svg" data-i18n="Ireland">Ireland</option><option value="FR" data-flag="assets/flags/fr.svg" data-i18n="France">France</option><option value="PT" data-flag="assets/flags/pt.svg" data-i18n="Portugal">Portugal</option><option value="JP" data-flag="assets/flags/jp.svg" data-i18n="Japan">Japan</option><option value="MX" data-flag="assets/flags/mx.svg" data-i18n="Mexico">Mexico</option><option value="US" data-flag="assets/flags/us.svg">US</option><option value="UK" data-flag="assets/flags/gb.svg">UK</option></select></label>
+              <label class="settings-detail-compact"><span data-i18n="Language">Language</span><select id="shelfSettingsLanguage"><option value="en">English</option><option value="es-ES">Castellano</option></select></label>
+              <div class="settings-preference-row" id="shelfSettingsPreferencesAfterLanguage"></div>
+            </div>
+          </section>
+          <section class="settings-section"><h3 data-i18n="Stores">Stores</h3><div class="settings-store-list" id="shelfSettingsStores"></div></section>
+          <section class="settings-section settings-inline-theme-section"><p class="eyebrow settings-customize-title">Customize Theme</p><div id="shelfSettingsThemeEditor"></div></section>
         </section>
-        <section class="settings-section settings-accounts-section" data-shelf-accounts>
-          <h3>Accounts</h3>
-          <div id="shelfAccountsMount"></div>
+        <section class="settings-window-panel settings-accounts-section" data-shelf-settings-window="accounts" hidden>
+          <label class="settings-account-field settings-default-owner-field"><span data-i18n="Default owner">Default owner</span><input id="shelfSettingsDefaultOwner" autocomplete="off"></label>
+          <hr class="settings-account-separator"><div data-shelf-accounts><div id="shelfAccountsMount"></div></div>
+          <button class="settings-logout-button" id="shelfSettingsLogoutButton" type="button"><svg class="exit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H6.8A2.8 2.8 0 0 0 4 7.8v8.4A2.8 2.8 0 0 0 6.8 19H10"></path><path d="M14 8l4 4-4 4"></path><path d="M8 12h10"></path></svg> Log out of my account</button>
         </section>
-        <p class="eyebrow settings-detail-title" data-i18n="Details">Details</p>
-        <section class="settings-grid settings-detail-grid">
-          <label class="settings-detail-compact"><span data-i18n="Default owner">Default owner</span><input id="shelfSettingsDefaultOwner" autocomplete="off"></label>
-          <label class="settings-detail-compact"><span data-i18n="Currency">Currency</span><select id="shelfSettingsCurrency"><option value="EUR">EUR</option><option value="USD">USD</option><option value="GBP">GBP</option><option value="JPY">JPY</option></select></label>
-          <label class="settings-detail-compact"><span data-i18n="Region">Region</span><select id="shelfSettingsRegion"><option value="ES" data-i18n="Spain">Spain</option><option value="IT" data-i18n="Italy">Italy</option><option value="IE" data-i18n="Ireland">Ireland</option><option value="FR" data-i18n="France">France</option><option value="PT" data-i18n="Portugal">Portugal</option><option value="JP" data-i18n="Japan">Japan</option><option value="MX" data-i18n="Mexico">Mexico</option><option value="US">US</option><option value="UK">UK</option></select></label>
-          <label class="settings-detail-compact"><span data-i18n="Language">Language</span><select id="shelfSettingsLanguage"><option value="en">English</option><option value="es-ES">Castellano</option></select></label>
-        </section>
-        <section class="settings-section">
-          <h3 data-i18n="Stores">Stores</h3>
-          <div class="settings-store-list" id="shelfSettingsStores"></div>
-        </section>
-        <section class="settings-section settings-csv-section">
-          <h3 data-i18n="Your data">Your data</h3>
-          <div class="settings-csv-data" id="shelfSettingsCsvData"></div>
-        </section>
-        <section class="settings-section settings-dev-section">
-          <h3 data-i18n="Dev features">Dev features</h3>
-          <div class="settings-dev-links" id="shelfSettingsDevFeatures"></div>
-        </section>
+        <section class="settings-window-panel settings-csv-section" data-shelf-settings-window="data" hidden><div class="settings-csv-data" id="shelfSettingsCsvData"></div></section>
+        <section class="settings-window-panel settings-dev-section" data-shelf-settings-window="dev" hidden><div class="settings-dev-links" id="shelfSettingsDevFeatures"></div></section>
         <div class="modal-actions"><button class="primary-button" type="submit" data-i18n="Save">Save</button></div>
       </form>
     </dialog>
+
+    <dialog id="shelfSettingsUnsavedDialog" class="settings-unsaved-dialog"><article class="auth-modal glass settings-unsaved-modal"><div class="modal-head"><div><p class="eyebrow">Settings</p><h2>Are you sure?</h2></div><button class="icon-button" type="button" data-shelf-unsaved-cancel aria-label="Go back to settings">×</button></div><p class="settings-unsaved-copy">You have unsaved changes.</p><div class="modal-actions settings-unsaved-actions"><button class="ghost-button" type="button" data-shelf-unsaved-save></button><button class="primary-button" type="button" data-shelf-unsaved-discard></button></div></article></dialog>
 
     <dialog id="showcaseDialog" class="settings-dialog">
       <form class="settings-modal glass showcase-modal" id="showcaseForm">

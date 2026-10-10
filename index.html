@@ -41,7 +41,8 @@
             if (theme.mainColorReset !== false) return fallback;
             try { return localStorage.getItem(`gamelist:tinted-icon:${kind}:${main}`) || fallback; } catch { return fallback; }
           };
-          return { title: `${owner}'s Gamelist`, shortName: "Gamelist", icon: theme.gamelistIcon || defaultIcon("gamelist"), appIcon: theme.appIcon || defaultIcon("app"), color: main, accent, gradient, extra, glow1: mix(source(theme.glowPrimary), .22), glow2: mix(source(theme.glowSecondary || "accent"), .14), background: theme.backgroundImage || "", font: fonts[theme.accentFont] || "Cascadia Code", fontKey: theme.accentFont || "", mode: theme.mode === "light" ? "light" : "dark", disableGlow: Boolean(theme.disableGlow), gradientOn: Boolean(theme.gradient), uppercaseTitles: Boolean(theme.uppercaseTitles), bigLogo: fallbackKey === "kash" || Boolean(theme.bigLogo) };
+          const icon = owner.toLowerCase() === "kash" ? themes.kash.icon : (theme.gamelistIcon || defaultIcon("gamelist"));
+          return { title: `${owner}'s Gamelist`, shortName: "Gamelist", icon, appIcon: theme.appIcon || defaultIcon("app"), color: main, accent, gradient, extra, glow1: mix(source(theme.glowPrimary), .22), glow2: mix(source(theme.glowSecondary || "accent"), .14), background: theme.backgroundImage || "", font: fonts[theme.accentFont] || "Cascadia Code", fontKey: theme.accentFont || "", mode: theme.mode === "light" ? "light" : "dark", disableGlow: Boolean(theme.disableGlow), gradientOn: Boolean(theme.gradient), uppercaseTitles: Boolean(theme.uppercaseTitles), bigLogo: fallbackKey === "kash" || Boolean(theme.bigLogo) };
         };
         const apply = (key, settings = {}) => {
           const themeKey = themes[key] ? key : "shabii";
@@ -211,7 +212,6 @@
             <circle cx="8" cy="18" r="2"></circle>
           </svg>
         </button>
-        <span class="top-actions-separator" aria-hidden="true"></span>
         <button class="ghost-button" id="fetchPricesButton" type="button" hidden>
           <svg class="euro-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M19 5.5A7 7 0 0 0 8.2 7.1 7.4 7.4 0 0 0 7 12a7.4 7.4 0 0 0 1.2 4.9A7 7 0 0 0 19 18.5"></path>
@@ -317,7 +317,7 @@
               <option value="playtime" data-i18n="Playtime">Playtime</option>
               <option value="rating" data-i18n="Rating">Rating</option>
             </select>
-            <button class="direction-toggle" id="sortDirectionButton" type="button" title="Sort ascending" aria-label="Sort ascending">↑</button>
+            <button class="direction-toggle" id="sortDirectionButton" type="button" title="Sort ascending" aria-label="Sort ascending"><svg class="sort-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"></path></svg></button>
           </div>
         </label>
         <button class="icon-button view-toggle" id="viewToggleButton" type="button" title="Show as list" aria-label="Show as list"></button>
@@ -420,6 +420,23 @@
         </svg>
       </button>
     </div>
+    <nav class="mobile-action-dock" id="mobileActionDock" aria-label="Quick actions">
+      <button class="mobile-dock-action" id="mobileDockAdd" type="button" title="Add Game" aria-label="Add Game" data-i18n-title="Add Game" data-i18n-aria-label="Add Game">
+        <svg class="plus-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        <span data-i18n="Add">Add</span>
+      </button>
+      <button class="mobile-dock-action" id="mobileDockSearch" type="button" title="Search" aria-label="Search" data-i18n-title="Search" data-i18n-aria-label="Search">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        <span data-i18n="Search">Search</span>
+      </button>
+      <button class="mobile-dock-action" id="mobileDockSettings" type="button" title="Settings" aria-label="Settings" data-i18n-title="Settings" data-i18n-aria-label="Settings" hidden>
+        <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"></path><circle cx="16" cy="6" r="2"></circle><circle cx="8" cy="12" r="2"></circle><circle cx="16" cy="18" r="2"></circle></svg>
+        <span data-i18n="Settings">Settings</span>
+      </button>
+      <button class="mobile-dock-action mobile-dock-switch" id="mobileDockSwitch" type="button" title="Switch between Shelf and Gamelist" aria-label="Switch between Shelf and Gamelist">
+        <span class="mobile-switch-logos" data-current-page="gamelist" aria-hidden="true"><span class="mobile-switch-logo mobile-switch-logo-shelf"></span><span class="mobile-switch-logo mobile-switch-logo-gamelist"></span></span>
+      </button>
+    </nav>
 
     <dialog id="gameDialog">
       <form method="dialog" class="modal" id="gameForm">
@@ -707,6 +724,20 @@
       </form>
     </dialog>
 
+    <dialog id="editorUnsavedDialog" class="unsaved-edit-dialog">
+      <article class="auth-modal glass unsaved-edit-modal">
+        <div class="modal-head">
+          <div><p class="eyebrow">Game editor</p><h2>Are you sure?</h2></div>
+          <button class="icon-button" type="button" data-editor-unsaved-cancel aria-label="Return to editing">×</button>
+        </div>
+        <p class="unsaved-edit-copy">You have unsaved changes.</p>
+        <div class="modal-actions unsaved-edit-actions">
+          <button class="ghost-button" type="button" data-editor-unsaved-save>Close and save</button>
+          <button class="primary-button" type="button" data-editor-unsaved-discard>Close without saving</button>
+        </div>
+      </article>
+    </dialog>
+
     <dialog id="detailDialog">
       <article class="detail-modal glass">
         <button class="icon-button detail-close" id="detailCloseButton" type="button" title="Close">×</button>
@@ -751,7 +782,7 @@
                   <option value="name" data-i18n="Name">Name</option>
                   <option value="completed" data-i18n="Completed">Completed</option>
                 </select>
-                <button class="direction-toggle" id="detailTrophyDirection" type="button" title="Sort ascending" aria-label="Sort ascending">↑</button>
+                <button class="direction-toggle" id="detailTrophyDirection" type="button" title="Sort ascending" aria-label="Sort ascending"><svg class="sort-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"></path></svg></button>
               </div>
             </div>
             <div class="detail-trophy-scroller" id="detailTrophyScroller">
@@ -899,8 +930,8 @@
       <form method="dialog" class="settings-modal glass" id="settingsForm" autocomplete="off">
         <div class="modal-head">
           <div>
-            <p class="eyebrow" data-i18n="Site settings">Site settings</p>
-            <h2 data-i18n="Settings">Settings</h2>
+            <p class="eyebrow" id="settingsDialogEyebrow" data-i18n="Site settings">Site settings</p>
+            <h2 class="settings-main-heading"><span id="settingsDialogTitle" data-i18n="Settings">Settings</span><button class="settings-main-back-title" id="settingsDialogBackTitle" type="button" data-settings-back aria-label="Go back" hidden><span class="settings-main-title-current"><svg class="settings-main-back-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span id="settingsDialogSectionTitle"></span></span><span class="settings-main-title-hover"><svg class="settings-main-back-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Go back</span></button></h2>
           </div>
           <div class="modal-head-actions">
             <button class="primary-button modal-head-save" type="submit" data-i18n="Save">Save</button>
@@ -908,21 +939,37 @@
           </div>
         </div>
 
-        <section class="settings-section">
-          <h3 data-i18n="Page">Page</h3>
-          <div class="settings-layout" id="settingsLayoutList" aria-label="Page order"></div>
-        </section>
+        <div class="settings-home" id="settingsHome">
+          <p class="settings-home-copy">Choose what you’d like to manage.</p>
+          <div class="settings-category-grid">
+            <button class="settings-category-card" type="button" data-settings-panel="design">
+              <span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="M13.5 6.5l4 4"/><path d="M13 20h7"/></svg></span>
+              <span class="settings-category-text"><strong>Page design</strong><small>Layout, appearance, and preferences</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span>
+            </button>
+            <button class="settings-category-card" type="button" data-settings-panel="accounts">
+              <span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="7" r="4"/><path d="M3 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2M19 8v6m3-3h-6"/></svg></span>
+              <span class="settings-category-text"><strong>Accounts</strong><small>Connected services and sign out</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span>
+            </button>
+            <button class="settings-category-card" type="button" data-settings-panel="data">
+              <span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg></span>
+              <span class="settings-category-text"><strong>Your Data</strong><small>Import and export your collections</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span>
+            </button>
+            <button class="settings-category-card" type="button" data-settings-panel="dev" hidden>
+              <span class="settings-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 5-6 7 6 7M16 5l6 7-6 7M14 3l-4 18"/></svg></span>
+              <span class="settings-category-text"><strong>Dev Features</strong><small>Tools and experimental features</small></span><span class="settings-category-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></span>
+            </button>
+          </div>
+          <section class="settings-dev-home" id="settingsDevHome" hidden>
+            <h3>Dev Features</h3>
+            <div class="settings-dev-links" id="settingsDevFeatures"></div>
+          </section>
+        </div>
 
-        <section class="settings-section settings-accounts-section">
-          <h3>Accounts</h3>
-          <div id="settingsAccountsMount"></div>
-        </section>
-        <p class="eyebrow settings-detail-title" data-i18n="Details">Details</p>
-        <section class="settings-grid settings-detail-grid">
-          <label class="settings-detail-compact">
-            <span data-i18n="Default owner">Default owner</span>
-            <input id="settingsDefaultOwner" autocomplete="off">
-          </label>
+        <section class="settings-window-panel" data-settings-window="design" hidden>
+          <section class="settings-section"><h3 data-i18n="Page Layout">Page Layout</h3><div class="settings-layout" id="settingsLayoutList" aria-label="Page order"></div></section>
+          <p class="eyebrow settings-detail-title" data-i18n="Details">Details</p>
+          <section class="settings-grid settings-detail-grid">
+          <div class="settings-preference-row" id="settingsPreferencesBeforeCurrency"></div>
           <label class="settings-detail-compact">
             <span data-i18n="Currency">Currency</span>
             <select id="settingsCurrency">
@@ -935,15 +982,15 @@
           <label class="settings-detail-compact">
             <span data-i18n="Region">Region</span>
             <select id="settingsRegion">
-              <option value="ES" data-i18n="Spain">Spain</option>
-              <option value="IT" data-i18n="Italy">Italy</option>
-              <option value="IE" data-i18n="Ireland">Ireland</option>
-              <option value="FR" data-i18n="France">France</option>
-              <option value="PT" data-i18n="Portugal">Portugal</option>
-              <option value="JP" data-i18n="Japan">Japan</option>
-              <option value="MX" data-i18n="Mexico">Mexico</option>
-              <option value="US">US</option>
-              <option value="UK">UK</option>
+              <option value="ES" data-flag="assets/flags/es.svg" data-i18n="Spain">Spain</option>
+              <option value="IT" data-flag="assets/flags/it.svg" data-i18n="Italy">Italy</option>
+              <option value="IE" data-flag="assets/flags/ie.svg" data-i18n="Ireland">Ireland</option>
+              <option value="FR" data-flag="assets/flags/fr.svg" data-i18n="France">France</option>
+              <option value="PT" data-flag="assets/flags/pt.svg" data-i18n="Portugal">Portugal</option>
+              <option value="JP" data-flag="assets/flags/jp.svg" data-i18n="Japan">Japan</option>
+              <option value="MX" data-flag="assets/flags/mx.svg" data-i18n="Mexico">Mexico</option>
+              <option value="US" data-flag="assets/flags/us.svg">US</option>
+              <option value="UK" data-flag="assets/flags/gb.svg">UK</option>
             </select>
           </label>
           <label class="settings-detail-compact">
@@ -953,27 +1000,57 @@
               <option value="es-ES">Castellano</option>
             </select>
           </label>
-        </section>
-
-        <section class="settings-section">
+          <div class="settings-preference-row" id="settingsPreferencesAfterLanguage"></div>
+          </section>
+          <section class="settings-section">
           <h3 data-i18n="Stores">Stores</h3>
           <div class="settings-store-list" id="settingsStores"></div>
+          </section>
+          <section class="settings-section settings-inline-theme-section">
+            <p class="eyebrow settings-customize-title">Customize Theme</p>
+            <div id="settingsThemeEditor"></div>
+          </section>
         </section>
 
-        <section class="settings-section settings-csv-section">
-          <h3 data-i18n="Your data">Your data</h3>
+        <section class="settings-window-panel settings-accounts-section" data-settings-window="accounts" hidden>
+          <label class="settings-account-field settings-default-owner-field">
+            <span data-i18n="Default owner">Default owner</span>
+            <input id="settingsDefaultOwner" autocomplete="off">
+          </label>
+          <hr class="settings-account-separator">
+          <div id="settingsAccountsMount"></div>
+          <button class="settings-logout-button" id="settingsLogoutButton" type="button"><svg class="exit-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H6.8A2.8 2.8 0 0 0 4 7.8v8.4A2.8 2.8 0 0 0 6.8 19H10"></path><path d="M14 8l4 4-4 4"></path><path d="M8 12h10"></path></svg> Log out of my account</button>
+        </section>
+
+        <section class="settings-window-panel settings-csv-section" data-settings-window="data" hidden>
           <div class="settings-csv-data" id="settingsCsvData"></div>
         </section>
 
-        <section class="settings-section settings-dev-section">
-          <h3 data-i18n="Dev features">Dev features</h3>
-          <div class="settings-dev-links" id="settingsDevFeatures"></div>
+        <section class="settings-window-panel settings-dev-section" data-settings-window="dev" hidden>
+          <div class="settings-dev-links" id="settingsDevPanelFeatures"></div>
         </section>
 
         <div class="modal-actions">
           <button class="primary-button" type="submit" data-i18n="Save">Save</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="settingsUnsavedDialog" class="settings-unsaved-dialog">
+      <article class="auth-modal glass settings-unsaved-modal">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">Settings</p>
+            <h2>Are you sure?</h2>
+          </div>
+          <button class="icon-button" type="button" data-settings-unsaved-cancel aria-label="Go back to settings">×</button>
+        </div>
+        <p class="settings-unsaved-copy">You have unsaved changes.</p>
+        <div class="modal-actions settings-unsaved-actions">
+          <button class="ghost-button" type="button" data-settings-unsaved-save></button>
+          <button class="primary-button" type="button" data-settings-unsaved-discard></button>
+        </div>
+      </article>
     </dialog>
 
     <dialog id="authDialog">
