@@ -340,7 +340,9 @@ const el = {
   floatingEditActions: document.querySelector("#floatingEditActions"),
   floatingAddButton: document.querySelector("#floatingAddButton"),
   floatingSearchButton: document.querySelector("#floatingSearchButton"),
+  mobileActionDock: document.querySelector("#mobileActionDock"),
   mobileDockAdd: document.querySelector("#mobileDockAdd"),
+  mobileDockUp: document.querySelector("#mobileDockUp"),
   mobileDockSearch: document.querySelector("#mobileDockSearch"),
   mobileDockSettings: document.querySelector("#mobileDockSettings"),
   mobileDockSwitch: document.querySelector("#mobileDockSwitch"),
@@ -712,8 +714,7 @@ function bindTextureParallax() {
 }
 
 function quickAddGame() {
-  scrollToSearchArea();
-  window.setTimeout(() => openEditor(), 180);
+  openEditor();
 }
 
 function registerServiceWorker() {
@@ -941,7 +942,7 @@ function bindEvents() {
       window.open(twitchUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    scrollToSearchArea();
+    scrollToGameList();
   });
   el.loginButton.addEventListener("click", toggleEditMode);
   document.querySelector("#settingsLogoutButton")?.addEventListener("click", () => {
@@ -1142,6 +1143,7 @@ function bindEvents() {
     if (document.body.classList.contains("dialog-open")) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
+  el.mobileDockUp?.addEventListener("click", () => el.scrollTopButton.click());
   el.detailCloseButton.addEventListener("click", () => el.detailDialog.close());
   el.detailDialog.addEventListener("click", (event) => {
     if (event.target === el.detailDialog) el.detailDialog.close();
@@ -1183,7 +1185,14 @@ function bindEvents() {
     event.preventDefault();
     requestSettingsExit("close");
   });
-  el.settingsDialog?.addEventListener("close", syncScrollLock);
+  el.settingsDialog?.addEventListener("close", () => {
+    syncScrollLock();
+    if (el.mobileDockSettings) {
+      el.mobileDockSettings.disabled = false;
+      el.mobileDockSettings.classList.remove("is-active");
+      el.mobileDockSettings.setAttribute("aria-pressed", "false");
+    }
+  });
   el.settingsForm?.addEventListener("input", () => { settingsDirty = true; });
   el.settingsForm?.addEventListener("change", () => { settingsDirty = true; });
   el.settingsForm?.addEventListener("click", (event) => {
@@ -1389,17 +1398,9 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   let pageDragArmed = false;
   let pageDragging = false;
   let moved = false;
-  const mobilePullQuery = window.matchMedia("(max-width: 760px)");
   const pagePullThreshold = () => Math.min(260, Math.max(150, window.innerHeight * 0.34));
   const isAtPageTop = () => window.scrollY <= 2 && document.documentElement.scrollTop <= 2 && document.body.scrollTop <= 2;
-  const canStartPagePull = (event) => {
-    if (!mobilePullQuery.matches || pageSwitchHidden() || document.body.classList.contains("dialog-open")) return false;
-    if (event.pointerType && event.pointerType !== "touch") return false;
-    if (event.button != null && event.button !== 0) return false;
-    if (!isAtPageTop()) return false;
-    const interactive = event.target?.closest?.("button, a, input, select, textarea, dialog, .platform-logo-menu, .playing-list, .playing-finished-list");
-    return !interactive || interactive.classList?.contains("cover-button");
-  };
+  const canStartPagePull = () => false;
   const setPull = (distance) => {
     const pull = Math.max(0, Math.min(window.innerHeight, distance));
     const progress = Math.min(1, pull / pagePullThreshold());
@@ -1867,6 +1868,7 @@ function render() {
   el.syncButton.hidden = !state.canEdit;
   if (el.settingsButton) el.settingsButton.hidden = !state.canEdit;
   if (el.mobileDockSettings) el.mobileDockSettings.hidden = !state.canEdit;
+  setSettingsAuthLoading(false);
   if (el.mobileDockSwitch) el.mobileDockSwitch.hidden = pageSwitchHidden();
   if (el.fetchDataButton) el.fetchDataButton.hidden = true;
   el.fetchPricesButton.hidden = !state.canEdit;
@@ -1979,6 +1981,11 @@ function openSettingsDialog() {
   settingsDirty = false;
   settingsSnapshot = JSON.parse(JSON.stringify(state.settings));
   el.settingsDialog.showModal();
+  if (el.mobileDockSettings) {
+    el.mobileDockSettings.disabled = true;
+    el.mobileDockSettings.classList.add("is-active");
+    el.mobileDockSettings.setAttribute("aria-pressed", "true");
+  }
   refreshIgdbConnectionStatus();
   refreshNintendoConnectionStatus();
   refreshPsnConnectionStatus();
@@ -2758,9 +2765,9 @@ function settingsShelfSyncItem() {
     <article class="settings-layout-card settings-sync-card" data-layout-key="shelf-sync">
       <div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="settings-theme-select">
-        <span>${escapeHtml(tt("Shelf Sync"))}</span>
+        <span>${escapeHtml(tt("Sync games with Shelf"))}</span>
         <div class="settings-check-field">
-          <label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Shelf Sync"))}">
+          <label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Sync games with Shelf"))}">
             <input type="checkbox" data-shelf-sync ${state.settings.shelfSync ? "checked" : ""}>
             <span>${escapeHtml(tt("Enabled"))}</span>
           </label>
@@ -5757,6 +5764,10 @@ function downloadCanvas(canvas, filename) {
 function scrollToSearchArea() {
   document.querySelector(".toolbar")?.scrollIntoView({ behavior: "smooth", block: "start" });
   window.requestAnimationFrame(() => el.searchInput?.focus({ preventScroll: true }));
+}
+
+function scrollToGameList() {
+  document.querySelector("#backlog")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function scrollToFinishedSection() {
@@ -9434,8 +9445,11 @@ function updateDetailTrophyEdges() {
 
 function updateScrollTopButton() {
   const visible = window.scrollY > 180 && !document.body.classList.contains("dialog-open");
+  const dockVisible = window.innerWidth >= 761 || window.scrollY > 180;
   el.scrollTopButton?.classList.toggle("visible", visible);
   el.floatingEditActions?.classList.toggle("visible", visible);
+  el.mobileActionDock?.classList.toggle("visible", dockVisible);
+  el.mobileDockUp?.classList.toggle("is-visible", visible);
 }
 
 function sortedDetailTrophies() {
@@ -12368,8 +12382,12 @@ async function hasSharedEditorSession() {
 }
 
 async function syncSharedEditorSession() {
+  setSettingsAuthLoading(true);
   const active = await hasSharedEditorSession();
-  if (active === state.canEdit) return;
+  if (active === state.canEdit) {
+    setSettingsAuthLoading(false);
+    return;
+  }
   state.canEdit = active;
   if (active) sessionStorage.setItem(SESSION_KEY, "true");
   else {
@@ -12380,14 +12398,26 @@ async function syncSharedEditorSession() {
   if (active) maybeShowUpdatesPopup();
 }
 
+function setSettingsAuthLoading(loading) {
+  document.body.classList.toggle("auth-checking", loading);
+  [el.settingsButton, el.mobileDockSettings].forEach((button) => {
+    if (!button) return;
+    button.disabled = loading;
+    if (loading) button.setAttribute("aria-busy", "true");
+    else button.removeAttribute("aria-busy");
+  });
+}
+
 async function ensureEditMode() {
   if (state.canEdit) return true;
   let showError = false;
   while (!state.canEdit) {
     const password = await requestEditorPassword({ error: showError });
     if (!password) return false;
+    setSettingsAuthLoading(true);
     const ok = await verifyPassword(password);
     if (!ok) {
+      setSettingsAuthLoading(false);
       showError = true;
       continue;
     }

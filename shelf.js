@@ -184,6 +184,7 @@ const el = {
   footerCreditText: document.querySelector("#footerCreditText"),
   scrollTop: document.querySelector("#scrollTopButton"),
   floatingActions: document.querySelector("#floatingEditActions"), floatingAdd: document.querySelector("#floatingAddButton"), floatingSearch: document.querySelector("#floatingSearchButton"),
+  mobileActionDock: document.querySelector("#mobileActionDock"), mobileDockUp: document.querySelector("#mobileDockUp"), mobileDockAdd: document.querySelector("#mobileDockAdd"), mobileDockSearch: document.querySelector("#mobileDockSearch"), mobileDockSettings: document.querySelector("#mobileDockSettings"), mobileDockSwitch: document.querySelector("#mobileDockSwitch"),
   detailDialog: document.querySelector("#detailDialog"),
   detailClose: document.querySelector("#detailClose"),
   detailTitle: document.querySelector("#detailTitle"),
@@ -349,11 +350,21 @@ function bindEvents() {
   el.searchButton?.addEventListener("click", scrollToShelfSearch);
   el.floatingAdd.addEventListener("click", () => state.canEdit ? openEditor(null, { digital: state.filters.tab === "drive" }) : openAuth());
   el.floatingSearch?.addEventListener("click", scrollToShelfSearch);
+  el.mobileDockAdd?.addEventListener("click", () => el.floatingAdd.click());
+  el.mobileDockSearch?.addEventListener("click", scrollToShelfSearch);
+  el.mobileDockSettings?.addEventListener("click", openLayout);
+  el.mobileDockSwitch?.addEventListener("click", () => {
+    if (pageSwitchHidden()) return;
+    const transitionButton = document.querySelector(".page-pull-switch");
+    if (transitionButton) transitionButton.click();
+    else window.location.href = pullNavigationUrl("./");
+  });
   el.layoutButton.addEventListener("click", openLayout);
   el.showcaseEdit.addEventListener("click", openShowcaseEditor);
   el.syncButton?.addEventListener("click", syncShelfNow);
   el.fetchPricesButton.addEventListener("click", refreshAllShelfPrices);
   el.scrollTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  el.mobileDockUp?.addEventListener("click", () => el.scrollTop.click());
   el.footerUpdate.addEventListener("click", clearSiteCachesAndReload);
   el.footerVersion.addEventListener("click", clearSiteCachesAndReload);
   el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
@@ -426,6 +437,13 @@ function bindEvents() {
     if (event.target.closest("[data-shelf-settings-back]")) requestShelfSettingsExit("back");
   });
   el.layoutDialog.addEventListener("cancel", (event) => { event.preventDefault(); requestShelfSettingsExit("close"); });
+  el.layoutDialog.addEventListener("close", () => {
+    if (el.mobileDockSettings) {
+      el.mobileDockSettings.disabled = false;
+      el.mobileDockSettings.classList.remove("is-active");
+      el.mobileDockSettings.setAttribute("aria-pressed", "false");
+    }
+  });
   el.layoutForm.addEventListener("submit", saveLayout);
   document.querySelector("#shelfSettingsLogoutButton")?.addEventListener("click", () => {
     if (shelfSettingsDirty) {
@@ -1077,6 +1095,9 @@ function renderChrome() {
   document.body.classList.toggle("list-view-mode", state.viewMode === "list");
   el.addButton.hidden = false;
   el.layoutButton.hidden = !state.canEdit;
+  if (el.mobileDockSettings) el.mobileDockSettings.hidden = !state.canEdit;
+  setSettingsAuthLoading(false);
+  if (el.mobileDockSwitch) el.mobileDockSwitch.hidden = pageSwitchHidden();
   if (el.syncButton) el.syncButton.hidden = true;
   const showPriceActions = state.canEdit && shelfPricesVisible();
   el.fetchPricesButton.hidden = !showPriceActions;
@@ -1118,8 +1139,11 @@ function normalizeOwnerKey(value) {
 
 function updateFloatingActions() {
   const visible = window.scrollY > 180 && !document.body.classList.contains("dialog-open");
+  const dockVisible = window.innerWidth >= 761 || window.scrollY > 180;
   el.scrollTop.classList.toggle("visible", visible);
   el.floatingActions.classList.toggle("visible", visible);
+  el.mobileActionDock?.classList.toggle("visible", dockVisible);
+  el.mobileDockUp?.classList.toggle("is-visible", visible);
 }
 
 async function syncShelfNow() {
@@ -1193,17 +1217,9 @@ function initPagePullTransition({ targetLabel, targetUrl }) {
   let pageDragArmed = false;
   let pageDragging = false;
   let moved = false;
-  const mobilePullQuery = window.matchMedia("(max-width: 760px)");
   const pagePullThreshold = () => Math.min(260, Math.max(150, window.innerHeight * 0.34));
   const isAtPageTop = () => window.scrollY <= 2 && document.documentElement.scrollTop <= 2 && document.body.scrollTop <= 2;
-  const canStartPagePull = (event) => {
-    if (!mobilePullQuery.matches || pageSwitchHidden() || document.body.classList.contains("dialog-open")) return false;
-    if (event.pointerType && event.pointerType !== "touch") return false;
-    if (event.button != null && event.button !== 0) return false;
-    if (!isAtPageTop()) return false;
-    const interactive = event.target?.closest?.("button, a, input, select, textarea, dialog, .platform-logo-menu, .playing-list, .playing-finished-list");
-    return !interactive || interactive.classList?.contains("cover-button");
-  };
+  const canStartPagePull = () => false;
   const setPull = (distance) => {
     const pull = Math.max(0, Math.min(window.innerHeight, distance));
     const progress = Math.min(1, pull / pagePullThreshold());
@@ -1651,6 +1667,7 @@ function syncStyledSelect(select, options = {}) {
   const selectOptions = [...select.options].map((option) => ({
     value: option.value,
     label: option.textContent.trim(),
+    flag: option.dataset.flag || (useFlags && option.value && option.value !== "all" ? flagAsset(option.value) : ""),
     selected: option.selected,
     disabled: option.disabled || option.hidden,
     fontFamily: option.style.fontFamily || "",
@@ -1660,12 +1677,12 @@ function syncStyledSelect(select, options = {}) {
   control.classList.toggle("is-active", options.activeValue != null && selected.value !== options.activeValue);
   control.innerHTML = `
     <button class="platform-logo-button" type="button" aria-haspopup="listbox" aria-expanded="false" data-full-label="${escapeHtml(selected.label)}" aria-label="${escapeHtml(selected.label)}">
-      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos, flags: useFlags, fontFamily: selected.fontFamily })}
+      ${platformLogoChoiceMarkup(selected.value, selected.label, { logos: useLogos, fontFamily: selected.fontFamily, flag: selected.flag })}
     </button>
     <div class="platform-logo-menu" role="listbox">
       ${visibleOptions.map((option) => `
         <button class="platform-logo-option ${option.selected ? "is-selected" : ""}" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-value="${escapeHtml(option.value)}" data-full-label="${escapeHtml(option.label)}">
-          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos, flags: useFlags, fontFamily: option.fontFamily })}
+          ${platformLogoChoiceMarkup(option.value, option.label, { logos: useLogos, fontFamily: option.fontFamily, flag: option.flag })}
         </button>
       `).join("")}
     </div>
@@ -1754,13 +1771,13 @@ function hidePlatformLogoOverlay() {
 
 function platformLogoChoiceMarkup(value, label, options = {}) {
   const showLogo = options.logos && value && value !== "all";
-  const showFlag = options.flags && value && value !== "all";
+  const showFlag = Boolean(options.flag);
   const cls = showLogo ? platformClass(value) : "platform-generic";
   const fontStyle = options.fontFamily ? ` style="font-family:${escapeHtml(options.fontFamily)}"` : "";
   return `
     <span class="platform-logo-choice ${escapeHtml(cls)}">
       ${showLogo ? `<span class="platform-logo-choice-icon"><img src="${escapeHtml(platformLogo(value))}" alt="" width="18" height="18" decoding="async"></span>` : ""}
-      ${showFlag ? `<span class="platform-logo-choice-icon"><img src="${escapeHtml(flagAsset(value))}" alt="" width="18" height="18" decoding="async"></span>` : ""}
+      ${showFlag ? `<span class="platform-logo-choice-icon settings-region-flag-icon"><img src="${escapeHtml(options.flag)}" alt="" width="22" height="16" decoding="async"></span>` : ""}
       <span class="platform-logo-choice-label"${fontStyle}>${escapeHtml(label)}</span>
     </span>
   `;
@@ -2721,6 +2738,7 @@ async function persistShelf(options = {}) {
 
 async function toggleEditMode() {
   if (!state.canEdit) return openAuth();
+  setSettingsAuthLoading(true);
   await fetch("/api/auth", { method: "DELETE" }).catch(() => {});
   state.canEdit = false;
   sessionStorage.removeItem(SESSION_KEY);
@@ -2738,9 +2756,10 @@ function openAuth() {
 
 async function submitAuth(event) {
   event.preventDefault();
+  setSettingsAuthLoading(true);
   const response = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: el.authPassword.value }) }).catch(() => null);
   const data = await response?.json().catch(() => ({}));
-  if (!data?.ok) { el.authError.hidden = false; return; }
+  if (!data?.ok) { el.authError.hidden = false; setSettingsAuthLoading(false); return; }
   state.canEdit = true;
   sessionStorage.setItem(SESSION_KEY, "true");
   sessionStorage.setItem(`${SESSION_KEY}:password`, el.authPassword.value);
@@ -2751,13 +2770,27 @@ async function submitAuth(event) {
 }
 
 async function refreshSharedAuth() {
+  setSettingsAuthLoading(true);
   const active = await fetchEditorAuth(state.canEdit);
-  if (active === state.canEdit) return;
+  if (active === state.canEdit) {
+    setSettingsAuthLoading(false);
+    return;
+  }
   state.canEdit = active;
   if (active) sessionStorage.setItem(SESSION_KEY, "true");
   else sessionStorage.removeItem(SESSION_KEY);
   renderAll();
   if (active) maybeShowUpdatesPopup();
+}
+
+function setSettingsAuthLoading(loading) {
+  document.body.classList.toggle("auth-checking", loading);
+  [el.layoutButton, el.mobileDockSettings].forEach((button) => {
+    if (!button) return;
+    button.disabled = loading;
+    if (loading) button.setAttribute("aria-busy", "true");
+    else button.removeAttribute("aria-busy");
+  });
 }
 
 function signalAuthChange() { localStorage.setItem("gamelist-editor-signal", String(Date.now())); }
@@ -2841,6 +2874,11 @@ function openLayout() {
   el.layoutDialogBackTitle.hidden = true;
   el.layoutDialogEyebrow.textContent = "Shelf settings";
   openDialog(el.layoutDialog);
+  if (el.mobileDockSettings) {
+    el.mobileDockSettings.disabled = true;
+    el.mobileDockSettings.classList.add("is-active");
+    el.mobileDockSettings.setAttribute("aria-pressed", "true");
+  }
   initShelfAccounts(document.querySelector("[data-shelf-accounts]"), {
     getSettings: () => state.gamelistSettings,
     saveSettings: async (settings) => {
@@ -2892,7 +2930,7 @@ function renderLayoutEditor() {
   el.settingsLanguage.value = currentLanguage();
   el.settingsTwitchUser.value = state.gamelistSettings.twitchUser || "";
   el.settingsDefaultOwner.value = state.gamelistSettings.defaultOwner || "";
-  el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `<label class="check-filter toggle-check settings-store-check"><input type="checkbox" value="${escapeHtml(store)}" ${settings.stores.includes(store) ? "checked" : ""}><span>${escapeHtml(store)}</span></label>`).join("");
+  el.settingsStores.innerHTML = STORE_OPTIONS.map((store) => `<label class="check-filter toggle-check settings-store-check"><input type="checkbox" value="${escapeHtml(store)}" ${settings.stores.includes(store) ? "checked" : ""}><img class="settings-store-icon" src="${escapeHtml(storeIcon(store))}" alt="" aria-hidden="true" loading="lazy"><span>${escapeHtml(store)}</span></label>`).join("");
   el.settingsStores.querySelectorAll("input").forEach((input) => input.addEventListener("change", () => {
     const checked = [...el.settingsStores.querySelectorAll("input:checked")];
     if (checked.length > MAX_PRICE_STORES) input.checked = false;
@@ -2911,6 +2949,7 @@ function renderLayoutEditor() {
   document.querySelector("[data-import-csv='finished']")?.addEventListener("click", importFinishedGamesCsv);
   applyLanguage();
   syncStyledSelects(el.layoutDialog, { activeValue: null });
+  syncStyledSelect(el.settingsRegion, { flags: true });
 }
 
 function settingsLayoutCard(key, index) {
@@ -2934,7 +2973,7 @@ function settingsPageFeatureToggles() {
 }
 
 function settingsShelfSyncCard() {
-  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>${escapeHtml(tt("Shelf Sync"))}</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Shelf Sync"))}"><input type="checkbox" id="shelfSettingsSync" ${state.gamelistSettings.shelfSync === false ? "" : "checked"}><span>${escapeHtml(tt("Enabled"))}</span></label></div></div></article>`;
+  return `<article class="settings-layout-card settings-sync-card"><div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div><div class="settings-theme-select"><span>${escapeHtml(tt("Sync games with Shelf"))}</span><div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Sync games with Shelf"))}"><input type="checkbox" id="shelfSettingsSync" ${state.gamelistSettings.shelfSync === false ? "" : "checked"}><span>${escapeHtml(tt("Enabled"))}</span></label></div></div></article>`;
 }
 
 function settingsPageSwitchCard() {
