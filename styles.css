@@ -4358,8 +4358,8 @@ body.dialog-open .floating-edit-actions {
   height: 32px;
   min-height: 32px;
   padding: 0 6px 0 8px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--panel-dark) 38%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 52%, transparent);
   border-radius: 4px;
   cursor: pointer;
   box-sizing: border-box;
@@ -4600,7 +4600,20 @@ body.dialog-open .floating-edit-actions {
 .toolbar-check {
   align-self: end;
   min-height: var(--toolbar-control-height);
-  padding-right: 18px;
+  gap: 6px;
+  padding-right: 24px;
+}
+
+.toolbar-check .preordered-filter-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: #fff;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .order-control {
@@ -7682,6 +7695,7 @@ a.time-pill {
 
 .game-card.has-price-footer .card-footer {
   grid-column: 1 / -1;
+  grid-row: 3;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -7689,8 +7703,13 @@ a.time-pill {
   width: 100%;
 }
 
+.game-card.has-price-footer > .cover-button {
+  align-self: start;
+}
+
 .game-card.has-price-footer .prices {
   order: 2;
+  align-self: center;
   flex: 1 1 0;
   width: auto;
   min-width: 0;
@@ -7720,11 +7739,12 @@ a.time-pill {
   flex: 0 0 auto;
   align-items: center;
   align-self: center;
+  justify-self: start;
   flex-flow: row nowrap;
   gap: 5px;
   width: auto;
   max-width: 100%;
-  margin: 0;
+  margin: 0 auto 0 0;
   padding: 0;
   border: 0;
 }
@@ -8505,31 +8525,64 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   height: auto;
 }
 
+.completed-list:not(.list-view) .completed-row {
+  grid-template-columns: 82px minmax(0, 1fr) auto;
+  align-items: start;
+  min-height: 178px;
+}
+
+.completed-list:not(.list-view) .completed-cover {
+  width: 82px;
+  height: 114px;
+  align-self: start;
+}
+
+.completed-list:not(.list-view) .completed-actions {
+  align-self: start;
+  justify-content: flex-start;
+}
+
+.completed-list:not(.list-view) .completed-main {
+  position: static;
+}
+
+.completed-main > .restore-action {
+  position: absolute;
+  left: 11px;
+  bottom: 11px;
+  z-index: 2;
+  justify-self: start;
+  margin: 0;
+}
+
 .completed-item:has(.completed-rating-breakdown) .completed-row {
   min-height: 122px;
 }
 
 .completed-rating-breakdown {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px 8px;
   min-width: 0;
-  padding: 5px 3px 2px;
-  border-top: 1px solid var(--line);
+  margin-top: 7px;
+  padding: 0 3px 2px;
 }
 
 .completed-rating-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 5px;
+  grid-template-rows: auto auto;
+  justify-items: start;
+  gap: 3px;
   min-width: 0;
   color: var(--dim);
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.25;
 }
 
-.completed-rating-item > span {
+.completed-rating-label {
+  text-transform: uppercase;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -8538,14 +8591,31 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .completed-rating-stars {
   display: inline-flex;
   align-items: center;
+  min-height: 28px;
+  padding: 1px 6px;
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  --rating-active-color: var(--accent);
+}
+
+.completed-rating-stars.is-perfect {
   color: #ffe985;
   --rating-active-color: #ffe985;
 }
 
 .completed-rating-stars .star-display {
   gap: 1px;
-  --rating-star-size: 18px;
+  --rating-star-size: 16px;
   --rating-star-gap: 1px;
+}
+
+@media (max-width: 760px) {
+  .completed-rating-stars .star-display {
+    --rating-star-size: 11px;
+  }
+
 }
 
 #completedCount {
@@ -10694,8 +10764,12 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
 
 .rating-score-pill {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  min-height: 31px;
+  padding: 4px 8px;
   gap: 4px;
   color: var(--rating-score-main);
   background:
@@ -10705,6 +10779,7 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
   border-radius: 7px;
   font-weight: 850;
   line-height: 1;
+  white-space: nowrap;
   --rating-score-start: rgba(255, 71, 103, 0.18);
   --rating-score-end: rgba(255, 153, 79, 0.12);
   --rating-score-border: rgba(255, 111, 133, 0.34);
@@ -15124,6 +15199,12 @@ body.theme-kash
   white-space: nowrap;
 }
 
+#addGameForm.needs-gamelist-preorder-store .shelf-gamelist-preorder-field input,
+#addGameForm.is-new-shelf-game.needs-title-field .shelf-title-field input,
+#addGameForm.is-new-shelf-game.needs-platform-field .shelf-console-field input,
+#addGameForm.is-new-shelf-game.needs-release-date-field .shelf-release-field input,
+#addGameForm.is-new-shelf-game.needs-addition-date-field .shelf-addition-field input,
+#addGameForm.is-new-shelf-game.needs-region-field .shelf-region-field select,
 #gameDialog.is-new-game.needs-title-field
   .collection-form-grid
   > .title-field
@@ -15830,8 +15911,25 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
     justify-content: center;
   }
 
-  .completed-list {
-    grid-template-columns: 1fr;
+  .completed-list:not(.list-view) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .completed-rating-breakdown {
+    gap: 4px 5px;
+  }
+
+  .completed-rating-item {
+    font-size: 10px;
+  }
+
+  .completed-rating-stars {
+    min-height: 24px;
+    padding: 0 4px;
+  }
+
+  .completed-rating-stars .star-display {
+    --rating-star-size: 13px;
   }
 
   .completed-row .restore-action {
@@ -15879,7 +15977,7 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   .mobile-action-dock {
     position: fixed;
     left: 50%;
-    bottom: calc(max(6px, env(safe-area-inset-bottom)) + var(--mobile-dock-viewport-bottom, 0px));
+    bottom: max(6px, env(safe-area-inset-bottom));
     z-index: 20;
     display: flex;
     width: min(620px, calc(100vw - 8px));
@@ -16787,6 +16885,14 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
 
   .card-list {
     grid-template-columns: 1fr;
+  }
+
+  .completed-list:not(.list-view) {
+    grid-template-columns: 1fr;
+  }
+
+  .completed-rating-stars .star-display {
+    --rating-star-size: 11px;
   }
 
   .card-list.list-view {
@@ -18509,7 +18615,9 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
     box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 32%, transparent);
   }
 
-  .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):active) #mobileDockAdd:not(:active) {
+  .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):active) #mobileDockAdd:not(:active),
+  .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):focus) #mobileDockAdd:not(:focus),
+  .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd).is-active) #mobileDockAdd:not(.is-active) {
     background: transparent;
     box-shadow: none;
   }
@@ -18562,6 +18670,7 @@ html.theme-light #shelfCompletedDialog > .platinum-modal {
     var(--grid-texture), var(--panel-dark);
 }
 
+#addGameForm.is-new-shelf-game.needs-stream-check .stream-check,
 #gameDialog.is-new-game.needs-stream-check .stream-check {
   color: color-mix(in srgb, var(--accent) 82%, #fff);
   border-color: color-mix(in srgb, var(--accent) 76%, #ff4d62);
@@ -18571,10 +18680,12 @@ html.theme-light #shelfCompletedDialog > .platinum-modal {
     0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
+#addGameForm.is-new-shelf-game.needs-stream-check .stream-check input[type="checkbox"],
 #gameDialog.is-new-game.needs-stream-check .stream-check input[type="checkbox"] {
   border-color: color-mix(in srgb, var(--accent) 76%, #ff4d62);
 }
 
+#addGameForm.is-new-shelf-game.needs-stream-check .stream-check span,
 #gameDialog.is-new-game.needs-stream-check .stream-check span {
   color: color-mix(in srgb, var(--accent) 82%, #fff);
 }
@@ -18635,3 +18746,93 @@ body:not(.shelf-page) #wanted .price-refresh-action {
   z-index: 1;
 }
 
+
+/* Shared moving selector for new games on Gamelist and Shelf. */
+.shelf-gamelist-target-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0 0 14px;
+}
+
+.shelf-gamelist-target-label {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  flex: 0 0 auto;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.shelf-gamelist-target-options {
+  --target-count: 3;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--target-count), minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  padding: 5px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
+    color-mix(in srgb, var(--panel-dark) 30%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  isolation: isolate;
+  backdrop-filter: blur(10px) saturate(1.12);
+  -webkit-backdrop-filter: blur(10px) saturate(1.12);
+}
+
+.shelf-gamelist-target-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 5px;
+  bottom: 5px;
+  left: var(--target-left, 5px);
+  width: var(--target-width, calc((100% - 22px) / 3));
+  border-radius: 7px;
+  background: var(--accent);
+  box-shadow: 0 3px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: left 180ms ease, width 180ms ease;
+  pointer-events: none;
+}
+
+.shelf-gamelist-target-options button {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 760;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+
+.shelf-gamelist-target-options button.active {
+  color: #fff;
+  font-weight: 820;
+}
+
+.shelf-gamelist-target-picker[hidden] { display: none !important; }
+#gameDialog.is-new-game .collection-form-grid > .list-field { display: none; }
+#gameDialog.is-new-game .collection-form-grid > .release-text-field { grid-column: span 7; }
+@media (max-width: 760px) {
+  #gameAddTargetPicker { gap: 4px; }
+  #gameAddTargetPicker .shelf-gamelist-target-label { min-height: 0; font-size: 11px; }
+  #gameAddTargetPicker .shelf-gamelist-target-options button { padding: 0 7px; font-size: 13px; white-space: normal; }
+  #gameDialog.is-new-game .collection-form-grid > .release-text-field { grid-column: 1 / -1; }
+}

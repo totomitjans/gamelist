@@ -501,6 +501,7 @@ const el = {
   detailTrophyList: document.querySelector("#detailTrophyList"),
   detailCover: document.querySelector(".detail-cover img"),
   dialog: document.querySelector("#gameDialog"),
+  gameAddTargetPicker: document.querySelector("#gameAddTargetPicker"),
   form: document.querySelector("#gameForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
   gameDialogSaveButton: document.querySelector("#gameDialogSaveButton"),
@@ -979,7 +980,17 @@ function bindEvents() {
   el.mobileDockAdd?.addEventListener("click", quickAddGame);
   el.searchButton?.addEventListener("click", scrollToSearchArea);
   el.floatingSearchButton?.addEventListener("click", scrollToSearchArea);
-  el.mobileDockSearch?.addEventListener("click", scrollToSearchArea);
+  el.mobileDockSearch?.addEventListener("click", () => {
+    el.mobileDockSearch.classList.add("is-active");
+    scrollToSearchArea();
+  });
+  el.mobileActionDock?.addEventListener("click", (event) => {
+    const action = event.target.closest(".mobile-dock-action");
+    if (action && action !== el.mobileDockSearch) el.mobileDockSearch?.classList.remove("is-active");
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!el.mobileActionDock?.contains(event.target)) el.mobileDockSearch?.classList.remove("is-active");
+  });
   el.mobileDockStats?.addEventListener("click", () => openFinishedStatsDialog(state.completedYear || "all", { streamMode: state.completedStreamMode }));
   el.mobileDockGoty?.addEventListener("click", () => openGameOfTheYearDialogWithAutofillLoading(currentGameOfTheYear(), { force: true, autoPick: true }));
   el.syncButton.addEventListener("click", syncNow);
@@ -1303,6 +1314,15 @@ function bindEvents() {
     newGameStreamTouched = true;
     syncNewGameRequiredHighlights();
   });
+  el.gameAddTargetPicker.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-game-target]");
+    if (!button || state.editingId) return;
+    el.fields.section.value = button.dataset.gameTarget;
+    syncStyledSelect(el.fields.section, { activeValue: null });
+    markNewGameListTouched();
+    syncDialogPriceVisibility();
+    syncGameAddTargetPicker();
+  });
   el.fields.section.addEventListener("change", () => {
     markNewGameListTouched();
     syncDialogPriceVisibility();
@@ -1403,6 +1423,7 @@ function bindEvents() {
   window.addEventListener("resize", () => {
     syncDisplayMode();
     syncSectionTabsStickyOffset();
+    syncGameAddTargetPicker();
   }, { passive: true });
   window.matchMedia("(display-mode: standalone)").addEventListener?.("change", syncDisplayMode);
 }
@@ -1889,6 +1910,7 @@ function syncMobileDockGoty() {
     localStorage.removeItem(GOTY_DOCK_DISMISSED_KEY);
   }
   button.hidden = !state.canEdit
+    || !gameOfTheYearVisible()
     || !state.gotyDockDismissed
     || !candidates.length
     || isSetUp
@@ -7435,10 +7457,11 @@ function renderCompleted() {
               ${completedDateLine(game)}
             </div>
             ${ratingBreakdown}
+            ${state.viewMode === "list" ? "" : `<button class="ghost-button restore-action" type="button">${backIcon()}<span>${escapeHtml(tt("Backlog"))}</span></button>`}
           </div>
           <div class="completed-actions">
             <button class="icon-button completed-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
-            <button class="ghost-button restore-action" type="button">${backIcon()}<span>${escapeHtml(tt("Backlog"))}</span></button>
+            ${state.viewMode === "list" ? `<button class="ghost-button restore-action" type="button">${backIcon()}<span>${escapeHtml(tt("Backlog"))}</span></button>` : ""}
           </div>
         </div>
       </div>
@@ -9544,7 +9567,6 @@ function updateDetailTrophyEdges() {
 }
 
 function updateScrollTopButton() {
-  syncMobileDockViewport();
   const visible = window.scrollY > 180 && !document.body.classList.contains("dialog-open");
   const dockVisible = window.innerWidth >= 761 || window.scrollY > 180;
   el.scrollTopButton?.classList.toggle("visible", visible);
@@ -9552,18 +9574,6 @@ function updateScrollTopButton() {
   el.mobileActionDock?.classList.toggle("visible", dockVisible);
   el.mobileDockUp?.classList.toggle("is-visible", visible);
 }
-
-function syncMobileDockViewport() {
-  const viewport = window.visualViewport;
-  const bottomGap = viewport
-    ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
-    : 0;
-  document.documentElement.style.setProperty("--mobile-dock-viewport-bottom", `${bottomGap}px`);
-}
-
-window.visualViewport?.addEventListener("resize", syncMobileDockViewport, { passive: true });
-window.visualViewport?.addEventListener("scroll", syncMobileDockViewport, { passive: true });
-syncMobileDockViewport();
 
 function sortedDetailTrophies() {
   const direction = state.detailTrophyDirection === "asc" ? 1 : -1;
@@ -10246,13 +10256,13 @@ function completedBadges(game, options = {}) {
     mediaFormatBadge(game),
     game.coop ? coopBadge() : "",
     game.multiplayer && !game.coop ? multiplayerBadge() : "",
-    options.includeRating === false ? "" : ratingScoreBadge(game),
     game.dlc ? dlcBadge(game) : "",
     entitlementBadge(game),
     game.emulator ? `<span class="emulator-pill">${escapeHtml(tt("Emulator"))}</span>` : "",
     game.stream ? streamBadge() : "",
     game.replayCount ? replayBadge(game.replayCount) : "",
     options.includePsn === false ? "" : (progress ? psnProgressBadge(progress) : ""),
+    options.includeRating === false ? "" : ratingScoreBadge(game),
   ].filter(Boolean).join("");
 }
 
@@ -10264,8 +10274,8 @@ function completedRatingBreakdownMarkup(game) {
   if (!rows.length) return "";
   return `<div class="completed-rating-breakdown" aria-label="${escapeHtml(tt("Rating breakdown"))}">${rows.map(([key, label, value]) => `
     <span class="completed-rating-item" data-rating-key="${escapeHtml(key)}">
-      <span>${escapeHtml(tt(label))}</span>
-      <span class="completed-rating-stars" style="${ratingStarFillStyle(value)}" aria-label="${escapeHtml(`${tt(label)}: ${value}/5`)}">
+      <span class="completed-rating-label">${escapeHtml(tt(label))}</span>
+      <span class="completed-rating-stars${value === 5 ? " is-perfect" : ""}" data-rating-value="${value}" style="${ratingStarFillStyle(value)}" aria-label="${escapeHtml(`${tt(label)}: ${value}/5`)}">
         <span class="star-display" aria-hidden="true">${ratingStarsMarkup()}</span>
       </span>
     </span>
@@ -11800,7 +11810,27 @@ function markNewGameListTouched() {
   syncNewGameRequiredHighlights();
 }
 
+function syncGameAddTargetPicker() {
+  const picker = el.gameAddTargetPicker;
+  const isNewGame = !state.editingId && el.dialog.classList.contains("is-new-game");
+  picker.hidden = !isNewGame;
+  if (!isNewGame) return;
+  const options = picker.querySelector(".shelf-gamelist-target-options");
+  let activeButton;
+  picker.querySelectorAll("[data-game-target]").forEach((button) => {
+    const active = button.dataset.gameTarget === el.fields.section.value;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    if (active) activeButton = button;
+  });
+  if (activeButton) requestAnimationFrame(() => {
+    options.style.setProperty("--target-left", `${activeButton.offsetLeft}px`);
+    options.style.setProperty("--target-width", `${activeButton.offsetWidth}px`);
+  });
+}
+
 function syncNewGameRequiredHighlights() {
+  syncGameAddTargetPicker();
   const isNewGame = !state.editingId && el.dialog.classList.contains("is-new-game");
   el.dialog.classList.toggle("needs-title-field", isNewGame && !el.fields.title.value.trim());
   el.dialog.classList.toggle("needs-platform-field", isNewGame && !el.fields.platform.value.trim());
@@ -11813,8 +11843,9 @@ function syncNewGameRequiredHighlights() {
 }
 
 function syncNewGameUpcomingSection() {
-  if (state.editingId || !newGameShouldBeUpcoming()) return;
-  el.fields.section.value = "upcoming";
+  if (state.editingId) return;
+  if (newGameShouldBeUpcoming()) el.fields.section.value = "upcoming";
+  else if (el.fields.releaseDate.value && el.fields.section.value === "upcoming") el.fields.section.value = "wanted";
   syncStyledSelect(el.fields.section, { activeValue: null });
   syncDialogPriceVisibility();
   syncNewGameRequiredHighlights();
@@ -11884,7 +11915,7 @@ async function openEditor(id = "") {
   const game = state.games.find((item) => item.id === id) || blankGame();
   newGameListTouched = Boolean(id);
   newGameStreamTouched = Boolean(id);
-  el.dialogTitle.textContent = id ? tt("Edit Game") : tt("Add Game");
+  el.dialogTitle.textContent = id ? tt("Edit Game") : tt("Add game");
   const saveLabel = id ? "Save" : "Add to Gamelist";
   el.gameDialogSaveButton.dataset.i18n = saveLabel;
   el.gameDialogSaveButton.textContent = tt(saveLabel);
