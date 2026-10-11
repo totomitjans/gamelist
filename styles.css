@@ -945,6 +945,12 @@ html.theme-font-mata {
   gap: 8px;
 }
 
+.goty-section .column-head h2.goty-mobile-title {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0;
+}
+
 .goty-section .column-head h2 > span {
   color: transparent;
   background: var(--accent);
@@ -1056,7 +1062,6 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 }
 
 .goty-save-button,
-.goty-stats-button,
 .goty-edit-button {
   width: 36px;
   min-width: 36px;
@@ -1068,7 +1073,6 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 
 .goty-edit-button .pencil-icon,
 .goty-save-button .download-icon,
-.goty-stats-button .graph-icon,
 .completed-stats-button .graph-icon {
   width: 18px;
   height: 18px;
@@ -1088,8 +1092,16 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 }
 
 .goty-publish-button {
+  padding: 8px 12px;
+}
+
+.goty-dialog .modal-head-save,
+.goty-dialog .goty-publish-button {
+  height: 36px;
   min-height: 36px;
-  padding: 8px 16px;
+  box-sizing: border-box;
+  padding: 8px 14px;
+  font-size: 13px;
 }
 
 .goty-grid {
@@ -1383,6 +1395,89 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 
 .goty-dialog[open] {
   overflow-x: hidden;
+  transform: translateY(-42px);
+}
+
+@media (max-width: 760px) {
+  #gotyDialog,
+  #gotyStatsPreviewDialog {
+    position: fixed;
+    inset: 0 !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    height: calc(100dvh - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    margin: auto !important;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 8px;
+    transform: none !important;
+  }
+
+  .goty-dialog .goty-modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    padding: calc(18px + env(safe-area-inset-top)) 14px
+      calc(18px + env(safe-area-inset-bottom));
+  }
+
+  #gotyStatsPreviewDialog {
+    background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
+    background-size:
+      auto,
+      22px 22px,
+      22px 22px,
+      auto;
+    background-position:
+      center,
+      var(--grid-x) var(--grid-y),
+      var(--grid-x) var(--grid-y),
+      center;
+  }
+
+  #gotyStatsPreviewDialog .goty-stats-preview-modal {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100% !important;
+    box-sizing: border-box;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    padding: calc(14px + env(safe-area-inset-top)) 14px
+      calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .goty-dialog[open],
+  #gotyStatsPreviewDialog[open] {
+    transform: none !important;
+  }
+
+  .goty-callout {
+    bottom: calc(max(6px, env(safe-area-inset-bottom)) + 80px) !important;
+  }
+}
+
+@media (min-width: 761px) {
+  .goty-dialog .goty-modal {
+    max-height: calc(100dvh - clamp(16px, 3vw, 28px) - 96px);
+  }
+
+  .goty-dialog[open] {
+    transform: translateY(calc(50dvh - 50% - clamp(16px, 3vw, 28px) - 84px));
+  }
 }
 
 .goty-stats-preview-dialog {
@@ -2190,6 +2285,12 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
     transform 180ms ease;
 }
 
+@media (min-width: 761px) {
+  .goty-callout {
+    bottom: clamp(16px, 3vw, 28px);
+  }
+}
+
 .goty-callout.visible {
   opacity: 1;
   pointer-events: auto;
@@ -2212,7 +2313,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
 .goty-callout-title .trophy-icon {
   width: 16px;
   height: 16px;
-  color: var(--accent);
+  color: #ffe985;
   stroke: currentColor;
 }
 
@@ -2618,16 +2719,6 @@ html.stats-embed #finishedStatsDialog::backdrop {
 
 .achievement-section .column-head {
   padding-top: 0;
-}
-
-.achievement-section .achievement-stats-button {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
-  flex: 0 0 34px;
-  padding: 0;
-  aspect-ratio: 1;
 }
 
 .achievement-section .column-head a {
@@ -3688,8 +3779,6 @@ body.dialog-open .scroll-top-button {
 #deleteButton:hover,
 .completed-stats-button:hover,
 .completed-stats-button:focus-visible,
-.achievement-stats-button:hover,
-.achievement-stats-button:focus-visible,
 .edit-action:hover,
 .completed-edit-action:hover,
 .history-edit-action:hover,
@@ -4629,7 +4718,10 @@ body.dialog-open .floating-edit-actions {
   --mobile-tab-index: 0;
   --mobile-tab-width: calc((100% - 24px) / 3);
   position: sticky;
-  top: calc(140px + var(--pull-ui-offset, 0px));
+  top: calc(
+    20px + var(--toolbar-sticky-height, 106px) + 14px +
+      var(--pull-ui-offset, 0px)
+  );
   z-index: 11;
   display: grid;
   grid-template-columns: repeat(var(--mobile-tab-count), 1fr);
@@ -4946,6 +5038,10 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
 .card-list.list-view {
   grid-template-columns: 1fr;
   gap: 8px;
+}
+
+.card-list:not(.list-view) .game-card.has-rating {
+  min-height: 260px;
 }
 
 .game-row {
@@ -5623,6 +5719,8 @@ body.theme-kash
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 24%),
     linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.38));
+  background-size: auto, auto;
+  background-position: center, center;
   opacity: 0.78;
 }
 
@@ -7578,6 +7676,83 @@ a.time-pill {
   display: none;
 }
 
+.game-card .card-footer {
+  display: contents;
+}
+
+.game-card.has-price-footer .card-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+
+.game-card.has-price-footer .prices {
+  order: 2;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  gap: 4px;
+  padding: 4px;
+}
+
+.game-card.has-price-footer .price-link {
+  gap: 4px;
+  padding: 3px 4px;
+}
+
+.game-card.has-price-footer .price-link strong {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.game-card.has-price-footer .store-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.game-card.has-price-footer .card-actions {
+  order: 1;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: center;
+  flex-flow: row nowrap;
+  gap: 5px;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.game-card.has-price-footer .card-actions .bought-action {
+  order: 1;
+  height: 34px;
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 13px;
+}
+
+.game-card.has-price-footer .card-actions .price-refresh-action {
+  order: 3;
+}
+
+.game-card.has-price-footer .card-actions .delete-action {
+  order: 2;
+}
+
+.game-card.has-price-footer .card-actions .icon-only-button {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  flex-basis: 34px;
+}
+
 .detail-prices {
   margin-top: 16px;
 }
@@ -7680,8 +7855,19 @@ a.time-pill {
 }
 
 .card-actions {
+  grid-column: 1 / -1;
+  align-self: end;
   margin-top: 10px;
   padding-top: 10px;
+}
+
+.game-card:not(.playing-card) .card-actions {
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
 .icon-button,
@@ -7869,6 +8055,18 @@ body:not(.can-edit) .top-actions-separator {
 
   .top-actions #addButton {
     order: 7;
+    width: auto;
+    min-width: 0;
+    padding: 10px 14px;
+    justify-content: center;
+    gap: 8px;
+    color: #fff;
+    background: var(--accent);
+    border-color: transparent;
+  }
+
+  .top-actions #addButton .button-icon {
+    margin: 0;
   }
 }
 
@@ -7931,6 +8129,45 @@ body:not(.can-edit) .top-actions-separator {
 
 .mobile-dock-action > span:not(.mobile-switch-logos) {
   display: none;
+}
+
+#mobileDockStats[hidden] {
+  display: none !important;
+}
+
+#mobileDockAdd[hidden] {
+  display: none !important;
+}
+
+#mobileDockGoty[hidden] {
+  display: none !important;
+}
+
+#mobileDockStats .graph-icon {
+  width: 21px;
+  height: 21px;
+}
+
+#mobileDockGoty .trophy-icon {
+  width: 23px;
+  height: 23px;
+  color: #ffe985;
+}
+
+#mobileDockSettings .settings-icon {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.7;
+}
+
+#settingsButton .settings-icon {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.7;
+}
+
+#settingsButton .settings-icon circle {
+  stroke-width: 1.7;
 }
 
 .mobile-switch-logos {
@@ -8111,7 +8348,6 @@ body.can-edit #loginButton .pause-icon {
 
 .goty-edit-button .pencil-icon,
 .goty-save-button .download-icon,
-.goty-stats-button .graph-icon,
 .completed-stats-button .graph-icon {
   width: 18px;
   height: 18px;
@@ -8231,6 +8467,87 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   grid-template-columns: 1fr;
 }
 
+.completed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+@media (min-width: 761px) and (hover: hover) and (pointer: fine) {
+  .card-list:not(.list-view) .game-card .edit-action,
+  .completed-list:not(.list-view) .completed-edit-action,
+  .shelf-grid:not(.list-view) .game-card .edit-action {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-2px);
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease,
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .card-list:not(.list-view) .game-card:hover .edit-action,
+  .card-list:not(.list-view) .game-card:focus-within .edit-action,
+  .completed-list:not(.list-view) .completed-row:hover .completed-edit-action,
+  .completed-list:not(.list-view) .completed-row:focus-within .completed-edit-action,
+  .shelf-grid:not(.list-view) .game-card:hover .edit-action,
+  .shelf-grid:not(.list-view) .game-card:focus-within .edit-action {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
+
+.completed-item .completed-row {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+.completed-item:has(.completed-rating-breakdown) .completed-row {
+  min-height: 122px;
+}
+
+.completed-rating-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  min-width: 0;
+  padding: 5px 3px 2px;
+  border-top: 1px solid var(--line);
+}
+
+.completed-rating-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.completed-rating-item > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.completed-rating-stars {
+  display: inline-flex;
+  align-items: center;
+  color: #ffe985;
+  --rating-active-color: #ffe985;
+}
+
+.completed-rating-stars .star-display {
+  gap: 1px;
+  --rating-star-size: 18px;
+  --rating-star-gap: 1px;
+}
+
 #completedCount {
   display: inline-flex;
   align-items: center;
@@ -8323,8 +8640,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 
 .completed-stats-button,
 .completed-stream-toggle,
-.playing-stream-toggle,
-.goty-stats-button {
+.playing-stream-toggle {
   width: 34px;
   height: 34px;
   min-width: 34px;
@@ -8479,7 +8795,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
 .goty-stats-preview-dialog {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--grid-fade), var(--grid-texture), var(--panel-strong);
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
   background-size:
     auto,
     22px 22px,
@@ -10145,6 +10461,28 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
     0 12px 28px rgba(247, 223, 105, 0.1) !important;
 }
 
+.completed-row.completed-trophy-card,
+.completed-row.completed-trophy-card:hover,
+.completed-row.stream-card.completed-trophy-card,
+.completed-row.stream-card.completed-trophy-card:hover,
+.playing-finished-game.completed-trophy-card,
+.playing-finished-game.completed-trophy-card:hover,
+body.theme-kash .completed-row.completed-trophy-card,
+body.theme-kash .completed-row.completed-trophy-card:hover,
+body.theme-kash .completed-row.stream-card.completed-trophy-card,
+body.theme-kash .completed-row.stream-card.completed-trophy-card:hover,
+body.theme-kash .playing-finished-game.completed-trophy-card,
+body.theme-kash .playing-finished-game.completed-trophy-card:hover {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(247, 223, 105, 0.16),
+      rgba(255, 255, 255, 0.055) 48%,
+      rgba(247, 223, 105, 0.08)
+    ),
+    rgba(255, 255, 255, 0.05) !important;
+}
+
 .completed-trophy-card .psn-progress-pill {
   color: #fff6bc;
   background:
@@ -10622,6 +10960,13 @@ dialog {
   padding: 0;
 }
 
+@media (min-width: 761px) {
+  #gameDialog,
+  #addDialog {
+    width: min(1120px, calc(100vw - 64px));
+  }
+}
+
 #detailDialog {
   width: min(980px, calc(100vw - 24px));
 }
@@ -10705,7 +11050,7 @@ dialog {
 
 @media (min-width: 761px) {
   #updatesDialog {
-    width: min(760px, calc(100vw - 64px));
+    width: min(920px, calc(100vw - 64px));
   }
 
   .updates-modal {
@@ -10775,6 +11120,10 @@ body.dialog-open .toolbar {
   border-radius: 8px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(8px) saturate(1.08);
+}
+
+#gameDialog > .modal {
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
 }
 
 .auth-modal {
@@ -10974,6 +11323,15 @@ body.dialog-open .toolbar {
   width: min(480px, calc(100vw - 24px));
   margin: auto;
 }
+.settings-unsaved-modal,
+.unsaved-edit-modal {
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+  backdrop-filter: blur(8px) saturate(1.08);
+  -webkit-backdrop-filter: blur(8px) saturate(1.08);
+}
+
 .settings-unsaved-modal {
   display: grid;
   gap: 16px;
@@ -12664,8 +13022,6 @@ html.theme-light #pricesButton:hover,
 html.theme-light #deleteButton:hover,
 html.theme-light .completed-stats-button:hover,
 html.theme-light .completed-stats-button:focus-visible,
-html.theme-light .achievement-stats-button:hover,
-html.theme-light .achievement-stats-button:focus-visible,
 html.theme-light .edit-action:hover,
 html.theme-light .completed-edit-action:hover,
 html.theme-light .history-edit-action:hover,
@@ -12799,6 +13155,20 @@ html.theme-light .playing-finished-game.completed-trophy-card:hover {
   box-shadow:
     0 0 0 1px rgba(154, 106, 0, 0.12),
     0 12px 28px rgba(154, 106, 0, 0.1) !important;
+}
+
+html.theme-light .completed-row.completed-trophy-card,
+html.theme-light .completed-row.completed-trophy-card:hover,
+html.theme-light .completed-row.stream-card.completed-trophy-card,
+html.theme-light .completed-row.stream-card.completed-trophy-card:hover,
+html.theme-light .playing-finished-game.completed-trophy-card,
+html.theme-light .playing-finished-game.completed-trophy-card:hover {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 237, 146, 0.2),
+      rgba(214, 224, 237, 0.96)
+    ) !important;
 }
 
 html.theme-light .toolbar,
@@ -14134,7 +14504,7 @@ body.theme-kash
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  background: var(--panel-dark);
+  background: var(--panel);
   box-shadow:
     var(--shadow),
     0 10px 24px rgba(0, 0, 0, 0.24);
@@ -14631,7 +15001,7 @@ body.theme-kash
 .settings-page-toggle-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-top: 2px;
 }
@@ -14766,10 +15136,6 @@ body.theme-kash
   .collection-form-grid
   > .list-field
   select,
-#gameDialog.is-new-game.needs-list-field
-  .collection-form-grid
-  > .list-field
-  .platform-logo-button,
 #gameDialog.is-new-game.needs-release-date-field
   .collection-form-grid
   > .release-date-field
@@ -14783,6 +15149,17 @@ body.theme-kash
       rgba(255, 255, 255, 0.07)
     ),
     rgba(255, 0, 57, 0.08);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+#gameDialog.is-new-game.needs-list-field
+  .collection-form-grid
+  > .list-field
+  .platform-logo-button {
+  border-color: color-mix(in srgb, var(--accent) 76%, #ff4d62);
+  background-color: color-mix(in srgb, var(--accent) 18%, var(--panel-strong));
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent),
     0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
@@ -15374,6 +15751,17 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   margin-top: 14px;
 }
 
+/* Keep dialog Save actions aligned with their 36px Close controls. */
+.modal-head-actions > .modal-head-save,
+.modal-save-button {
+  height: 36px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 8px 14px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
 .empty {
   padding: 18px;
   color: var(--muted);
@@ -15491,7 +15879,7 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   .mobile-action-dock {
     position: fixed;
     left: 50%;
-    bottom: max(6px, env(safe-area-inset-bottom));
+    bottom: calc(max(6px, env(safe-area-inset-bottom)) + var(--mobile-dock-viewport-bottom, 0px));
     z-index: 20;
     display: flex;
     width: min(620px, calc(100vw - 8px));
@@ -17403,7 +17791,7 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
     display: grid;
     grid-column: 2;
     grid-row: 1 / span 2;
-    grid-template-columns: repeat(3, 36px);
+    grid-template-columns: repeat(2, 36px);
     gap: 6px 8px;
     justify-content: end;
     justify-self: end;
@@ -17415,26 +17803,25 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
     grid-row: 2;
     width: 124px;
     margin: 0;
-    justify-self: end;
+    justify-self: center;
+  }
+
+  .goty-year-select .platform-logo-select {
+    justify-self: center;
   }
 
   .goty-save-button,
-  .goty-stats-button,
   .goty-edit-button {
     grid-row: 1;
     align-self: start;
   }
 
   .goty-edit-button {
-    grid-column: 3;
-  }
-
-  .goty-stats-button {
-    grid-column: 2;
+    grid-column: 1;
   }
 
   .goty-save-button {
-    grid-column: 1;
+    grid-column: 2;
   }
 
   .goty-grid {
@@ -17471,6 +17858,7 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
 @media (min-width: 761px) {
   #mobileDockUp {
     display: grid !important;
+    order: 1;
     width: 0;
     height: 0;
     min-width: 0;
@@ -17564,6 +17952,19 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
       gap 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
       background 140ms ease,
       box-shadow 140ms ease;
+    color: #fff;
+    background: var(--accent);
+    box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):hover)
+      #mobileDockAdd:not(:hover),
+    .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):focus-visible)
+      #mobileDockAdd:not(:hover):not(:focus-visible) {
+      background: transparent;
+      box-shadow: none;
+    }
   }
 
   #mobileDockAdd > span {
@@ -17640,6 +18041,154 @@ html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
     transition-duration: 220ms;
   }
 
+  #mobileDockStats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
+    transition:
+      flex-basis 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      padding 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      gap 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  #mobileDockStats > span {
+    display: inline-block;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    flex-shrink: 0;
+    font-weight: 900;
+    text-align: left;
+    white-space: nowrap;
+    transition:
+      width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 220ms ease;
+  }
+
+  #mobileDockStats:hover,
+  #mobileDockStats:focus-visible {
+    width: 208px;
+    flex-basis: 208px;
+    gap: 8px;
+    justify-content: flex-start;
+    padding-inline: 12px;
+    transition-duration: 220ms;
+  }
+
+  #mobileDockStats:hover > span,
+  #mobileDockStats:focus-visible > span {
+    width: 152px;
+    opacity: 1;
+    transition-duration: 220ms;
+  }
+
+  #mobileDockGoty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
+    transition:
+      flex-basis 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      padding 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      gap 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  #mobileDockGoty > span {
+    display: inline-block;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    font-weight: 900;
+    text-align: center;
+    white-space: nowrap;
+    transition:
+      width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 220ms ease;
+  }
+
+  #mobileDockGoty:hover,
+  #mobileDockGoty:focus-visible {
+    width: 218px;
+    flex-basis: 218px;
+    gap: 8px;
+    justify-content: center;
+    padding-inline: 12px;
+    transition-duration: 220ms;
+  }
+
+  #mobileDockAdd,
+  #mobileDockSwitch,
+  #mobileDockStats,
+  #mobileDockGoty {
+    transition-duration: 220ms, 220ms, 220ms, 220ms, 140ms, 140ms;
+    transition-delay: 80ms;
+  }
+
+  #mobileDockAdd:hover,
+  #mobileDockAdd:focus-visible,
+  #mobileDockSwitch:hover,
+  #mobileDockSwitch:focus-visible,
+  #mobileDockStats:hover,
+  #mobileDockStats:focus-visible,
+  #mobileDockGoty:hover,
+  #mobileDockGoty:focus-visible {
+    transition-duration: 190ms, 190ms, 190ms, 190ms, 140ms, 140ms;
+    transition-delay: 0s;
+  }
+
+  #mobileDockAdd > span,
+  #mobileDockSwitch > .mobile-switch-label,
+  #mobileDockStats > span,
+  #mobileDockGoty > span {
+    transition-duration: 180ms, 180ms;
+    transition-delay: 80ms;
+  }
+
+  #mobileDockAdd:hover > span,
+  #mobileDockAdd:focus-visible > span,
+  #mobileDockSwitch:hover > .mobile-switch-label,
+  #mobileDockSwitch:focus-visible > .mobile-switch-label,
+  #mobileDockStats:hover > span,
+  #mobileDockStats:focus-visible > span,
+  #mobileDockGoty:hover > span,
+  #mobileDockGoty:focus-visible > span {
+    transition-duration: 180ms, 180ms;
+    transition-delay: 0s;
+  }
+
+  #mobileDockGoty:hover > span,
+  #mobileDockGoty:focus-visible > span {
+    width: 144px;
+    opacity: 1;
+    transition-duration: 220ms;
+  }
+
+  #mobileDockGoty:hover .trophy-icon,
+  #mobileDockGoty:focus-visible .trophy-icon,
+  #mobileDockGoty:active .trophy-icon,
+  #mobileDockGoty.is-active .trophy-icon {
+    color: #302817;
+  }
+
+  #mobileDockGoty:hover,
+  #mobileDockGoty:focus-visible,
+  #mobileDockGoty:active,
+  #mobileDockGoty.is-active {
+    color: #302817;
+    background: #ffe985;
+    border-color: #ffe985;
+    box-shadow: 0 3px 24px rgba(255, 233, 133, 0.42);
+  }
+
   .mobile-dock-action svg {
     width: 24px;
     height: 24px;
@@ -17687,6 +18236,104 @@ body.page-pulling #mobileActionDock {
 }
 
 @media (max-width: 760px) {
+  body:not(.shelf-page) dialog[open],
+  body.shelf-page dialog[open] {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  :is(#platinumDialog, #shelfCompletedDialog) {
+    position: fixed;
+    inset: 0 !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    height: calc(100dvh - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    margin: auto !important;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 8px;
+    transform: none !important;
+  }
+
+  :is(#platinumDialog, #shelfCompletedDialog) > .platinum-modal {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    padding: calc(14px + env(safe-area-inset-top)) 10px
+      calc(14px + env(safe-area-inset-bottom));
+  }
+
+  :is(#platinumDialog, #shelfCompletedDialog) .platinum-filter-bar {
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 0.96fr) minmax(0, 1.35fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  :is(#platinumDialog, #shelfCompletedDialog) .platinum-order-control {
+    gap: 5px;
+  }
+
+  :is(#platinumDialog, #shelfCompletedDialog) .platinum-order-control .direction-toggle {
+    flex-basis: 36px;
+    width: 36px;
+    min-width: 36px;
+  }
+
+  :is(#platinumDialog, #shelfCompletedDialog) .platinum-list {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  #gameDialog,
+  #addDialog {
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  #gameDialog > .modal,
+  #addDialog > .add-modal {
+    display: block;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #mobileDockGoty:active,
+  #mobileDockGoty.is-active {
+    color: #302817;
+    background: #ffe985;
+    border-color: #ffe985;
+    box-shadow: 0 3px 24px rgba(255, 233, 133, 0.42);
+  }
+
+  #mobileDockGoty:active .trophy-icon,
+  #mobileDockGoty.is-active .trophy-icon {
+    color: #302817;
+  }
+
   body.page-pulling #mobileActionDock,
   body.page-switching > #mobileActionDock {
     transform: translateX(-50%) translateY(26px);
@@ -17703,7 +18350,9 @@ body.page-pulling #mobileActionDock {
 }
 
 @media (min-width: 761px) {
-  html.from-authenticated-navigation body.auth-checking #settingsButton[hidden] {
+  html.from-authenticated-navigation
+    body.auth-checking
+    #settingsButton[hidden] {
     display: inline-grid !important;
     visibility: visible;
     pointer-events: none;
@@ -17711,7 +18360,9 @@ body.page-pulling #mobileActionDock {
 }
 
 @media (max-width: 760px) {
-  html.from-authenticated-navigation body.auth-checking #mobileDockSettings[hidden] {
+  html.from-authenticated-navigation
+    body.auth-checking
+    #mobileDockSettings[hidden] {
     display: grid !important;
     visibility: visible;
     pointer-events: none;
@@ -17728,3 +18379,259 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
 #mobileDockSettings svg {
   transition: opacity 180ms ease;
 }
+
+@media (max-width: 760px) {
+  #mobileDockGoty:hover,
+  #mobileDockGoty:focus-visible,
+  #mobileDockGoty:active,
+  #mobileDockGoty.is-active {
+    color: #302817 !important;
+    background: #ffe985 !important;
+    border-color: #ffe985 !important;
+    box-shadow: 0 3px 24px rgba(255, 233, 133, 0.42) !important;
+  }
+
+  #mobileDockGoty:hover .trophy-icon,
+  #mobileDockGoty:focus-visible .trophy-icon,
+  #mobileDockGoty:active .trophy-icon,
+  #mobileDockGoty.is-active .trophy-icon {
+    color: #302817 !important;
+  }
+}
+
+@media (min-width: 761px) {
+  #gotyDialog[open] {
+    position: fixed;
+    inset: 8px !important;
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    height: calc(100dvh - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    margin: auto !important;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    transform: none !important;
+  }
+
+  #gotyDialog > .goty-modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 760px) {
+  #gotyStatsPreviewDialog .goty-stats-preview-modal {
+    display: flex !important;
+    flex-direction: column;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    padding-bottom: 0;
+  }
+
+  #gotyStatsPreviewBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-bottom: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #gotyStatsPreviewDialog .goty-stats-preview-actions {
+    position: static !important;
+    bottom: auto;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
+    padding: 10px 0 max(8px, env(safe-area-inset-bottom));
+    transform: none;
+    background: var(--panel-dark);
+  }
+
+  #gotyStatsPreviewDialog .goty-stats-preview-continue {
+    min-height: 48px;
+    padding-inline: 12px;
+    font-size: clamp(12px, 3.7vw, 15px);
+    line-height: 1.2;
+    white-space: normal;
+  }
+}
+
+@media (min-width: 761px) {
+  #gotyStatsPreviewDialog {
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: hidden;
+  }
+
+  #gotyStatsPreviewDialog .goty-stats-preview-modal {
+    display: flex !important;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  #gotyStatsPreviewBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-bottom: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  #gotyStatsPreviewDialog .goty-stats-preview-actions {
+    position: static !important;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
+    padding: 12px 0 0;
+    transform: none;
+    background: var(--panel-dark);
+  }
+}
+
+@media (max-width: 760px) {
+  #mobileDockAdd:not([hidden]) {
+    color: #fff;
+    background: var(--accent);
+    box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+
+  .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):active) #mobileDockAdd:not(:active) {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+#gameDialog > .modal,
+#addDialog > .add-modal,
+#detailDialog > .detail-modal,
+#finishedStatsDialog,
+#shelfStatsDialog,
+#gotyDialog > .goty-modal,
+#gotyStatsPreviewDialog,
+#platinumDialog > .platinum-modal,
+#shelfCompletedDialog > .platinum-modal {
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
+  background-size:
+    auto,
+    22px 22px,
+    22px 22px,
+    auto;
+  background-position:
+    center,
+    var(--grid-x) var(--grid-y),
+    var(--grid-x) var(--grid-y),
+    center;
+}
+
+#gameDialog > .modal,
+#addDialog > .add-modal {
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), var(--grid-x) var(--grid-y), center;
+}
+
+html.theme-light #gameDialog > .modal,
+html.theme-light #addDialog > .add-modal,
+html.theme-light #detailDialog > .detail-modal,
+html.theme-light #finishedStatsDialog,
+html.theme-light #shelfStatsDialog,
+html.theme-light #gotyDialog > .goty-modal,
+html.theme-light #gotyStatsPreviewDialog,
+html.theme-light #platinumDialog > .platinum-modal,
+html.theme-light #shelfCompletedDialog > .platinum-modal {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(236, 241, 248, 0.97),
+      rgba(212, 222, 235, 0.94)
+    ),
+    var(--grid-texture), var(--panel-dark);
+}
+
+#gameDialog.is-new-game.needs-stream-check .stream-check {
+  color: color-mix(in srgb, var(--accent) 82%, #fff);
+  border-color: color-mix(in srgb, var(--accent) 76%, #ff4d62);
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel-strong));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+#gameDialog.is-new-game.needs-stream-check .stream-check input[type="checkbox"] {
+  border-color: color-mix(in srgb, var(--accent) 76%, #ff4d62);
+}
+
+#gameDialog.is-new-game.needs-stream-check .stream-check span {
+  color: color-mix(in srgb, var(--accent) 82%, #fff);
+}
+/* Keep game cards on both pages consistent with the translucent window panels. */
+.game-card.has-art:not(.playing-card)::before {
+  display: none !important;
+}
+
+.game-card.glass:not(.playing-card) {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)),
+    var(--grid-texture),
+    color-mix(in srgb, var(--panel) 72%, transparent);
+  background-size: auto, 22px 22px, auto;
+  background-position: center, var(--grid-x) var(--grid-y), center;
+  backdrop-filter: blur(8px) saturate(1.08);
+  -webkit-backdrop-filter: blur(8px) saturate(1.08);
+}
+body:not(.shelf-page) #upcoming .price-refresh-action,
+body:not(.shelf-page) #wanted .price-refresh-action {
+  display: inline-flex !important;
+}
+.completed-row,
+.history-row,
+.playing-finished-game {
+  position: relative;
+  isolation: isolate;
+}
+
+.completed-row::before,
+.history-row::before,
+.playing-finished-game::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background-image: var(--grid-texture);
+  background-size: 22px 22px;
+  background-position: var(--grid-x) var(--grid-y);
+  pointer-events: none;
+}
+
+.playing-finished-game::before {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025));
+  background-size: auto;
+  background-position: center;
+}
+
+.completed-row::before {
+  background-image: none;
+}
+
+.completed-row > *,
+.history-row > *,
+.playing-finished-game > * {
+  position: relative;
+  z-index: 1;
+}
+

@@ -21,6 +21,7 @@ const DEFAULT_PAGE_ORDER = ["trophies", "calendar", "highlights", "search", "gam
 const LAYOUT_SECTION_KEYS = ["playing", ...DEFAULT_PAGE_ORDER, "latestFinished"];
 const VERSION_STORAGE_KEY = "gamelist:site-version";
 const UPDATES_NOTIFICATION_STORAGE_KEY = "gamelist:updates-notification-version";
+const GOTY_DOCK_DISMISSED_KEY = "gamelist:goty-dock-dismissed";
 const CACHE_HOUR_STORAGE_KEY = "gamelist:cache-hour";
 const PULL_NAVIGATION_KEY = "gamelist:pull-navigation";
 const STORE_OPTIONS = ["Amazon", "eBay", "GAME.es", "Xtralife", "Retro Island NY", "GameStop", "Walmart"];
@@ -85,6 +86,7 @@ const DEFAULT_SETTINGS = {
   storeSettingsVersion: 2,
   defaultOwner: "User",
   shelfSync: true,
+  shelfSyncWishlist: true,
   hidePageSwitch: false,
   streamFilterPriority: "all",
   prioritizeFinishedStream: false,
@@ -195,6 +197,7 @@ const MANUAL_PSN_TITLE_OVERRIDES = [
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
 let newGameListTouched = false;
+let newGameStreamTouched = false;
 let selectMeasureContext = null;
 let selectOverflowPopover = null;
 let platformLogoOverlay = null;
@@ -260,6 +263,7 @@ const state = {
   gotyYear: String(new Date().getFullYear()),
   gotyPickerOrder: gotyOrderForDefault(initialSettings.defaultOrder),
   gotyPromptShown: false,
+  gotyDockDismissed: localStorage.getItem(GOTY_DOCK_DISMISSED_KEY) === "true",
   historyYear: String(new Date().getFullYear()),
   platinumYear: "all",
   platinumPlatform: "all",
@@ -304,12 +308,10 @@ const el = {
   gotyYearSelect: document.querySelector("#gotyYearSelect"),
   gotyYearCount: document.querySelector("#gotyYearCount"),
   gotySaveButton: document.querySelector("#gotySaveButton"),
-  gotyStatsButton: document.querySelector("#gotyStatsButton"),
   gotyEditButton: document.querySelector("#gotyEditButton"),
   gotyResetButton: document.querySelector("#gotyResetButton"),
   gotyGrid: document.querySelector("#gotyGrid"),
   achievementSection: document.querySelector("#achievementSection"),
-  achievementStatsButton: document.querySelector("#achievementStatsButton"),
   calendarSection: document.querySelector(".calendar-section"),
   highlightsSection: document.querySelector(".highlights-section"),
   achievementPanel: document.querySelector("#achievementPanel"),
@@ -344,6 +346,8 @@ const el = {
   mobileDockAdd: document.querySelector("#mobileDockAdd"),
   mobileDockUp: document.querySelector("#mobileDockUp"),
   mobileDockSearch: document.querySelector("#mobileDockSearch"),
+  mobileDockStats: document.querySelector("#mobileDockStats"),
+  mobileDockGoty: document.querySelector("#mobileDockGoty"),
   mobileDockSettings: document.querySelector("#mobileDockSettings"),
   mobileDockSwitch: document.querySelector("#mobileDockSwitch"),
   mobileTabs: document.querySelectorAll("[data-mobile-section]"),
@@ -361,7 +365,6 @@ const el = {
   gotyPickerOrder: document.querySelector("#gotyPickerOrder"),
   gotyPickerGrid: document.querySelector("#gotyPickerGrid"),
   gotyStatsPreviewDialog: document.querySelector("#gotyStatsPreviewDialog"),
-  gotyStatsPreviewCloseButton: document.querySelector("#gotyStatsPreviewCloseButton"),
   gotyStatsPreviewContinueButton: document.querySelector("#gotyStatsPreviewContinueButton"),
   gotyStatsPreviewBrow: document.querySelector("#gotyStatsPreviewBrow"),
   gotyStatsPreviewTitle: document.querySelector("#gotyStatsPreviewTitle"),
@@ -500,6 +503,8 @@ const el = {
   dialog: document.querySelector("#gameDialog"),
   form: document.querySelector("#gameForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
+  gameDialogSaveButton: document.querySelector("#gameDialogSaveButton"),
+  gameDialogBottomSaveButton: document.querySelector("#gameDialogBottomSaveButton"),
   lookupInput: document.querySelector("#lookupInput"),
   lookupButton: document.querySelector("#lookupButton"),
   lookupResults: document.querySelector("#lookupResults"),
@@ -719,10 +724,8 @@ function quickAddGame() {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch(() => {
-      // Asset caching is optional; the app still works without it.
-    });
+  navigator.serviceWorker.register("/service-worker.js").catch(() => {
+    // Asset caching is optional; the app still works without it.
   });
 }
 
@@ -935,6 +938,28 @@ async function clearSiteCachesAndReload() {
 function bindEvents() {
   bindModalTouchGuard();
   syncStyledSelect(el.detailTrophySort);
+  const toolbar = document.querySelector(".toolbar");
+  const sectionTabs = document.querySelector(".mobile-section-tabs");
+  const syncSectionTabsStickyOffset = () => {
+    if (!toolbar || !sectionTabs) return;
+    if (toolbar.hidden) {
+      sectionTabs.style.removeProperty("--toolbar-sticky-height");
+      return;
+    }
+    sectionTabs.style.setProperty("--toolbar-sticky-height", `${toolbar.getBoundingClientRect().height}px`);
+  };
+  syncSectionTabsStickyOffset();
+  if (toolbar && sectionTabs && "ResizeObserver" in window) {
+    new ResizeObserver(syncSectionTabsStickyOffset).observe(toolbar);
+  }
+  window.addEventListener("keydown", (event) => {
+    if (window.innerWidth < 761 || event.key.toLowerCase() !== "f" || event.repeat || event.isComposing) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const target = event.target;
+    if (target instanceof HTMLElement && target.closest("input, textarea, select, [contenteditable='true'], [role='textbox'], dialog[open]")) return;
+    event.preventDefault();
+    scrollToSearchArea();
+  });
   el.brandLink.addEventListener("click", (event) => {
     event.preventDefault();
     const twitchUrl = twitchChannelUrl(normalizeSettings(state.settings).twitchUser);
@@ -955,6 +980,8 @@ function bindEvents() {
   el.searchButton?.addEventListener("click", scrollToSearchArea);
   el.floatingSearchButton?.addEventListener("click", scrollToSearchArea);
   el.mobileDockSearch?.addEventListener("click", scrollToSearchArea);
+  el.mobileDockStats?.addEventListener("click", () => openFinishedStatsDialog(state.completedYear || "all", { streamMode: state.completedStreamMode }));
+  el.mobileDockGoty?.addEventListener("click", () => openGameOfTheYearDialogWithAutofillLoading(currentGameOfTheYear(), { force: true, autoPick: true }));
   el.syncButton.addEventListener("click", syncNow);
   el.settingsButton?.addEventListener("click", openSettingsDialog);
   el.mobileDockSettings?.addEventListener("click", openSettingsDialog);
@@ -1093,7 +1120,6 @@ function bindEvents() {
   el.completedYearFilter?.addEventListener("change", handleCompletedYearChange);
   el.completedStreamToggleButton?.addEventListener("click", cycleCompletedStreamMode);
   el.completedStatsButton?.addEventListener("click", () => openFinishedStatsDialog(state.completedYear || "all", { streamMode: state.completedStreamMode }));
-  el.achievementStatsButton?.addEventListener("click", () => openFinishedStatsDialog("all", { yearPicker: true }));
   el.finishedStatsYearSelect?.addEventListener("change", () => {
     renderFinishedStatsDialog(el.finishedStatsYearSelect.value || "all");
   });
@@ -1107,7 +1133,6 @@ function bindEvents() {
   });
   el.gotyEditButton?.addEventListener("click", () => openGameOfTheYearDialog(currentGameOfTheYear(), { force: true }));
   el.gotySaveButton?.addEventListener("click", downloadGameOfTheYearImage);
-  el.gotyStatsButton?.addEventListener("click", () => openFinishedStatsDialog(state.gotyYear || currentGameOfTheYear()));
   el.gotyResetButton?.addEventListener("click", resetGameOfTheYearFromForm);
   el.gotyPickerOrder?.addEventListener("change", () => {
     state.gotyPickerOrder = normalizeGameOfTheYearPickerOrder(el.gotyPickerOrder.value || gotyOrderForDefault(state.settings.defaultOrder));
@@ -1118,9 +1143,14 @@ function bindEvents() {
   el.gotyDialog?.addEventListener("click", (event) => {
     if (event.target === el.gotyDialog) el.gotyDialog.close();
   });
-  el.gotyDialog?.addEventListener("close", syncScrollLock);
+  el.gotyDialog?.addEventListener("close", () => {
+    el.mobileDockGoty?.classList.remove("is-active");
+    state.gotyDockDismissed = true;
+    localStorage.setItem(GOTY_DOCK_DISMISSED_KEY, "true");
+    syncMobileDockGoty();
+    syncScrollLock();
+  });
   el.gotyForm?.addEventListener("submit", saveGameOfTheYearFromForm);
-  el.gotyStatsPreviewCloseButton?.addEventListener("click", () => el.gotyStatsPreviewDialog.close());
   el.gotyStatsPreviewDialog?.addEventListener("click", (event) => {
     if (event.target === el.gotyStatsPreviewDialog) el.gotyStatsPreviewDialog.close();
   });
@@ -1269,6 +1299,10 @@ function bindEvents() {
   el.board.addEventListener("touchend", handleBoardSwipeEnd, { passive: true });
   window.addEventListener("touchend", handleBoardSwipeEnd, { passive: true });
   el.fields.title.addEventListener("input", syncNewGameRequiredHighlights);
+  el.fields.stream?.addEventListener("change", () => {
+    newGameStreamTouched = true;
+    syncNewGameRequiredHighlights();
+  });
   el.fields.section.addEventListener("change", () => {
     markNewGameListTouched();
     syncDialogPriceVisibility();
@@ -1366,7 +1400,10 @@ function bindEvents() {
   });
   el.pricesButton?.addEventListener("click", refreshCurrentPrices);
   el.coverUpload?.addEventListener("change", handleCoverUpload);
-  window.addEventListener("resize", syncDisplayMode, { passive: true });
+  window.addEventListener("resize", () => {
+    syncDisplayMode();
+    syncSectionTabsStickyOffset();
+  }, { passive: true });
   window.matchMedia("(display-mode: standalone)").addEventListener?.("change", syncDisplayMode);
 }
 
@@ -1786,6 +1823,7 @@ function normalizeSettings(settings = {}) {
     storeSettingsVersion: 2,
     defaultOwner: cleanOwnerLabel(settings.defaultOwner) || DEFAULT_SETTINGS.defaultOwner,
     shelfSync: settings.shelfSync !== false,
+    shelfSyncWishlist: settings.shelfSyncWishlist !== false,
     hidePageSwitch: settings.hidePageSwitch === true,
     streamFilterPriority: streamFilterPriorityForSettings(settings),
     prioritizeFinishedStream: streamFilterPriorityForSettings(settings) === "stream",
@@ -1838,6 +1876,31 @@ function gameOfTheYearCategoriesValid(picks = {}, categories = GAME_OF_YEAR_CATE
   });
 }
 
+function syncMobileDockGoty() {
+  const button = el.mobileDockGoty;
+  if (!button) return;
+  const year = currentGameOfTheYear();
+  const candidates = gameOfTheYearCandidateGames(year);
+  const picks = state.settings.gameOfTheYear?.[year]?.picks || {};
+  const isSetUp = candidates.length > 0
+    && gameOfTheYearCategoriesValid(picks, gameOfTheYearCategoriesForYear(year, candidates), candidates);
+  if (isSetUp) {
+    state.gotyDockDismissed = false;
+    localStorage.removeItem(GOTY_DOCK_DISMISSED_KEY);
+  }
+  button.hidden = !state.canEdit
+    || !state.gotyDockDismissed
+    || !candidates.length
+    || isSetUp
+    || Boolean(el.gotyDialog?.open);
+  button.innerHTML = `${trophyIcon()}<span>${escapeHtml(tt("Check my GOTYs"))}</span>`;
+  button.title = tt("Check my GOTYs");
+  button.setAttribute("aria-label", tt("Check my GOTYs"));
+  if (el.mobileDockStats) {
+    el.mobileDockStats.hidden = !button.hidden || !finishedGamesForCurrentView().length;
+  }
+}
+
 async function persistCloud() {
   const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
   try {
@@ -1865,6 +1928,7 @@ function render() {
   el.loginButton.setAttribute("aria-label", el.loginButton.title);
   el.loginButton.hidden = state.canEdit;
   el.addButton.hidden = false;
+  if (el.mobileDockAdd) el.mobileDockAdd.hidden = !state.canEdit;
   el.syncButton.hidden = !state.canEdit;
   if (el.settingsButton) el.settingsButton.hidden = !state.canEdit;
   if (el.mobileDockSettings) el.mobileDockSettings.hidden = !state.canEdit;
@@ -3542,6 +3606,7 @@ function renderPlayingFinished() {
 }
 
 function renderGameOfTheYear() {
+  syncMobileDockGoty();
   if (!el.gotySection) return;
   const years = gameOfTheYearYears();
   if (!gameOfTheYearVisible() || !years.length) {
@@ -3558,8 +3623,12 @@ function renderGameOfTheYear() {
   const categories = GAME_OF_YEAR_CATEGORIES;
   const candidateIds = new Set(candidates.map((game) => game.id));
   el.gotySection.hidden = false;
-  const sectionTitle = window.matchMedia("(max-width: 520px)").matches ? tt("My GOTYs {year}", { year }) : tt("My Games of the year {year}", { year });
-  el.gotyTitle.innerHTML = `${trophyIcon()} <span>${escapeHtml(sectionTitle)}</span>`;
+  const mobileTitle = window.matchMedia("(max-width: 760px)").matches;
+  const sectionTitle = mobileTitle
+    ? `<span class="goty-title-label">${escapeHtml(tt("My GOTYs {year}", { year: "" }).trim())}</span><span class="goty-title-year">${escapeHtml(year)}</span>`
+    : `<span>${escapeHtml(tt("My Games of the year {year}", { year }))}</span>`;
+  el.gotyTitle.classList.toggle("goty-mobile-title", mobileTitle);
+  el.gotyTitle.innerHTML = `${trophyIcon()}${sectionTitle}`;
   el.gotyYearSelect.innerHTML = years.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
   el.gotyYearSelect.value = year;
   syncStyledSelect(el.gotyYearSelect, { activeValue: null });
@@ -3580,12 +3649,6 @@ function renderGameOfTheYear() {
   el.gotySaveButton.innerHTML = downloadIcon();
   el.gotySaveButton.title = tt("Download");
   el.gotySaveButton.setAttribute("aria-label", tt("Download"));
-  if (el.gotyStatsButton) {
-    el.gotyStatsButton.hidden = !completedGamesForYear(year).length;
-    el.gotyStatsButton.innerHTML = graphIcon();
-    el.gotyStatsButton.title = tt("Stats");
-    el.gotyStatsButton.setAttribute("aria-label", tt("Stats for {year}", { year }));
-  }
   const gotyCards = categories.map(([key, label]) => {
     const labelText = tt(label);
     const game = gameById(picks[key]);
@@ -3663,6 +3726,7 @@ function openGameOfTheYearDialog(year = currentGameOfTheYear(), options = {}) {
       return false;
     }
   }
+  el.mobileDockGoty?.classList.add("is-active");
   syncScrollLock();
   return true;
 }
@@ -4045,6 +4109,9 @@ function resetGameOfTheYearFromForm(event) {
 
 function showGameOfTheYearCallout(year) {
   if (!state.canEdit || el.gotyDialog?.open) return;
+  state.gotyDockDismissed = false;
+  localStorage.removeItem(GOTY_DOCK_DISMISSED_KEY);
+  syncMobileDockGoty();
   let callout = document.querySelector(".goty-callout");
   if (!callout) {
     callout = document.createElement("div");
@@ -4074,6 +4141,9 @@ function showGameOfTheYearCallout(year) {
     event.preventDefault();
     event.stopPropagation();
     callout.classList.remove("visible");
+    state.gotyDockDismissed = true;
+    localStorage.setItem(GOTY_DOCK_DISMISSED_KEY, "true");
+    syncMobileDockGoty();
   });
   requestAnimationFrame(() => callout.classList.add("visible"));
 }
@@ -7330,8 +7400,14 @@ function renderCompleted() {
   if (state.completedYear !== "all" && !years.includes(state.completedYear)) state.completedYear = "all";
   renderCompletedYearFilter(years);
   if (el.completedStatsButton) {
-    el.completedStatsButton.hidden = !finishedGamesForCurrentView().length;
+    const hasFinishedGames = Boolean(finishedGamesForCurrentView().length);
+    el.completedStatsButton.hidden = !hasFinishedGames;
     el.completedStatsButton.innerHTML = graphIcon();
+    if (el.mobileDockStats) {
+      const gotyOnDock = Boolean(el.mobileDockGoty && !el.mobileDockGoty.hidden);
+      el.mobileDockStats.hidden = !hasFinishedGames || gotyOnDock;
+      el.mobileDockStats.innerHTML = `${graphIcon()}<span>${escapeHtml(tt("Check statistics"))}</span>`;
+    }
   }
   renderCompletedStreamToggle();
   const filteredFinishedGames = filteredGames({ applyPreorder: false }).filter((game) => game.completedAt && finishedStreamFilterMatches(game));
@@ -7342,26 +7418,32 @@ function renderCompleted() {
   const hasMore = games.length > shownGames.length;
   list.classList.toggle("is-collapsed", hasMore);
   updateCompletedCount(completedCountForSelectedYear());
-  list.innerHTML = shownGames.length ? shownGames.map((game) => `
-    <div class="completed-row ${game.stream ? "stream-card" : ""} ${game.platinum ? "completed-trophy-card" : ""} ${ownerCardClass(game)}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
-      <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
-      <div class="completed-main">
-        <div class="completed-identity">
-          <strong class="${game.platinum ? "completed-achievements-title" : ""}" tabindex="0">${escapeHtml(game.title)}</strong>
-          ${completedDurationLine(game, " completed-duration-list")}
-        </div>
-        <div class="completed-meta">
-          <span class="completed-platform">${completedOwnerBadges(game)}${completedBadges(game)}</span>
-          ${completedDurationLine(game)}
-          ${completedDateLine(game)}
+  list.innerHTML = shownGames.length ? shownGames.map((game) => {
+    const ratingBreakdown = state.viewMode === "list" ? "" : completedRatingBreakdownMarkup(game);
+    return `
+      <div class="completed-item">
+        <div class="completed-row ${game.stream ? "stream-card" : ""} ${game.platinum ? "completed-trophy-card" : ""} ${ownerCardClass(game)}" data-id="${escapeHtml(game.id)}" role="button" tabindex="0" aria-label="${escapeHtml(`Open ${game.title}`)}">
+          <img class="completed-cover" src="${escapeHtml(game.cover || "")}" alt="" loading="lazy" decoding="async" ${game.cover ? "" : "hidden"}>
+          <div class="completed-main">
+            <div class="completed-identity">
+              <strong class="${game.platinum ? "completed-achievements-title" : ""}" tabindex="0">${escapeHtml(game.title)}</strong>
+              ${completedDurationLine(game, " completed-duration-list")}
+            </div>
+            <div class="completed-meta">
+              <span class="completed-platform">${completedOwnerBadges(game)}${completedBadges(game, { includeRating: true })}</span>
+              ${completedDurationLine(game)}
+              ${completedDateLine(game)}
+            </div>
+            ${ratingBreakdown}
+          </div>
+          <div class="completed-actions">
+            <button class="icon-button completed-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
+            <button class="ghost-button restore-action" type="button">${backIcon()}<span>${escapeHtml(tt("Backlog"))}</span></button>
+          </div>
         </div>
       </div>
-      <div class="completed-actions">
-        <button class="icon-button completed-edit-action" type="button" title="Edit" aria-label="Edit">${pencilIcon()}</button>
-        <button class="ghost-button restore-action" type="button">${backIcon()}<span>${escapeHtml(tt("Backlog"))}</span></button>
-      </div>
-    </div>
-  `).join("") : `<div class="empty">Finished games will stay saved here.</div>`;
+    `;
+  }).join("") : `<div class="empty">Finished games will stay saved here.</div>`;
   if (el.completedMoreButton) {
     el.completedMoreButton.hidden = !hasMore;
     el.completedMoreButton.textContent = tt("See more");
@@ -8742,6 +8824,9 @@ function cardFor(game, options = {}) {
   const displaySection = options.displaySection || game.section;
   const neutralReleaseCard = releaseDialog && Boolean(game.playing);
   const card = createGameCardShell(document);
+  if (game.playing && !neutralReleaseCard) {
+    card.querySelector(".game-main")?.append(card.querySelector(".card-actions"));
+  }
   const statuses = gameStatuses(game);
   const owners = ownerTags(game);
   card.dataset.id = game.id;
@@ -8752,6 +8837,8 @@ function cardFor(game, options = {}) {
   card.classList.toggle("playing-card", Boolean(game.playing) && !neutralReleaseCard);
   card.classList.toggle("stream-card", Boolean(game.stream));
   card.classList.toggle("completed-trophy-card", Boolean(game.platinum));
+  card.classList.toggle("has-rating", ratingScoreValue(game) != null);
+  card.classList.toggle("has-price-footer", !releaseDialog && ["upcoming", "wanted"].includes(displaySection) && priceProvidersForGame(game).length > 0);
   card.classList.toggle("calendar-completed-card", releaseDialog && Boolean(game.platinum));
   const trailer = card.querySelector(".card-trailer");
   const trailerUrl = !neutralReleaseCard && shouldShowCardTrailer(game) ? trailerEmbedUrl(game.trailerUrl) : "";
@@ -8788,7 +8875,7 @@ function cardFor(game, options = {}) {
   card.querySelector(".meta").innerHTML = metaFor(game, {
     includePsn: neutralReleaseCard || !game.playing,
     includeCalendarState: releaseDialog,
-  }).join("");
+  }).join("") + ratingScoreBadge(game);
   const playDates = card.querySelector(".play-dates");
   playDates.innerHTML = playDatesFor(game, { includePastRelease: Boolean(options.includePastRelease), includeRelease: !releaseDialog, includePreorder: true, includeCalendarState: releaseDialog }).join("");
   playDates.hidden = !playDates.innerHTML;
@@ -8818,15 +8905,16 @@ function cardFor(game, options = {}) {
   const deleteAction = card.querySelector(".delete-action");
   if (priceRefreshAction) {
     priceRefreshAction.innerHTML = currencyIcon();
-    priceRefreshAction.title = tt("Prices");
-    priceRefreshAction.setAttribute("aria-label", tt("Prices"));
+    priceRefreshAction.title = tt("Refresh Prices");
+    priceRefreshAction.setAttribute("aria-label", tt("Refresh Prices"));
   }
   if (boughtAction) boughtAction.textContent = tt("Backlog");
   if (completeAction) completeAction.textContent = tt("Finished");
   if (backlogAction) {
     backlogAction.title = tt("Backlog");
     backlogAction.setAttribute("aria-label", tt("Move back to backlog"));
-    backlogAction.querySelector(".action-label").textContent = tt("Backlog");
+    const actionLabel = backlogAction.querySelector(".action-label");
+    if (actionLabel) actionLabel.textContent = tt("Backlog");
   }
   if (editAction) {
     editAction.title = tt("Edit");
@@ -8843,57 +8931,68 @@ function cardFor(game, options = {}) {
   if (neutralReleaseCard) {
     card.querySelector(".edit-action")?.remove();
     card.querySelector(".card-actions")?.remove();
+    card.querySelector(".card-footer")?.remove();
     prices.remove();
   } else if (displaySection === "new") {
-    card.querySelector(".edit-action").remove();
+    card.querySelector(".edit-action")?.remove();
     prices.remove();
-    priceRefreshAction.remove();
-    backlogAction.remove();
-    trophyAction.remove();
-    boughtAction.innerHTML = `${forwardIcon()}<span class="action-label">${escapeHtml(tt("Setup"))}</span>`;
-    boughtAction.classList.remove("ghost-button");
-    boughtAction.classList.add("primary-button");
-    boughtAction.addEventListener("click", () => finishSetupGame(game.id));
-    completeAction.innerHTML = `${playIcon()}<span class="action-label">${escapeHtml(tt("Play"))}</span>`;
-    completeAction.addEventListener("click", () => startPlaying(game.id));
+    priceRefreshAction?.remove();
+    backlogAction?.remove();
+    trophyAction?.remove();
+    if (boughtAction) {
+      boughtAction.innerHTML = `${forwardIcon()}<span class="action-label">${escapeHtml(tt("Setup"))}</span>`;
+      boughtAction.classList.remove("ghost-button");
+      boughtAction.classList.add("primary-button");
+      boughtAction.addEventListener("click", () => finishSetupGame(game.id));
+    }
+    if (completeAction) {
+      completeAction.innerHTML = `${playIcon()}<span class="action-label">${escapeHtml(tt("Play"))}</span>`;
+      completeAction.addEventListener("click", () => startPlaying(game.id));
+    }
   } else if (displaySection === "backlog" || game.completedAt) {
     prices.remove();
-    priceRefreshAction.remove();
-    boughtAction.remove();
+    priceRefreshAction?.remove();
+    boughtAction?.remove();
     if (game.playing) {
-      backlogAction.addEventListener("click", () => returnPlayingToBacklog(game.id));
+      backlogAction?.addEventListener("click", () => returnPlayingToBacklog(game.id));
       deleteAction?.remove();
-    } else backlogAction.remove();
-    completeAction.innerHTML = game.playing
-      ? `${checkIcon()}<span class="action-label">${escapeHtml(tt("Finished"))}</span>`
-      : `${playIcon()}<span class="action-label">${escapeHtml(tt("Play"))}</span>`;
-    completeAction.addEventListener("click", () => {
-      if (game.playing) completeGame(game.id);
-      else startPlaying(game.id);
-    });
-    trophyAction.hidden = !game.playing;
-    trophyAction.classList.toggle("active", Boolean(game.platinum));
-    if (game.playing) {
-      trophyAction.classList.add("playing-completed-action");
-      trophyAction.innerHTML = `${trophyIcon()}<span class="action-label">${escapeHtml(tt("Completed"))}</span>`;
-      card.querySelector(".card-actions")?.append(completeAction, trophyAction, backlogAction);
+    } else backlogAction?.remove();
+    if (completeAction) {
+      completeAction.innerHTML = game.playing
+        ? `${checkIcon()}<span class="action-label">${escapeHtml(tt("Finished"))}</span>`
+        : `${playIcon()}<span class="action-label">${escapeHtml(tt("Play"))}</span>`;
+      completeAction.addEventListener("click", () => {
+        if (game.playing) completeGame(game.id);
+        else startPlaying(game.id);
+      });
     }
-    trophyAction.addEventListener("click", () => completeGameWithTrophy(game.id));
+    if (trophyAction) {
+      trophyAction.hidden = !game.playing;
+      trophyAction.classList.toggle("active", Boolean(game.platinum));
+    }
+    if (game.playing) {
+      trophyAction?.classList.add("playing-completed-action");
+      if (trophyAction) trophyAction.innerHTML = `${trophyIcon()}<span class="action-label">${escapeHtml(tt("Completed"))}</span>`;
+      card.querySelector(".card-actions")?.append(...[completeAction, trophyAction, backlogAction].filter(Boolean));
+    }
+    trophyAction?.addEventListener("click", () => completeGameWithTrophy(game.id));
   } else {
-    backlogAction.remove();
-    completeAction.remove();
-    trophyAction.remove();
+    backlogAction?.remove();
+    completeAction?.remove();
+    trophyAction?.remove();
     const providers = priceProvidersForGame(game);
     if (providers.length) {
       prices.style.setProperty("--price-columns", providers.length);
       prices.innerHTML = pricesFor(game);
-      priceRefreshAction.addEventListener("click", () => refreshPricesForGame(game.id));
+      priceRefreshAction?.addEventListener("click", () => refreshPricesForGame(game.id));
     } else {
       prices.remove();
-      priceRefreshAction.remove();
+      priceRefreshAction?.remove();
     }
-    boughtAction.innerHTML = `${forwardIcon()}<span class="action-label">${escapeHtml(tt("Backlog"))}</span>`;
-    boughtAction.addEventListener("click", () => moveToBacklog(game.id));
+    if (boughtAction) {
+      boughtAction.innerHTML = `${forwardIcon()}<span class="action-label">${escapeHtml(tt("Backlog"))}</span>`;
+      boughtAction.addEventListener("click", () => moveToBacklog(game.id));
+    }
   }
   card.querySelector(".edit-action")?.addEventListener("click", () => openEditor(game.id));
   const trailerToggle = card.querySelector(".trailer-toggle");
@@ -8921,6 +9020,7 @@ function cardFor(game, options = {}) {
     if (event.target.closest("button, a")) return;
     openDetail(game.id);
   });
+  if (game.playing && !neutralReleaseCard) card.querySelector(".card-footer")?.remove();
   return card;
 }
 
@@ -9444,6 +9544,7 @@ function updateDetailTrophyEdges() {
 }
 
 function updateScrollTopButton() {
+  syncMobileDockViewport();
   const visible = window.scrollY > 180 && !document.body.classList.contains("dialog-open");
   const dockVisible = window.innerWidth >= 761 || window.scrollY > 180;
   el.scrollTopButton?.classList.toggle("visible", visible);
@@ -9451,6 +9552,18 @@ function updateScrollTopButton() {
   el.mobileActionDock?.classList.toggle("visible", dockVisible);
   el.mobileDockUp?.classList.toggle("is-visible", visible);
 }
+
+function syncMobileDockViewport() {
+  const viewport = window.visualViewport;
+  const bottomGap = viewport
+    ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
+    : 0;
+  document.documentElement.style.setProperty("--mobile-dock-viewport-bottom", `${bottomGap}px`);
+}
+
+window.visualViewport?.addEventListener("resize", syncMobileDockViewport, { passive: true });
+window.visualViewport?.addEventListener("scroll", syncMobileDockViewport, { passive: true });
+syncMobileDockViewport();
 
 function sortedDetailTrophies() {
   const direction = state.detailTrophyDirection === "asc" ? 1 : -1;
@@ -10133,7 +10246,7 @@ function completedBadges(game, options = {}) {
     mediaFormatBadge(game),
     game.coop ? coopBadge() : "",
     game.multiplayer && !game.coop ? multiplayerBadge() : "",
-    ratingScoreBadge(game),
+    options.includeRating === false ? "" : ratingScoreBadge(game),
     game.dlc ? dlcBadge(game) : "",
     entitlementBadge(game),
     game.emulator ? `<span class="emulator-pill">${escapeHtml(tt("Emulator"))}</span>` : "",
@@ -10141,6 +10254,22 @@ function completedBadges(game, options = {}) {
     game.replayCount ? replayBadge(game.replayCount) : "",
     options.includePsn === false ? "" : (progress ? psnProgressBadge(progress) : ""),
   ].filter(Boolean).join("");
+}
+
+function completedRatingBreakdownMarkup(game) {
+  const ratings = normalizeGameRatings(game?.ratings);
+  const rows = GAME_RATING_CATEGORIES
+    .map(([key, label]) => [key, label, ratings[key] || 0])
+    .filter(([, , value]) => value > 0);
+  if (!rows.length) return "";
+  return `<div class="completed-rating-breakdown" aria-label="${escapeHtml(tt("Rating breakdown"))}">${rows.map(([key, label, value]) => `
+    <span class="completed-rating-item" data-rating-key="${escapeHtml(key)}">
+      <span>${escapeHtml(tt(label))}</span>
+      <span class="completed-rating-stars" style="${ratingStarFillStyle(value)}" aria-label="${escapeHtml(`${tt(label)}: ${value}/5`)}">
+        <span class="star-display" aria-hidden="true">${ratingStarsMarkup()}</span>
+      </span>
+    </span>
+  `).join("")}</div>`;
 }
 
 function playDatesFor(game, options = {}) {
@@ -11677,6 +11806,10 @@ function syncNewGameRequiredHighlights() {
   el.dialog.classList.toggle("needs-platform-field", isNewGame && !el.fields.platform.value.trim());
   el.dialog.classList.toggle("needs-release-date-field", isNewGame && !el.fields.releaseDate.value);
   el.dialog.classList.toggle("needs-list-field", isNewGame && !newGameListTouched);
+  el.dialog.classList.toggle(
+    "needs-stream-check",
+    isNewGame && Boolean(cleanTwitchUser(state.settings.twitchUser)) && !newGameStreamTouched,
+  );
 }
 
 function syncNewGameUpcomingSection() {
@@ -11741,11 +11874,22 @@ function formatPillDate(value) {
 
 async function openEditor(id = "") {
   if (!await ensureEditMode()) return;
+  const playingSection = el.form.querySelector("#playingFormSection");
+  const collectingSection = el.form.querySelector("#collectingFormSection");
+  if (playingSection && collectingSection) {
+    el.form.insertBefore(id ? playingSection : collectingSection, id ? collectingSection : playingSection);
+  }
   state.editingId = id;
   state.pendingDescription = "";
   const game = state.games.find((item) => item.id === id) || blankGame();
   newGameListTouched = Boolean(id);
+  newGameStreamTouched = Boolean(id);
   el.dialogTitle.textContent = id ? tt("Edit Game") : tt("Add Game");
+  const saveLabel = id ? "Save" : "Add to Gamelist";
+  el.gameDialogSaveButton.dataset.i18n = saveLabel;
+  el.gameDialogSaveButton.textContent = tt(saveLabel);
+  el.gameDialogBottomSaveButton.dataset.i18n = saveLabel;
+  el.gameDialogBottomSaveButton.textContent = tt(saveLabel);
   el.dialog.classList.toggle("is-new-game", !id);
   el.deleteButton.hidden = !id;
   el.lookupResults.innerHTML = "";

@@ -14,6 +14,13 @@
     <link rel="manifest" href="manifest.webmanifest">
     <style>html.theme-booting:not(.from-pull-navigation) body{visibility:hidden}</style>
     <script>
+      if ("serviceWorker" in navigator) {
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        if (hadController) navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+        navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+      }
+    </script>
+    <script>
       (() => {
         const root = document.documentElement;
         if (new URLSearchParams(location.search).get("pull") === "1") {
@@ -235,7 +242,7 @@
             <path d="M19.2 3.8v4.8h-4.8"></path>
           </svg>
         </button>
-        <button class="ghost-button" id="loginButton" type="button" title="Edit" aria-label="Edit" data-i18n-title="Edit" data-i18n-aria-label="Edit">
+        <button class="ghost-button" id="loginButton" type="button" title="Edit" aria-label="Edit" data-i18n-title="Edit" data-i18n-aria-label="Edit" hidden>
           <svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
             <path d="M13.5 6.5l4 4"></path>
@@ -243,15 +250,10 @@
         </button>
         <button class="icon-button" id="settingsButton" type="button" title="Settings" aria-label="Settings" data-i18n-title="Settings" data-i18n-aria-label="Settings" aria-busy="true" disabled hidden>
           <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 6h6"></path>
-            <path d="M14 6h6"></path>
-            <circle cx="12" cy="6" r="2"></circle>
-            <path d="M4 12h11"></path>
-            <path d="M19 12h1"></path>
-            <circle cx="17" cy="12" r="2"></circle>
-            <path d="M4 18h2"></path>
-            <path d="M10 18h10"></path>
-            <circle cx="8" cy="18" r="2"></circle>
+            <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"></path>
+            <circle cx="16" cy="6" r="2"></circle>
+            <circle cx="8" cy="12" r="2"></circle>
+            <circle cx="16" cy="18" r="2"></circle>
           </svg>
         </button>
         <button class="ghost-button" id="fetchPricesButton" type="button" hidden>
@@ -300,9 +302,8 @@
             <label class="goty-year-select">
               <select id="gotyYearSelect" aria-label="Game of the year picks year" data-i18n-aria-label="Game of the year picks year"></select>
             </label>
-            <button class="ghost-button goty-save-button" id="gotySaveButton" type="button" data-i18n="Save">Save</button>
-            <button class="ghost-button goty-stats-button" id="gotyStatsButton" type="button" title="Stats" aria-label="Game of the year stats" data-i18n-title="Stats" data-i18n-aria-label="Game of the year stats" hidden></button>
             <button class="ghost-button goty-edit-button" id="gotyEditButton" type="button" data-i18n="Edit" hidden>Edit</button>
+            <button class="ghost-button goty-save-button" id="gotySaveButton" type="button" data-i18n="Save">Save</button>
           </div>
         </div>
         <div class="goty-grid" id="gotyGrid"></div>
@@ -313,9 +314,6 @@
           <div>
             <h2 data-i18n="Achievements">Achievements</h2>
           </div>
-          <button class="icon-button completed-stats-button achievement-stats-button" id="achievementStatsButton" type="button" title="Stats" aria-label="Achievement stats">
-            <svg class="graph-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-4"></path></svg>
-          </button>
         </div>
         <div class="achievement-panel" id="achievementPanel">
           <div class="achievement-loading">Loading latest achievements...</div>
@@ -474,11 +472,13 @@
         <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2"></path><circle cx="16" cy="6" r="2"></circle><circle cx="8" cy="12" r="2"></circle><circle cx="16" cy="18" r="2"></circle></svg>
         <span data-i18n="Settings">Settings</span>
       </button>
+      <button class="mobile-dock-action" id="mobileDockStats" type="button" title="Stats" aria-label="Finished games stats" data-i18n-title="Stats" data-i18n-aria-label="Finished games stats" hidden></button>
+      <button class="mobile-dock-action mobile-dock-goty" id="mobileDockGoty" type="button" title="Games of the year" aria-label="Set up Games of the year" data-i18n-title="Games of the year" data-i18n-aria-label="Set up Games of the year" hidden></button>
       <button class="mobile-dock-action" id="mobileDockSearch" type="button" title="Search" aria-label="Search" data-i18n-title="Search" data-i18n-aria-label="Search">
         <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
         <span data-i18n="Search">Search</span>
       </button>
-      <button class="mobile-dock-action" id="mobileDockAdd" type="button" aria-label="Add Game" data-i18n-aria-label="Add Game">
+      <button class="mobile-dock-action" id="mobileDockAdd" type="button" aria-label="Add Game" data-i18n-aria-label="Add Game" hidden>
         <svg class="plus-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
         <span data-i18n="Add Game">Add Game</span>
       </button>
@@ -492,7 +492,7 @@
             <h2 id="dialogTitle">Add Game</h2>
           </div>
           <div class="modal-head-actions">
-            <button class="primary-button modal-head-save" type="submit" data-i18n="Save">Save</button>
+            <button class="primary-button modal-head-save" id="gameDialogSaveButton" type="submit" data-i18n="Save">Save</button>
             <button class="icon-button" id="closeDialogButton" type="button" title="Close">×</button>
           </div>
         </div>
@@ -512,7 +512,7 @@
         </div>
         <div class="lookup-results" id="lookupResults"></div>
 
-        <section class="form-group">
+        <section class="form-group" id="playingFormSection">
           <h3 data-i18n="Playing">Playing</h3>
           <div class="form-grid playing-form-grid">
             <label class="check-filter toggle-check modal-playing-check">
@@ -564,7 +564,7 @@
           </div>
         </section>
 
-        <section class="form-group">
+        <section class="form-group" id="collectingFormSection">
           <h3 data-i18n="Collecting Information">Collecting Information</h3>
           <div class="form-grid collection-form-grid">
             <label class="title-field">
@@ -765,7 +765,7 @@
               <path d="M14 11v5"></path>
             </svg>
           </button>
-          <button class="primary-button" type="submit">Save</button>
+          <button class="primary-button modal-save-button" id="gameDialogBottomSaveButton" type="submit" data-i18n="Save">Save</button>
         </div>
       </form>
     </dialog>
@@ -880,7 +880,7 @@
         <div class="goty-picker-grid" id="gotyPickerGrid"></div>
         <div class="goty-dialog-actions">
           <button class="danger-button icon-only-button goty-reset-button" id="gotyResetButton" type="button" title="Reset" aria-label="Reset Game of the year picks" data-i18n-title="Reset" data-i18n-aria-label="Reset Game of the year picks"></button>
-          <button class="primary-button goty-publish-button" type="submit" data-i18n="Save">Save</button>
+          <button class="primary-button goty-publish-button modal-save-button" type="submit" data-i18n="Save">Save</button>
         </div>
       </form>
     </dialog>
@@ -891,9 +891,6 @@
           <div>
             <p class="eyebrow" id="gotyStatsPreviewBrow">Before your picks</p>
             <h2 id="gotyStatsPreviewTitle">Your year in games</h2>
-          </div>
-          <div class="modal-head-actions">
-            <button class="icon-button" id="gotyStatsPreviewCloseButton" type="button" title="Close" data-i18n-title="Close">×</button>
           </div>
         </div>
         <div class="goty-stats-preview-body finished-stats-body" id="gotyStatsPreviewBody"></div>
@@ -1012,7 +1009,7 @@
         </div>
 
         <section class="settings-window-panel" data-settings-window="design" hidden>
-          <section class="settings-section"><h3 data-i18n="Page Layout">Page Layout</h3><div class="settings-layout" id="settingsLayoutList" aria-label="Page order"></div></section>
+          <section class="settings-section"><h3 data-i18n="Gamelist page layout">Gamelist page layout</h3><div class="settings-layout" id="settingsLayoutList" aria-label="Page order"></div></section>
           <p class="eyebrow settings-detail-title" data-i18n="Details">Details</p>
           <section class="settings-grid settings-detail-grid">
           <div class="settings-preference-row" id="settingsPreferencesBeforeCurrency"></div>
@@ -1077,7 +1074,7 @@
         </section>
 
         <div class="modal-actions">
-          <button class="primary-button" type="submit" data-i18n="Save">Save</button>
+          <button class="primary-button modal-save-button" type="submit" data-i18n="Save">Save</button>
         </div>
       </form>
     </dialog>
@@ -1170,7 +1167,7 @@
         <p class="auth-error" id="finishTimeError" hidden>Use whole numbers only.</p>
         <div class="modal-actions">
           <button class="ghost-button" id="finishTimeSkipButton" type="button">Skip</button>
-          <button class="primary-button" type="submit">Save</button>
+          <button class="primary-button modal-save-button" type="submit">Save</button>
         </div>
       </form>
     </dialog>

@@ -94,7 +94,7 @@ body:not(.can-edit) .showcase-edit-button {
   display: none;
 }
 .shelf-page .shelf-library {
-  margin: 20px 0 0;
+  margin: 0;
 }
 
 .shelf-page .stats {
@@ -105,10 +105,6 @@ body:not(.can-edit) .showcase-edit-button {
   flex: 1 1 0;
   min-width: 0;
 }
-.shelf-page .stats .glass {
-  background: var(--panel);
-}
-
 body.mobile-app-mode.shelf-page {
   --theme-control-bg: linear-gradient(
     135deg,
@@ -153,7 +149,7 @@ body.mobile-app-mode.shelf-page .backdrop {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0;
-  background: var(--grid-fade), var(--grid-texture), var(--panel-strong);
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
   background-size:
     auto,
     22px 22px,
@@ -478,14 +474,6 @@ body.theme-kash
 .shelf-stats-years-grid {
   grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)) !important;
   grid-auto-rows: minmax(92px, auto);
-}
-
-.shelf-stats-launch-row {
-  justify-content: flex-end;
-}
-
-.shelf-stats-launch-row .completed-stats-button {
-  margin-left: auto;
 }
 
 @media (max-width: 760px) {
@@ -1143,6 +1131,10 @@ html.theme-font-mata .shelf-page .playing-section .column-head h2 {
   gap: 10px;
 }
 
+.shelf-grid:not(.list-view) .game-card.has-rating {
+  min-height: 260px;
+}
+
 .shelf-grid .game-card {
   grid-template-columns: var(--shelf-cover-width, 104px) minmax(0, 1fr);
   min-height: 240px;
@@ -1167,14 +1159,14 @@ html.theme-font-mata .shelf-page .playing-section .column-head h2 {
   object-fit: cover;
 }
 
-.shelf-grid.preorders-view .preorder-projection-card .card-actions {
+.shelf-grid.preorders-view .synced-projection-card .card-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
   gap: 8px;
 }
 
-.shelf-grid.preorders-view .preorder-projection-card .prices {
+.shelf-grid.preorders-view .synced-projection-card .prices {
   grid-column: 1 / -1;
 }
 
@@ -1329,7 +1321,7 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   }
 
   .shelf-grid.preorders-view.list-view
-    .preorder-projection-row
+    .synced-projection-row
     .game-row-description {
     display: none;
   }
@@ -1397,7 +1389,7 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--grid-fade), var(--grid-texture), rgba(18, 20, 25, 0.97);
+  background: var(--grid-fade), var(--grid-texture), var(--panel-dark);
   background-size:
     auto,
     22px 22px,
@@ -1587,7 +1579,7 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   --tab-index: 0;
   --tab-width: calc((100% - 18px) / 2);
   position: sticky;
-  top: calc(145px + var(--pull-ui-offset, 0px));
+  top: calc(20px + var(--shelf-toolbar-sticky-height, 111px) + 14px + var(--pull-ui-offset, 0px));
   z-index: 11;
   display: grid;
   grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr));
@@ -1664,10 +1656,30 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   display: inline-flex;
 }
 
+.digital-tracking-disabled .lookup-digital-separator,
+.digital-tracking-disabled .lookup-digital-check {
+  display: none;
+}
+
 .preorder-tab-icon .shopping-bag-icon {
   width: 22px;
   height: 22px;
   fill: none !important;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wishlist-tab-icon {
+  display: none;
+  color: var(--muted);
+}
+
+.wishlist-tab-icon .wishlist-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linecap: round;
@@ -1925,6 +1937,14 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   min-width: 0;
 }
 
+.gamelist-target-editor .lookup-label-physical {
+  display: none;
+}
+
+.gamelist-target-editor .lookup-label-digital {
+  display: inline;
+}
+
 .lookup-digital-separator {
   align-self: flex-end;
   width: 0;
@@ -1943,6 +1963,81 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   flex: 0 0 auto;
   padding: 0 12px;
   margin: 0;
+}
+
+.shelf-gamelist-target-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+}
+
+.shelf-gamelist-target-picker[hidden],
+.shelf-gamelist-placement[hidden],
+.shelf-gamelist-preorder-field[hidden] {
+  display: none !important;
+}
+
+.shelf-gamelist-placement:not([hidden]) {
+  display: contents;
+}
+
+.shelf-gamelist-placement > label {
+  grid-column: span 4;
+}
+
+.shelf-gamelist-target-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.shelf-gamelist-target-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shelf-gamelist-target-options button {
+  font-size: 16px;
+}
+
+.shelf-gamelist-target-options button.active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.gamelist-target-editor .shelf-region-field,
+.gamelist-target-editor .shelf-addition-field,
+.gamelist-target-editor .shelf-value-field,
+.gamelist-target-editor .shelf-condition-field,
+.gamelist-target-editor .shelf-condition-notes-field,
+.gamelist-target-editor .shelf-pricecharting-section {
+  display: none !important;
+}
+
+.gamelist-target-editor .shelf-title-field {
+  grid-column: span 4;
+}
+
+#addGameForm.needs-gamelist-preorder-store .shelf-gamelist-preorder-field input {
+  border-color: color-mix(in srgb, var(--accent) 78%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), rgba(255, 255, 255, 0.055)),
+    var(--panel-strong);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+#addGameForm.needs-gamelist-preorder-store .shelf-gamelist-preorder-field > span:first-child {
+  color: color-mix(in srgb, var(--accent) 85%, #fff);
 }
 
 .shelf-editor-grid > .shelf-release-field,
@@ -1971,6 +2066,40 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   grid-column: 1 / -1;
   min-width: 0;
   margin-top: 2px;
+}
+
+#addGameForm.is-new-shelf-game.needs-title-field .shelf-title-field input,
+#addGameForm.is-new-shelf-game.needs-platform-field .shelf-console-field input,
+#addGameForm.is-new-shelf-game.needs-release-date-field .shelf-release-field input,
+#addGameForm.is-new-shelf-game.needs-addition-date-field .shelf-addition-field input,
+#addGameForm.is-new-shelf-game.needs-region-field .shelf-region-field select {
+  border-color: color-mix(in srgb, var(--accent) 76%, var(--line));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      rgba(255, 255, 255, 0.055)
+    ),
+    var(--panel-strong);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+#addGameForm.is-new-shelf-game.needs-region-field .shelf-region-field .platform-logo-button {
+  border-color: color-mix(in srgb, var(--accent) 76%, var(--line));
+  background-color: color-mix(in srgb, var(--accent) 14%, var(--panel-strong));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+#addGameForm.is-new-shelf-game.needs-title-field .shelf-title-field > span,
+#addGameForm.is-new-shelf-game.needs-platform-field .shelf-console-field > span:first-child,
+#addGameForm.is-new-shelf-game.needs-release-date-field .shelf-release-field > span,
+#addGameForm.is-new-shelf-game.needs-addition-date-field .shelf-addition-field > span,
+#addGameForm.is-new-shelf-game.needs-region-field .shelf-region-field > span:first-child {
+  color: color-mix(in srgb, var(--accent) 82%, #fff);
 }
 
 .shelf-condition-notes-field {
@@ -2501,6 +2630,20 @@ textarea {
 }
 
 @media (max-width: 760px) {
+  .shelf-gamelist-target-picker {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .shelf-gamelist-target-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shelf-gamelist-placement > label {
+    grid-column: 1 / -1;
+  }
+
   .shelf-page .calendar-section.hero {
     min-height: 0;
     padding: 0 0 8px;
@@ -2731,6 +2874,34 @@ textarea {
     .preorder-tab-icon {
     color: #fff;
   }
+
+  .shelf-tabs.four-tabs button[data-shelf-tab="wishlist"] .count {
+    display: none;
+  }
+
+  .shelf-tabs.five-tabs button[data-shelf-tab="wishlist"] .wishlist-tab-text {
+    display: none;
+  }
+
+  .shelf-tabs.five-tabs button[data-shelf-tab="preorders"] .preorder-tab-text {
+    display: none;
+  }
+
+  .shelf-tabs.five-tabs button[data-shelf-tab="preorders"] .preorder-tab-icon {
+    display: inline-flex;
+  }
+
+  .shelf-tabs.five-tabs button.active[data-shelf-tab="preorders"] .preorder-tab-icon {
+    color: #fff;
+  }
+
+  .shelf-tabs.five-tabs button[data-shelf-tab="wishlist"] .wishlist-tab-icon {
+    display: inline-flex;
+  }
+
+  .shelf-tabs.five-tabs button.active[data-shelf-tab="wishlist"] .wishlist-tab-icon {
+    color: #fff;
+  }
   .shelf-grid {
     grid-template-columns: 1fr;
   }
@@ -2749,7 +2920,7 @@ textarea {
     width: 96px;
     height: 131px;
   }
-  .shelf-grid.preorders-view .preorder-projection-card .card-actions {
+  .shelf-grid.preorders-view .synced-projection-card .card-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr)) 42px;
     align-items: stretch;
@@ -2758,7 +2929,7 @@ textarea {
   }
   .shelf-grid .game-card .card-actions {
     grid-template-columns: minmax(0, max-content) 42px;
-    justify-content: end;
+    justify-content: start;
     gap: 6px;
   }
   .shelf-grid .game-card .card-actions:has(.add-collection-action) {
