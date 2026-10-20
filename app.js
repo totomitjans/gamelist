@@ -1,7 +1,9 @@
+import { openSharedAddGame, warmSharedAddGame } from "./shared-add-game.js";
 import { normalizeSearchText, bindModalTouchGuard, createGameCardShell, bindActivityCardParallax, mountActivitySlider, mountTwitchPreview, mountReleaseCalendar, finishedGameMarkup, achievementCardMarkup, achievementDashboardMarkup, achievementPanelMarkup, completedCardMarkup, horizontalCarouselState, syncViewModeButton, slideHorizontalCarousel, comparePlayingGames, finishedDurationText, timeBadgeMarkup, guideLinksMarkup, storeButtonsMarkup, activityTrailerUrl, activityTrailerFrameMarkup, preloadPausedActivityTrailers, activityReleaseStatus, activityCoverOverride, activityAllowsPsnCardTrophies, formatFooterDate, formatFooterDateTime, formatFooterShortDate, confirmGameDelete } from "./activity-ui.js";
 import { applySiteTheme, normalizeThemeSettings, ownerCardColorClass, ownerColorClass, themeSettingsContent, bindThemeSettingsContent, readThemeSettingsContent } from "./theme-system.js";
 import { applyDocumentTranslations, languageOptions, normalizeLanguage, t } from "./i18n.js";
 import { accountSettingsMarkup } from "./account-settings-ui.js";
+import { syncGameListControls, syncGameListSlider, syncStoreFieldIcon } from "./game-editor-controls.js";
 
 document.querySelector("#settingsAccountsMount").innerHTML = accountSettingsMarkup();
 
@@ -198,7 +200,6 @@ const MANUAL_PSN_TITLE_OVERRIDES = [
 const SEARCH_CACHE_TTL = 1000 * 60 * 60;
 let titleLookupTimer = 0;
 let newGameListTouched = false;
-let newGameStreamTouched = false;
 let selectMeasureContext = null;
 let selectOverflowPopover = null;
 let platformLogoOverlay = null;
@@ -507,10 +508,6 @@ const el = {
   dialog: document.querySelector("#gameDialog"),
   gameAddTargetPicker: document.querySelector("#gameAddTargetPicker"),
   gameAddDestinationPicker: document.querySelector("#gameAddDestinationPicker"),
-  shelfDestinationFields: document.querySelector("#shelfDestinationFields"),
-  shelfCountry: document.querySelector("#gameShelfCountryInput"),
-  shelfAdditionDate: document.querySelector("#gameShelfAdditionDateInput"),
-  shelfValue: document.querySelector("#gameShelfValueInput"),
   form: document.querySelector("#gameForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
   gameDialogSaveButton: document.querySelector("#gameDialogSaveButton"),
@@ -569,6 +566,7 @@ const el = {
 renderRatingInputs(el.playingRatingGrid, "edit");
 renderRatingInputs(el.finishRatingGrid, "finish");
 
+
 init();
 
 async function init() {
@@ -584,6 +582,7 @@ async function init() {
     sessionStorage.removeItem(`${SESSION_KEY}:password`);
   }
   document.body.classList.toggle("can-edit", state.canEdit);
+  if (state.canEdit) warmSharedAddGame();
   bindEvents();
   initRenderSettling();
   warmUiIcons();
@@ -1321,14 +1320,11 @@ function bindEvents() {
   el.board.addEventListener("touchend", handleBoardSwipeEnd, { passive: true });
   window.addEventListener("touchend", handleBoardSwipeEnd, { passive: true });
   el.fields.title.addEventListener("input", syncNewGameRequiredHighlights);
-  el.fields.stream?.addEventListener("change", () => {
-    newGameStreamTouched = true;
-    syncNewGameRequiredHighlights();
-  });
   el.gameAddTargetPicker.addEventListener("click", (event) => {
     const button = event.target.closest("[data-game-target]");
-    if (!button || state.editingId) return;
+    if (!button) return;
     el.fields.section.value = button.dataset.gameTarget;
+    gameEditorDirty = true;
     syncStyledSelect(el.fields.section, { activeValue: null });
     markNewGameListTouched();
     syncDialogPriceVisibility();
@@ -1369,8 +1365,10 @@ function bindEvents() {
   });
   el.preorderCheck?.addEventListener("change", () => {
     el.preorderStoreField.hidden = !el.preorderCheck.checked;
-    if (!el.preorderCheck.checked) el.fields.preorderStore.value = "";
+    if (el.preorderCheck.checked) el.fields.section.value = "upcoming";
+    else el.fields.preorderStore.value = "";
     syncNewGameUpcomingSection();
+    syncDialogPriceVisibility();
   });
   el.fields.preorderStore.addEventListener("change", () => {
     syncStoreInputIcon(el.fields.preorderStore, el.preorderStoreFieldIcon);
@@ -1379,19 +1377,30 @@ function bindEvents() {
   el.fields.preferredStore.addEventListener("input", () => syncStoreInputIcon(el.fields.preferredStore, el.preferredStoreFieldIcon));
   el.fields.preferredStore.addEventListener("change", () => syncStoreInputIcon(el.fields.preferredStore, el.preferredStoreFieldIcon));
   el.fields.digital.addEventListener("change", () => {
-    if (!el.fields.digital.checked && el.fields.emulator) el.fields.emulator.checked = false;
+    if (!el.fields.digital.checked) {
+      el.fields.dlc.checked = false;
+      el.fields.psPlus.checked = false;
+      el.fields.gamesWithGold.checked = false;
+      if (el.fields.emulator) el.fields.emulator.checked = false;
+    }
     syncDialogPriceVisibility();
     syncGamelistEntitlementEditor();
     syncGameAddDestination();
   });
   el.fields.emulator?.addEventListener("change", () => {
     if (el.fields.digital) el.fields.digital.checked = el.fields.emulator.checked;
+    if (!el.fields.digital.checked) {
+      el.fields.dlc.checked = false;
+      el.fields.psPlus.checked = false;
+      el.fields.gamesWithGold.checked = false;
+    }
     syncDialogPriceVisibility();
     syncGamelistEntitlementEditor();
+    syncGameAddDestination();
   });
   el.fields.dlc.addEventListener("change", syncDlcDigital);
   el.fields.coop?.addEventListener("change", () => {
-    if (el.fields.coop.checked && el.fields.multiplayer) el.fields.multiplayer.checked = true;
+    if (el.fields.multiplayer) el.fields.multiplayer.checked = el.fields.coop.checked;
   });
   el.fields.multiplayer?.addEventListener("change", () => {
     if (!el.fields.multiplayer.checked && el.fields.coop) el.fields.coop.checked = false;
@@ -1444,6 +1453,8 @@ function bindEvents() {
   });
   el.pricesButton?.addEventListener("click", refreshCurrentPrices);
   el.coverUpload?.addEventListener("change", handleCoverUpload);
+  el.fields.cover.addEventListener("input", syncGameEditorCover);
+  el.fields.cover.addEventListener("change", syncGameEditorCover);
   window.addEventListener("resize", () => {
     syncDisplayMode();
     syncSectionTabsStickyOffset();
@@ -11806,8 +11817,19 @@ function storeIcon(store) {
 function syncEditFieldIcons() {
   syncPlatformInputIcon();
   syncGamelistEntitlementEditor();
+  syncGameEditorCover();
   syncStoreInputIcon(el.fields.preorderStore, el.preorderStoreFieldIcon);
   syncStoreInputIcon(el.fields.preferredStore, el.preferredStoreFieldIcon);
+}
+
+function syncGameEditorCover() {
+  const image = document.querySelector("#gameEditorCoverPreview");
+  if (!image) return;
+  const source = el.fields.cover.value.trim();
+  image.hidden = !source;
+  if (source) image.src = coverDisplayUrl(source);
+  else image.removeAttribute("src");
+  image.onerror = () => { image.hidden = true; };
 }
 
 function syncPlatformInputIcon() {
@@ -11818,31 +11840,7 @@ function syncPlatformInputIcon() {
 }
 
 function syncStoreInputIcon(input, slot) {
-  const store = knownStoreIconName(input?.value);
-  setLeadingFieldIcon(slot, store ? storeIcon(store) : "", store);
-}
-
-function knownStoreIconName(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const normalized = normalizeTag(raw);
-  const exact = STORE_OPTIONS.find((store) => normalizeTag(store) === normalized);
-  if (exact) return exact;
-  if (normalized.startsWith("amazon")) return "Amazon";
-  if (normalized === "ebay" || normalized === "e bay") return "eBay";
-  if (isKickstarterStore(raw)) return "Kickstarter";
-  if (normalized === "game" || normalized === "game es") return "GAME.es";
-  if (normalized === "xtralife" || normalized === "xtra life") return "Xtralife";
-  if (normalized === "retro island" || normalized === "retro island ny") return "Retro Island NY";
-  if (normalized === "limitedrun" || normalized === "limitedrungames" || normalized === "lrg") return "Limited Run";
-  if (normalized === "squareenix" || normalized === "squareenixstore" || normalized === "sqex" || normalized === "sqexstore") return "Square Enix Store";
-  if (normalized === "gamestop" || normalized === "game stop") return "GameStop";
-  if (normalized === "walmart" || normalized === "wallmart") return "Walmart";
-  if (normalized.startsWith("nintendo")) return "Nintendo";
-  if (normalized.startsWith("playstation") || normalized.startsWith("play station")) return "PlayStation";
-  if (normalized === "steam") return "Steam";
-  if (normalized === "xbox") return "Xbox";
-  return "";
+  syncStoreFieldIcon(input, slot);
 }
 
 function isKickstarterStore(store) {
@@ -11883,7 +11881,7 @@ function todayDate() {
 function newGameShouldBeUpcoming() {
   const releaseDate = dateOnly(el.fields.releaseDate.value);
   const futureRelease = Boolean(releaseDate) && new Date(`${releaseDate}T00:00:00`).getTime() > new Date().setHours(0, 0, 0, 0);
-  return futureRelease || Boolean(el.fields.preorderStore.value.trim());
+  return futureRelease || Boolean(el.preorderCheck?.checked || el.fields.preorderStore.value.trim());
 }
 
 function markNewGameListTouched() {
@@ -11895,20 +11893,38 @@ function markNewGameListTouched() {
 function syncGameAddTargetPicker() {
   const picker = el.gameAddTargetPicker;
   const isNewGame = !state.editingId && el.dialog.classList.contains("is-new-game");
-  picker.hidden = !isNewGame || state.addDestination !== "gamelist";
-  if (!isNewGame) return;
-  const options = picker.querySelector(".shelf-gamelist-target-options");
-  let activeButton;
-  picker.querySelectorAll("[data-game-target]").forEach((button) => {
-    const active = button.dataset.gameTarget === el.fields.section.value;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-    if (active) activeButton = button;
+  const collectingSection = document.querySelector("#collectingFormSection");
+  const controls = document.querySelector("#gameListControls");
+  picker.hidden = isNewGame && state.addDestination !== "gamelist";
+  controls.hidden = picker.hidden;
+  if (isNewGame) {
+    el.form.insertBefore(controls, el.lookupResults);
+  } else {
+    const grid = collectingSection.querySelector(".collection-form-grid");
+    grid.insertBefore(controls, grid.querySelector(".owners-field"));
+  }
+  syncGamePreorderStreamLayout();
+  syncGameListSlider(picker, el.fields.section.value);
+}
+
+function syncGamePreorderStreamLayout() {
+  const editing = Boolean(state.editingId);
+  const { isBacklog } = syncGameListControls({
+    active: editing || state.addDestination !== "shelf",
+    section: el.fields.section.value,
+    preorderCheck: el.preorderCheck,
+    preorderStore: el.fields.preorderStore,
+    preorderField: el.preorderStoreField,
+    preorderRow: el.preorderCheck.closest(".game-preorder-control"),
+    streamRow: document.querySelector("#gamePreorderStreamRow"),
+    streamInput: el.fields.stream,
+    hasTwitchAccount: Boolean(cleanTwitchUser(state.settings.twitchUser)),
+    editing,
+    playingGrid: document.querySelector("#playingFormSection .playing-form-grid"),
   });
-  if (activeButton) requestAnimationFrame(() => {
-    options.style.setProperty("--target-left", `${activeButton.offsetLeft}px`);
-    options.style.setProperty("--target-width", `${activeButton.offsetWidth}px`);
-  });
+  if (isBacklog) {
+    syncStoreInputIcon(el.fields.preorderStore, el.preorderStoreFieldIcon);
+  }
 }
 
 function syncGameAddDestination() {
@@ -11917,7 +11933,6 @@ function syncGameAddDestination() {
   const shelfTarget = isNewGame && state.addDestination === "shelf";
   picker.hidden = !isNewGame;
   el.dialog.classList.toggle("shelf-destination-selected", shelfTarget);
-  el.shelfDestinationFields.hidden = !shelfTarget;
   picker.querySelectorAll("[data-game-destination]").forEach((button) => {
     const selected = button.dataset.gameDestination === state.addDestination;
     button.classList.toggle("active", selected);
@@ -11937,11 +11952,13 @@ function syncGameAddDestination() {
   });
   el.dialogTitle.textContent = !isNewGame
     ? tt("Edit Game")
-    : el.fields.digital.checked
-      ? tt("Add a Digital Game")
-      : shelfTarget
-        ? tt("Add to Shelf")
-        : tt("Add to Gamelist");
+    : state.addDestination === "gamelist" && el.preorderCheck?.checked
+      ? tt("Add a game preorder")
+      : el.fields.digital.checked
+        ? tt("Add a digital game")
+        : shelfTarget
+          ? tt("Add to Shelf")
+          : tt("Add to Gamelist");
   syncGameAddTargetPicker();
 }
 
@@ -11952,10 +11969,6 @@ function syncNewGameRequiredHighlights() {
   el.dialog.classList.toggle("needs-platform-field", isNewGame && !el.fields.platform.value.trim());
   el.dialog.classList.toggle("needs-release-date-field", isNewGame && !el.fields.releaseDate.value);
   el.dialog.classList.toggle("needs-list-field", isNewGame && !newGameListTouched);
-  el.dialog.classList.toggle(
-    "needs-stream-check",
-    isNewGame && Boolean(cleanTwitchUser(state.settings.twitchUser)) && !newGameStreamTouched,
-  );
 }
 
 function syncNewGameUpcomingSection() {
@@ -12021,6 +12034,7 @@ function formatPillDate(value) {
 
 async function openEditor(id = "") {
   if (!await ensureEditMode()) return;
+  if (!id) return openGameAddFlow();
   const playingSection = el.form.querySelector("#playingFormSection");
   const collectingSection = el.form.querySelector("#collectingFormSection");
   if (playingSection && collectingSection) {
@@ -12031,7 +12045,6 @@ async function openEditor(id = "") {
   state.pendingDescription = "";
   const game = state.games.find((item) => item.id === id) || blankGame();
   newGameListTouched = Boolean(id);
-  newGameStreamTouched = Boolean(id);
   el.dialogTitle.textContent = id ? tt("Edit Game") : tt("Add game");
   const saveLabel = id ? "Save" : "Add to Gamelist";
   el.gameDialogSaveButton.dataset.i18n = saveLabel;
@@ -12066,11 +12079,6 @@ async function openEditor(id = "") {
   if (el.preorderCheck) el.preorderCheck.checked = Boolean(game.preorderStore);
   if (el.preorderStoreField) el.preorderStoreField.hidden = !game.preorderStore;
   el.fields.preferredStore.value = game.preferredStore || "";
-  el.shelfCountry.value = shelfCountryForRegion(state.settings.region);
-  el.shelfAdditionDate.value = todayDate();
-  el.shelfValue.value = "";
-  el.form.querySelector("#gameShelfConditionGame").checked = true;
-  el.form.querySelectorAll("#gameShelfConditionManual, #gameShelfConditionBox, #gameShelfConditionOther, #gameShelfConditionSealed").forEach((input) => { input.checked = false; });
   el.fields.owners.value = ownerTags(game).join(", ");
   el.fields.statuses.value = gameStatuses(game).join(", ");
   el.fields.digital.checked = Boolean(game.digital || game.dlc);
@@ -12107,17 +12115,21 @@ async function openEditor(id = "") {
   syncScrollLock();
 }
 
+function openGameAddFlow(options = {}) {
+  return openSharedAddGame({ ...options, target: "gamelist", settings: state.settings }, {
+    beforeOpen: pauseAllPlayingTrailers,
+    afterSave: async result => {
+      await pullCloudData();
+      render();
+      showToast(tt(result.target === "shelf" ? "Added to Shelf." : "Added to Gamelist."));
+    },
+    afterClose: syncScrollLock,
+  });
+}
+
 async function addGameFromSearch(query, section = "wanted") {
-  const title = String(query || "").trim();
-  if (!title) return openEditor("");
-  await openEditor("");
-  el.lookupInput.value = title;
-  el.fields.title.value = title;
-  if (["wanted", "released", "backlog"].includes(section)) el.fields.section.value = section;
-  gameEditorDirty = true;
-  syncDialogPriceVisibility();
-  syncNewGameRequiredHighlights();
-  queueTitleLookup();
+  if (!await ensureEditMode()) return;
+  return openGameAddFlow({ query: String(query || "").trim(), section });
 }
 
 function blankGame() {
@@ -12172,10 +12184,6 @@ function blankGame() {
 
 async function saveFromForm(event) {
   event.preventDefault();
-  if (!state.editingId && state.addDestination === "shelf") {
-    await saveNewShelfGameFromForm();
-    return;
-  }
   const existing = state.games.find((game) => game.id === el.fields.id.value);
   const game = await saveCurrentFormGame();
   gameEditorDirty = false;
@@ -12185,88 +12193,6 @@ async function saveFromForm(event) {
     await createPreorderCalendarEvent(game);
   }
   refreshPricesForGame(game.id, { silent: true });
-}
-
-function shelfCountryForRegion(region) {
-  return ({ ES: "Spain", IT: "Italy", IE: "Ireland", FR: "France", PT: "Portugal", JP: "Japan", MX: "Mexico", US: "United States of America", UK: "United Kingdom" })[region] || "Spain";
-}
-
-async function saveNewShelfGameFromForm() {
-  const title = el.fields.title.value.trim();
-  if (!title) { el.fields.title.focus(); return; }
-  try {
-    const response = await fetch("/api/shelf", { cache: "no-store" });
-    if (!response.ok) throw new Error("Could not load Shelf data.");
-    const current = await response.json();
-    const now = new Date().toISOString();
-    const additionDate = el.shelfAdditionDate.value;
-    const enteredValueText = String(el.shelfValue.value || "").trim().replace(",", ".");
-    const enteredValue = enteredValueText ? Number(enteredValueText) : NaN;
-    const digital = Boolean(el.fields.digital.checked || el.fields.dlc.checked);
-    const shelfGame = {
-      id: crypto.randomUUID(),
-      title,
-      platform: platformDisplayName(el.fields.platform.value),
-      country: digital ? "" : el.shelfCountry.value,
-      region: digital ? "" : el.shelfCountry.value,
-      digital,
-      dlc: Boolean(el.fields.dlc.checked),
-      psPlus: Boolean(el.fields.psPlus.checked),
-      gamesWithGold: Boolean(el.fields.gamesWithGold.checked),
-      game: !digital && el.form.querySelector("#gameShelfConditionGame").checked,
-      manual: !digital && el.form.querySelector("#gameShelfConditionManual").checked,
-      box: !digital && el.form.querySelector("#gameShelfConditionBox").checked,
-      other: !digital && el.form.querySelector("#gameShelfConditionOther").checked,
-      sealed: !digital && el.form.querySelector("#gameShelfConditionSealed").checked,
-      price: !digital && Number.isFinite(enteredValue) && enteredValue >= 0 ? enteredValue : null,
-      owners: ownerInputValues(el.fields.owners.value),
-      tags: listFrom(el.fields.statuses.value),
-      statuses: listFrom(el.fields.statuses.value),
-      category: "Game",
-      releaseDate: el.fields.releaseDate.value,
-      releaseText: el.fields.releaseText.value.trim(),
-      createdAt: additionDate ? new Date(`${additionDate}T12:00:00`).toISOString() : now,
-      updatedAt: now,
-      recordType: "Owned",
-      releaseType: "Official",
-      genre: listFrom(el.fields.genres.value).join(", "),
-      publisher: el.fields.publisher.value.trim(),
-      developer: el.fields.developer.value.trim(),
-      cover: el.fields.cover.value.trim(),
-      description: el.fields.description.value.trim() || state.pendingDescription || "",
-      igdbUrl: el.fields.igdbUrl.value.trim(),
-      hltbUrl: normalizeGuideUrl(el.fields.hltbUrl.value),
-      lengthHours: approximatePlaytimeHours(el.fields.length.value) || null,
-      trophyName: el.fields.trophyName.value.trim(),
-      storeLinks: {
-        playstation: el.fields.playstationUrl.value.trim(),
-        nintendo: el.fields.nintendoUrl.value.trim(),
-        xbox: el.fields.xboxUrl.value.trim(),
-        steam: el.fields.steamUrl.value.trim(),
-      },
-      preferredStore: el.fields.preferredStore.value.trim(),
-      skipGamelistSync: true,
-    };
-    const payload = {
-      sourceGames: Array.isArray(current.sourceGames) ? current.sourceGames : [],
-      games: [shelfGame, ...(Array.isArray(current.games) ? current.games : [])],
-      overrides: current.overrides && typeof current.overrides === "object" ? current.overrides : {},
-      layout: current.layout || null,
-      favoriteGameIds: Array.isArray(current.favoriteGameIds) ? current.favoriteGameIds : [],
-    };
-    const password = sessionStorage.getItem(`${SESSION_KEY}:password`) || "";
-    const save = await fetch("/api/shelf", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "x-edit-password": password },
-      body: JSON.stringify(payload),
-    });
-    if (!save.ok) throw new Error("Could not add the game to Shelf.");
-    gameEditorDirty = false;
-    el.dialog.close();
-    showToast(tt("Added to Shelf."));
-  } catch (error) {
-    showToast(error?.message || tt("Could not add the game to Shelf."), "error");
-  }
 }
 
 function requestGameEditorClose() {
@@ -12385,12 +12311,18 @@ function syncDialogPriceVisibility() {
     digital: el.fields.dlc.checked || el.fields.digital.checked,
   };
   if (el.pricesButton) el.pricesButton.hidden = draft.section === "backlog" || !priceProvidersForGame(draft).length;
+  syncGameAddTargetPicker();
 }
 
 function syncDlcDigital() {
-  if (el.fields.dlc.checked) el.fields.digital.checked = true;
+  el.fields.digital.checked = el.fields.dlc.checked;
+  if (!el.fields.digital.checked) {
+    el.fields.psPlus.checked = false;
+    el.fields.gamesWithGold.checked = false;
+  }
   syncDialogPriceVisibility();
   syncGamelistEntitlementEditor();
+  syncGameAddDestination();
 }
 
 function syncGamelistEntitlementEditor() {
@@ -12398,6 +12330,7 @@ function syncGamelistEntitlementEditor() {
   const digital = el.fields.digital.checked || el.fields.dlc.checked;
   el.dialog.classList.toggle("show-psplus-check", digital && ["PS3", "PS4", "PS5"].includes(platform));
   el.dialog.classList.toggle("show-games-with-gold-check", digital && ["X360", "XOne"].includes(platform));
+  el.form.querySelector(".unified-game-editor-grid").classList.toggle("has-editor-entitlement", digital && ["PS3", "PS4", "PS5", "X360", "XOne"].includes(platform));
 }
 
 function syncReplaySection() {
@@ -12902,7 +12835,7 @@ function renderLookupResults(results) {
     const description = previewDescription(result.description || "");
     const matchedTitle = localizedMatchedTitleLine(result);
     row.innerHTML = `
-      <img class="${result.cover ? "" : "lookup-cover-placeholder"}" src="${escapeHtml(result.cover ? coverDisplayUrl(result.cover) : "assets/Icon.png")}" alt="" loading="lazy" decoding="async">
+      ${result.cover ? `<img src="${escapeHtml(coverDisplayUrl(result.cover))}" alt="" loading="lazy" decoding="async">` : `<span class="game-editor-search-placeholder" aria-hidden="true"></span>`}
       <div>
         <span class="lookup-result-title"><strong>${escapeHtml(result.title)}</strong>${igdbRating}</span>
         ${matchedTitle ? `<p>${escapeHtml(matchedTitle)}</p>` : ""}
@@ -12914,7 +12847,7 @@ function renderLookupResults(results) {
     `;
     row.querySelector("button").addEventListener("click", () => applyLookup(result));
     const cover = row.querySelector("img");
-    cover.addEventListener("error", () => {
+    cover?.addEventListener("error", () => {
       if (cover.dataset.placeholderApplied) return;
       cover.dataset.placeholderApplied = "true";
       cover.classList.add("lookup-cover-placeholder");
@@ -12995,12 +12928,13 @@ function applyLookup(result) {
       syncReplaySection();
     }
   }
+  syncGameAddDestination();
   hideGameLookupSearch();
 }
 
 function hideGameLookupSearch() {
   const row = el.lookupInput.closest(".lookup-row");
-  if (row) row.hidden = true;
+  if (row) row.hidden = false;
   el.lookupResults.hidden = true;
   el.lookupResults.replaceChildren();
   el.lookupResults.classList.remove("loaded");
@@ -13408,6 +13342,7 @@ async function handleCoverUpload(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   el.fields.cover.value = await compressImage(file);
+  syncGameEditorCover();
 }
 
 function compressImage(file) {
