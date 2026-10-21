@@ -963,6 +963,10 @@ function bindEvents() {
   if (toolbar && sectionTabs && "ResizeObserver" in window) {
     new ResizeObserver(syncSectionTabsStickyOffset).observe(toolbar);
   }
+  if (sectionTabs && el.board && "ResizeObserver" in window) {
+    new ResizeObserver(() => requestAnimationFrame(syncSectionTabsVisibility)).observe(el.board);
+  }
+  requestAnimationFrame(syncSectionTabsVisibility);
   window.addEventListener("keydown", (event) => {
     if (window.innerWidth < 761 || typeof event.key !== "string" || event.key.toLowerCase() !== "f" || event.repeat || event.isComposing) return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -1065,6 +1069,7 @@ function bindEvents() {
   window.addEventListener("scroll", () => {
     updateScrollTopButton();
     scheduleFocusedPlayingTrailerUpdate();
+    syncSectionTabsVisibility();
   }, { passive: true });
   window.addEventListener("resize", () => {
     schedulePlayingCardHeightSync();
@@ -1878,7 +1883,7 @@ function normalizeSettings(settings = {}) {
     stores: stores.slice(0, MAX_PRICE_STORES),
     storeSettingsVersion: 2,
     defaultOwner: cleanOwnerLabel(settings.defaultOwner) || DEFAULT_SETTINGS.defaultOwner,
-    shelfSync: settings.shelfSync !== false,
+    shelfSync: true,
     shelfSyncWishlist: settings.shelfSyncWishlist !== false,
     hidePageSwitch: settings.hidePageSwitch === true,
     streamFilterPriority: streamFilterPriorityForSettings(settings),
@@ -2731,7 +2736,6 @@ function renderSettingsDialog() {
     ...state.settings.pageOrder.map((key) => settingsLayoutItem(key, pageIndex.get(key) ?? 0)),
   ].join("");
   el.settingsPreferencesBeforeCurrency.innerHTML = [
-    settingsShelfSyncItem(),
     settingsPageSwitchItem(),
     settingsDefaultOrderItem(),
   ].join("");
@@ -2877,23 +2881,6 @@ function settingsWeekStartItem() {
           ${WEEK_START_OPTIONS.map(([value, label]) => `<option value="${value}" ${state.settings.weekStart === value ? "selected" : ""}>${escapeHtml(tt(label))}</option>`).join("")}
         </select>
       </label>
-    </article>
-  `;
-}
-
-function settingsShelfSyncItem() {
-  return `
-    <article class="settings-layout-card settings-sync-card" data-layout-key="shelf-sync">
-      <div class="settings-wire wire-list" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="settings-theme-select">
-        <span>${escapeHtml(tt("Sync games with Shelf"))}</span>
-        <div class="settings-check-field">
-          <label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt("Sync games with Shelf"))}">
-            <input type="checkbox" data-shelf-sync ${state.settings.shelfSync ? "checked" : ""}>
-            <span>${escapeHtml(tt("Enabled"))}</span>
-          </label>
-        </div>
-      </div>
     </article>
   `;
 }
@@ -3470,7 +3457,7 @@ async function saveSettingsFromForm(event, { close = true } = {}) {
     language: el.settingsLanguage.value,
     stores,
     defaultOwner: el.settingsDefaultOwner.value,
-    shelfSync: Boolean(el.settingsDialog.querySelector("[data-shelf-sync]")?.checked),
+    shelfSync: true,
     hidePageSwitch: el.settingsDialog.querySelector("[data-hide-page-switch]")?.checked === true,
     streamFilterPriority: normalizeStreamFilterMode(el.settingsDialog.querySelector("[data-stream-filter-priority]")?.value),
     prioritizeFinishedStream: normalizeStreamFilterMode(el.settingsDialog.querySelector("[data-stream-filter-priority]")?.value) === "stream",
@@ -6939,6 +6926,16 @@ function renderMobileTabs() {
     column.setAttribute("aria-hidden", String(columnIndex < 0 || column.id !== state.mobileSection));
   });
   document.body.dataset.mobileSection = state.mobileSection;
+  requestAnimationFrame(syncSectionTabsVisibility);
+}
+
+function syncSectionTabsVisibility() {
+  const tabs = document.querySelector(".mobile-section-tabs");
+  if (!tabs || !el.board) return;
+  const pastSection = !tabs.hidden && !el.board.hidden
+    && el.board.getBoundingClientRect().bottom <= tabs.getBoundingClientRect().bottom;
+  tabs.classList.toggle("is-past-section", pastSection);
+  tabs.inert = pastSection;
 }
 
 function syncMobileTabIndicator() {
@@ -11961,7 +11958,7 @@ function syncGameAddDestination() {
     button.textContent = tt(saveLabel);
   });
   el.dialogTitle.textContent = !isNewGame
-    ? tt("Edit Game")
+    ? tt("Edit game")
     : state.addDestination === "gamelist" && el.preorderCheck?.checked
       ? tt("Add a game preorder")
       : el.fields.digital.checked
@@ -12055,7 +12052,7 @@ async function openEditor(id = "") {
   state.pendingDescription = "";
   const game = state.games.find((item) => item.id === id) || blankGame();
   newGameListTouched = Boolean(id);
-  el.dialogTitle.textContent = id ? tt("Edit Game") : tt("Add game");
+  el.dialogTitle.textContent = id ? tt("Edit game") : tt("Add game");
   const saveLabel = id ? "Save" : "Add to Gamelist";
   el.gameDialogSaveButton.dataset.i18n = saveLabel;
   el.gameDialogSaveButton.textContent = tt(saveLabel);
@@ -12375,6 +12372,7 @@ function moveToBacklog(id) {
       platform: game.platform || "",
       shelfGameId: game.shelfId ? String(game.shelfId) : "",
       gamelistGameId: game.id,
+      gamelistGame: game,
       target: "gamelist",
       section: "backlog",
       miniGamelistImport: true,
