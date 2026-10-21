@@ -1246,10 +1246,20 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   justify-self: end;
 }
 
-.shelf-dialog .lookup-result .lookup-placeholder {
-  background: color-mix(in srgb, var(--muted) 30%, transparent);
-  border: 1px solid var(--line);
-  opacity: 0.3;
+.shelf-dialog .lookup-result .lookup-cover-placeholder {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035));
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  opacity: 0.9;
+}
+
+.shelf-dialog .lookup-result .lookup-cover-placeholder::after {
+  content: "▧";
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  opacity: 0.75;
 }
 
 .shelf-dialog .lookup-result.no-cover {
@@ -1914,6 +1924,10 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   display: none;
 }
 
+#addGameForm:not(.gamelist-target-editor).digital-game-editor :is(.shelf-region-field, .shelf-value-field, .shelf-condition-field, .shelf-condition-notes-field) {
+  display: none;
+}
+
 .digital-game-editor .shelf-dlc-field {
   display: inline-flex;
 }
@@ -2156,6 +2170,11 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   #addGameForm:not(.gamelist-target-editor) .shelf-release-field > input {
     height: 44px;
     flex-shrink: 0;
+  }
+
+  #addGameForm:not(.gamelist-target-editor).digital-game-editor .shelf-owner-field {
+    grid-column: 7 / span 7;
+    grid-row: 3;
   }
 
   #addGameForm:not(.gamelist-target-editor) .shelf-achievement-search-field {
@@ -2745,6 +2764,23 @@ textarea {
 }
 #addDialog #lookupButton.is-loading svg {
   animation: shelf-search-pulse 0.75s ease-in-out infinite alternate;
+}
+
+#addDialog #lookupButton .autocomplete-cone-icon {
+  display: none;
+}
+
+#addDialog #lookupButton.is-autocomplete .search-icon {
+  display: none;
+}
+
+#addDialog #lookupButton.is-autocomplete .autocomplete-cone-icon {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @keyframes shelf-search-pulse {
@@ -3456,6 +3492,190 @@ textarea {
 
 .gamelist-target-editor .shelf-gamelist-list-picker {
   margin: 0 0 8px;
+}
+
+#addDialog.shelf-gamelist-import-mini {
+  width: min(1000px, calc(100vw - 28px));
+  max-height: min(88vh, calc(100vh - 28px));
+}
+
+#addDialog.shelf-gamelist-import-mini .modal {
+  max-height: min(88vh, calc(100vh - 28px));
+  max-width: 100%;
+  box-sizing: border-box;
+  gap: 10px;
+}
+
+#addGameForm.shelf-gamelist-import-mini > :is(.lookup-row, .lookup-results, .shelf-pricecharting-section),
+#addGameForm.shelf-gamelist-import-mini #shelfGamelistTargetPicker,
+#addGameForm.shelf-gamelist-import-mini #editDeleteButton {
+  display: none !important;
+}
+
+#addGameForm.shelf-gamelist-import-mini.digital-tracking-disabled .lookup-digital-check {
+  display: none !important;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-gamelist-import-summary,
+#addGameForm.shelf-gamelist-import-mini #shelfGamelistListControls,
+#addGameForm.shelf-gamelist-import-mini #shelfGamelistPlacement,
+#addGameForm.shelf-gamelist-import-mini .shelf-release-text-field,
+#addGameForm.shelf-gamelist-import-mini .shelf-gamelist-flag,
+#addGameForm.shelf-gamelist-import-mini .shelf-gamelist-length-field,
+#addGameForm.shelf-gamelist-import-mini .shelf-gamelist-preferred-store-field,
+#addGameForm.shelf-gamelist-import-mini .shelf-gamelist-status-field,
+#addGameForm.shelf-gamelist-import-mini .shelf-achievement-search-field {
+  display: none !important;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-collecting-section,
+#addGameForm.shelf-gamelist-import-mini .shelf-game-data-section {
+  display: block;
+  margin: 0;
+  padding: 14px 0 0;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-game-data-section {
+  margin-top: 20px;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-collecting-section {
+  border-top: 0;
+}
+
+#addGameForm.shelf-gamelist-import-mini:has(#shelfGameDataDisclosure:not([open])) > .modal-actions {
+  display: none;
+}
+
+.shelf-game-data-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 860;
+  text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+}
+
+.shelf-game-data-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.shelf-game-data-toggle svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: var(--muted);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shelf-game-data-section details[open] > .shelf-game-data-toggle {
+  margin-bottom: 12px;
+}
+
+.shelf-game-data-section details[open] > .shelf-game-data-toggle svg {
+  transform: rotate(90deg);
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-collecting-section h3,
+#addGameForm.shelf-gamelist-import-mini .shelf-game-data-section h3 {
+  margin: 0 0 8px;
+}
+
+#addGameForm.shelf-gamelist-import-mini .modal-head h2 {
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.15;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-game-data-section .form-grid {
+  gap: 8px;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-game-data-section .form-grid > * {
+  grid-column: span 1;
+}
+
+#addGameForm.shelf-gamelist-import-mini .shelf-game-data-section .form-grid > .wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 760px) {
+  #addGameForm.shelf-gamelist-import-mini .modal-head {
+    flex-direction: column;
+  }
+
+  #addGameForm.shelf-gamelist-import-mini .modal-head-actions {
+    width: 100%;
+  }
+
+  #addGameForm.shelf-gamelist-import-mini .modal-head-save {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  #addGameForm.shelf-gamelist-import-mini .shelf-game-data-section .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #addGameForm.shelf-gamelist-import-mini .modal-actions .modal-save-button {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+.shelf-gamelist-import-summary {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.shelf-gamelist-import-summary[hidden] {
+  display: none !important;
+}
+
+.shelf-gamelist-import-cover {
+  width: 64px;
+  height: 86px;
+  object-fit: contain;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.shelf-gamelist-import-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.shelf-gamelist-import-copy > * {
+  overflow-wrap: anywhere;
+}
+
+.shelf-gamelist-import-title {
+  color: var(--text);
+  font-size: 17px;
+}
+
+.shelf-gamelist-import-notes:empty,
+.shelf-gamelist-import-condition:empty {
+  display: none;
 }
 
 @media (max-width: 760px) {

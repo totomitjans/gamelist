@@ -20,6 +20,7 @@ export async function onRequestGet({ request, env = {} }) {
   const cacheUrl = new URL("/api/search", url.origin);
   cacheUrl.searchParams.set("q", normalize(query));
   cacheUrl.searchParams.set("lang", language);
+  cacheUrl.searchParams.set("v", "4");
   if (lookup.igdbSlug) cacheUrl.searchParams.set("slug", lookup.igdbSlug);
   const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
@@ -30,10 +31,11 @@ export async function onRequestGet({ request, env = {} }) {
 
 async function searchUncached(query, language, env, lookup, cache, cacheKey) {
   const igdb = await igdbCredentials(env);
+  const hltbLookupPromise = safeHltbResults(searchAlias(query), language);
   let igdbError = null;
   if (igdb) {
     try {
-      const results = await igdbSearch(query, igdb, lookup, language);
+      const results = await igdbSearch(query, igdb, lookup, language, hltbLookupPromise);
       if (results.length) return cachedJson({ results }, cache, cacheKey);
     } catch (error) {
       igdbError = error;
@@ -41,12 +43,14 @@ async function searchUncached(query, language, env, lookup, cache, cacheKey) {
     }
   }
 
-  try {
-    const hltb = await getHltbClient();
-    const results = await hltbSearch(query, hltb, language);
-    if (results.length) return cachedJson({ results }, cache, cacheKey);
-    return json({ results });
-  } catch (error) {
+  const hltbLookup = await hltbLookupPromise;
+  if (!hltbLookup.error) {
+    if (hltbLookup.results.length) {
+      const results = await Promise.all(hltbLookup.results.map((result) => enrichMetadata(result, language)));
+      return cachedJson({ results }, cache, cacheKey);
+    }
+    return json({ results: [] });
+  } else {
     const igdbWasTried = Boolean(igdb);
     const igdbCompleted = igdbWasTried && !igdbError;
     return json({
@@ -112,39 +116,35 @@ export async function igdbLookup(rawQuery, credentials, language = "en") {
   return igdbSearch(query, credentials, lookup, normalizeMetadataLanguage(language));
 }
 
-async function igdbSearch(query, credentials, lookup = {}, language = "en") {
+async function igdbSearch(query, credentials, lookup = {}, language = "en", hltbLookupPromise = null) {
   const token = await getIgdbToken(credentials);
-  const fields = "fields name,slug,summary,storyline,first_release_date,cover.image_id,genres.name,hypes,total_rating,total_rating_count,alternative_names.name,alternative_names.comment,game_localizations.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.category,release_dates.date,release_dates.date_format,release_dates.human,release_dates.platform.name,release_dates.y,websites.url,websites.category,videos.name,videos.video_id;";
+  const fields = "fields name,slug,summary,storyline,first_release_date,cover.image_id,genres.name,game_type.type,parent_game.name,game_modes.name,multiplayer_modes.onlinecoop,multiplayer_modes.offlinecoop,multiplayer_modes.lancoop,multiplayer_modes.campaigncoop,multiplayer_modes.splitscreen,multiplayer_modes.splitscreenonline,multiplayer_modes.onlinemax,multiplayer_modes.offlinemax,hypes,total_rating,total_rating_count,alternative_names.name,alternative_names.comment,game_localizations.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,platforms.name,release_dates.category,release_dates.date,release_dates.date_format,release_dates.human,release_dates.platform.name,release_dates.y,websites.url,websites.category,videos.name,videos.video_id;";
   const slugBody = lookup.igdbSlug ? [
     fields,
     `where slug = "${escapeIgdbString(lookup.igdbSlug)}";`,
     "limit 1;",
   ].join(" ") : "";
-  const searchQueries = slugBody ? [query] : await igdbSearchQueries(query, language, token, credentials);
+  const searchQueries = slugBody ? [query] : igdbSearchQueries(query);
   let games = [];
   if (slugBody) {
     games = await igdbPost("games", slugBody, credentials, token);
   } else {
-    const gamesById = new Map();
-    for (const searchQuery of searchQueries) {
+    const responses = await Promise.all(searchQueries.map(async (searchQuery) => {
       const body = [
         fields,
         `search "${escapeIgdbString(searchAlias(searchQuery))}";`,
         "where version_parent = null;",
         "limit 10;",
       ].join(" ");
-      (await igdbPost("games", body, credentials, token)).forEach((game) => {
-        gamesById.set(String(game.id || game.slug || game.name), game);
-      });
-    }
-    if (language === "es-ES") {
-      const localized = await igdbLocalizedTitleGames(query, fields, credentials, token);
-      localized.forEach((game) => gamesById.set(String(game.id || game.slug || game.name), game));
-    }
+      return igdbPost("games", body, credentials, token);
+    }));
+    const gamesById = new Map(responses.flat().map((game) => [String(game.id || game.slug || game.name), game]));
     games = [...gamesById.values()];
   }
-  if (slugBody && !games.length) return igdbSearch(query, credentials, { ...lookup, igdbSlug: "" }, language);
-  const hltbResults = (await Promise.all(searchQueries.map((searchQuery) => safeHltbResults(searchQuery)))).flat();
+  if (slugBody && !games.length) return igdbSearch(query, credentials, { ...lookup, igdbSlug: "" }, language, hltbLookupPromise);
+  if (!games.length) return [];
+  const hltbLookup = await (hltbLookupPromise || safeHltbResults(query, language));
+  const hltbResults = hltbLookup.results;
   const settledResults = await Promise.allSettled(games
     .map((game) => igdbResult(game, query, hltbResults, lookup, language, searchQueries)));
   const results = settledResults
@@ -172,9 +172,8 @@ async function igdbPost(endpoint, body, credentials, token) {
   return response.json();
 }
 
-async function igdbSearchQueries(query, language, token, credentials) {
-  const aliases = language === "es-ES" ? await spanishTitleAliases(query, token, credentials) : [];
-  return uniqueSearchQueries([query, searchAlias(query), ...aliases, ...aliases.map(searchAlias)]).slice(0, 5);
+function igdbSearchQueries(query) {
+  return uniqueSearchQueries([query, searchAlias(query)]).slice(0, 2);
 }
 
 async function igdbLocalizedTitleGames(query, fields, credentials, token) {
@@ -234,8 +233,12 @@ async function igdbResult(game, query, hltbResults, lookup = {}, language = "en"
   const release = bestIgdbRelease(game.release_dates) || igdbFirstReleaseDate(game.first_release_date);
   const score = textScore + igdbQualityScore(game, hltbMatch);
   const storeLinks = storeLinksFromWebsites(game.websites);
-  const steamTrailerUrl = await steamTrailer(storeLinks.steam);
-  const description = await localizedDescription(title, game.summary || game.storyline || "", language, [query, ...searchQueries]);
+  const description = fullDescription(game.summary || game.storyline || "");
+  const gameType = String(game.game_type?.type || "").toLowerCase();
+  const gameModes = (game.game_modes || []).map((mode) => String(mode?.name || "").toLowerCase());
+  const multiplayerModes = game.multiplayer_modes || [];
+  const coop = multiplayerModes.some((mode) => mode.onlinecoop || mode.offlinecoop || mode.lancoop || mode.campaigncoop || mode.splitscreen || mode.splitscreenonline);
+  const multiplayer = coop || gameModes.includes("multiplayer") || multiplayerModes.some((mode) => Number(mode.onlinemax || 0) > 1 || Number(mode.offlinemax || 0) > 1);
   return {
     id: game.id ? `igdb:${game.id}` : title,
     igdbId: game.id || null,
@@ -249,10 +252,13 @@ async function igdbResult(game, query, hltbResults, lookup = {}, language = "en"
     platform: firstPlatform((game.platforms || []).map((platform) => platform.name).join(", ")),
     platforms: (game.platforms || []).map((platform) => platform.name).filter(Boolean),
     genres: cleanGenreLabels((game.genres || []).map((genre) => genre.name).filter(Boolean), language),
+    dlc: isDlcLookupResult(game, title),
+    multiplayer,
+    coop,
     developer: companyName(companies, "developer"),
     publisher: companyName(companies, "publisher"),
     description,
-    trailerUrl: steamTrailerUrl || igdbTrailer(game.videos),
+    trailerUrl: igdbTrailer(game.videos),
     storeLinks,
     lengthHours: hltbMatch?.lengthHours || null,
     igdbRating: igdbRating(game.total_rating),
@@ -266,6 +272,13 @@ function igdbRating(value) {
   const rating = Number(value);
   if (!Number.isFinite(rating) || rating <= 0) return null;
   return Math.round(rating);
+}
+
+function isDlcLookupResult(game, title) {
+  const type = normalize(game.game_type?.type || "");
+  return /\b(dlc|downloadable content|expansion|standalone expansion|add[ -]?on|pack)\b/.test(type)
+    || Boolean(game.parent_game)
+    || /\b(dlc|downloadable content|expansion(?: pack)?|add[ -]?on|season pass|battle pass|(?:skin|costume|character|map|content|cosmetic|weapon|vehicle|outfit|item|resource|level|mission|story|campaign|adventure|soundtrack|music|artbook|bonus|starter|booster|upgrade)s? pack|(?:extra|bonus) (?:content|mission|chapter|episode|story|campaign)|(?:story|campaign|mission|level|chapter|episode) expansion)\b/i.test(title);
 }
 
 function fullDescription(value) {
@@ -286,12 +299,12 @@ function igdbQualityScore(game, hltbMatch) {
   return score;
 }
 
-async function safeHltbResults(query) {
+async function safeHltbResults(query, language = "en") {
   try {
     const hltb = await getHltbClient();
-    return await hltbSearch(query, hltb);
-  } catch {
-    return [];
+    return { results: await hltbSearch(query, hltb, language, { enrich: false }), error: null };
+  } catch (error) {
+    return { results: [], error };
   }
 }
 
@@ -511,7 +524,7 @@ async function createHltbClient() {
   };
 }
 
-async function hltbSearch(query, hltb, language = "en") {
+async function hltbSearch(query, hltb, language = "en", { enrich = true } = {}) {
   if (!hltb.token) return [];
   const terms = searchTerms(query);
 
@@ -560,7 +573,7 @@ async function hltbSearch(query, hltb, language = "en") {
     .filter(Boolean)
     .sort((a, b) => b.score - a.score)
     .map(({ score, ...game }) => game);
-  return Promise.all(results.map((result) => enrichMetadata(result, language)));
+  return enrich ? Promise.all(results.map((result) => enrichMetadata(result, language))) : results;
 }
 
 function hltbResult(game, query) {
@@ -573,6 +586,7 @@ function hltbResult(game, query) {
     id: game.game_id ? `hltb:${game.game_id}` : title,
     hltbId: game.game_id || null,
     title,
+    dlc: isDlcLookupResult({}, title),
     releaseDate: hltbDate(game.release_world || game.release_na || game.release_eu || game.release_jp),
     releaseText: hltbReleaseText(game),
     cover: game.game_image ? `${HLTB_BASE}/games/${game.game_image}` : "",
@@ -627,6 +641,7 @@ function searchAlias(query) {
   const value = String(query || "");
   const key = normalize(value).replace(/\s+/g, "");
   const aliases = {
+    "13sentinels": "13 Sentinels: Aegis Rim",
     baldursgate3: "Baldur's Gate 3",
     tmntshreddersrevenge: "Teenage Mutant Ninja Turtles Shredder's Revenge",
     diofieldchronicles: "The DioField Chronicle",

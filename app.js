@@ -964,7 +964,7 @@ function bindEvents() {
     new ResizeObserver(syncSectionTabsStickyOffset).observe(toolbar);
   }
   window.addEventListener("keydown", (event) => {
-    if (window.innerWidth < 761 || event.key.toLowerCase() !== "f" || event.repeat || event.isComposing) return;
+    if (window.innerWidth < 761 || typeof event.key !== "string" || event.key.toLowerCase() !== "f" || event.repeat || event.isComposing) return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const target = event.target;
     if (target instanceof HTMLElement && target.closest("input, textarea, select, [contenteditable='true'], [role='textbox'], dialog[open]")) return;
@@ -7398,16 +7398,22 @@ function rowFor(game, section, options = {}) {
     else moveToBacklog(game.id);
   });
   row.querySelector(".row-setup-action")?.addEventListener("click", () => finishSetupGame(game.id));
+  row.querySelector(".stream-start-action")?.addEventListener("click", () => startPlaying(game.id, { stream: true }));
   row.querySelector(".row-delete-action")?.addEventListener("click", () => deleteGame(game.id));
   return row;
 }
 
 function rowPrimaryAction(game, section) {
-  if (section === "backlog") return `<button class="primary-button row-primary-action" type="button">${playIcon()}<span>${escapeHtml(tt("Play"))}</span></button>`;
+  if (section === "backlog") return `<button class="primary-button row-primary-action" type="button">${playIcon()}<span>${escapeHtml(tt("Play"))}</span></button>${backlogStreamAction(game)}`;
   if (section === "new") {
     return `<button class="primary-button row-primary-action" type="button">${playIcon()}<span>${escapeHtml(tt("Play"))}</span></button><button class="primary-button row-setup-action" type="button">${forwardIcon()}<span>${escapeHtml(tt("Setup"))}</span></button>`;
   }
   return `<button class="ghost-button row-primary-action row-backlog-action" type="button">${forwardIcon()}<span>${escapeHtml(tt("Backlog"))}</span></button>`;
+}
+
+function backlogStreamAction(game) {
+  if (!cleanTwitchUser(state.settings.twitchUser) || game.playing || game.completedAt) return "";
+  return `<button class="primary-button stream-start-action" type="button">${playIcon()}<span>${escapeHtml(tt("Stream"))}</span></button>`;
 }
 
 function rowCoreStats(game) {
@@ -9081,6 +9087,10 @@ function cardFor(game, options = {}) {
         if (game.playing) completeGame(game.id);
         else startPlaying(game.id);
       });
+      if (displaySection === "backlog") {
+        completeAction.insertAdjacentHTML("afterend", backlogStreamAction(game));
+        card.querySelector(".stream-start-action")?.addEventListener("click", () => startPlaying(game.id, { stream: true }));
+      }
     }
     if (trophyAction) {
       trophyAction.hidden = !game.playing;
@@ -11898,7 +11908,7 @@ function syncGameAddTargetPicker() {
   picker.hidden = isNewGame && state.addDestination !== "gamelist";
   controls.hidden = picker.hidden;
   if (isNewGame) {
-    el.form.insertBefore(controls, el.lookupResults);
+    el.form.insertBefore(controls, el.gameAddDestinationPicker.nextSibling);
   } else {
     const grid = collectingSection.querySelector(".collection-form-grid");
     grid.insertBefore(controls, grid.querySelector(".owners-field"));
@@ -12357,6 +12367,21 @@ function markGameEdited(game, timestamp = new Date().toISOString()) {
 function moveToBacklog(id) {
   if (!state.canEdit) return;
   const game = getGame(id);
+  if (!game) return;
+  const skipCollectingInfo = Boolean(game.digital || game.dlc) && state.settings.shelfDigitalGames !== true;
+  if (["upcoming", "wanted"].includes(game.section) && !skipCollectingInfo) {
+    void openGameAddFlow({
+      query: game.title,
+      platform: game.platform || "",
+      shelfGameId: game.shelfId ? String(game.shelfId) : "",
+      gamelistGameId: game.id,
+      target: "gamelist",
+      section: "backlog",
+      miniGamelistImport: true,
+      autocomplete: false,
+    });
+    return;
+  }
   const fromShelfAdditions = isShelfNewAddition(game);
   game.section = "backlog";
   if (fromShelfAdditions) game.acceptedFromShelfAt = new Date().toISOString();
@@ -12374,13 +12399,14 @@ function returnPlayingToBacklog(id) {
   moveToBacklog(id);
 }
 
-function startPlaying(id) {
+function startPlaying(id, { stream = false } = {}) {
   const game = getGame(id);
   if (!game || game.completedAt) return;
   if (isShelfNewAddition(game)) game.acceptedFromShelfAt = new Date().toISOString();
   game.section = "backlog";
   game.preorderNewAddition = false;
   game.playing = true;
+  if (stream) game.stream = true;
   game.startedAt = game.startedAt || todayDate();
   markGameEdited(game);
   upsertGame(game);
@@ -12916,6 +12942,12 @@ function applyLookup(result) {
   if (current && !current.description && result.description) current.description = result.description;
   if (!current) state.pendingDescription = result.description || "";
   if (result.genres?.length) el.fields.genres.value = result.genres.join(", ");
+  const isBaseMinecraft = String(result.title || "").trim().toLocaleLowerCase() === "minecraft";
+  if (result.dlc && !isBaseMinecraft) {
+    el.fields.dlc.checked = true;
+    el.fields.digital.checked = true;
+    syncDlcDigital();
+  }
   if (result.developer) el.fields.developer.value = result.developer;
   if (result.publisher) el.fields.publisher.value = result.publisher;
   if (result.platform && !el.fields.platform.value) el.fields.platform.value = platformDisplayName(result.platform);
@@ -13199,7 +13231,7 @@ async function fetchSearchResults(query) {
   const cached = searchCache.get(cacheKey);
   if (cached && (now - cached.timestamp) < SEARCH_CACHE_TTL) return cached.results;
   if (searchInflight.has(cacheKey)) return searchInflight.get(cacheKey);
-  const params = new URLSearchParams({ q: normalized, lang: language });
+  const params = new URLSearchParams({ q: normalized, lang: language, v: "4" });
   const request = fetch(`/api/search?${params}`)
     .then(async (response) => {
       if (!response.ok) return [];
