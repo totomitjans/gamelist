@@ -240,7 +240,7 @@ html {
   scroll-behavior: smooth;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   html {
     overflow-x: clip;
   }
@@ -1437,7 +1437,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   transform: translateY(-42px);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #gotyDialog,
   #gotyStatsPreviewDialog {
     position: fixed;
@@ -1509,7 +1509,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   }
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .goty-dialog .goty-modal {
     max-height: calc(100dvh - clamp(16px, 3vw, 28px) - 96px);
   }
@@ -2324,7 +2324,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
     transform 180ms ease;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .goty-callout {
     bottom: clamp(16px, 3vw, 28px);
   }
@@ -2986,6 +2986,28 @@ button.achievement-kpi {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
   align-items: end;
+}
+
+@media (max-width: 520px) {
+  .rarity-graph {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    padding: 8px;
+  }
+
+  .rarity-graph .rarity-bar {
+    min-width: 0;
+    height: 56px;
+    font-size: 9px;
+  }
+
+  .rarity-graph .rarity-bar small {
+    font-size: clamp(7px, 2.4vw, 9px);
+    white-space: nowrap;
+  }
 }
 
 .rarity-bar {
@@ -3921,7 +3943,7 @@ body.dialog-open .floating-edit-actions {
   border-radius: 8px;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .release-months {
     background: var(--grid-fade), var(--grid-texture), var(--panel);
     background-size:
@@ -3942,6 +3964,18 @@ body.dialog-open .floating-edit-actions {
 
   .release-month {
     background: rgba(255, 255, 255, 0.045);
+  }
+}
+
+@media (min-width: 700px) and (max-width: 899px) {
+  .release-months {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1100px) {
+  .release-months {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -5162,7 +5196,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   z-index: 0;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .card-list.list-view .game-row {
     grid-template-columns:
       42px minmax(145px, 230px) minmax(0, 2.2fr) minmax(120px, 0.8fr)
@@ -5949,12 +5983,31 @@ body.theme-kash
 .playing-section .game-card {
   grid-template-columns: clamp(300px, 30vw, 372px) minmax(0, 1fr);
   flex: 0 0 min(1220px, calc(100vw - clamp(54px, 9vw, 112px)));
-  min-height: 548px;
+  min-height: 0;
+  height: auto;
   align-items: stretch;
   padding: 18px;
   row-gap: 0px;
   scroll-snap-align: start;
   scroll-snap-stop: always;
+}
+
+@media (min-width: 700px) {
+  .playing-section
+    .game-card.playing-card:not(:has(.card-trophies:not([hidden]))) {
+    grid-template-rows: auto;
+    align-content: start;
+  }
+}
+
+/* Let tablet playing cards shrink their poster column with the viewport.
+   The desktop 300px minimum made portrait covers taller than the content
+   column at 700–1100px, so cards with more metadata grew much taller. */
+@media (min-width: 700px) and (max-width: 1100px) {
+  .playing-section .game-card {
+    grid-template-columns: clamp(210px, 26vw, 286px) minmax(0, 1fr);
+    min-height: 0;
+  }
 }
 
 .playing-section.playing-single .game-card {
@@ -6091,6 +6144,16 @@ body.theme-kash
   width: 14px;
   height: 14px;
   border-radius: 3px;
+}
+
+@media (min-width: 700px) and (max-width: 1100px) {
+  .playing-section .card-trophy-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .playing-section .card-trophy-list > .card-trophy:nth-child(n + 3) {
+    display: none;
+  }
 }
 
 .card-trophy-list {
@@ -8066,6 +8129,13 @@ html.theme-light #floatingAddButton:hover {
   border-color: color-mix(in srgb, var(--accent) 72%, #ffffff) !important;
 }
 
+/* Keep the logged-out overlay add action identical to the normal add control. */
+body:not(.can-edit) #floatingAddButton {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: transparent;
+}
+
 .icon-button.view-toggle {
   align-self: end;
   width: var(--toolbar-control-height);
@@ -8153,7 +8223,7 @@ body:not(.can-edit) .top-actions-separator {
   display: none;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .top-actions #syncButton {
     order: 1;
   }
@@ -8241,7 +8311,7 @@ body:not(.can-edit) .top-actions-separator {
 }
 
 .floating-search-button {
-  display: none;
+  display: grid;
 }
 
 .mobile-action-dock {
@@ -8262,6 +8332,12 @@ body:not(.can-edit) .top-actions-separator {
 
 #mobileDockAdd[hidden] {
   display: none !important;
+}
+
+body:not(.can-edit) #mobileDockEdit:not([hidden]) {
+  color: #ffffff;
+  background: var(--accent);
+  box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 #mobileDockGoty[hidden] {
@@ -8292,7 +8368,7 @@ body:not(.can-edit) .top-actions-separator {
   height: 23px;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #floatingStatsButton,
   #completedStatsButton {
     position: relative;
@@ -8433,7 +8509,7 @@ body.dialog-open .floating-search-button {
   display: none;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .playing-card .complete-action .check-icon,
   .playing-card .backlog-action .back-icon {
     display: block;
@@ -8539,7 +8615,7 @@ body:not(.can-edit) .history-edit-action,
 body:not(.can-edit) #syncButton,
 body:not(.can-edit) #settingsButton,
 body:not(.can-edit) #fetchPricesButton {
-  display: none;
+  display: none !important;
 }
 
 body:not(.shelf-page):not(.can-edit)
@@ -8640,7 +8716,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   min-width: 0;
 }
 
-@media (min-width: 761px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 700px) and (hover: hover) and (pointer: fine) {
   .card-list:not(.list-view) .game-card .edit-action,
   .completed-list:not(.list-view) .completed-edit-action,
   .shelf-grid:not(.list-view) .game-card .edit-action {
@@ -8759,7 +8835,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   --rating-star-gap: 1px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .completed-rating-stars .star-display {
     --rating-star-size: 11px;
   }
@@ -8886,7 +8962,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   height: 16px;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .completed-stream-toggle[data-tooltip],
   .playing-stream-toggle[data-tooltip] {
     position: relative;
@@ -9081,7 +9157,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   gap: 10px;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .finished-stats-kpis.is-grid-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -9411,7 +9487,6 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   display: grid;
   grid-template-rows: auto auto;
   flex: 0 0 min(860px, calc(100vw - clamp(54px, 9vw, 112px)));
-  min-height: 548px;
   align-content: center;
   padding: 14px;
   gap: 20px;
@@ -9457,6 +9532,28 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
   gap: 8px;
 }
 
+@media (min-width: 801px) {
+  .twitch-preview-card.is-collapsed {
+    height: auto;
+    min-height: 0;
+    align-self: stretch;
+  }
+
+  .playing-section .twitch-preview-card {
+    height: auto;
+    min-height: 0;
+    align-self: stretch;
+  }
+
+  .playing-section .twitch-preview-card:not(.is-collapsed) {
+    flex: 0 0
+      var(
+        --twitch-preview-open-width,
+        min(860px, calc(100vw - clamp(54px, 9vw, 112px)))
+      );
+  }
+}
+
 .twitch-preview-link {
   position: relative;
   z-index: 1;
@@ -9493,15 +9590,18 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 
 .twitch-preview-card.is-collapsed .twitch-preview-status {
   position: absolute;
-  left: 33px;
-  bottom: 0;
+  top: auto;
+  right: auto;
+  left: 34px;
+  bottom: 50px;
   width: max-content;
+  height: auto;
   max-width: none;
   margin: 0;
   font-size: 10px;
   transform: rotate(-90deg);
   transform-origin: left center;
-  padding: 5px 13px 8px 13px;
+  padding: 8px 13px 8px 13px;
 }
 
 .twitch-preview-status.is-live {
@@ -9659,7 +9759,7 @@ body.theme-kash .finished-stats-kpi.is-completed:focus-visible strong {
 .twitch-preview-card.is-collapsed .twitch-preview-collapsed-logo span {
   display: block;
   width: 300px;
-  max-width: 300px;
+  min-width: 300px;
   color: #d7b8ff;
   font-size: 20px;
   font-weight: 900;
@@ -10910,6 +11010,13 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
   padding: 0;
 }
 
+.completed-platform .coop-pill .coop-icon,
+.completed-platform .multiplayer-pill .online-globe-icon {
+  width: 12px;
+  height: 12px;
+  flex-basis: 12px;
+}
+
 .completed-platform .rating-score-star {
   display: inline-grid;
   place-items: center;
@@ -11007,7 +11114,7 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
   margin: 0;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .completed-list.list-view .completed-row {
     grid-template-columns: 42px minmax(145px, 230px) minmax(0, 1fr) auto;
     min-height: 64px;
@@ -11245,7 +11352,7 @@ dialog {
   padding: 0;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #gameDialog,
   #addDialog {
     width: min(1120px, calc(100vw - 64px));
@@ -11333,7 +11440,7 @@ dialog {
   margin-bottom: 16px;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #updatesDialog {
     width: min(920px, calc(100vw - 64px));
   }
@@ -11985,7 +12092,7 @@ html.theme-light .settings-category-card {
   );
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .settings-dialog {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
@@ -12040,7 +12147,8 @@ html.theme-light .settings-category-card {
 }
 
 .settings-window-panel[data-settings-window="design"] > .settings-detail-title,
-.settings-window-panel[data-settings-window="design"] > .settings-section:not(:first-child) {
+.settings-window-panel[data-settings-window="design"]
+  > .settings-section:not(:first-child) {
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
@@ -12059,30 +12167,17 @@ html.theme-light .settings-category-card {
 
 .settings-layout {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  font-family: var(--display-title-font);
 }
 
-@media (max-width: 760px) {
-  .settings-layout {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+@media (max-width: 699px) {
   .settings-layout-card {
     min-width: 0;
   }
   .settings-layout-actions {
-    justify-content: center;
-    flex-wrap: wrap;
     gap: 4px;
-  }
-  .settings-layout-actions .settings-visible-check {
-    margin-left: 0;
-  }
-  .settings-layout-actions .icon-button {
-    width: 28px;
-    min-width: 28px;
-    height: 28px;
-    min-height: 28px;
   }
 }
 
@@ -12096,15 +12191,110 @@ html.theme-light .settings-category-card {
   border-radius: 8px;
 }
 
+.settings-layout .settings-layout-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 7px 12px;
+  border-radius: 10px;
+}
+
 .settings-layout-card.is-hidden-section {
   opacity: 0.55;
 }
 
 .settings-layout-card strong {
-  min-height: 16px;
+  min-height: 0;
   font-size: 13px;
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
+}
+
+.settings-layout-move {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  place-items: center;
+}
+
+.settings-layout-move.icon-button svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-layout-visibility {
+  position: relative;
+  display: grid !important;
+  box-sizing: border-box;
+  width: 36px !important;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  flex: 0 0 36px;
+  margin-left: auto;
+  padding: 0 !important;
+  place-items: center;
+}
+
+.settings-layout-visibility input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 1px;
+  min-height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.settings-visibility-icon {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.settings-layout-visibility input:focus-visible + .settings-visibility-icon {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.settings-visibility-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 520px) {
+  .settings-layout .settings-layout-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .settings-layout .settings-layout-actions {
+    justify-content: flex-end;
+  }
+  .settings-layout .settings-layout-actions .settings-visible-check {
+    margin-left: 0;
+  }
 }
 
 .settings-wire {
@@ -12368,10 +12558,10 @@ html.theme-light .settings-category-card {
 }
 
 .settings-layout-actions .icon-button {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .settings-layout-actions .icon-button svg {
@@ -12503,31 +12693,32 @@ html.theme-light .settings-category-card {
 
 .settings-csv-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  align-items: stretch;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0;
 }
 
 .settings-csv-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 16px;
-  min-height: 118px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  min-width: 0;
+  padding: 14px 0;
+}
+
+.settings-csv-row + .settings-csv-row {
+  border-top: 1px solid var(--line);
 }
 
 .settings-csv-label {
   display: block;
   padding: 2px 0;
-  text-align: center;
+  text-align: left;
 }
 
 .settings-csv-label > span {
-  color: var(--text);
+  color: var(--accent-2);
   font-size: 14px;
   font-weight: 900;
   line-height: 1.3;
@@ -12537,12 +12728,18 @@ html.theme-light .settings-category-card {
 .settings-csv-label > .settings-home-copy {
   display: block;
   margin-top: 4px;
+  color: var(--dim);
   line-height: 1.3;
 }
 
-html.theme-light .settings-csv-row {
-  background: rgba(211, 221, 234, 0.7);
-  border-color: rgba(31, 42, 61, 0.28);
+@media (max-width: 600px) {
+  .settings-csv-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .settings-data-actions {
+    max-width: 360px;
+  }
 }
 
 .settings-dev-links {
@@ -13088,7 +13285,7 @@ html.theme-light .platinum-highlight:active {
     0 16px 34px rgba(31, 42, 61, 0.2);
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   html.theme-light .release-months {
     background: var(--grid-fade), var(--grid-texture), var(--panel);
     background-size:
@@ -14218,7 +14415,7 @@ html.theme-light .shelf-card-delete-action:hover {
   border-radius: 4px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .settings-store-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -14681,7 +14878,7 @@ body.theme-kash
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .playing-section .card-trophy-meta {
     display: block;
   }
@@ -15130,7 +15327,7 @@ body.theme-kash
   justify-self: start;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .detail-rating-grid {
     grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
     gap: 13px 16px;
@@ -15251,7 +15448,7 @@ body.theme-kash
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .settings-page-toggle-row {
     grid-template-columns: 1fr;
   }
@@ -15602,7 +15799,7 @@ body.theme-kash
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .game-rating-grid {
     --rating-star-size: 25px;
     --rating-star-gap: 5px;
@@ -15617,7 +15814,7 @@ body.theme-kash
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .finish-rating-grid {
     --rating-star-size: 23px;
     --rating-star-gap: 4px;
@@ -16265,7 +16462,11 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
+  body:not(.can-edit) #loginButton {
+    display: none !important;
+  }
+
   body {
     padding-bottom: calc(84px + env(safe-area-inset-bottom));
   }
@@ -16534,9 +16735,18 @@ html.theme-light .primary-button.stream-start-action:hover {
     display: block;
     min-width: 0;
     overflow: hidden;
-    margin-left: 20px;
+    margin-left: 28px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  body.shabii-main-owner:not(.can-edit) .brand span:last-child {
+    font-size: clamp(17px, 4.5vw, 20px);
+  }
+
+  body.shabii-main-owner:not(.can-edit) .brand-mark {
+    width: 40px;
+    height: 40px;
   }
 
   .top-actions {
@@ -17263,7 +17473,131 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 
   .playing-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
     padding: 4px 0 8px;
+    overflow: visible;
+  }
+
+  .playing-section .playing-panel > .twitch-preview-card {
+    box-sizing: border-box;
+    grid-row: 2;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    padding: 10px;
+    flex: none;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 9px;
+    overflow: visible;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card
+    .twitch-preview-player {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card
+    .twitch-preview-status {
+    top: 18px;
+    right: 20px;
+  }
+
+  .playing-section .playing-panel > .twitch-preview-card .twitch-preview-link {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card
+    .twitch-preview-toggle {
+    position: static;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    width: auto;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 9px;
+  }
+
+  .playing-section .playing-panel > .playing-list {
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .playing-section .playing-panel > .twitch-preview-card.is-collapsed {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 56px;
+    min-height: 56px;
+    padding: 8px 52px 8px 12px;
+    overflow: visible;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card.is-collapsed
+    .twitch-preview-collapsed-logo {
+    position: static;
+    flex-direction: row;
+    gap: 8px;
+    transform: none;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card.is-collapsed
+    .twitch-preview-collapsed-logo
+    span {
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-size: 12px;
+    text-align: left;
+    text-overflow: ellipsis;
+    transform: none;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card.is-collapsed
+    .twitch-preview-player {
+    display: none;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card.is-collapsed
+    .twitch-preview-status {
+    display: none;
+  }
+
+  .playing-section
+    .playing-panel
+    > .twitch-preview-card.is-collapsed
+    .twitch-preview-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    bottom: auto;
+    left: auto;
+    transform: translateY(-50%);
   }
 
   .playing-section .column-head {
@@ -18063,7 +18397,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (width <= 760px) {
+@media (width <= 699px) {
   .completed-head-actions {
     display: flex;
     flex-wrap: wrap;
@@ -18380,7 +18714,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #mobileDockUp {
     display: grid !important;
     order: 1;
@@ -18482,6 +18816,23 @@ html.theme-light .primary-button.stream-start-action:hover {
     box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 32%, transparent);
   }
 
+  body:not(.can-edit) #mobileDockEdit:not([hidden]) {
+    display: flex;
+    color: #ffffff;
+    background: var(--accent);
+    box-shadow: 0 3px 24px color-mix(in srgb, var(--accent) 32%, transparent);
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition:
+      flex-basis 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      padding 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      gap 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background 140ms ease,
+      box-shadow 140ms ease;
+  }
+
   @media (hover: hover) and (pointer: fine) {
     .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd):hover)
       #mobileDockAdd:not(:hover),
@@ -18492,9 +18843,32 @@ html.theme-light .primary-button.stream-start-action:hover {
       background: transparent;
       box-shadow: none;
     }
+    body:not(.can-edit)
+      .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockEdit):hover)
+      #mobileDockEdit:not(:hover),
+    body:not(.can-edit)
+      .mobile-action-dock:has(
+        .mobile-dock-action:not(#mobileDockEdit):focus-visible
+      )
+      #mobileDockEdit:not(:hover):not(:focus-visible) {
+      background: transparent;
+      box-shadow: none;
+    }
   }
 
   #mobileDockAdd > span {
+    display: inline-block;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    font-weight: 900;
+    white-space: nowrap;
+    transition:
+      width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 220ms ease;
+  }
+
+  body:not(.can-edit) #mobileDockEdit > span {
     display: inline-block;
     width: 0;
     overflow: hidden;
@@ -18519,6 +18893,24 @@ html.theme-light .primary-button.stream-start-action:hover {
 
   #mobileDockAdd:hover > span,
   #mobileDockAdd:focus-visible > span {
+    width: 104px;
+    opacity: 1;
+    transition-duration: 220ms;
+  }
+
+  body:not(.can-edit) #mobileDockEdit:not([hidden]):hover,
+  body:not(.can-edit) #mobileDockEdit:not([hidden]):focus-visible {
+    width: 160px;
+    flex-basis: 160px;
+    gap: 8px;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    padding-inline: 12px;
+    transition-duration: 220ms;
+  }
+
+  body:not(.can-edit) #mobileDockEdit:hover > span,
+  body:not(.can-edit) #mobileDockEdit:focus-visible > span {
     width: 104px;
     opacity: 1;
     transition-duration: 220ms;
@@ -18692,7 +19084,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   main.shell:has(#gotySection:not([hidden])) #gotySection,
   main.shell:not(:has(#gotySection:not([hidden])))
     #playingSection:not([hidden]) {
@@ -18830,7 +19222,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   transition: opacity 180ms ease;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #mobileDockGoty:hover,
   #mobileDockGoty:focus-visible,
   #mobileDockGoty:active,
@@ -18849,7 +19241,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #gotyDialog[open] {
     position: fixed;
     inset: 8px !important;
@@ -18877,7 +19269,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #gotyStatsPreviewDialog .goty-stats-preview-modal {
     display: flex !important;
     flex-direction: column;
@@ -18917,7 +19309,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #gotyStatsPreviewDialog {
     height: calc(100dvh - 24px);
     max-height: calc(100dvh - 24px);
@@ -18952,7 +19344,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #mobileDockAdd:not([hidden]) {
     color: #fff;
     background: var(--accent);
@@ -18965,6 +19357,19 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
     #mobileDockAdd:not(:focus),
   .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockAdd).is-active)
     #mobileDockAdd:not(.is-active) {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body:not(.can-edit)
+    .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockEdit):active)
+    #mobileDockEdit:not(:active),
+  body:not(.can-edit)
+    .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockEdit):focus)
+    #mobileDockEdit:not(:focus),
+  body:not(.can-edit)
+    .mobile-action-dock:has(.mobile-dock-action:not(#mobileDockEdit).is-active)
+    #mobileDockEdit:not(.is-active) {
     background: transparent;
     box-shadow: none;
   }
@@ -19234,7 +19639,7 @@ body:not(.can-edit):not(.shelf-page)
   display: none !important;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #addGameForm.gamelist-target-editor .shelf-editor-grid {
     grid-template-columns: 132px repeat(12, minmax(0, 1fr));
     align-items: end;
@@ -19344,7 +19749,7 @@ body:not(.can-edit):not(.shelf-page)
 #gameDialog.is-new-game .collection-form-grid > .release-text-field {
   grid-column: span 7;
 }
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .playing-finished-progress {
     grid-template-columns: 14px auto minmax(0, 1fr);
   }
@@ -19383,7 +19788,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .playing-finished-game .playing-finished-progress strong {
     align-self: center;
     font-size: 10px;
@@ -19437,7 +19842,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Keep the mobile playing actions in their own columns without overlap. */
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .playing-section .game-card.playing-card h3 {
     font-size: clamp(28px, 7vw, 40px);
     line-height: 1.05;
@@ -19508,7 +19913,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Compact mobile list actions leave the text column room to breathe. */
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .card-list .game-card:not(.playing-card) .title-line > .edit-action,
   .card-list .game-card:not(.playing-card) .card-actions > .delete-action,
   .shelf-grid .game-card .title-line > .edit-action,
@@ -19642,7 +20047,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #addGameForm .modal-head h2.mobile-two-line-title {
     line-height: 1.05;
     white-space: nowrap;
@@ -19723,7 +20128,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-grid.list-view .game-row .psn-progress-pill {
     display: none;
   }
@@ -19733,7 +20138,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #backlog
     .card-list:not(.list-view)
     .game-card:not(.playing-card)
@@ -19753,7 +20158,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Keep action names visible on mobile cards in Backlog, Radar, and Wishlist. */
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .card-list .game-card:not(.playing-card) .card-actions > button {
     min-height: 42px;
     height: 42px;
@@ -19865,7 +20270,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Keep prices beside card actions when the card has enough horizontal space. */
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .card-list:not(.list-view) .game-card.has-price-footer .card-footer {
     display: flex;
     flex-direction: row;
@@ -19916,7 +20321,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* With no second line of tags, center badges over the full list row. */
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .game-row:has(> .game-row-tags:empty) > .game-row-core {
     grid-row: 1 / -1;
     align-self: center;
@@ -19980,7 +20385,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .playing-section .game-card.playing-card .card-actions > .backlog-action {
     box-sizing: border-box;
     display: grid;
@@ -20007,7 +20412,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   :is(#releaseDialog, #shelfReleaseDialog)
     .release-dialog-list
     .game-card
@@ -20448,7 +20853,7 @@ body.theme-kash
   text-align: center;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .shelf-stats-body .finished-stats-kpis.is-shelf-one > .finished-stats-kpi,
   .shelf-stats-body .finished-stats-kpis.is-shelf-two > .finished-stats-kpi {
     justify-items: start;
@@ -20635,7 +21040,7 @@ body.theme-kash
   grid-auto-rows: minmax(92px, auto);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-stats-dialog {
     box-sizing: border-box;
     width: calc(100% - 14px);
@@ -20674,7 +21079,7 @@ body.theme-kash
   background: unset;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-page .detail-cover {
     max-height: unset;
   }
@@ -21488,7 +21893,7 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   gap: 6px;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .shelf-grid.preorders-view.list-view .game-row {
     grid-template-columns:
       42px minmax(145px, 230px) minmax(0, 2.2fr) minmax(120px, 0.8fr)
@@ -22358,7 +22763,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   display: grid !important;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #addGameForm.combined-collection-editor .shelf-editor-grid {
     --collection-extra-row: 5;
     --collection-owner-offset: 3;
@@ -22416,7 +22821,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #addGameForm.combined-collection-editor
     .shelf-editor-grid
     > :is(
@@ -22488,7 +22893,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   display: none !important;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #addGameForm .shelf-editor-grid > * {
     order: 30;
   }
@@ -22649,7 +23054,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-editor-cover-preview {
     display: none !important;
   }
@@ -22672,7 +23077,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   grid-column: span 6;
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   .digital-game-editor .shelf-release-field,
   .digital-game-editor .shelf-owner-field {
     grid-column: 1 / span 6;
@@ -23265,12 +23670,11 @@ textarea {
   }
 }
 
-@media (min-width: 761px) and (max-width: 1300px) {
+@media (min-width: 700px) and (max-width: 1300px) {
   .shelf-toolbar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(
-        0,
-        1.5fr
-      ) minmax(0, 0.75fr) minmax(0, 0.75fr) var(--toolbar-control-height);
+    grid-template-columns:
+      minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr)
+      minmax(0, 0.75fr) minmax(0, 0.75fr) var(--toolbar-control-height);
   }
   .shelf-toolbar .search {
     grid-column: span 2;
@@ -23299,7 +23703,7 @@ textarea {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #addGameForm.gamelist-target-editor .shelf-entitlement-grid-spacer {
     display: none !important;
   }
@@ -23863,7 +24267,7 @@ textarea {
   object-fit: cover;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-dialog .detail-cover#detailCoverWrap {
     width: 100%;
     height: var(--shelf-cover-height, 520px);
@@ -23878,7 +24282,7 @@ textarea {
 }
 
 /* Keep the unified Gamelist editor aligned with the Shelf cover-first layout. */
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #addGameForm.gamelist-target-editor .shelf-editor-grid {
     position: relative;
     grid-template-columns: 160px repeat(12, minmax(0, 1fr));
@@ -23983,7 +24387,7 @@ textarea {
   }
 }
 
-@media (min-width: 761px) {
+@media (min-width: 700px) {
   #addGameForm:not(.gamelist-target-editor):not(.digital-tracking-disabled)
     .shelf-console-field {
     grid-column: 8 / span 4;
@@ -24176,7 +24580,7 @@ textarea {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   #addGameForm.shelf-gamelist-import-mini .modal-head {
     position: relative;
     flex-direction: column;
@@ -24263,7 +24667,7 @@ textarea {
   display: none;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   /* Shelf follows the shared markup: DLC, subscription, then release details. */
   #addGameForm.gamelist-target-editor .shelf-entitlement-field {
     order: 11;
@@ -24314,7 +24718,7 @@ textarea {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-grid .status-pill {
     display: none !important;
   }
@@ -24334,7 +24738,7 @@ textarea {
 }
 
 /* The unified Shelf dialog lives inside .shelf-page rather than .shelf-dialog. */
-@media (max-width: 760px) {
+@media (max-width: 699px) {
   .shelf-page #detailDialog .detail-cover {
     box-sizing: border-box;
     display: block;
@@ -24412,4 +24816,90 @@ textarea {
 #addGameForm:not(.shelf-gamelist-import-mini) > #shelfGamelistListPicker,
 #addGameForm:not(.shelf-gamelist-import-mini) > #shelfGamelistListControls {
   margin: 0 0 12px;
+}
+
+/* Keep tablet release calendars to two or three months total. */
+@media (min-width: 700px) and (max-width: 899px) {
+  .release-months {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .release-month:nth-child(2) {
+    display: grid;
+  }
+  .release-month:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1100px) {
+  .release-months {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .release-month:nth-child(n + 4) {
+    display: none;
+  }
+}
+
+/* Keep the four trophy rank bars compact inside narrower achievement cards. */
+@media (max-width: 800px) {
+  .rarity-graph {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .rarity-graph .rarity-bar {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+    font-size: 9px;
+  }
+
+  .rarity-graph .rarity-bar small {
+    font-size: clamp(7px, 1.5vw, 9px);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 800px) {
+  #searchButton {
+    display: none !important;
+  }
+
+  #mobileDockSearch {
+    display: grid !important;
+    order: 0;
+  }
+
+  .mobile-section-tabs,
+  .shelf-tabs {
+    top: 20px;
+    margin-top: 8px;
+  }
+
+  .mobile-section-tabs button[data-mobile-section="new"] {
+    min-width: 0;
+    padding: 0;
+  }
+
+  .mobile-section-tabs button[data-mobile-section="new"] .label {
+    display: none;
+  }
+
+  .mobile-section-tabs button[data-mobile-section="new"] .count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 5px;
+    font-size: 9px;
+  }
+
+  .completed-list .completed-rating-breakdown,
+  .completed-list .completed-platform .rating-score-pill {
+    display: none !important;
+  }
 }

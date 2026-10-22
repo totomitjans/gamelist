@@ -216,7 +216,7 @@ const platinumMetaCache = loadPlatinumMetaCache();
 const initialSettings = loadLocalSettings();
 
 function defaultViewModeForDevice() {
-  return window.matchMedia?.("(max-width: 760px)")?.matches ? "list" : "grid";
+  return window.matchMedia?.("(max-width: 699px)")?.matches ? "list" : "grid";
 }
 
 function loadSharedViewMode() {
@@ -353,6 +353,7 @@ const el = {
   floatingSearchButton: document.querySelector("#floatingSearchButton"),
   mobileActionDock: document.querySelector("#mobileActionDock"),
   mobileDockAdd: document.querySelector("#mobileDockAdd"),
+  mobileDockEdit: document.querySelector("#mobileDockEdit"),
   mobileDockUp: document.querySelector("#mobileDockUp"),
   mobileDockSearch: document.querySelector("#mobileDockSearch"),
   mobileDockStats: document.querySelector("#mobileDockStats"),
@@ -986,7 +987,7 @@ function bindEvents() {
     }
     scrollToGameList();
   });
-  el.loginButton.addEventListener("click", toggleEditMode);
+  el.loginButton.addEventListener("click", () => state.canEdit ? toggleEditMode() : quickAddGame());
   document.querySelector("#settingsLogoutButton")?.addEventListener("click", () => {
     el.settingsDialog.close();
     toggleEditMode();
@@ -994,6 +995,7 @@ function bindEvents() {
   el.addButton.addEventListener("click", quickAddGame);
   el.floatingAddButton.addEventListener("click", quickAddGame);
   el.mobileDockAdd?.addEventListener("click", quickAddGame);
+  el.mobileDockEdit?.addEventListener("click", quickAddGame);
   el.searchButton?.addEventListener("click", scrollToSearchArea);
   el.floatingSearchButton?.addEventListener("click", scrollToSearchArea);
   el.mobileDockSearch?.addEventListener("click", () => {
@@ -1064,7 +1066,7 @@ function bindEvents() {
     el.finishedStatsDialog.classList.remove("has-mini-overlay");
     document.querySelector(".finished-stats-hover-float")?.remove();
     el.finishedStatsBody?.querySelector(".finished-stats-floating-source")?.classList.remove("finished-stats-floating-source");
-    if (window.matchMedia("(max-width: 760px)").matches) el.mobileDockAdd?.classList.add("stats-just-closed");
+    if (window.matchMedia("(max-width: 699px)").matches) el.mobileDockAdd?.classList.add("stats-just-closed");
     syncScrollLock();
   });
   window.addEventListener("scroll", () => {
@@ -1508,7 +1510,7 @@ function scheduleBackgroundRefreshes() {
 
 function syncDisplayMode() {
   const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-  const mobile = window.matchMedia("(max-width: 760px)").matches;
+  const mobile = window.matchMedia("(max-width: 699px)").matches;
   document.body.classList.toggle("mobile-app-mode", standalone && mobile);
   scheduleMobilePaintRefresh();
 }
@@ -1847,11 +1849,22 @@ function render() {
   applyLanguage();
   document.documentElement.classList.remove("theme-booting");
   document.body.classList.toggle("can-edit", state.canEdit);
+  const shabiiMainOwner = isShabiiMainOwner();
+  document.body.classList.toggle("shabii-main-owner", shabiiMainOwner);
   document.body.classList.toggle("list-view-mode", state.viewMode === "list");
   el.loginButton.innerHTML = state.canEdit ? `<span class="button-icon" aria-hidden="true">${exitIcon()}</span>` : pencilIcon();
-  el.loginButton.title = state.canEdit ? tt("Stop Editing") : tt("Edit");
+  el.loginButton.title = state.canEdit ? tt("Stop Editing") : tt("Log in to edit");
   el.loginButton.setAttribute("aria-label", el.loginButton.title);
   el.loginButton.hidden = state.canEdit;
+  el.floatingAddButton.innerHTML = plusIcon();
+  el.floatingAddButton.title = tt("Add Game");
+  el.floatingAddButton.setAttribute("aria-label", tt("Add Game"));
+  if (el.mobileDockEdit) {
+    el.mobileDockEdit.hidden = state.canEdit;
+    el.mobileDockEdit.innerHTML = `${plusIcon()}<span>${escapeHtml(tt("Add Game"))}</span>`;
+    el.mobileDockEdit.title = tt("Add Game");
+    el.mobileDockEdit.setAttribute("aria-label", tt("Add Game"));
+  }
   el.addButton.hidden = false;
   if (el.mobileDockAdd) el.mobileDockAdd.hidden = !state.canEdit;
   el.syncButton.hidden = !state.canEdit;
@@ -2666,11 +2679,6 @@ function renderSettingsDialog() {
   document.querySelector("[data-add-csv='shelf']")?.addEventListener("click", addShelfGamesCsv);
   document.querySelector("[data-export-csv='goty']")?.addEventListener("click", exportGameOfTheYearCsv);
   document.querySelector("[data-import-csv='goty']")?.addEventListener("click", importGameOfTheYearCsv);
-  document.querySelector("[data-export-csv='finished']")?.addEventListener("click", exportYearlyStatsCsv);
-  document.querySelector("[data-import-csv='finished']")?.addEventListener("click", importYearlyStatsCsv);
-  document.querySelector("[data-add-csv='finished']")?.addEventListener("click", addFinishedGamesCsv);
-  document.querySelector("[data-export-csv='yearly-stats']")?.addEventListener("click", exportYearlyStatsCsv);
-  document.querySelector("[data-import-csv='yearly-stats']")?.addEventListener("click", importYearlyStatsCsv);
   applyLanguage();
   syncStyledSelects(el.settingsDialog, { activeValue: null });
 }
@@ -2687,31 +2695,22 @@ function settingsLayoutItem(key, index, options = {}) {
     finished: "Finished games",
     latestFinished: "Last finished",
   }[key] || key;
-  const wireClass = {
-    showcase: "wire-favorites",
-    playing: "wire-playing",
-    trophies: "wire-trophies",
-    calendar: "wire-calendar",
-    highlights: "wire-highlights",
-    search: "wire-search",
-    gamelist: "wire-list",
-    finished: "wire-finished",
-    latestFinished: "wire-latest-finished",
-  }[key] || "";
   const fixed = Boolean(options.fixed);
   const visible = !(state.settings.hiddenSections || []).includes(key);
   return `
     <article class="settings-layout-card ${fixed ? "is-fixed" : ""} ${visible ? "" : "is-hidden-section"}" data-layout-key="${escapeHtml(key)}">
-      <div class="settings-wire ${wireClass}" aria-hidden="true">${Array.from({ length: 6 }, () => "<span></span>").join("")}</div>
       <strong>${escapeHtml(title)}</strong>
       <div class="settings-layout-actions">
         ${fixed ? `<span class="settings-fixed-label">Fixed</span>` : `
-          <button class="icon-button" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(title)} up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
-          <button class="icon-button" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="1" ${index === state.settings.pageOrder.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(title)} down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m7-7-7 7-7-7"/></svg></button>
+          <button class="icon-button settings-layout-move" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(title)} up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
+          <button class="icon-button settings-layout-move" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="1" ${index === state.settings.pageOrder.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(title)} down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m7-7-7 7-7-7"/></svg></button>
         `}
-        <label class="check-filter toggle-check settings-visible-check" title="${visible ? "Visible" : "Hidden"}">
-          <input type="checkbox" value="${escapeHtml(key)}" data-layout-hidden ${visible ? "checked" : ""}>
-          <span>${visible ? "Show" : "Hide"}</span>
+        <label class="check-filter toggle-check settings-visible-check settings-layout-visibility" title="${visible ? "Hide" : "Show"} ${escapeHtml(title)}">
+          <input type="checkbox" value="${escapeHtml(key)}" data-layout-hidden aria-label="${visible ? "Hide" : "Show"} ${escapeHtml(title)}" ${visible ? "checked" : ""}>
+          <svg class="settings-visibility-icon ${visible ? "is-visible" : "is-hidden"}" viewBox="0 0 24 24" aria-hidden="true">
+            ${visible ? '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' : '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a16 16 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a10.8 10.8 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'}
+          </svg>
+          <span class="settings-visibility-sr-only">${visible ? "Hide" : "Show"} ${escapeHtml(title)}</span>
         </label>
       </div>
     </article>
@@ -2786,9 +2785,8 @@ function settingsHideNonStreamPlayingItem() {
 
 function settingsCsvDataItem() {
   const rows = [
-    ["gamelist", "Gamelist games", "Backlog, Radar, Wishlist"],
+    ["gamelist", "Gamelist games", "Backlog, Radar, Wishlist, Finished"],
     ["shelf", "Shelf Games"],
-    ["finished", "Finished games"],
     ["goty", "GOTY"],
   ];
   return `
@@ -2800,10 +2798,10 @@ function settingsCsvDataItem() {
               <span>${escapeHtml(tt(label))}</span>
               ${detail ? `<small class="settings-home-copy">${escapeHtml(tt(detail))}</small>` : ""}
             </div>
-            <div class="settings-data-actions ${["gamelist", "shelf", "finished"].includes(key) ? "settings-data-actions-add" : ""}">
-              <button class="ghost-button" type="button" data-export-csv="${escapeHtml(key)}">${escapeHtml(tt("Export"))}</button>
-              <button class="ghost-button" type="button" data-import-csv="${escapeHtml(key)}">${escapeHtml(tt("Import"))}</button>
-              ${["gamelist", "shelf", "finished"].includes(key) ? `<button class="ghost-button" type="button" data-add-csv="${escapeHtml(key)}">${escapeHtml(tt("Add"))}</button>` : ""}
+            <div class="settings-data-actions ${["gamelist", "shelf"].includes(key) ? "settings-data-actions-add" : ""}">
+              <button class="ghost-button" type="button" data-export-csv="${escapeHtml(key)}">${downloadIcon()}${escapeHtml(tt("Export"))}</button>
+              <button class="ghost-button" type="button" data-import-csv="${escapeHtml(key)}">${uploadIcon()}${escapeHtml(tt("Import"))}</button>
+              ${["gamelist", "shelf"].includes(key) ? `<button class="ghost-button" type="button" data-add-csv="${escapeHtml(key)}">${escapeHtml(tt("Add"))}${plusIcon()}</button>` : ""}
             </div>
           </div>
         `).join("")}
@@ -2983,6 +2981,7 @@ async function importGamelistCsv() {
     state.games = normalizeGameRecords(rows.map((row, index) => ({
       ...row,
       id: row.id || csvImportedId("gamelist", index),
+      pendingCollection: false,
       updatedAt: row.updatedAt || new Date().toISOString(),
     })));
     persistLocal(false);
@@ -3118,7 +3117,7 @@ async function importShelfPhysicalCsv() {
     next.games = [];
     next.overrides = {};
     rows.forEach((row, index) => {
-      const game = normalizeShelfCsvGame({ ...row, id: row.id || csvImportedId("shelf", index), updatedAt: row.updatedAt || now });
+      const game = normalizeShelfCsvGame({ ...row, id: row.id || csvImportedId("shelf", index), pendingCollection: false, updatedAt: row.updatedAt || now });
       if (row.sourceRecord === true) next.sourceGames.push(game);
       else next.games.push(game);
     });
@@ -3325,7 +3324,7 @@ async function importGameOfTheYearCsv() {
       showToast(tt("No GOTY picks found in that CSV."), "error");
       return;
     }
-    if (!window.confirm(tt("Import GOTY picks from {count} CSV rows? This updates saved Games of the year picks.", { count: rows.length }))) return;
+    if (!window.confirm(tt("Import GOTY picks from {count} CSV rows? This replaces all saved Games of the year picks.", { count: rows.length }))) return;
     const imported = {};
     rows.forEach((row) => {
       const year = String(row.year || "").match(/\b(19|20)\d{2}\b/)?.[0];
@@ -3341,10 +3340,9 @@ async function importGameOfTheYearCsv() {
       return;
     }
     const now = new Date().toISOString();
-    const nextGameOfTheYear = { ...(state.settings.gameOfTheYear || {}) };
+    const nextGameOfTheYear = {};
     years.forEach((year) => {
-      const previous = nextGameOfTheYear[year]?.picks || {};
-      const picks = Object.fromEntries(GAME_OF_YEAR_CATEGORIES.map(([key]) => [key, imported[year].picks[key] || previous[key] || ""]));
+      const picks = Object.fromEntries(GAME_OF_YEAR_CATEGORIES.map(([key]) => [key, imported[year].picks[key] || ""]));
       const candidates = gameOfTheYearCandidateGames(year);
       const categories = gameOfTheYearCategoriesForYear(year, candidates);
       nextGameOfTheYear[year] = {
@@ -3484,7 +3482,7 @@ function mobilePlayingCountText(count) {
 
 function updatePlayingCountText(count = visiblePlayingGames().length) {
   if (!el.playingCount) return;
-  el.playingCount.textContent = window.matchMedia("(max-width: 760px)").matches
+  el.playingCount.textContent = window.matchMedia("(max-width: 699px)").matches
     ? mobilePlayingCountText(count)
     : playingCountText(count);
 }
@@ -3555,7 +3553,7 @@ function renderStreamFilterToggle(button, { hidden = false } = {}) {
   button.classList.toggle("is-non-stream", mode === "nonstream");
   button.innerHTML = mode === "all" ? allGamesIcon() : mode === "stream" ? streamPlayIcon() : streamPlayOffIcon();
   const tooltip = tt("Filter between stream and non-stream games");
-  if (window.matchMedia("(min-width: 761px)").matches) {
+  if (window.matchMedia("(min-width: 700px)").matches) {
     button.removeAttribute("title");
     button.dataset.tooltip = tooltip;
   } else {
@@ -3608,7 +3606,7 @@ function renderGameOfTheYear() {
   const categories = GAME_OF_YEAR_CATEGORIES;
   const candidateIds = new Set(candidates.map((game) => game.id));
   el.gotySection.hidden = false;
-  const mobileTitle = window.matchMedia("(max-width: 760px)").matches;
+  const mobileTitle = window.matchMedia("(max-width: 699px)").matches;
   const sectionTitle = mobileTitle
     ? `<span class="goty-title-label">${escapeHtml(tt("My GOTYs {year}", { year: "" }).trim())}</span><span class="goty-title-year">${escapeHtml(year)}</span>`
     : `<span>${escapeHtml(tt("My Games of the year {year}", { year }))}</span>`;
@@ -6859,7 +6857,7 @@ function renderMobileTabs() {
   mobileTabs?.style.setProperty("--mobile-tab-count", String(sections.length));
   mobileTabs?.style.setProperty("--mobile-tab-index", String(index));
   if (mobileTabs) {
-    mobileTabs.style.gridTemplateColumns = sections.includes("new") && window.matchMedia("(max-width: 760px)").matches ? `minmax(34px, 42px) repeat(${Math.max(1, sections.length - 1)}, minmax(0, 1fr))` : "";
+    mobileTabs.style.gridTemplateColumns = sections.includes("new") && window.matchMedia("(max-width: 699px)").matches ? `minmax(34px, 42px) repeat(${Math.max(1, sections.length - 1)}, minmax(0, 1fr))` : "";
     requestAnimationFrame(syncMobileTabIndicator);
   }
   el.board.style.setProperty("--mobile-section-count", String(sections.length));
@@ -6885,7 +6883,7 @@ function renderMobileTabs() {
 }
 
 function captureMobileLibraryScrollAnchor() {
-  if (!window.matchMedia("(max-width: 760px)").matches || document.body.classList.contains("dialog-open")) return null;
+  if (!window.matchMedia("(max-width: 800px)").matches || document.body.classList.contains("dialog-open")) return null;
   const previous = document.body.dataset.mobileSection;
   if (!previous || previous === state.mobileSection) return null;
   const toolbar = document.querySelector(".toolbar");
@@ -6956,7 +6954,7 @@ function canSeeNewAdditions() {
 }
 
 function handleBoardSwipeStart(event) {
-  if (!window.matchMedia("(max-width: 760px)").matches) return;
+  if (!window.matchMedia("(max-width: 699px)").matches) return;
   const touch = event.changedTouches?.[0];
   if (!touch) return;
   state.mobileSwipeStart = { x: touch.clientX, y: touch.clientY };
@@ -6965,7 +6963,7 @@ function handleBoardSwipeStart(event) {
 function handleBoardSwipeEnd(event) {
   const start = state.mobileSwipeStart;
   state.mobileSwipeStart = null;
-  if (!start || !window.matchMedia("(max-width: 760px)").matches) return;
+  if (!start || !window.matchMedia("(max-width: 699px)").matches) return;
   const touch = event.changedTouches?.[0];
   if (!touch) return;
   const dx = touch.clientX - start.x;
@@ -7402,7 +7400,7 @@ function rowPrimaryAction(game, section) {
 }
 
 function backlogStreamAction(game) {
-  if (!cleanTwitchUser(state.settings.twitchUser) || game.playing || game.completedAt) return "";
+  if (!state.canEdit || !cleanTwitchUser(state.settings.twitchUser) || game.playing || game.completedAt) return "";
   return `<button class="primary-button stream-start-action" type="button" title="${escapeHtml(tt("Stream"))}" aria-label="${escapeHtml(tt("Stream"))}">${playIcon()}<span>${escapeHtml(tt("Stream"))}</span></button>`;
 }
 
@@ -7523,7 +7521,7 @@ function renderCompleted() {
 }
 
 function bindCompletedCoverPreviews(list) {
-  if (state.viewMode !== "list" || !window.matchMedia("(min-width: 761px) and (hover: hover) and (pointer: fine)").matches) return;
+  if (state.viewMode !== "list" || !window.matchMedia("(min-width: 700px) and (hover: hover) and (pointer: fine)").matches) return;
   list.querySelectorAll(".completed-cover-wrap:not([hidden])").forEach((wrap) => {
     const source = wrap.querySelector(".completed-cover");
     if (!source?.src) return;
@@ -8364,7 +8362,7 @@ function bindFinishedStatsMobileOverlays(body = el.finishedStatsBody, dialog = e
   body?.querySelectorAll("[data-stats-overlay-title]").forEach((node) => {
     if (node.closest("[data-stats-source=collection]")) return;
     node.addEventListener("click", (event) => {
-      if (!window.matchMedia("(max-width: 760px)").matches) return;
+      if (!window.matchMedia("(max-width: 699px)").matches) return;
       if (event.target.closest(".finished-stats-breakdown")) return;
       const breakdown = node.querySelector(".finished-stats-breakdown");
       if (!breakdown?.innerHTML.trim()) return;
@@ -8389,7 +8387,7 @@ function bindFinishedStatsDesktopOverlays(dialog = el.finishedStatsDialog, body 
     closeTimer = setTimeout(closeFloatingOverlay, 90);
   };
   const openFloatingContent = (sourceNode, content, className = "") => {
-    if (window.matchMedia("(max-width: 760px)").matches || !content.trim()) return;
+    if (window.matchMedia("(max-width: 699px)").matches || !content.trim()) return;
     clearTimeout(closeTimer);
     document.querySelector(".finished-stats-hover-float")?.remove();
     body.querySelectorAll(".finished-stats-floating-source").forEach((node) => {
@@ -9652,7 +9650,7 @@ function initMobileBrandOverlay() {
   const header = document.querySelector("body > .topbar");
   const dock = el.mobileActionDock;
   if (!header || !dock) return;
-  const mobile = window.matchMedia("(max-width: 760px)");
+  const mobile = window.matchMedia("(max-width: 699px)");
   let lastScroll = Math.max(0, window.scrollY);
   let scheduled = false;
   const setHidden = hidden => {
@@ -9685,10 +9683,12 @@ function initMobileBrandOverlay() {
 }
 
 function updateScrollTopButton() {
-  const visible = window.scrollY > 180 && !document.body.classList.contains("dialog-open");
+  const dialogOpen = document.body.classList.contains("dialog-open");
+  const visible = window.scrollY > 180 && !dialogOpen;
+  const showLoggedOutAddAction = !state.canEdit && window.innerWidth > 800 && !dialogOpen;
   const dockVisible = window.innerWidth >= 761 || window.scrollY > 180;
   el.scrollTopButton?.classList.toggle("visible", visible);
-  el.floatingEditActions?.classList.toggle("visible", visible);
+  el.floatingEditActions?.classList.toggle("visible", visible || showLoggedOutAddAction);
   el.mobileActionDock?.classList.toggle("visible", dockVisible);
   el.mobileDockUp?.classList.toggle("is-visible", visible);
 }
@@ -10805,6 +10805,16 @@ function downloadIcon() {
     <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 2.5v13.5"></path>
       <path d="M6.5 10.5l5.5 5.5 5.5-5.5"></path>
+      <path d="M4.5 20.5h15"></path>
+    </svg>
+  `;
+}
+
+function uploadIcon() {
+  return `
+    <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 16V2.5"></path>
+      <path d="m6.5 8 5.5-5.5L17.5 8"></path>
       <path d="M4.5 20.5h15"></path>
     </svg>
   `;
@@ -12457,6 +12467,7 @@ function returnPlayingToBacklog(id) {
 }
 
 function startPlaying(id, { stream = false } = {}) {
+  if (!state.canEdit) return;
   const game = getGame(id);
   if (!game || game.completedAt) return;
   if (isShelfNewAddition(game)) game.acceptedFromShelfAt = new Date().toISOString();

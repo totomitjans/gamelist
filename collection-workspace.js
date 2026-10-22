@@ -35,7 +35,7 @@ async function mount({ slots, changed, openGame, openSettings, mediaChanged, vie
       .shelf-grid{gap:12px;align-items:stretch;grid-template-columns:repeat(3,minmax(0,1fr))}
       .shelf-grid.list-view{grid-template-columns:minmax(0,1fr);gap:8px}
       @media(max-width:1120px){.shelf-grid:not(.list-view){grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:760px){.shelf-grid:not(.list-view){grid-template-columns:minmax(0,1fr)}.shelf-grid.list-view{gap:7px}}
+      @media(max-width:699px){.shelf-grid:not(.list-view){grid-template-columns:minmax(0,1fr)}.shelf-grid.list-view{gap:7px}}
       #shelfStats .stat[data-stat-action="completed"]{--stat-color:var(--accent);--stat-glow:color-mix(in srgb,var(--accent) 26%,transparent)}
       #shelfStats .stat-available{--stat-color:var(--accent-2);--stat-glow:color-mix(in srgb,var(--accent-2) 26%,transparent)}
       #detailDialog #detailDescription{font-family:"Cascadia Code",monospace;font-size:14px;font-weight:400;line-height:1.55;letter-spacing:normal;text-transform:none;white-space:pre-line}
@@ -43,7 +43,7 @@ async function mount({ slots, changed, openGame, openSettings, mediaChanged, vie
       #showcaseDialog .showcase-toolbar{position:relative;z-index:30;overflow:visible}
       #showcaseDialog .showcase-toolbar .platform-logo-select.is-open{z-index:40}
       #showcaseDialog .showcase-picker-grid{position:relative;z-index:1}
-      @media(max-width:760px){.shelf-page .stats .stat:nth-child(5):last-child{grid-column:1/-1;width:100%}}
+      @media(max-width:699px){.shelf-page .stats .stat:nth-child(5):last-child{grid-column:1/-1;width:100%}}
       [hidden]{display:none!important}
       .collection-view-controls{display:flex;align-items:flex-end;gap:6px;justify-self:end}
       .collection-view-controls .view-toggle{flex:0 0 42px}
@@ -57,6 +57,18 @@ async function mount({ slots, changed, openGame, openSettings, mediaChanged, vie
         .shelf-toolbar{grid-template-columns:minmax(0,1fr) auto}
         .shelf-toolbar>label{grid-column:1/-1!important}.shelf-toolbar>.order-label{grid-column:1!important}
         .collection-view-controls{grid-column:2}
+      }
+      @media(min-width:700px) and (max-width:800px){
+        .shelf-toolbar{grid-template-columns:repeat(6,minmax(0,1fr)) 90px;gap:8px}
+        .shelf-toolbar>label{width:100%;min-width:0}
+        .shelf-toolbar>.search{grid-column:1/span 3!important;grid-row:1!important}
+        .shelf-toolbar>label:has(#platformFilter){grid-column:4/span 2!important;grid-row:1!important}
+        .shelf-toolbar>label:has(#regionFilter){grid-column:6/span 2!important;grid-row:1!important}
+        .shelf-toolbar>label:has(#categoryFilter){grid-column:1/span 2!important;grid-row:2!important}
+        .shelf-toolbar>label:has(#conditionFilter){grid-column:3/span 2!important;grid-row:2!important}
+        .shelf-toolbar>.order-label{grid-column:5/span 2!important;grid-row:2!important}
+        .shelf-toolbar>.collection-view-controls{grid-column:7!important;grid-row:2!important;width:100%;justify-self:end}
+        .shelf-toolbar .order-control{width:100%;min-width:0}
       }
     `;
   // Parse the shared rules once rather than once per shadow surface.
