@@ -1,6 +1,5 @@
 import { syncMediaFormatToggle } from "./media-format-toggle.js";
-/** Mount the existing Shelf UI in scoped surfaces, using its original markup,
- * styles, renderers and event handlers. The legacy Shelf page remains intact. */
+/** Mount shared collection components inside the unified Gamelist shell. */
 let workspacePromise;
 export function mountCollectionWorkspace(options) {
   return workspacePromise ||= mount(options).catch(error => { workspacePromise = null; throw error; });
@@ -8,7 +7,7 @@ export function mountCollectionWorkspace(options) {
 
 async function mount({ slots, changed, openGame, mediaChanged, viewChanged, clearFilters }) {
   const [markup, ...styles] = await Promise.all([
-    fetch('shelf.html').then(read),
+    fetch('collection-ui.html').then(read),
     ...['styles.css', 'shelf.css', 'game-editor-layout.css'].map(path => fetch(path).then(read)),
   ]);
   const source = new DOMParser().parseFromString(markup, 'text/html');
@@ -24,6 +23,7 @@ async function mount({ slots, changed, openGame, mediaChanged, viewChanged, clea
       .shelf-page>.floating-edit-actions,.shelf-page>.floating-search-button,.shelf-page>.scroll-top-button{display:none!important}
       .shelf-tabs{display:none!important}.shelf-toolbar{margin:0}.shelf-library{margin:0}
       .shelf-favorites-section{margin:0 0 24px}.highlights-section{margin:0}
+      .shelf-page[data-surface="showcase"],.shelf-page[data-surface="showcase"] .shelf-favorites-section{overflow:visible}
       .shell.shelf-shell{display:none!important}.shelf-page.dialog-open{overflow:visible}
       .shelf-page .highlights-section{margin:0!important}
       .shelf-library{min-width:0;background:transparent;border:0;box-shadow:none;padding:0}
@@ -124,7 +124,7 @@ async function mount({ slots, changed, openGame, mediaChanged, viewChanged, clea
   };
   renderMedia();
   window.__unifiedShelfScope = { document: scopeDocument, changed, openGame, viewChanged, clearFilters, ready(value) { api = value; resolveReady(); } };
-  await import('./shelf.js');
+  await import('./collection-ui.js');
   await ready;
   setMedia(media);
   const syncTheme = () => {
