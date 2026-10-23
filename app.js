@@ -1,4 +1,4 @@
-import { bindCardHoverSounds, playRatingSound } from "./card-hover-sound.js";
+import { bindCardHoverSounds, playRatingSound, playUiSound, scrollWithSound, setSoundsDisabled } from "./card-hover-sound.js";
 import { renderBatchedList, stopBatchedList } from "./batched-list.js";
 import { syncMediaFormatToggle } from "./media-format-toggle.js";
 import { mountCollectionWorkspace, prepareCollectionWorkspace } from "./collection-workspace.js";
@@ -101,6 +101,8 @@ const DEFAULT_SETTINGS = {
   streamFilterPriority: "all",
   prioritizeFinishedStream: false,
   hideNonStreamPlaying: false,
+  disableSounds: false,
+  hideShelf: false,
   forceCacheOnLoad: false,
   syncPreorders: false,
   gotyAlwaysShow: false,
@@ -1212,7 +1214,7 @@ function bindEvents() {
   el.brandVersion?.addEventListener("click", clearSiteCachesAndReload);
   el.scrollTopButton.addEventListener("click", () => {
     if (document.body.classList.contains("dialog-open")) return;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollWithSound(0);
   });
   el.mobileDockUp?.addEventListener("click", () => el.scrollTopButton.click());
   el.detailCloseButton.addEventListener("click", () => el.detailDialog.close());
@@ -1698,6 +1700,8 @@ function normalizeSettings(settings = {}) {
     streamFilterPriority: streamFilterPriorityForSettings(settings),
     prioritizeFinishedStream: streamFilterPriorityForSettings(settings) === "stream",
     hideNonStreamPlaying: settings.hideNonStreamPlaying === true,
+    disableSounds: settings.disableSounds === true,
+    hideShelf: settings.hideShelf === true,
     forceCacheOnLoad: settings.forceCacheOnLoad === true,
     syncPreorders: settings.syncPreorders === true,
     gotyAlwaysShow: settings.gotyAlwaysShow === true,
@@ -1931,6 +1935,7 @@ function applyLanguage() {
 let appliedThemeKey;
 function applyTheme() {
   const settings = normalizeSettings(state.settings);
+  setSoundsDisabled(settings.disableSounds);
   const key = JSON.stringify(settings);
   if (key === appliedThemeKey) return;
   appliedThemeKey = key;
@@ -2630,6 +2635,7 @@ function renderSettingsDialog() {
     settingsWeekStartItem(),
     settingsPrioritizeFinishedStreamItem(),
     settingsHideNonStreamPlayingItem(),
+    settingsVisibilityToggle("sounds", "Sounds", !state.settings.disableSounds),
   ].join("");
   el.settingsThemeEditor.innerHTML = themeSettingsContent(state.settings, tt);
   bindThemeSettingsContent(el.settingsThemeEditor, tt);
@@ -2767,6 +2773,18 @@ function settingsPrioritizeFinishedStreamItem() {
       </div>
     </article>
   `;
+}
+
+function settingsVisibilityToggle(key, label, checked) {
+  return `<article class="settings-layout-card settings-sync-card" data-layout-key="${key}">
+    <div class="settings-wire wire-playing" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="settings-theme-select"><span>${escapeHtml(tt(label))}</span>
+      <div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check" title="${escapeHtml(tt(label))}">
+        <input type="checkbox" data-${key} aria-label="${escapeHtml(tt(label))}" ${checked ? "checked" : ""}>
+        <span>${escapeHtml(tt("Enable"))}</span>
+      </label></div>
+    </div>
+  </article>`;
 }
 
 function settingsHideNonStreamPlayingItem() {
@@ -3405,10 +3423,13 @@ async function saveSettingsFromForm(event, { close = true } = {}) {
     streamFilterPriority: normalizeStreamFilterMode(el.settingsDialog.querySelector("[data-stream-filter-priority]")?.value),
     prioritizeFinishedStream: normalizeStreamFilterMode(el.settingsDialog.querySelector("[data-stream-filter-priority]")?.value) === "stream",
     hideNonStreamPlaying: el.settingsDialog.querySelector("[data-hide-non-stream-playing]")?.checked === true,
+    disableSounds: el.settingsDialog.querySelector("[data-sounds]")?.checked === false,
+    hideShelf: el.settingsDialog.querySelector("[data-shelf]")?.checked === false,
     weekStart: normalizeWeekStart(el.settingsDialog.querySelector("[data-week-start]")?.value || state.settings.weekStart),
     forceCacheOnLoad: document.querySelector("#settingsForceCacheOnLoad")?.checked === true,
     gotyAlwaysShow: document.querySelector("#settingsGotyAlwaysShow")?.checked === true,
   });
+  setSoundsDisabled(state.settings.disableSounds);
   state.completedStreamMode = streamFilterPriorityForSettings(state.settings);
   persistLocalSettings();
   await persistCloud();
@@ -3928,6 +3949,7 @@ function showGameOfTheYearAutofillLoading(games = []) {
   return new Promise((resolve) => {
     window.setTimeout(() => {
       window.clearInterval(timer);
+      if (overlay.isConnected) playUiSound("congrats");
       overlay.classList.remove("visible");
       window.setTimeout(() => {
         overlay.remove();
@@ -5819,16 +5841,16 @@ function downloadCanvas(canvas, filename) {
 }
 
 function scrollToSearchArea() {
-  document.querySelector(".toolbar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollWithSound(document.querySelector(".toolbar"));
   window.requestAnimationFrame(() => el.searchInput?.focus({ preventScroll: true }));
 }
 
 function scrollToGameList() {
-  document.querySelector("#backlog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollWithSound(document.querySelector("#backlog"));
 }
 
 function scrollToFinishedSection() {
-  document.querySelector("#completed")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollWithSound(document.querySelector("#completed"));
 }
 
 function bindLatestFinishedHeading() {
@@ -6756,7 +6778,7 @@ function completedStatDetail(year, yearCount, total, completedYearCount, expansi
 }
 
 function scrollToCompletedSection() {
-  document.querySelector("#completed")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  scrollWithSound(document.querySelector("#completed"));
 }
 
 function sectionCountLabel(section, games, count) {
@@ -6845,6 +6867,7 @@ function renderMobileTabs() {
     state.mobileSection = ["backlog", "shelf", "upcoming", "wanted"].includes(requestedList) ? requestedList : state.settings.defaultList || "backlog";
   }
   const sections = mobileSections();
+  if (state.settings.hideShelf && state.mobileSection === "shelf") state.mobileSection = "backlog";
   const counts = mobileSectionCounts();
   if (!sections.includes(state.mobileSection)) state.mobileSection = sections[0] || "backlog";
   el.mobileTabs.forEach((button) => {
@@ -6922,7 +6945,7 @@ function syncMobileTabIndicator() {
 }
 
 function mobileSections() {
-  return [hasNewAdditions() || collectionUI?.pending().length ? "new" : "", "backlog", "shelf", "upcoming", "wanted"].filter(Boolean);
+  return [hasNewAdditions() || collectionUI?.pending().length ? "new" : "", "backlog", state.settings.hideShelf ? "" : "shelf", "upcoming", "wanted"].filter(Boolean);
 }
 
 function mobileSectionCounts() {
@@ -6977,6 +7000,7 @@ function handleBoardSwipeEnd(event) {
   const index = sections.indexOf(state.mobileSection);
   const next = dx < 0 ? sections[index + 1] : sections[index - 1];
   if (!next) return;
+  playUiSound("swipe", { direction: dx < 0 ? 1 : -1 });
   state.mobileSection = next;
   render();
 }
@@ -7003,7 +7027,7 @@ function syncMobileSectionToResults() {
     && !game.playing
   )));
   if (next) state.mobileSection = next;
-  else if (collectionUI?.matches(state.filters, collectionMedia)) state.mobileSection = "shelf";
+  else if (!state.settings.hideShelf && collectionUI?.matches(state.filters, collectionMedia)) state.mobileSection = "shelf";
 }
 
 function renderFilters() {
@@ -13688,7 +13712,7 @@ function collectionSettingsMarkup() {
       <div class="settings-theme-select">
         <span>${escapeHtml(tt(title))}</span>
         <div class="settings-check-field"><label class="check-filter toggle-check settings-visible-check">
-          <input ${attribute} type="checkbox" ${checked ? "checked" : ""}>
+          <input ${attribute} type="checkbox" aria-label="${escapeHtml(tt(title))}" ${checked ? "checked" : ""}>
           <span>${escapeHtml(tt("Enable"))}</span>
         </label></div>
       </div>
@@ -13699,8 +13723,9 @@ function collectionSettingsMarkup() {
         <select data-default-list>${lists.map(([value, label]) => `<option value="${value}" ${state.settings.defaultList === value ? "selected" : ""}>${escapeHtml(tt(label))}</option>`).join("")}</select>
       </label>
     </article>
-    ${toggle("data-track-digital", "Shelf Digital", state.settings.shelfDigitalGames)}
-    ${toggle("data-collection-prices", "Shelf Prices", !state.settings.shelfHidePrices)}
+    ${toggle("data-shelf", "Shelf", !state.settings.hideShelf)}
+    ${toggle("data-track-digital", "Shelf Digital Games", state.settings.shelfDigitalGames)}
+    ${toggle("data-collection-prices", "Show Shelf Prices", !state.settings.shelfHidePrices)}
   `;
 }
 
