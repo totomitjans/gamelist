@@ -13,6 +13,8 @@ const STATIC_ASSETS = [
   "/media-format-toggle.js",
   "/collection-workspace.css",
   "/app.js",
+  "/batched-list.js",
+  "/card-hover-sound.js",
   "/activity-ui.js",
   "/theme-system.js",
   "/i18n.js",
