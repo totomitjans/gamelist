@@ -95,7 +95,7 @@
   --title-gradient-end: var(--accent);
   --glow-primary: rgba(255, 0, 81, 0.22);
   --glow-secondary: rgba(0, 0, 255, 0.14);
-  --default-backdrop-image: url("assets/backdrop.png");
+  --default-backdrop-image: url("assets/backgrounds/backdrop.png");
   --custom-backdrop-image: var(--default-backdrop-image);
   --theme-control-bg:
     linear-gradient(
@@ -166,7 +166,7 @@ html.theme-light {
   --dim: #617086;
   --glow-primary: color-mix(in srgb, var(--accent) 18%, transparent);
   --glow-secondary: color-mix(in srgb, var(--accent-2) 16%, transparent);
-  --default-backdrop-image: url("assets/backdrop_light.png");
+  --default-backdrop-image: url("assets/backgrounds/backdrop_light.png");
   --theme-control-bg:
     linear-gradient(
       135deg,
@@ -240,7 +240,7 @@ html {
   scroll-behavior: smooth;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   html {
     overflow-x: clip;
   }
@@ -403,7 +403,7 @@ body.theme-kash .backdrop {
     radial-gradient(circle at 78% 9%, rgba(0, 92, 255, 0.24), transparent 30%),
     radial-gradient(circle at 11% 84%, rgb(0 89 255 / 16%), transparent 34%),
     linear-gradient(120deg, rgba(255, 255, 255, 0.04), transparent 38%),
-    url(assets/backdrop.png) top left / auto repeat,
+    url(assets/backgrounds/backdrop.png) top left / auto repeat,
     #111723;
 }
 
@@ -520,7 +520,7 @@ body.theme-big-logo .brand-mark {
 html.theme-font-pokemon {
   --display-title-size: clamp(36px, 3.6vw, 54px);
   --display-title-playing-size: clamp(34px, 4.2vw, 62px);
-  --display-title-line-height: 0.9;
+  --display-title-line-height: 0.9 !important;
 }
 
 html.theme-font-default {
@@ -552,11 +552,13 @@ html.theme-font-mata {
 }
 
 .shell {
+  --shell-inline-padding: clamp(18px, 4vw, 48px);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  width: min(1620px, 100%);
+  width: 100%;
   margin: 0 auto;
-  padding: clamp(8px, 2vw, 24px) clamp(18px, 4vw, 48px) clamp(18px, 4vw, 48px);
+  padding: clamp(8px, 2vw, 24px) var(--shell-inline-padding)
+    clamp(18px, 4vw, 48px);
 }
 
 .shell > * {
@@ -613,8 +615,9 @@ html.theme-font-mata {
   width: 18px;
   height: 12px;
   background: var(--accent);
-  -webkit-mask: url("assets/shabii_logo.png") center / contain no-repeat;
-  mask: url("assets/shabii_logo.png") center / contain no-repeat;
+  -webkit-mask: url("assets/branding/shabii_logo.png") center / contain
+    no-repeat;
+  mask: url("assets/branding/shabii_logo.png") center / contain no-repeat;
 }
 
 .hero {
@@ -722,7 +725,7 @@ html.theme-font-mata {
   padding: 4px 18px 8px 0;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-padding-left: 18px;
+  scroll-padding-left: 0;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -webkit-mask-image: linear-gradient(
@@ -745,12 +748,29 @@ html.theme-font-mata {
   mask-size: 100% 100%;
 }
 
-.playing-section.playing-at-end:not(.playing-at-start) .card-list {
+.playing-section:not(.playing-at-start) .card-list {
   --playing-mask-left: min(92px, 10vw);
 }
 
 .playing-section:not(.playing-at-end) .card-list {
   --playing-mask-right: min(92px, 10vw);
+}
+
+/* Let carousel content scroll through both shell gutters. */
+.shell > .playing-section .playing-panel {
+  overflow: visible;
+}
+
+.shell > .playing-section .playing-panel > .playing-list,
+.shell > .playing-section .playing-finished-list {
+  box-sizing: border-box;
+  width: calc(100% + 2 * var(--shell-inline-padding));
+  margin-left: calc(-1 * var(--shell-inline-padding));
+  margin-right: calc(-1 * var(--shell-inline-padding));
+  padding-left: var(--shell-inline-padding);
+  padding-right: var(--shell-inline-padding);
+  scroll-padding-left: var(--shell-inline-padding);
+  scroll-padding-right: var(--shell-inline-padding);
 }
 
 .playing-section .card-list::-webkit-scrollbar {
@@ -816,7 +836,7 @@ html.theme-font-mata {
   mask-size: 100% 100%;
 }
 
-.playing-finished.finished-has-overflow.finished-at-end:not(.finished-at-start)
+.playing-finished.finished-has-overflow:not(.finished-at-start)
   .playing-finished-list {
   --finished-mask-left: min(58px, 13vw);
 }
@@ -1441,7 +1461,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   transform: translateY(-42px);
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #gotyDialog,
   #gotyStatsPreviewDialog {
     position: fixed;
@@ -1513,7 +1533,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
   }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .goty-dialog .goty-modal {
     max-height: calc(100dvh - clamp(16px, 3vw, 28px) - 96px);
   }
@@ -2328,7 +2348,7 @@ html.theme-gradient .goty-section .column-head h2 .trophy-icon {
     transform 180ms ease;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .goty-callout {
     bottom: clamp(16px, 3vw, 28px);
   }
@@ -3195,8 +3215,8 @@ button.achievement-kpi {
   width: 42px;
   height: 42px;
   background: var(--accent);
-  -webkit-mask: url("assets/Icon.png") center / contain no-repeat;
-  mask: url("assets/Icon.png") center / contain no-repeat;
+  -webkit-mask: url("assets/branding/Icon.png") center / contain no-repeat;
+  mask: url("assets/branding/Icon.png") center / contain no-repeat;
   filter: drop-shadow(
     0 0 12px color-mix(in srgb, var(--accent) 38%, transparent)
   );
@@ -3584,6 +3604,21 @@ h3 {
   cursor: help;
 }
 
+.column-head > span:has(.preorder-count-pill) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  max-width: none;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.column-head .preorder-count-pill {
+  margin-left: 0;
+  margin-right: 0;
+}
+
 .preorder-store-list {
   position: absolute;
   left: 50%;
@@ -3857,7 +3892,11 @@ body.dialog-open .scroll-top-button {
 #deleteButton:hover,
 .completed-stats-button:hover,
 .completed-stats-button:focus-visible,
+.detail-edit:hover,
+.detail-edit:focus-visible,
 .edit-action:hover,
+.row-edit-action:hover,
+.row-edit-action:focus-visible,
 .completed-edit-action:hover,
 .history-edit-action:hover,
 .price-refresh-action:hover,
@@ -3961,7 +4000,7 @@ body.dialog-open .floating-edit-actions {
   border-radius: 8px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .release-months {
     background: var(--grid-fade), var(--grid-texture), var(--panel);
     background-size:
@@ -3985,7 +4024,7 @@ body.dialog-open .floating-edit-actions {
   }
 }
 
-@media (min-width: 700px) and (max-width: 899px) {
+@media (min-width: 690px) and (max-width: 899px) {
   .release-months {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4423,13 +4462,13 @@ body.dialog-open .floating-edit-actions {
   font-size: 14px;
   line-height: 1;
   background-color: rgba(255, 255, 255, 0.07);
-  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("/assets/icons/navigation/dropdown-chevron.svg");
   background-position: right 15px center;
   background-repeat: no-repeat;
   background-size: 14px 14px;
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-      right 15px center / 14px 14px no-repeat,
+    url("/assets/icons/navigation/dropdown-chevron.svg") right 15px center /
+      14px 14px no-repeat,
     rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 7px;
@@ -4448,8 +4487,8 @@ body.dialog-open .floating-edit-actions {
   border-color: color-mix(in srgb, var(--accent) 68%, transparent);
   background-color: rgba(255, 255, 255, 0.07);
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.9' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-      right 15px center / 14px 14px no-repeat,
+    url("/assets/icons/navigation/dropdown-chevron-hover.svg") right 15px
+      center / 14px 14px no-repeat,
     rgba(255, 255, 255, 0.07);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
@@ -4711,8 +4750,7 @@ body.dialog-open .floating-edit-actions {
 .check-filter input[type="checkbox"]:checked {
   border-color: color-mix(in srgb, var(--accent) 72%, transparent);
   background:
-    center / 15px 15px no-repeat
-      url("data:image/svg+xml,%3Csvg width='15' height='15' viewBox='0 0 15 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.4 7.6 6.3 10.5 11.8 4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    center / 15px 15px no-repeat url("/assets/icons/status/checkbox-check.svg"),
     var(--accent);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
@@ -5049,8 +5087,8 @@ textarea:hover {
 
 select:hover {
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.9' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-      right 15px center / 14px 14px no-repeat,
+    url("/assets/icons/navigation/dropdown-chevron-hover.svg") right 15px
+      center / 14px 14px no-repeat,
     rgba(255, 255, 255, 0.08);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent);
 }
@@ -5064,13 +5102,13 @@ select {
   text-overflow: ellipsis;
   white-space: nowrap;
   background-color: rgba(255, 255, 255, 0.07);
-  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("/assets/icons/navigation/dropdown-chevron.svg");
   background-position: right 15px center;
   background-repeat: no-repeat;
   background-size: 14px 14px;
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23f6f7fb' stroke-opacity='.78' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-      right 15px center / 14px 14px no-repeat,
+    url("/assets/icons/navigation/dropdown-chevron.svg") right 15px center /
+      14px 14px no-repeat,
     rgba(255, 255, 255, 0.07);
   transition:
     background-color 160ms ease,
@@ -5094,8 +5132,8 @@ select.is-active {
   color: #ffffff;
   border-color: color-mix(in srgb, var(--accent) 68%, transparent);
   background:
-    url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25 7 8.75l3.5-3.5' fill='none' stroke='%23ffffff' stroke-opacity='.92' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-      right 15px center / 14px 14px no-repeat,
+    url("/assets/icons/navigation/dropdown-chevron-active.svg") right 15px
+      center / 14px 14px no-repeat,
     linear-gradient(
       135deg,
       color-mix(in srgb, var(--accent) 22%, transparent),
@@ -5220,7 +5258,7 @@ body[data-mobile-section="upcoming"] .column:not(#upcoming) {
   z-index: 0;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .card-list.list-view .game-row {
     grid-template-columns:
       42px minmax(145px, 230px) minmax(0, 2.2fr) minmax(120px, 0.8fr)
@@ -6016,7 +6054,7 @@ body.theme-kash
   scroll-snap-stop: always;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .playing-section
     .game-card.playing-card:not(:has(.card-trophies:not([hidden]))) {
     grid-template-rows: auto;
@@ -6026,8 +6064,8 @@ body.theme-kash
 
 /* Let tablet playing cards shrink their poster column with the viewport.
    The desktop 300px minimum made portrait covers taller than the content
-   column at 700–1100px, so cards with more metadata grew much taller. */
-@media (min-width: 700px) and (max-width: 1100px) {
+   column at 690–1100px, so cards with more metadata grew much taller. */
+@media (min-width: 690px) and (max-width: 1100px) {
   .playing-section .game-card {
     grid-template-columns: clamp(210px, 26vw, 286px) minmax(0, 1fr);
     min-height: 0;
@@ -6170,7 +6208,7 @@ body.theme-kash
   border-radius: 3px;
 }
 
-@media (min-width: 700px) and (max-width: 1100px) {
+@media (min-width: 690px) and (max-width: 1100px) {
   .playing-section .card-trophy-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -8190,6 +8228,7 @@ body:not(.can-edit) #floatingAddButton {
 
 .top-actions #syncButton,
 .top-actions #settingsButton,
+.top-actions #localSoundToggle,
 .top-actions #fetchPricesButton,
 .top-actions #addButton,
 .top-actions #searchButton,
@@ -8203,6 +8242,7 @@ body:not(.can-edit) #loginButton,
 
 .top-actions #syncButton,
 .top-actions #settingsButton,
+.top-actions #localSoundToggle,
 .top-actions #fetchPricesButton,
 .top-actions #loginButton,
 .top-actions #searchButton,
@@ -8247,7 +8287,7 @@ body:not(.can-edit) .top-actions-separator {
   display: none;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .top-actions #syncButton {
     order: 1;
   }
@@ -8392,7 +8432,7 @@ body:not(.can-edit) #mobileDockEdit:not([hidden]) {
   height: 23px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #floatingStatsButton,
   #completedStatsButton {
     position: relative;
@@ -8533,7 +8573,7 @@ body.dialog-open .floating-search-button {
   display: none;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .playing-card .complete-action .check-icon,
   .playing-card .backlog-action .back-icon {
     display: block;
@@ -8740,7 +8780,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   min-width: 0;
 }
 
-@media (min-width: 700px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 690px) and (hover: hover) and (pointer: fine) {
   .card-list:not(.list-view) .game-card .edit-action,
   .completed-list:not(.list-view) .completed-edit-action,
   .shelf-grid:not(.list-view) .game-card .edit-action {
@@ -8859,7 +8899,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   --rating-star-gap: 1px;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .completed-rating-stars .star-display {
     --rating-star-size: 11px;
   }
@@ -8918,7 +8958,9 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   line-height: 1;
 }
 
-.completed-year-control :is(.platform-logo-button, .platform-logo-option) .platform-logo-choice {
+.completed-year-control
+  :is(.platform-logo-button, .platform-logo-option)
+  .platform-logo-choice {
   display: flex;
   align-items: center;
   align-self: center;
@@ -8933,7 +8975,9 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   margin-bottom: 0;
 }
 
-.completed-year-control :is(.platform-logo-button, .platform-logo-option) .platform-logo-choice-label {
+.completed-year-control
+  :is(.platform-logo-button, .platform-logo-option)
+  .platform-logo-choice-label {
   align-self: center;
   height: auto;
   line-height: 1;
@@ -8996,7 +9040,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   height: 16px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .completed-stream-toggle[data-tooltip],
   .playing-stream-toggle[data-tooltip] {
     position: relative;
@@ -9185,7 +9229,7 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   overscroll-behavior: contain;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .finished-stats-dialog {
     touch-action: pan-y;
   }
@@ -9197,9 +9241,13 @@ body:not(.can-edit) .game-card:focus-within .edit-action {
   gap: 10px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .finished-stats-kpis.is-grid-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #gotyStatsPreviewBody > .finished-stats-kpis:not(.is-grid-3) {
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   }
 }
 
@@ -11170,7 +11218,7 @@ body.theme-kash .playing-finished-game.completed-trophy-card:hover {
   margin: 0;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .completed-list.list-view .completed-row {
     grid-template-columns: 42px minmax(145px, 230px) minmax(0, 1fr) auto;
     min-height: 64px;
@@ -11412,7 +11460,7 @@ dialog:not([open]) {
   display: none !important;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #gameDialog,
   #addDialog {
     width: min(1120px, calc(100vw - 64px));
@@ -11500,7 +11548,7 @@ dialog:not([open]) {
   margin-bottom: 16px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #updatesDialog {
     width: min(920px, calc(100vw - 64px));
   }
@@ -12152,7 +12200,7 @@ html.theme-light .settings-category-card {
   );
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .settings-dialog[open] {
     position: fixed;
     inset: 0;
@@ -12238,7 +12286,7 @@ html.theme-light .settings-category-card {
   font-family: var(--display-title-font);
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .settings-layout-card {
     min-width: 0;
   }
@@ -13222,8 +13270,7 @@ html.theme-light .stream-check input[type="checkbox"] {
 html.theme-light .check-filter input[type="checkbox"]:checked,
 html.theme-light .stream-check input[type="checkbox"]:checked {
   background:
-    center / 15px 15px no-repeat
-      url("data:image/svg+xml,%3Csvg width='15' height='15' viewBox='0 0 15 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.4 7.6 6.3 10.5 11.8 4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    center / 15px 15px no-repeat url("/assets/icons/status/checkbox-check.svg"),
     var(--accent);
   border-color: color-mix(in srgb, var(--accent) 72%, rgba(17, 24, 39, 0.28));
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.72);
@@ -13351,7 +13398,7 @@ html.theme-light .platinum-highlight:active {
     0 16px 34px rgba(31, 42, 61, 0.2);
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   html.theme-light .release-months {
     background: var(--grid-fade), var(--grid-texture), var(--panel);
     background-size:
@@ -13637,6 +13684,8 @@ html.theme-light #pricesButton:hover,
 html.theme-light #deleteButton:hover,
 html.theme-light .completed-stats-button:hover,
 html.theme-light .completed-stats-button:focus-visible,
+html.theme-light .detail-edit:hover,
+html.theme-light .detail-edit:focus-visible,
 html.theme-light .edit-action:hover,
 html.theme-light .completed-edit-action:hover,
 html.theme-light .history-edit-action:hover,
@@ -14481,7 +14530,7 @@ html.theme-light .shelf-card-delete-action:hover {
   border-radius: 4px;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .settings-store-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -14617,6 +14666,17 @@ body.theme-kash
   z-index: 2;
 }
 
+.detail-edit {
+  position: absolute;
+  top: 12px;
+  right: 58px;
+  z-index: 2;
+}
+
+body:not(.can-edit) #detailEditButton {
+  display: none !important;
+}
+
 .detail-cover {
   align-self: start;
   aspect-ratio: 104 / 142;
@@ -14650,9 +14710,12 @@ body.theme-kash
 }
 
 .detail-trophies {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 10px;
   border-top: 1px solid var(--line);
+}
+
+#detailTrophies {
+  padding-top: 8px;
 }
 
 .detail-condition.price-panel-hidden:not([hidden]) ~ .detail-trophies {
@@ -14944,7 +15007,7 @@ body.theme-kash
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .playing-section .card-trophy-meta {
     display: block;
   }
@@ -15298,6 +15361,12 @@ body.theme-kash
   background: rgba(78, 82, 92, 0.32);
 }
 
+.store-igdb {
+  color: #fff;
+  border-color: rgba(145, 71, 255, 0.48);
+  background: rgba(145, 71, 255, 0.2);
+}
+
 .detail-guides {
   display: grid;
   gap: 9px;
@@ -15393,7 +15462,7 @@ body.theme-kash
   justify-self: start;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .detail-rating-grid {
     grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
     gap: 13px 16px;
@@ -15514,7 +15583,7 @@ body.theme-kash
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .settings-page-toggle-row {
     grid-template-columns: 1fr;
   }
@@ -15865,7 +15934,7 @@ body.theme-kash
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .game-rating-grid {
     --rating-star-size: 25px;
     --rating-star-gap: 5px;
@@ -15880,7 +15949,7 @@ body.theme-kash
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .finish-rating-grid {
     --rating-star-size: 23px;
     --rating-star-gap: 4px;
@@ -16127,8 +16196,7 @@ html.theme-light .playing-achievements-check input[type="checkbox"]:checked,
 html.theme-light .finish-trophy-check input[type="checkbox"]:checked {
   border-color: rgba(255, 233, 133, 0.82);
   background:
-    center / 15px 15px no-repeat
-      url("data:image/svg+xml,%3Csvg width='15' height='15' viewBox='0 0 15 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.4 7.6 6.3 10.5 11.8 4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    center / 15px 15px no-repeat url("/assets/icons/status/checkbox-check.svg"),
     #ffe985;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.28),
@@ -16193,8 +16261,7 @@ html.theme-light .primary-button.stream-start-action:hover {
 .stream-check input[type="checkbox"]:checked {
   border-color: rgba(183, 116, 255, 0.72);
   background:
-    center / 15px 15px no-repeat
-      url("data:image/svg+xml,%3Csvg width='15' height='15' viewBox='0 0 15 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.4 7.6 6.3 10.5 11.8 4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    center / 15px 15px no-repeat url("/assets/icons/status/checkbox-check.svg"),
     #b774ff;
 }
 
@@ -16528,7 +16595,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   body:not(.can-edit) #loginButton {
     display: none !important;
   }
@@ -16675,8 +16742,13 @@ html.theme-light .primary-button.stream-start-action:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .settings-window-panel[data-settings-window="design"] .settings-detail-grid .settings-detail-compact,
-  .settings-window-panel[data-settings-window="design"] .settings-detail-grid .settings-preference-row > article {
+  .settings-window-panel[data-settings-window="design"]
+    .settings-detail-grid
+    .settings-detail-compact,
+  .settings-window-panel[data-settings-window="design"]
+    .settings-detail-grid
+    .settings-preference-row
+    > article {
     grid-column: auto;
   }
 
@@ -16793,7 +16865,8 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 
   .column-head .preorder-count-pill {
-    margin-left: 4px;
+    margin-left: 0;
+    margin-right: 4px;
     margin-bottom: 0;
   }
 
@@ -17941,22 +18014,20 @@ html.theme-light .primary-button.stream-start-action:hover {
     grid-template-columns: 1fr;
     gap: 10px;
     padding-right: 10px;
-    scroll-padding-left: 10px;
+    scroll-padding-left: 0;
   }
 
-  .playing-section.playing-at-end:not(.playing-at-start) .card-list {
-    --playing-mask-left: 34px;
+  .playing-section:not(.playing-at-start) .card-list {
+    --playing-mask-left: 12px;
+  }
+
+  .playing-finished.finished-has-overflow:not(.finished-at-start)
+    .playing-finished-list {
+    --finished-mask-left: 10px;
   }
 
   .playing-section:not(.playing-at-end) .card-list {
     --playing-mask-right: 34px;
-  }
-
-  .playing-finished.finished-has-overflow.finished-at-end:not(
-      .finished-at-start
-    )
-    .playing-finished-list {
-    --finished-mask-left: 28px;
   }
 
   .playing-finished.finished-has-overflow:not(.finished-at-end)
@@ -18483,10 +18554,10 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (width <= 699px) {
+@media (width <= 689px) {
   .completed > .column-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 200px);
     gap: 10px;
   }
 
@@ -18815,6 +18886,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 
   .shell {
+    --shell-inline-padding: 14px;
     padding: 14px;
   }
 
@@ -18831,7 +18903,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #mobileDockUp {
     display: grid !important;
     order: 1;
@@ -19201,7 +19273,7 @@ html.theme-light .primary-button.stream-start-action:hover {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   main.shell:has(#gotySection:not([hidden])) #gotySection,
   main.shell:not(:has(#gotySection:not([hidden])))
     #playingSection:not([hidden]) {
@@ -19339,7 +19411,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   transition: opacity 180ms ease;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #mobileDockGoty:hover,
   #mobileDockGoty:focus-visible,
   #mobileDockGoty:active,
@@ -19358,7 +19430,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #gotyDialog[open] {
     position: fixed;
     inset: 8px !important;
@@ -19386,7 +19458,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #gotyStatsPreviewDialog .goty-stats-preview-modal {
     display: flex !important;
     flex-direction: column;
@@ -19426,7 +19498,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #gotyStatsPreviewDialog {
     height: calc(100dvh - 24px);
     max-height: calc(100dvh - 24px);
@@ -19461,7 +19533,7 @@ body.auth-checking #mobileDockSettings[aria-busy="true"] {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #mobileDockAdd:not([hidden]) {
     color: #fff;
     background: var(--accent);
@@ -19730,13 +19802,13 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 .gamelist-target-logo {
-  -webkit-mask-image: url("assets/Icon.png");
-  mask-image: url("assets/Icon.png");
+  -webkit-mask-image: url("assets/branding/Icon.png");
+  mask-image: url("assets/branding/Icon.png");
 }
 
 .shelf-target-logo {
-  -webkit-mask-image: url("assets/Icon_shelf.png");
-  mask-image: url("assets/Icon_shelf.png");
+  -webkit-mask-image: url("assets/branding/Icon_shelf.png");
+  mask-image: url("assets/branding/Icon_shelf.png");
 }
 
 .shelf-gamelist-target-options button.active {
@@ -19752,11 +19824,22 @@ body:not(.can-edit):not(.shelf-page)
   display: none;
 }
 
+#addGameForm .modal-head h2.collection-action-two-line-title {
+  white-space: normal;
+}
+
+#addGameForm
+  .modal-head
+  h2.collection-action-two-line-title
+  .mobile-title-break {
+  display: initial;
+}
+
 .shelf-gamelist-list-picker[hidden] {
   display: none !important;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #addGameForm.gamelist-target-editor .shelf-editor-grid {
     grid-template-columns: 132px repeat(12, minmax(0, 1fr));
     align-items: end;
@@ -19866,7 +19949,7 @@ body:not(.can-edit):not(.shelf-page)
 #gameDialog.is-new-game .collection-form-grid > .release-text-field {
   grid-column: span 7;
 }
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .playing-finished-progress {
     grid-template-columns: 14px auto minmax(0, 1fr);
   }
@@ -19905,7 +19988,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .playing-finished-game .playing-finished-progress strong {
     align-self: center;
     font-size: 10px;
@@ -19959,7 +20042,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Keep the mobile playing actions in their own columns without overlap. */
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .playing-section .game-card.playing-card h3 {
     font-size: clamp(28px, 7vw, 40px);
     line-height: 1.05;
@@ -20030,7 +20113,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Compact mobile list actions leave the text column room to breathe. */
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .card-list .game-card:not(.playing-card) .title-line > .edit-action,
   .card-list .game-card:not(.playing-card) .card-actions > .delete-action,
   .shelf-grid .game-card .title-line > .edit-action,
@@ -20164,7 +20247,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #addGameForm .modal-head h2.mobile-two-line-title {
     line-height: 1.05;
     white-space: nowrap;
@@ -20254,7 +20337,13 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
+  #backlog .card-list.list-view .game-row .psn-progress-pill,
+  #upcoming .card-list.list-view .game-row .psn-progress-pill,
+  #wanted .card-list.list-view .game-row .psn-progress-pill {
+    display: none;
+  }
+
   .shelf-grid.list-view .game-row .psn-progress-pill {
     display: none;
   }
@@ -20264,7 +20353,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #backlog
     .card-list:not(.list-view)
     .game-card:not(.playing-card)
@@ -20284,7 +20373,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Keep action names visible on mobile cards in Backlog, Radar, and Wishlist. */
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .card-list .game-card:not(.playing-card) .card-actions > button {
     min-height: 42px;
     height: 42px;
@@ -20396,7 +20485,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* Keep prices beside card actions when the card has enough horizontal space. */
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .card-list:not(.list-view) .game-card.has-price-footer .card-footer {
     display: flex;
     flex-direction: row;
@@ -20447,7 +20536,7 @@ body:not(.can-edit):not(.shelf-page)
 }
 
 /* With no second line of tags, center badges over the full list row. */
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .game-row:has(> .game-row-tags:empty) > .game-row-core {
     grid-row: 1 / -1;
     align-self: center;
@@ -20511,7 +20600,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .playing-section .game-card.playing-card .card-actions > .backlog-action {
     box-sizing: border-box;
     display: grid;
@@ -20539,7 +20628,7 @@ body:not(.can-edit):not(.shelf-page)
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   :is(#releaseDialog, #shelfReleaseDialog)
     .release-dialog-list
     .game-card
@@ -20701,7 +20790,7 @@ body:not(.can-edit):not(.shelf-page)
 
 html.theme-font-pokemon .shelf-intro h1 {
   font-size: clamp(52px, 7vw, 94px);
-  line-height: 0.78;
+  line-height: 0.78 !important;
   letter-spacing: 0;
 }
 
@@ -20980,7 +21069,7 @@ body.theme-kash
   text-align: center;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .shelf-stats-body .finished-stats-kpis.is-shelf-one > .finished-stats-kpi,
   .shelf-stats-body .finished-stats-kpis.is-shelf-two > .finished-stats-kpi {
     justify-items: start;
@@ -21167,7 +21256,7 @@ body.theme-kash
   grid-auto-rows: minmax(92px, auto);
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .shelf-stats-dialog {
     box-sizing: border-box;
     width: calc(100% - 14px);
@@ -21206,7 +21295,7 @@ body.theme-kash
   background: unset;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .shelf-page .detail-cover {
     max-height: unset;
   }
@@ -22020,7 +22109,7 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
   gap: 6px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .shelf-grid.preorders-view.list-view .game-row {
     grid-template-columns:
       42px minmax(145px, 230px) minmax(0, 2.2fr) minmax(120px, 0.8fr)
@@ -22036,9 +22125,10 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
 
 .shelf-grid.list-view .region-flag,
 .shelf-grid.list-view .condition-pill {
+  box-sizing: border-box;
   width: auto;
-  height: 24px;
-  min-height: 24px;
+  height: 22px;
+  min-height: 22px;
   padding: 3px 6px;
   border-radius: 5px;
 }
@@ -22046,6 +22136,10 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
 .shelf-grid.list-view .region-flag {
   width: 32px;
   padding: 0;
+}
+
+.shelf-grid.list-view .condition-pill {
+  line-height: 1;
 }
 
 .shelf-grid.list-view .condition-pill img {
@@ -22485,8 +22579,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
 .condition-sealed input[type="checkbox"]:checked {
   border-color: #f7df69;
   background:
-    center / 15px 15px no-repeat
-      url("data:image/svg+xml,%3Csvg width='15' height='15' viewBox='0 0 15 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.4 7.6 6.3 10.5 11.8 4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    center / 15px 15px no-repeat url("/assets/icons/status/checkbox-check.svg"),
     linear-gradient(135deg, #ffe982, #c8920a);
   box-shadow:
     0 0 0 3px rgba(247, 223, 105, 0.12),
@@ -22721,7 +22814,8 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
 }
 
 #addGameForm:not(.gamelist-target-editor) .shelf-release-text-field,
-#addGameForm:not(.gamelist-target-editor) .shelf-gamelist-flag:not(.shelf-gamelist-stream-field),
+#addGameForm:not(.gamelist-target-editor)
+  .shelf-gamelist-flag:not(.shelf-gamelist-stream-field),
 #addGameForm:not(.gamelist-target-editor) .shelf-gamelist-length-field,
 #addGameForm:not(.gamelist-target-editor) .shelf-gamelist-preferred-store-field,
 #addGameForm:not(.gamelist-target-editor) .shelf-gamelist-status-field {
@@ -22895,12 +22989,13 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   margin-bottom: 12px;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #shelfGamelistPreorderStreamRow.has-playing-option.has-stream {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  #shelfGamelistPreorderStreamRow.has-playing-option.has-stream .shelf-add-collection-check {
+  #shelfGamelistPreorderStreamRow.has-playing-option.has-stream
+    .shelf-add-collection-check {
     grid-column: 1 / -1;
   }
 }
@@ -22918,7 +23013,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   display: grid !important;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #addGameForm.combined-collection-editor .shelf-editor-grid {
     --collection-extra-row: 5;
     --collection-owner-offset: 3;
@@ -22976,7 +23071,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #addGameForm.combined-collection-editor
     .shelf-editor-grid
     > :is(
@@ -23048,7 +23143,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   display: none !important;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #addGameForm .shelf-editor-grid > * {
     order: 30;
   }
@@ -23209,7 +23304,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .shelf-editor-cover-preview {
     display: none !important;
   }
@@ -23232,7 +23327,7 @@ body.mobile-app-mode .shelf-tabs button.active:hover {
   grid-column: span 6;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   .digital-game-editor .shelf-release-field,
   .digital-game-editor .shelf-owner-field {
     grid-column: 1 / span 6;
@@ -23355,8 +23450,7 @@ textarea {
 .condition-editor .condition-sealed input[type="checkbox"]:checked {
   border-color: #f7df69;
   background:
-    center / 15px 15px no-repeat
-      url("data:image/svg+xml,%3Csvg width='15' height='15' viewBox='0 0 15 15' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.4 7.6 6.3 10.5 11.8 4.8' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    center / 15px 15px no-repeat url("/assets/icons/status/checkbox-check.svg"),
     linear-gradient(135deg, #ffe982, #c8920a);
   box-shadow:
     0 0 0 3px rgba(247, 223, 105, 0.12),
@@ -23377,7 +23471,9 @@ textarea {
 }
 
 .detail-condition {
+  padding-top: 14px;
   padding-bottom: 14px;
+  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
 
@@ -23824,7 +23920,7 @@ textarea {
   }
 }
 
-@media (min-width: 700px) and (max-width: 1300px) {
+@media (min-width: 690px) and (max-width: 1300px) {
   .shelf-toolbar {
     grid-template-columns:
       minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr)
@@ -23857,7 +23953,7 @@ textarea {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #addGameForm.gamelist-target-editor .shelf-entitlement-grid-spacer {
     display: none !important;
   }
@@ -24421,7 +24517,7 @@ textarea {
   object-fit: cover;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .shelf-dialog .detail-cover#detailCoverWrap {
     width: 100%;
     height: var(--shelf-cover-height, 520px);
@@ -24436,7 +24532,7 @@ textarea {
 }
 
 /* Keep the unified Gamelist editor aligned with the Shelf cover-first layout. */
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #addGameForm.gamelist-target-editor .shelf-editor-grid {
     position: relative;
     grid-template-columns: 160px repeat(12, minmax(0, 1fr));
@@ -24541,7 +24637,7 @@ textarea {
   }
 }
 
-@media (min-width: 700px) {
+@media (min-width: 690px) {
   #addGameForm:not(.gamelist-target-editor):not(.digital-tracking-disabled)
     .shelf-console-field {
     grid-column: 8 / span 4;
@@ -24638,7 +24734,8 @@ textarea {
 #addGameForm.shelf-gamelist-import-mini .shelf-gamelist-import-summary,
 #addGameForm.shelf-gamelist-import-mini #shelfGamelistPlacement,
 #addGameForm.shelf-gamelist-import-mini .shelf-release-text-field,
-#addGameForm.shelf-gamelist-import-mini .shelf-gamelist-flag:not(.shelf-gamelist-stream-field),
+#addGameForm.shelf-gamelist-import-mini
+  .shelf-gamelist-flag:not(.shelf-gamelist-stream-field),
 #addGameForm.shelf-gamelist-import-mini .shelf-gamelist-length-field,
 #addGameForm.shelf-gamelist-import-mini .shelf-gamelist-preferred-store-field,
 #addGameForm.shelf-gamelist-import-mini .shelf-gamelist-status-field {
@@ -24733,7 +24830,7 @@ textarea {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   #addGameForm.shelf-gamelist-import-mini .modal-head {
     position: relative;
     flex-direction: column;
@@ -24820,7 +24917,7 @@ textarea {
   display: none;
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   /* Shelf follows the shared markup: DLC, subscription, then release details. */
   #addGameForm.gamelist-target-editor .shelf-entitlement-field {
     order: 11;
@@ -24871,7 +24968,7 @@ textarea {
   }
 }
 
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .shelf-grid .status-pill {
     display: none !important;
   }
@@ -24891,7 +24988,7 @@ textarea {
 }
 
 /* The unified Shelf dialog lives inside .shelf-page rather than .shelf-dialog. */
-@media (max-width: 699px) {
+@media (max-width: 689px) {
   .shelf-page #detailDialog .detail-cover {
     box-sizing: border-box;
     display: block;
@@ -24972,7 +25069,7 @@ textarea {
 }
 
 /* Keep tablet release calendars to two or three months total. */
-@media (min-width: 700px) and (max-width: 899px) {
+@media (min-width: 690px) and (max-width: 899px) {
   .release-months {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -25018,7 +25115,7 @@ textarea {
   }
 }
 
-@media (min-width: 700px) and (max-width: 800px) {
+@media (min-width: 690px) and (max-width: 800px) {
   #searchButton {
     display: none !important;
   }
@@ -25054,5 +25151,143 @@ textarea {
   .completed-list .completed-rating-breakdown,
   .completed-list .completed-platform .rating-score-pill {
     display: none !important;
+  }
+}
+
+/* Leave room for the descenders in the shared dropdown typeface. */
+.platform-logo-select
+  :is(.platform-logo-button, .platform-logo-option)
+  .platform-logo-choice-label {
+  line-height: 1.4;
+  padding-block: 1px;
+}
+
+.sound-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.game-card.playing-card.has-key-art::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(7, 8, 12, 0.82), rgba(7, 8, 12, 0.42)),
+    var(--card-art) center / cover no-repeat;
+  filter: none;
+  opacity: 0.6;
+}
+
+@media (max-width: 689px) {
+  .mobile-section-tabs button {
+    font-size: 14px;
+  }
+  .completed > .column-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0 7px;
+  }
+  .completed > .column-head h2,
+  html.theme-font-antique .completed > .column-head h2 {
+    width: min-content;
+    max-width: 100%;
+    line-height: 1.12;
+    overflow-wrap: normal;
+  }
+  .completed .completed-head-actions {
+    width: auto;
+    flex-wrap: wrap;
+    justify-self: end;
+    column-gap: 7px;
+    row-gap: 2px;
+    max-width: 174px;
+  }
+  .completed-head-actions #completedCount {
+    order: -1;
+    flex: 0 0 100%;
+    width: 100%;
+    justify-items: end;
+    text-align: right;
+    margin-bottom: 0 !important;
+    font-size: 13px !important;
+    font-weight: 760;
+    line-height: 1 !important;
+    height: 13px;
+  }
+  .playing-section .playing-head-actions {
+    gap: 5px 7px;
+  }
+  .playing-section .playing-head-actions > button {
+    box-sizing: border-box;
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    flex: 0 0 36px;
+    padding: 0;
+  }
+  .playing-section .playing-head-actions > span {
+    margin-bottom: 0;
+  }
+  .playing-section .game-card.playing-card .card-actions {
+    gap: 7px;
+  }
+  .playing-section .game-card.playing-card.has-art::before {
+    display: block !important;
+  }
+  .playing-section .game-card.playing-card .card-trailer {
+    display: none !important;
+  }
+  :is(#gameDialog, #addDialog) :is(.editor-cover, .shelf-editor-cover-preview) {
+    display: none !important;
+  }
+}
+
+.release-calendar {
+  touch-action: pan-y;
+}
+
+@media (min-width: 1101px) and (max-width: 1919px) {
+  .release-month:nth-child(n + 5) {
+    display: none;
+  }
+}
+
+@media (min-width: 1920px) {
+  .release-months {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .release-month:nth-child(n + 5) {
+    display: grid;
+  }
+}
+
+@media (min-width: 1920px) and (min-aspect-ratio: 2/1) {
+  .card-list:not(.list-view),
+  .shelf-grid:not(.list-view),
+  .completed-list:not(.list-view) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 2560px) and (min-aspect-ratio: 2/1) {
+  .card-list:not(.list-view),
+  .shelf-grid:not(.list-view),
+  .completed-list:not(.list-view) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 3200px) and (min-aspect-ratio: 2/1) {
+  .card-list:not(.list-view),
+  .shelf-grid:not(.list-view),
+  .completed-list:not(.list-view) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }

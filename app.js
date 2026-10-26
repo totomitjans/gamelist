@@ -1,4 +1,5 @@
-import { bindCardHoverSounds, playRatingSound, playUiSound, scrollWithSound, setSoundsDisabled } from "./card-hover-sound.js";
+import { svgAsset, loadSvgAssets, hydrateSvgAssets } from "./svg-assets.js";
+import { bindCardHoverSounds, playRatingSound, playUiSound, scrollWithSound, setSoundsDisabled, setSessionSoundsEnabled, getSoundStatus } from "./card-hover-sound.js";
 import { renderBatchedList, stopBatchedList } from "./batched-list.js";
 import { syncMediaFormatToggle } from "./media-format-toggle.js";
 import { mountCollectionWorkspace, prepareCollectionWorkspace } from "./collection-workspace.js";
@@ -9,6 +10,8 @@ import { applyDocumentTranslations, languageOptions, normalizeLanguage, t } from
 import { accountSettingsMarkup } from "./account-settings-ui.js";
 import { isPlayasiaStore, syncGameListControls, syncGameListSlider, syncStoreFieldIcon, SHELF_COUNTRIES, preventImplicitGameSubmit } from "./game-editor-controls.js";
 
+await loadSvgAssets();
+hydrateSvgAssets(document);
 document.querySelector("#settingsAccountsMount").innerHTML = accountSettingsMarkup();
 
 mountActivitySlider(document.querySelector("#playingSection"), { title: "playingTitle", count: "playingCount", streamToggle: "playingStreamToggleButton", previous: "playingPrevButton", next: "playingNextButton", list: "playingList", dataSection: "playing", finished: "playingFinished", finishedList: "playingFinishedList" });
@@ -56,16 +59,16 @@ const THEMES = {
     name: "Shabii",
     title: "Shabii's Gamelist",
     shortName: "Gamelist",
-    icon: "assets/Icon.png",
-    appIcon: "assets/app-Icon.png",
+    icon: "assets/branding/Icon.png",
+    appIcon: "assets/branding/app-icons/app-Icon.png",
     themeColor: "#ff0039",
   },
   kash: {
     name: "Kash",
     title: "Kash's Gamelist",
     shortName: "Kash",
-    icon: "assets/kh_icon.png",
-    appIcon: "assets/kh_app-icon.png",
+    icon: "assets/branding/kh_icon.png",
+    appIcon: "assets/branding/app-icons/kh_app-icon.png",
     themeColor: "#005cff",
   },
 };
@@ -127,9 +130,9 @@ const STATUS_OPTIONS = [
 ];
 const STREAM_FILTER_MODES = ["all", "stream", "nonstream"];
 const UI_ICON_URLS = [
-  "/assets/Icon.png",
-  "/assets/kh_icon.png",
-  "/assets/kh_app-icon.png",
+  "/assets/branding/Icon.png",
+  "/assets/branding/kh_icon.png",
+  "/assets/branding/app-icons/kh_app-icon.png",
   "/assets/platforms/playstation.png",
   "/assets/platforms/steam.png",
   "/assets/platforms/switch.png",
@@ -221,7 +224,7 @@ const platinumMetaCache = loadPlatinumMetaCache();
 const initialSettings = loadLocalSettings();
 
 function defaultViewModeForDevice() {
-  return window.matchMedia?.("(max-width: 699px)")?.matches ? "list" : "grid";
+  return window.matchMedia?.("(max-width: 689px)")?.matches ? "list" : "grid";
 }
 
 function loadSharedViewMode() {
@@ -245,6 +248,7 @@ let settingsDirty = false;
 let settingsSnapshot = null;
 let settingsExitDestination = "";
 let gameEditorDirty = false;
+let newGameEditorContentBaseline = "";
 
 const state = {
   games: [],
@@ -369,6 +373,7 @@ const el = {
   board: document.querySelector(".board"),
   detailDialog: document.querySelector("#detailDialog"),
   detailCloseButton: document.querySelector("#detailCloseButton"),
+  detailEditButton: document.querySelector("#detailEditButton"),
   historyDialog: document.querySelector("#historyDialog"),
   historyCloseButton: document.querySelector("#historyCloseButton"),
   historyYearTabs: document.querySelector("#historyYearTabs"),
@@ -570,6 +575,7 @@ const el = {
     xboxUrl: document.querySelector("#xboxUrlInput"),
     steamUrl: document.querySelector("#steamUrlInput"),
     cover: document.querySelector("#coverInput"),
+    keyArt: document.querySelector("#keyArtInput"),
     notes: document.querySelector("#notesInput"),
   },
   playingRatingGrid: document.querySelector("#playingRatingGrid"),
@@ -623,12 +629,14 @@ async function init() {
   if (await maybeRenderGameOfTheYearExportPreview()) return;
   render();
   loginAnimation.start(state.settings.disableLoginAnimation);
+  document.documentElement.classList.remove("theme-booting");
   if (state.canEdit) {
     const warmEditor = () => warmSharedAddGame();
     if ("requestIdleCallback" in window) window.requestIdleCallback(warmEditor, { timeout: 2500 });
     else window.setTimeout(warmEditor, 500);
   }
   void refreshPlayingCardPlaytime();
+  void refreshPlayingKeyArt();
   window.setInterval(refreshPlayingCardPlaytime, 5 * 60 * 1000);
   const requestedParams = new URLSearchParams(location.search);
   const requestedEdit = requestedParams.get("edit");
@@ -670,17 +678,18 @@ function createLoginAnimation() {
   const refresh = () => {
     if (!started || !enabled || reducedMotion.matches) return;
     const components = [...document.querySelectorAll(
-      ".topbar, main.shell > :not(.board), .board > .column, .board > #collectionLibrary, .board > .unified-new-head, .site-footer, .mobile-action-dock, .floating-edit-actions, .floating-search-button, .scroll-top-button"
+      ".topbar, main.shell > :not(.board):not(.playing-section), .playing-current > .column-head, .playing-list > *, .playing-finished > .achievement-subtitle, .playing-finished-list > *, .board > .column, .board > #collectionLibrary, .board > .unified-new-head, .site-footer, .mobile-action-dock, .floating-edit-actions, .floating-search-button, .scroll-top-button"
     )].filter(element => !animated.has(element) && !element.hidden && element.getBoundingClientRect().height > 0);
     components.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
     components.forEach((element, index) => {
       animated.add(element);
+      const fromLeft = element.matches(".playing-list > *, .playing-finished-list > *");
       const animation = element.animate([
-        { opacity: 0, translate: "0 12px" },
+        { opacity: 0, translate: fromLeft ? "-36px 0" : "0 18px" },
         { opacity: 1, translate: "0 0" },
       ], {
-        duration: 420,
-        delay: Math.min(index * 35, 210),
+        duration: fromLeft ? 620 : 520,
+        delay: Math.min(index * 70, 490),
         easing: "cubic-bezier(0.2, 0.7, 0.2, 1)",
         fill: "backwards",
       });
@@ -696,7 +705,6 @@ function createLoginAnimation() {
       enabled = disabled !== true;
       refresh();
     },
-    refresh,
     setDisabled(disabled) {
       if (disabled !== true) return;
       enabled = false;
@@ -1073,6 +1081,10 @@ function bindEvents() {
   el.mobileDockGoty?.addEventListener("click", () => openGameOfTheYearDialogWithAutofillLoading(currentGameOfTheYear(), { force: true, autoPick: true }));
   el.syncButton.addEventListener("click", syncNow);
   el.settingsButton?.addEventListener("click", openSettingsDialog);
+  document.querySelector("#localSoundToggle")?.addEventListener("click", () => {
+    setSessionSoundsEnabled(getSoundStatus().disabled);
+    renderLocalSoundToggle();
+  });
   el.mobileDockSettings?.addEventListener("click", openSettingsDialog);
 
   el.settingsDialog?.querySelectorAll("[data-settings-panel]").forEach((button) => {
@@ -1081,7 +1093,7 @@ function bindEvents() {
       const home = document.querySelector("#settingsHome");
       if (home) home.hidden = true;
       const sectionTitle = button.querySelector(".settings-category-text strong")?.textContent.trim() || "Settings";
-      document.querySelector("#settingsDialogEyebrow").textContent = "Settings";
+      document.querySelector("#settingsDialogEyebrow").textContent = tt("Settings");
       document.querySelector("#settingsDialogTitle").hidden = true;
       document.querySelector("#settingsDialogSectionTitle").textContent = sectionTitle;
       document.querySelector("#settingsDialogBackTitle").hidden = false;
@@ -1122,7 +1134,7 @@ function bindEvents() {
   });
   let statsTouchStart = null;
   el.finishedStatsDialog?.addEventListener("touchstart", (event) => {
-    if (!window.matchMedia("(max-width: 699px)").matches || event.touches.length !== 1) {
+    if (!window.matchMedia("(max-width: 689px)").matches || event.touches.length !== 1) {
       statsTouchStart = null;
       return;
     }
@@ -1130,7 +1142,7 @@ function bindEvents() {
     statsTouchStart = { x: touch.clientX, y: touch.clientY };
   }, { passive: true });
   el.finishedStatsDialog?.addEventListener("touchend", (event) => {
-    if (!statsTouchStart || !window.matchMedia("(max-width: 699px)").matches) return;
+    if (!statsTouchStart || !window.matchMedia("(max-width: 689px)").matches) return;
     const touch = event.changedTouches[0];
     const dx = touch.clientX - statsTouchStart.x;
     const dy = touch.clientY - statsTouchStart.y;
@@ -1143,7 +1155,7 @@ function bindEvents() {
     el.finishedStatsDialog.classList.remove("has-mini-overlay");
     document.querySelector(".finished-stats-hover-float")?.remove();
     el.finishedStatsBody?.querySelector(".finished-stats-floating-source")?.classList.remove("finished-stats-floating-source");
-    if (window.matchMedia("(max-width: 699px)").matches) el.mobileDockAdd?.classList.add("stats-just-closed");
+    if (window.matchMedia("(max-width: 689px)").matches) el.mobileDockAdd?.classList.add("stats-just-closed");
     syncScrollLock();
   });
   window.addEventListener("scroll", () => {
@@ -1288,6 +1300,12 @@ function bindEvents() {
   });
   el.mobileDockUp?.addEventListener("click", () => el.scrollTopButton.click());
   el.detailCloseButton.addEventListener("click", () => el.detailDialog.close());
+  el.detailEditButton.addEventListener("click", () => {
+    const id = state.detailGameId;
+    if (!id) return;
+    el.detailDialog.close();
+    void openEditor(id);
+  });
   el.detailDialog.addEventListener("click", (event) => {
     if (event.target === el.detailDialog) el.detailDialog.close();
   });
@@ -1524,14 +1542,18 @@ function bindEvents() {
   el.form.addEventListener("input", () => { gameEditorDirty = true; });
   el.form.addEventListener("change", () => { gameEditorDirty = true; });
   el.dialog.addEventListener("cancel", (event) => {
-    if (!gameEditorDirty) return;
+    if (!shouldConfirmGameEditorClose()) return;
     event.preventDefault();
     showGameEditorUnsavedDialog();
   });
   el.dialog.addEventListener("click", (event) => {
     if (event.target !== el.dialog) return;
-    event.preventDefault();
-    if (gameEditorDirty) showGameEditorUnsavedDialog();
+    if (shouldConfirmGameEditorClose()) {
+      event.preventDefault();
+      showGameEditorUnsavedDialog();
+    } else {
+      el.dialog.close();
+    }
   });
   document.querySelector("#editorUnsavedDialog [data-editor-unsaved-cancel]")?.addEventListener("click", () => document.querySelector("#editorUnsavedDialog").close());
   document.querySelector("#editorUnsavedDialog [data-editor-unsaved-save]")?.addEventListener("click", () => {
@@ -1560,6 +1582,7 @@ function bindEvents() {
     syncSectionTabsStickyOffset();
     syncGameAddTargetPicker();
   }, { passive: true });
+  window.matchMedia("(max-width: 689px)").addEventListener("change", renderStats);
   window.matchMedia("(display-mode: standalone)").addEventListener?.("change", syncDisplayMode);
 }
 
@@ -1591,7 +1614,7 @@ function scheduleBackgroundRefreshes() {
 
 function syncDisplayMode() {
   const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-  const mobile = window.matchMedia("(max-width: 699px)").matches;
+  const mobile = window.matchMedia("(max-width: 689px)").matches;
   document.body.classList.toggle("mobile-app-mode", standalone && mobile);
   scheduleMobilePaintRefresh();
 }
@@ -1931,7 +1954,6 @@ function render() {
   const libraryScrollAnchor = captureMobileLibraryScrollAnchor();
   applyTheme();
   applyLanguage();
-  document.documentElement.classList.remove("theme-booting");
   document.body.classList.toggle("can-edit", state.canEdit);
   const shabiiMainOwner = isShabiiMainOwner();
   document.body.classList.toggle("shabii-main-owner", shabiiMainOwner);
@@ -1974,6 +1996,7 @@ function render() {
   renderCompleted();
   renderFooter();
   renderBrandVersionChip();
+  renderLocalSoundToggle();
   scheduleMobilePaintRefresh();
   el.sortDirectionButton.innerHTML = sortArrowIcon(state.filters.direction === "desc");
   el.sortDirectionButton.title = state.filters.direction === "asc" ? tt("Sort ascending") : tt("Sort descending");
@@ -1994,6 +2017,25 @@ function render() {
 
 function currentLanguage() {
   return normalizeLanguage(state.settings?.language);
+}
+
+function renderLocalSoundToggle() {
+  const button = document.querySelector("#localSoundToggle");
+  if (!button) return;
+  const topActions = document.querySelector(".topbar > .top-actions");
+  const settingsButton = topActions?.querySelector("#settingsButton");
+  if (topActions && button.parentElement !== topActions) {
+    if (settingsButton) settingsButton.after(button);
+    else topActions.prepend(button);
+  }
+  button.hidden = state.settings.disableSounds;
+  const muted = getSoundStatus().disabled;
+  button.setAttribute("aria-pressed", String(!muted));
+  button.title = tt(muted ? "Enable sound for this session" : "Mute sound for this session");
+  button.setAttribute("aria-label", button.title);
+  button.innerHTML = muted
+    ? `${svgAsset("icons/actions/sound")}`
+    : `${svgAsset("icons/actions/sound-2")}`;
 }
 
 function tt(key, values) {
@@ -2068,8 +2110,8 @@ function openSettingsDialog() {
   const settingsHome = document.querySelector("#settingsHome");
   if (settingsHome) settingsHome.hidden = false;
   el.settingsDialog.classList.remove("has-settings-window");
-  document.querySelector("#settingsDialogEyebrow").textContent = "Site settings";
-  document.querySelector("#settingsDialogTitle").textContent = "Settings";
+  document.querySelector("#settingsDialogEyebrow").textContent = tt("Site settings");
+  document.querySelector("#settingsDialogTitle").textContent = tt("Settings");
   document.querySelector("#settingsDialogTitle").hidden = false;
   document.querySelector("#settingsDialogBackTitle").hidden = true;
   renderSettingsDialog();
@@ -2097,8 +2139,8 @@ function requestSettingsExit(destination) {
   settingsExitDestination = destination;
   const saveButton = document.querySelector("[data-settings-unsaved-save]");
   const discardButton = document.querySelector("[data-settings-unsaved-discard]");
-  if (saveButton) saveButton.textContent = destination === "back" ? "Go back and save" : "Close and save";
-  if (discardButton) discardButton.textContent = destination === "back" ? "Go back without saving" : "Close without saving";
+  if (saveButton) saveButton.textContent = tt(destination === "back" ? "Go back and save" : "Close and save");
+  if (discardButton) discardButton.textContent = tt(destination === "back" ? "Go back without saving" : "Close without saving");
   document.querySelector("#settingsUnsavedDialog")?.showModal();
 }
 
@@ -2112,7 +2154,7 @@ function finishSettingsExit(destination) {
   const home = document.querySelector("#settingsHome");
   if (home) home.hidden = false;
   el.settingsDialog.classList.remove("has-settings-window");
-  document.querySelector("#settingsDialogEyebrow").textContent = "Site settings";
+  document.querySelector("#settingsDialogEyebrow").textContent = tt("Site settings");
   document.querySelector("#settingsDialogTitle").hidden = false;
   document.querySelector("#settingsDialogBackTitle").hidden = true;
   el.settingsDialog.querySelector(".settings-modal")?.scrollTo({ top: 0 });
@@ -2790,14 +2832,12 @@ function settingsLayoutItem(key, index, options = {}) {
       <strong>${escapeHtml(title)}</strong>
       <div class="settings-layout-actions">
         ${fixed ? `<span class="settings-fixed-label">Fixed</span>` : `
-          <button class="icon-button settings-layout-move" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(title)} up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button>
-          <button class="icon-button settings-layout-move" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="1" ${index === state.settings.pageOrder.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(title)} down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m7-7-7 7-7-7"/></svg></button>
+          <button class="icon-button settings-layout-move" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="-1" ${index === 0 ? "disabled" : ""} title="Move up" aria-label="Move ${escapeHtml(title)} up">${svgAsset("icons/settings/settings-layout-item-2")}</button>
+          <button class="icon-button settings-layout-move" type="button" data-layout-key="${escapeHtml(key)}" data-layout-move="1" ${index === state.settings.pageOrder.length - 1 ? "disabled" : ""} title="Move down" aria-label="Move ${escapeHtml(title)} down">${svgAsset("icons/settings/settings-layout-item")}</button>
         `}
         <label class="check-filter toggle-check settings-visible-check settings-layout-visibility" title="${visible ? "Hide" : "Show"} ${escapeHtml(title)}">
           <input type="checkbox" value="${escapeHtml(key)}" data-layout-hidden aria-label="${visible ? "Hide" : "Show"} ${escapeHtml(title)}" ${visible ? "checked" : ""}>
-          <svg class="settings-visibility-icon ${visible ? "is-visible" : "is-hidden"}" viewBox="0 0 24 24" aria-hidden="true">
-            ${visible ? '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' : '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a16 16 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7a10.8 10.8 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'}
-          </svg>
+          ${svgAsset("icons/settings/settings-visibility", [visible ? "is-visible" : "is-hidden", visible ? svgAsset("icons/settings/settings-layout-item-4") : svgAsset("icons/settings/settings-layout-item-5")])}
           <span class="settings-visibility-sr-only">${visible ? "Hide" : "Show"} ${escapeHtml(title)}</span>
         </label>
       </div>
@@ -3588,7 +3628,7 @@ function mobilePlayingCountText(count) {
 
 function updatePlayingCountText(count = visiblePlayingGames().length) {
   if (!el.playingCount) return;
-  el.playingCount.textContent = window.matchMedia("(max-width: 699px)").matches
+  el.playingCount.textContent = window.matchMedia("(max-width: 689px)").matches
     ? mobilePlayingCountText(count)
     : playingCountText(count);
 }
@@ -3662,7 +3702,7 @@ function renderStreamFilterToggle(button, { hidden = false, tooltip = true } = {
   if (!tooltip) {
     button.removeAttribute("title");
     button.removeAttribute("data-tooltip");
-  } else if (window.matchMedia("(min-width: 700px)").matches) {
+  } else if (window.matchMedia("(min-width: 690px)").matches) {
     button.removeAttribute("title");
     button.dataset.tooltip = tooltipText;
   } else {
@@ -3676,7 +3716,7 @@ function renderStreamFilterToggle(button, { hidden = false, tooltip = true } = {
 function renderPlayingFinished() {
   const games = finishedGamesForCurrentView()
     .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)) || stringCompare(a.title, b.title))
-    .slice(0, 10);
+    .slice(0, 15);
   el.playingFinished.hidden = (state.settings.hiddenSections || []).includes("latestFinished") || !games.length;
   el.playingFinishedList.innerHTML = games.map((game) => {
     const achievementProgress = achievementProgressForGame(game);
@@ -3715,7 +3755,7 @@ function renderGameOfTheYear() {
   const categories = GAME_OF_YEAR_CATEGORIES;
   const candidateIds = new Set(candidates.map((game) => game.id));
   el.gotySection.hidden = false;
-  const mobileTitle = window.matchMedia("(max-width: 699px)").matches;
+  const mobileTitle = window.matchMedia("(max-width: 689px)").matches;
   const sectionTitle = mobileTitle
     ? `<span class="goty-title-label">${escapeHtml(tt("My GOTYs {year}", { year: "" }).trim())}</span><span class="goty-title-year">${escapeHtml(year)}</span>`
     : `<span>${escapeHtml(tt("My Games of the year {year}", { year }))}</span>`;
@@ -4277,7 +4317,7 @@ function hideGameOfTheYearTitleOverlay() {
 
 function gotyPickerArrowIcon(direction) {
   const path = direction === "left" ? "M15 18l-6-6 6-6" : "M9 6l6 6-6 6";
-  return `<svg class="sort-arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"></path></svg>`;
+  return `${svgAsset("icons/navigation/sort-arrow", [path])}`;
 }
 
 function gameOfTheYearHoverInfo(game, className) {
@@ -4459,7 +4499,7 @@ async function gameOfTheYearExportHtml(year = state.gotyYear) {
     coverSrc: await exportImageDataUrl(coverDisplayUrl(row.game.cover || ""), platformLogo(row.game.platform || "PS5")),
   })));
   const logo = await gameOfTheYearExportLogoDataUrl(theme);
-  const background = await exportImageDataUrl(theme.backgroundImage || "", theme.mode === "light" ? "assets/backdrop_light.png" : "assets/backdrop.png");
+  const background = await exportImageDataUrl(theme.backgroundImage || "", theme.mode === "light" ? "assets/backgrounds/backdrop_light.png" : "assets/backgrounds/backdrop.png");
   const twitchUrl = twitchChannelUrl(state.settings.twitchUser);
   return gameOfTheYearExportMarkup({ owner, year, rows: assetRows, statsGames, theme, logo, background, twitchUrl });
 }
@@ -4478,7 +4518,7 @@ function gameOfTheYearExportMarkup({ owner, year, rows, statsGames, theme, logo,
   const main = theme.mainColorReset ? DEFAULT_SETTINGS.theme === "kash" ? THEMES.kash.themeColor : THEMES.shabii.themeColor : theme.mainColor;
   const accent = theme.accentColor || "#79f2ce";
   const gradient = theme.gradient ? theme.gradientColor : main;
-  const bg = background || theme.backgroundImage || (theme.mode === "light" ? "assets/backdrop_light.png" : "assets/backdrop.png");
+  const bg = background || theme.backgroundImage || (theme.mode === "light" ? "assets/backgrounds/backdrop_light.png" : "assets/backgrounds/backdrop.png");
   const glowPrimary = canvasThemeColorBySource(theme, theme.glowPrimary || "main", main, accent);
   const glowSecondary = canvasThemeColorBySource(theme, theme.glowSecondary || "accent", main, accent);
   const siteUrl = cleanCanvasSiteUrl(window.location.origin && window.location.origin !== "null" ? window.location.origin : window.location.hostname || "Gamelist");
@@ -4560,9 +4600,7 @@ function gameOfTheYearExportPlatformChartMarkup(games = []) {
     <div class="goty-export-item goty-export-platform-item">
       <article class="goty-export-platform-card">
         <div class="goty-export-platform-chart">
-          <svg class="goty-export-platform-pie" viewBox="0 0 220 220" aria-hidden="true">
-            ${segments.map((segment) => segment.shape).join("")}
-          </svg>
+          ${svgAsset("charts/goty-export-platform-pie", [segments.map((segment) => segment.shape).join("")])}
           ${gameOfTheYearExportPlatformLabels(segments)}
         </div>
       </article>
@@ -4577,8 +4615,8 @@ function gameOfTheYearExportPlatformSegment(item, index, startDeg, endDeg, color
   const label = polarPoint(50, 50, 50, startDeg + sweep / 2 - 90);
   const labelShift = gameOfTheYearExportPlatformLabelShift(item.label);
   const shape = sweep >= 359.99
-    ? `<circle class="goty-export-platform-slice" cx="110" cy="110" r="96" fill="${escapeHtml(color)}"></circle>`
-    : `<path class="goty-export-platform-slice" d="M 110 110 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 96 96 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}"></path>`;
+    ? `${svgAsset("charts/goty-export-platform-slice", [escapeHtml(color)])}`
+    : `${svgAsset("charts/goty-export-platform-slice-2", [start.x.toFixed(3), start.y.toFixed(3), sweep > 180 ? 1 : 0, end.x.toFixed(3), end.y.toFixed(3), escapeHtml(color)])}`;
   return {
     shape,
     item,
@@ -6778,7 +6816,8 @@ function trophyTone(value) {
 }
 
 function renderStats() {
-  const active = filteredGames({ applyPreorder: false }).filter((game) => !game.completedAt && !game.dlc);
+  const activeWithExpansions = filteredGames({ applyPreorder: false }).filter((game) => !game.completedAt);
+  const active = activeWithExpansions.filter((game) => !game.dlc);
   const total = active.length;
   const currentYear = String(new Date().getFullYear());
   const listedCompleted = state.games.filter((game) => !game.deletedAt && Boolean(game.completedAt));
@@ -6824,7 +6863,7 @@ function renderStats() {
   });
   for (const [section, count] of Object.entries(counts)) {
     const node = document.querySelector(`#${section}Count`);
-    if (node) node.innerHTML = sectionCountLabel(section, active, count);
+    if (node) node.innerHTML = sectionCountLabel(section, activeWithExpansions, count);
   }
 }
 
@@ -6866,11 +6905,19 @@ function scrollToCompletedSection() {
 }
 
 function sectionCountLabel(section, games, count) {
-  const preorderSummary = preorderStoreSummary(games.filter((game) => game.section === section));
+  const sectionGames = games.filter((game) => game.section === section);
+  const preorderSummary = preorderStoreSummary(sectionGames);
   const preordered = preorderSummary.reduce((sum, [, storeCount]) => sum + storeCount, 0);
+  const expansions = ["backlog", "upcoming", "wanted"].includes(section)
+    ? sectionGames.filter((game) => game.dlc).length
+    : 0;
+  const mobile = window.matchMedia("(max-width: 689px)").matches;
+  const expansionText = expansions && !mobile
+    ? ` · ${escapeHtml(tt("{count} {item}", { count: expansions, item: tt(expansions === 1 ? "expansion" : "expansions") }))}`
+    : "";
   return [
-    gameCountText(count),
     preordered ? preorderCountPill(preordered, preorderSummary) : "",
+    gameCountText(count + (mobile ? expansions : 0)) + expansionText,
   ].filter(Boolean).join("");
 }
 
@@ -6887,7 +6934,7 @@ function preorderCountPill(count, summary) {
   const title = summary.map(([store, storeCount]) => `${store}: ${storeCount}`).join("\n");
   return `
     <span class="preorder-count-pill preorder-count-tooltip" tabindex="0" title="${escapeHtml(title)}">
-      ${shoppingBagIcon()}${escapeHtml(tt("{count} preordered", { count }))}
+      ${shoppingBagIcon()}${count} ${escapeHtml(tt(count === 1 ? "Preorder" : "Preorders"))}
       <span class="preorder-store-list" role="tooltip">${rows}</span>
     </span>
   `;
@@ -6901,6 +6948,7 @@ function renderReleaseCalendar() {
     locale: currentLanguage(),
     translate: tt,
     onShift: (value) => {
+      playUiSound("swipe", { direction: value });
       state.releaseCalendarOffset += value;
       renderReleaseCalendar();
     },
@@ -6968,7 +7016,7 @@ function renderMobileTabs() {
   mobileTabs?.style.setProperty("--mobile-tab-count", String(sections.length));
   mobileTabs?.style.setProperty("--mobile-tab-index", String(index));
   if (mobileTabs) {
-    mobileTabs.style.gridTemplateColumns = sections.includes("new") && window.matchMedia("(max-width: 699px)").matches ? `minmax(34px, 42px) repeat(${Math.max(1, sections.length - 1)}, minmax(0, 1fr))` : "";
+    mobileTabs.style.gridTemplateColumns = sections.includes("new") && window.matchMedia("(max-width: 689px)").matches ? `minmax(34px, 42px) repeat(${Math.max(1, sections.length - 1)}, minmax(0, 1fr))` : "";
     requestAnimationFrame(syncMobileTabIndicator);
   }
   el.board.style.setProperty("--mobile-section-count", String(sections.length));
@@ -7065,7 +7113,7 @@ function canSeeNewAdditions() {
 }
 
 function handleBoardSwipeStart(event) {
-  if (!window.matchMedia("(max-width: 699px)").matches) return;
+  if (!window.matchMedia("(max-width: 689px)").matches) return;
   const touch = event.changedTouches?.[0];
   if (!touch) return;
   state.mobileSwipeStart = { x: touch.clientX, y: touch.clientY };
@@ -7074,7 +7122,7 @@ function handleBoardSwipeStart(event) {
 function handleBoardSwipeEnd(event) {
   const start = state.mobileSwipeStart;
   state.mobileSwipeStart = null;
-  if (!start || !window.matchMedia("(max-width: 699px)").matches) return;
+  if (!start || !window.matchMedia("(max-width: 689px)").matches) return;
   const touch = event.changedTouches?.[0];
   if (!touch) return;
   const dx = touch.clientX - start.x;
@@ -7136,6 +7184,9 @@ function fillSelect(select, values, selected, allLabel) {
   const current = [...select.options].map((option) => option.value).join("|");
   const next = values.join("|");
   if (current === next) {
+    [...select.options].forEach(option => {
+      option.textContent = option.value === "all" ? allLabel : (select === el.platformFilter ? platformFilterDisplayName(option.value) : localizedTagLabel(option.value));
+    });
     select.value = values.includes(selected) ? selected : "all";
     updateSelectOverflowTitle(select);
     return;
@@ -7641,7 +7692,7 @@ function renderCompleted() {
 }
 
 function bindCompletedCoverPreviews(list) {
-  if (state.viewMode !== "list" || !window.matchMedia("(min-width: 700px) and (hover: hover) and (pointer: fine)").matches) return;
+  if (state.viewMode !== "list" || !window.matchMedia("(min-width: 690px) and (hover: hover) and (pointer: fine)").matches) return;
   list.querySelectorAll(".completed-cover-wrap:not([hidden])").forEach((wrap) => {
     const source = wrap.querySelector(".completed-cover");
     if (!source?.src) return;
@@ -8084,7 +8135,7 @@ function statsReleaseYearInsights(year, games) {
 
 function statsPieMarkup(counts, tone, games = []) {
   const total = counts.reduce((sum, item) => sum + item.count, 0);
-  if (!total) return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.08)"></circle></svg>`;
+  if (!total) return `${svgAsset("charts/stats-pie-markup")}`;
   let cursor = 0;
   const segments = counts.map((item, index) => {
     const start = cursor;
@@ -8125,7 +8176,7 @@ function statsPieMarkup(counts, tone, games = []) {
       pointer-events: auto;
     }
   `).join("");
-  return `<svg viewBox="0 0 100 100" role="img" aria-label="Stats breakdown">${segments.map((segment) => segment.shape).join("")}</svg><div class="finished-stats-pie-tips">${segments.map((segment) => segment.tip).join("")}</div><style>${tipCss}</style>`;
+  return `${svgAsset("charts/stats-pie-markup-2", [segments.map((segment) => segment.shape).join("")])}<div class="finished-stats-pie-tips">${segments.map((segment) => segment.tip).join("")}</div><style>${tipCss}</style>`;
 }
 
 function statsBellMarkup(counts, tone, games = []) {
@@ -8139,7 +8190,7 @@ function statsBellMarkup(counts, tone, games = []) {
     })
     : [];
   if (!points.length) {
-    return `<svg viewBox="0 0 100 100" aria-hidden="true"><path class="finished-stats-bell-area" d="M 8 88 C 28 72 38 42 50 42 C 62 42 72 72 92 88 Z"></path><path class="finished-stats-bell-line" d="M 8 88 C 28 72 38 42 50 42 C 62 42 72 72 92 88"></path></svg>`;
+    return `${svgAsset("charts/finished-stats-bell-area")}`;
   }
   const line = smoothStatsPath(points);
   const area = `M ${points[0].x.toFixed(2)} 88 L ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} ${line.replace(/^M\s+[0-9.]+\s+[0-9.]+/, "")} L ${points[points.length - 1].x.toFixed(2)} 88 Z`;
@@ -8154,10 +8205,7 @@ function statsBellMarkup(counts, tone, games = []) {
     return `<span class="finished-stats-bell-dot" style="--dot-x:${point.x.toFixed(2)}%;--dot-y:${point.y.toFixed(2)}%;--dot-color:${escapeHtml(color)}" title="${escapeHtml(`${point.item.label}: ${point.item.count}`)}"><b>${escapeHtml(String(point.item.count))}</b>${bucketList}</span>`;
   }).join("");
   return `
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <path class="finished-stats-bell-area" d="${escapeHtml(area)}"></path>
-      <path class="finished-stats-bell-line" d="${escapeHtml(line)}"></path>
-    </svg>
+    ${svgAsset("charts/finished-stats-bell-area-2", [escapeHtml(area), escapeHtml(line)])}
     ${dots}
   `;
 }
@@ -8181,12 +8229,12 @@ function statsPieSegmentData(item, startDeg, endDeg, color, total, index, tone, 
   const left = clampNumber(mid.x, 16, 84);
   const top = clampNumber(mid.y, 14, 86);
   const shape = sweep >= 359.99
-    ? `<circle class="finished-stats-pie-shape" cx="50" cy="50" r="46" fill="${escapeHtml(color)}" stroke="rgba(255,255,255,.22)" stroke-width="0.9"></circle>`
-    : `<path class="finished-stats-pie-shape" d="M 50 50 L ${start.x.toFixed(3)} ${start.y.toFixed(3)} A 46 46 0 ${sweep > 180 ? 1 : 0} 1 ${end.x.toFixed(3)} ${end.y.toFixed(3)} Z" fill="${escapeHtml(color)}" stroke="rgba(255,255,255,.22)" stroke-width="0.9"></path>`;
+    ? `${svgAsset("charts/finished-stats-pie-shape", [escapeHtml(color)])}`
+    : `${svgAsset("charts/finished-stats-pie-shape-2", [start.x.toFixed(3), start.y.toFixed(3), sweep > 180 ? 1 : 0, end.x.toFixed(3), end.y.toFixed(3), escapeHtml(color)])}`;
   const label = statsPieSegmentLabel(item, tone);
   const segmentGames = statsSegmentGames(item.label, tone, games);
   return {
-    shape: `<g class="finished-stats-pie-segment finished-stats-pie-segment-${index}" style="--slice-opacity:${index % 2 ? 0.78 : 0.96}" tabindex="0">${shape}</g>`,
+    shape: `${svgAsset("charts/finished-stats-pie-segment", [index, index % 2 ? 0.78 : 0.96, shape])}`,
     tip: `<div class="finished-stats-segment-tip finished-stats-segment-tip-${index}" style="--tip-x:${left.toFixed(2)}%;--tip-y:${top.toFixed(2)}%"><span class="finished-stats-segment-percent">${percent}%</span>${label}${segmentGames.length ? `<div class="finished-stats-segment-games">${statsGameList(segmentGames)}</div>` : ""}</div>`,
   };
 }
@@ -8483,7 +8531,7 @@ function bindFinishedStatsMobileOverlays(body = el.finishedStatsBody, dialog = e
   body?.querySelectorAll("[data-stats-overlay-title]").forEach((node) => {
     if (node.closest("[data-stats-source=collection]")) return;
     node.addEventListener("click", (event) => {
-      if (!window.matchMedia("(max-width: 699px)").matches) return;
+      if (!window.matchMedia("(max-width: 689px)").matches) return;
       if (event.target.closest(".finished-stats-breakdown")) return;
       const breakdown = node.querySelector(".finished-stats-breakdown");
       if (!breakdown?.innerHTML.trim()) return;
@@ -8508,7 +8556,7 @@ function bindFinishedStatsDesktopOverlays(dialog = el.finishedStatsDialog, body 
     closeTimer = setTimeout(closeFloatingOverlay, 90);
   };
   const openFloatingContent = (sourceNode, content, className = "") => {
-    if (window.matchMedia("(max-width: 699px)").matches || !content.trim()) return;
+    if (window.matchMedia("(max-width: 689px)").matches || !content.trim()) return;
     clearTimeout(closeTimer);
     document.querySelector(".finished-stats-hover-float")?.remove();
     body.querySelectorAll(".finished-stats-floating-source").forEach((node) => {
@@ -9103,9 +9151,11 @@ function cardFor(game, options = {}) {
   img.decoding = "async";
   if (game.playing && !neutralReleaseCard && game.cover) upgradeCoverIfFast(img, game.cover, "playing");
   if (game.playing && !neutralReleaseCard && game.cover) img.addEventListener("load", schedulePlayingCardHeightSync, { once: true });
-  card.classList.toggle("has-art", Boolean(game.cover));
-  if (game.cover) {
-    card.style.setProperty("--card-art", `url("${cssUrl(backgroundCoverUrl(game.cover))}")`);
+  const cardArt = game.playing ? game.keyArt : game.cover;
+  card.classList.toggle("has-art", Boolean(cardArt));
+  card.classList.toggle("has-key-art", Boolean(game.playing && game.keyArt));
+  if (cardArt) {
+    card.style.setProperty("--card-art", `url("${cssUrl(game.playing ? cardArt : backgroundCoverUrl(cardArt))}")`);
     bindActivityCardParallax(card);
   }
   card.querySelector("h3").textContent = game.title;
@@ -9284,7 +9334,7 @@ function calendarMilestoneCard(game) {
   card.draggable = false;
   card.querySelector(".card-trailer")?.remove();
   card.querySelector(".trailer-toggle")?.remove();
-  const cover = game.cover || "assets/Icon.png";
+  const cover = game.cover || "assets/branding/Icon.png";
   const image = card.querySelector(".cover-button img");
   image.hidden = false;
   image.src = coverDisplayUrl(cover);
@@ -9428,6 +9478,27 @@ function shouldShowCardTrailer(game) {
   return Boolean(game.playing && game.trailerUrl && window.matchMedia("(min-width: 900px)").matches);
 }
 
+const keyArtRequests = new Map();
+async function refreshPlayingKeyArt() {
+  const games = state.games.filter(game => game.playing && !game.deletedAt && !game.keyArt);
+  await Promise.allSettled(games.map(async game => {
+    let request = keyArtRequests.get(game.id);
+    if (!request) {
+      request = lookupFirstResult(game.igdbUrl || game.title);
+      keyArtRequests.set(game.id, request);
+    }
+    const result = await request;
+    const live = getGame(game.id);
+    if (!result?.keyArt || !live || live.keyArt) return;
+    live.keyArt = result.keyArt;
+    document.querySelectorAll(`.playing-card[data-id="${CSS.escape(game.id)}"]`).forEach(card => {
+      card.classList.add("has-art", "has-key-art");
+      card.style.setProperty("--card-art", `url("${cssUrl(result.keyArt)}")`);
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.games));
+  }));
+}
+
 function trailerEmbedUrl(value) {
   return activityTrailerUrl(value);
 }
@@ -9435,6 +9506,7 @@ function trailerEmbedUrl(value) {
 function openDetail(id, options = {}) {
   const game = getGame(id);
   if (!game) return;
+  state.detailGameId = game.id;
   pauseAllPlayingTrailers();
   state.detailReturnToHistory = Boolean(options.returnToHistory);
   const owners = ownerTags(game);
@@ -9774,7 +9846,7 @@ function initMobileBrandOverlay() {
   const header = document.querySelector("body > .topbar");
   const dock = el.mobileActionDock;
   if (!header || !dock) return;
-  const mobile = window.matchMedia("(max-width: 699px)");
+  const mobile = window.matchMedia("(max-width: 689px)");
   let lastScroll = Math.max(0, window.scrollY);
   let scheduled = false;
   const setHidden = hidden => {
@@ -9845,7 +9917,7 @@ function detailTrophyCard(trophy) {
       <img src="${escapeHtml(trophy.icon || fallbackIcon)}" alt="">
       <div>
         <strong>${escapeHtml(trophy.title || "Trophy")}</strong>
-        <span>${escapeHtml([trophy.earned ? trophy.earnedAt || tt("Earned") : tt("Missing"), trophy.rarity].filter(Boolean).join(" · "))}</span>
+        <span>${escapeHtml([trophy.earned ? trophy.earnedAt || tt("Earned") : tt("Missing"), tt(trophy.rarity || "")].filter(Boolean).join(" · "))}</span>
         ${trophy.description ? `<p>${escapeHtml(trophy.description)}</p>` : ""}
       </div>
     </article>
@@ -10342,7 +10414,7 @@ async function loadCardXboxAchievements(game, xboxGame) {
 }
 
 function cardTrophyMeta(trophy) {
-  const meta = [trophy.rarity || trophy.type, trophy.earnedAt].filter(Boolean).join(" · ");
+  const meta = [tt(trophy.rarity || trophy.type || ""), trophy.earnedAt].filter(Boolean).join(" · ");
   return meta ? `<small class="card-trophy-meta">${escapeHtml(meta)}</small>` : "";
 }
 
@@ -10787,31 +10859,31 @@ function streamBadge() {
 }
 
 function streamPlayIcon() {
-  return `<svg class="stream-play-icon twitch-filter-icon" viewBox="0 0 24 24" aria-hidden="true">${twitchLogoPath()}</svg>`;
+  return `${svgAsset("icons/brands/stream-play", [twitchLogoPath()])}`;
 }
 
 function streamPlayOffIcon() {
-  return `<svg class="stream-play-off-icon twitch-filter-icon" viewBox="0 0 24 24" aria-hidden="true">${twitchLogoPath()}<path class="stream-play-off-slash-cut" d="M2 22 22 2"></path><path class="stream-play-off-slash" d="M2 22 22 2"></path></svg>`;
+  return `${svgAsset("icons/brands/stream-play-off", [twitchLogoPath()])}`;
 }
 
 function allGamesIcon() {
-  return `<img class="stream-all-icon gamelist-filter-icon" src="assets/Icon.png" alt="" aria-hidden="true" decoding="async">`;
+  return `<img class="stream-all-icon gamelist-filter-icon" src="assets/branding/Icon.png" alt="" aria-hidden="true" decoding="async">`;
 }
 
 function twitchLogoPath() {
-  return `<path class="twitch-filter-logo-path" d="M6 0 1.7 4.3v15.4h5.1V24l4.3-4.3h3.4l7.8-7.7V0H6Zm14.6 11.1-3.4 3.4h-3.5l-3 3v-3H6.9V1.7h13.7v9.4ZM18 4.7v5.1h-1.7V4.7H18Zm-4.7 0v5.1h-1.7V4.7h1.7Z"></path>`;
+  return `${svgAsset("icons/brands/twitch-filter-logo-path")}`;
 }
 
 function coopIcon() {
-  return `<svg class="coop-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><circle cx="16" cy="8" r="3"></circle><path d="M2.8 19c.4-4 2.1-6 5.2-6s4.8 2 5.2 6"></path><path d="M10.8 19c.4-4 2.1-6 5.2-6s4.8 2 5.2 6"></path></svg>`;
+  return `${svgAsset("icons/status/coop")}`;
 }
 
 function onlineGlobeIcon() {
-  return `<svg class="online-globe-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M4 12h16"></path><path d="M12 4c2.1 2.2 3.2 4.8 3.2 8s-1.1 5.8-3.2 8"></path><path d="M12 4c-2.1 2.2-3.2 4.8-3.2 8s1.1 5.8 3.2 8"></path></svg>`;
+  return `${svgAsset("icons/status/online-globe")}`;
 }
 
 function alertTagIcon() {
-  return `<svg class="alert-tag-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5v10.5"></path><circle cx="12" cy="19" r="1.5"></circle></svg>`;
+  return `${svgAsset("icons/status/alert-tag")}`;
 }
 
 function replayBadge(count) {
@@ -10856,198 +10928,121 @@ function physicalDiskIcon(platformClassName = "") {
 
 function pencilIcon() {
   return `
-    <svg class="pencil-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"></path>
-      <path d="M13.5 6.5l4 4"></path>
-    </svg>
+    ${svgAsset("icons/actions/pencil")}
   `;
 }
 
 function trashIcon() {
   return `
-    <svg class="trash-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 6h18"></path>
-      <path d="M8 6V4h8v2"></path>
-      <path d="M19 6l-1 14H6L5 6"></path>
-      <path d="M10 11v5"></path>
-      <path d="M14 11v5"></path>
-    </svg>
+    ${svgAsset("icons/actions/trash")}
   `;
 }
 
 function downloadBadgeIcon() {
   return `
-    <svg class="download-badge-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="5" y="4.5" width="14" height="15" rx="3"></rect>
-      <path d="M12 7.5v6.5"></path>
-      <path d="M9.5 11.8 12 14.3l2.5-2.5"></path>
-      <path d="M8.8 17h6.4"></path>
-    </svg>
+    ${svgAsset("icons/actions/download-badge")}
   `;
 }
 
 function calendarMiniIcon() {
   return `
-    <svg class="calendar-mini-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4" y="5.5" width="16" height="15" rx="3"></rect>
-      <path d="M8 3.5v4"></path>
-      <path d="M16 3.5v4"></path>
-      <path d="M4 10h16"></path>
-    </svg>
+    ${svgAsset("icons/status/calendar-mini")}
   `;
 }
 
 function clockIcon() {
   return `
-    <svg class="clock-icon" viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="8.5"></circle>
-      <path d="M12 7.5V12l3.2 2"></path>
-    </svg>
+    ${svgAsset("icons/status/clock")}
   `;
 }
 
 function shoppingBagIcon() {
   return `
-    <svg class="shopping-bag-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6.5 8.5h11l1 12h-13l1-12Z"></path>
-      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"></path>
-    </svg>
+    ${svgAsset("icons/actions/shopping-bag")}
   `;
 }
 
 function plusIcon() {
   return `
-    <svg class="plus-icon" viewBox="0 0 24 24">
-      <path d="M12 5v14"></path>
-      <path d="M5 12h14"></path>
-    </svg>
+    ${svgAsset("icons/actions/plus")}
   `;
 }
 
 function downloadIcon() {
   return `
-    <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 2.5v13.5"></path>
-      <path d="M6.5 10.5l5.5 5.5 5.5-5.5"></path>
-      <path d="M4.5 20.5h15"></path>
-    </svg>
+    ${svgAsset("icons/actions/download")}
   `;
 }
 
 function uploadIcon() {
   return `
-    <svg class="download-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 16V2.5"></path>
-      <path d="m6.5 8 5.5-5.5L17.5 8"></path>
-      <path d="M4.5 20.5h15"></path>
-    </svg>
+    ${svgAsset("icons/actions/download-2")}
   `;
 }
 
 function graphIcon() {
   return `
-    <svg class="graph-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 19h16"></path>
-      <path d="M7 16V9"></path>
-      <path d="M12 16V5"></path>
-      <path d="M17 16v-4"></path>
-    </svg>
+    ${svgAsset("icons/actions/graph")}
   `;
 }
 
 function linesIcon() {
   return `
-    <svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 7h14"></path>
-      <path d="M5 12h14"></path>
-      <path d="M5 17h14"></path>
-    </svg>
+    ${svgAsset("icons/actions/view")}
   `;
 }
 
 function gridIcon() {
   return `
-    <svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4.5" y="4.5" width="5.5" height="5.5"></rect>
-      <rect x="14" y="4.5" width="5.5" height="5.5"></rect>
-      <rect x="4.5" y="14" width="5.5" height="5.5"></rect>
-      <rect x="14" y="14" width="5.5" height="5.5"></rect>
-    </svg>
+    ${svgAsset("icons/actions/view-2")}
   `;
 }
 
 function sortArrowIcon(desc = false) {
   return `
-    <svg class="sort-arrow-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="${desc ? "M12 5v14m-7-7 7 7 7-7" : "M12 19V5m-7 7 7-7 7 7"}"></path>
-    </svg>
+    ${svgAsset("icons/navigation/sort-arrow", [desc ? "M12 5v14m-7-7 7 7 7-7" : "M12 19V5m-7 7 7-7 7 7"])}
   `;
 }
 
 function pauseIcon() {
   return `
-    <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 4.5v15"></path>
-      <path d="M16 4.5v15"></path>
-    </svg>
+    ${svgAsset("icons/actions/pause")}
   `;
 }
 
 function exitIcon() {
   return `
-    <svg class="exit-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M10 5H6.8A2.8 2.8 0 0 0 4 7.8v8.4A2.8 2.8 0 0 0 6.8 19H10"></path>
-      <path d="M14 8l4 4-4 4"></path>
-      <path d="M8 12h10"></path>
-    </svg>
+    ${svgAsset("icons/actions/exit")}
   `;
 }
 
 function playIcon() {
   return `
-    <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 5.5v13l11-6.5-11-6.5Z"></path>
-    </svg>
+    ${svgAsset("icons/actions/play")}
   `;
 }
 
 function euroIcon() {
   return `
-    <svg class="euro-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M19 5.5A7 7 0 0 0 8.2 7.1 7.4 7.4 0 0 0 7 12a7.4 7.4 0 0 0 1.2 4.9A7 7 0 0 0 19 18.5"></path>
-      <path d="M4 10h10"></path>
-      <path d="M4 14h10"></path>
-    </svg>
+    ${svgAsset("icons/actions/euro")}
   `;
 }
 
 function dollarIcon() {
   return `
-    <svg class="dollar-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 4.5v15"></path>
-      <path d="M16.4 7.4c-.9-.8-2.2-1.2-3.8-1.2h-1.1c-2.2 0-3.7 1.2-3.7 2.9 0 1.8 1.4 2.6 3.7 3.1l1.4.3c2.2.5 3.5 1.3 3.5 3.1 0 1.7-1.5 2.9-3.8 2.9h-1.1c-1.7 0-3-.4-4-1.3"></path>
-    </svg>
+    ${svgAsset("icons/actions/dollar")}
   `;
 }
 
 function poundIcon() {
   return `
-    <svg class="pound-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 20h9"></path>
-      <path d="M7 13h8"></path>
-      <path d="M16.5 6.6A4.4 4.4 0 0 0 12.8 5C10.5 5 9 6.5 9 8.8V20"></path>
-    </svg>
+    ${svgAsset("icons/actions/pound")}
   `;
 }
 
 function yenIcon() {
   return `
-    <svg class="yen-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 4l6 8 6-8"></path>
-      <path d="M12 12v8"></path>
-      <path d="M8 12h8"></path>
-      <path d="M8 16h8"></path>
-    </svg>
+    ${svgAsset("icons/actions/yen")}
   `;
 }
 
@@ -11060,44 +11055,29 @@ function currencyIcon() {
 
 function checkIcon() {
   return `
-    <svg class="check-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 12.5l4.2 4.2L19 7"></path>
-    </svg>
+    ${svgAsset("icons/actions/check")}
   `;
 }
 
 function backIcon() {
   return `
-    <svg class="back-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M10 6 4 12l6 6"></path>
-      <path d="M4 12h10a6 6 0 0 1 6 6"></path>
-    </svg>
+    ${svgAsset("icons/actions/back")}
   `;
 }
 
 function forwardIcon() {
   return `
-    <svg class="forward-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m10 6-6 6 6 6"></path>
-      <path d="M4 12h10a6 6 0 0 1 6 6"></path>
-    </svg>
+    ${svgAsset("icons/actions/forward")}
   `;
 }
 
 function collectionAddIcon() {
-  return `<svg class="forward-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 6 6-6 6"></path><path d="M20 12H10a6 6 0 0 0-6 6"></path></svg>`;
+  return `${svgAsset("icons/actions/forward-2")}`;
 }
 
 function trophyIcon() {
   return `
-    <svg class="trophy-icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"></path>
-      <path d="M8 6H5a3 3 0 0 0 3 3"></path>
-      <path d="M16 6h3a3 3 0 0 1-3 3"></path>
-      <path d="M12 12v4"></path>
-      <path d="M9 20h6"></path>
-      <path d="M10 16h4v4h-4z"></path>
-    </svg>
+    ${svgAsset("icons/status/trophy")}
   `;
 }
 
@@ -11125,7 +11105,7 @@ function platformLogo(platform) {
   if (value === "xbox") return "assets/platforms/xbox_retro.png";
   if (value.includes("xbox") || value.includes("microsoft") || value === "xone") return "assets/platforms/xbox.png";
   if (value.includes("steam") || value.includes("pc")) return "assets/platforms/steam.png";
-  return "assets/Icon.png";
+  return "assets/branding/Icon.png";
 }
 
 function platformClass(platform, options = {}) {
@@ -11672,6 +11652,7 @@ function steamAppIdFromUrl(value) {
 function storeLinksFor(game) {
   const links = storeLinksWithFallbacks(game);
   const hltbUrl = hltbUrlFor(game);
+  const igdbUrl = igdbUrlFor(game);
   const stores = [
     { key: "playstation", label: "PlayStation", cls: "store-playstation", icon: "assets/sites/playstation.png", provider: playStationStoreName() },
     { key: "nintendo", label: "Nintendo", cls: "store-nintendo", icon: "assets/sites/nintendo.png", provider: nintendoStoreName() },
@@ -11685,8 +11666,18 @@ function storeLinksFor(game) {
     .map((store) => ({ ...store, url: links[store.key] })),
     providers.length ? null : { label: "Wikipedia", url: wikipediaUrlFor(game), cls: "store-wikipedia", icon: "assets/sites/wikipedia.ico" },
     hltbUrl ? { label: "HowLongToBeat", url: hltbUrl, cls: "store-hltb", icon: "assets/sites/howlongtobeat.png" } : null,
+    igdbUrl ? { label: "IGDB", url: igdbUrl, cls: "store-igdb", icon: "assets/sites/igdb.svg" } : null,
   ];
   return storeButtonsMarkup(buttons, escapeHtml);
+}
+
+function igdbUrlFor(game) {
+  try {
+    const url = new URL(String(game?.igdbUrl || ""));
+    return /^https?:$/.test(url.protocol) && /(^|\.)igdb\.com$/i.test(url.hostname) ? url.href : "";
+  } catch {
+    return "";
+  }
 }
 
 function storeLinksWithFallbacks(game) {
@@ -11767,7 +11758,7 @@ function ratingStarsMarkup() {
 }
 
 function roundedStarSvg(className = "rounded-star-icon") {
-  return `<svg class="${escapeHtml(className)}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.75c.3 0 .58.17.71.44l2.48 5.02 5.54.8c.3.04.55.25.65.54.09.29.02.6-.2.81l-4.01 3.91.95 5.52a.8.8 0 0 1-1.16.84L12 18.02l-4.95 2.6a.8.8 0 0 1-1.16-.84l.95-5.52-4.01-3.91a.8.8 0 0 1 .44-1.35l5.54-.8 2.48-5.02c.13-.27.41-.44.71-.44Z"></path></svg>`;
+  return `${svgAsset("icons/status/rounded-star-svg", [escapeHtml(className)])}`;
 }
 
 function ownerRatingTitle() {
@@ -12027,7 +12018,7 @@ function syncPlatformInputIcon() {
   const raw = String(el.fields.platform?.value || "").trim();
   const platform = canonicalPlatform(raw) || raw;
   const icon = platform && platformLogo(platform);
-  setLeadingFieldIcon(el.platformFieldIcon, icon && icon !== "assets/Icon.png" ? icon : "", platformDisplayName(platform));
+  setLeadingFieldIcon(el.platformFieldIcon, icon && icon !== "assets/branding/Icon.png" ? icon : "", platformDisplayName(platform));
 }
 
 function syncStoreInputIcon(input, slot) {
@@ -12299,6 +12290,7 @@ async function openEditor(id = "") {
   el.fields.igdbUrl.value = game.igdbUrl || "";
   el.fields.hltbUrl.value = game.hltbUrl || game.howLongToBeatUrl || "";
   el.fields.trailerUrl.value = game.trailerUrl || "";
+  el.fields.keyArt.value = game.keyArt || "";
   el.fields.playstationUrl.value = game.storeLinks?.playstation || "";
   el.fields.nintendoUrl.value = game.storeLinks?.nintendo || "";
   el.fields.xboxUrl.value = game.storeLinks?.xbox || "";
@@ -12314,6 +12306,7 @@ async function openEditor(id = "") {
   syncStyledSelect(el.fields.section, { activeValue: null });
   syncNewGameRequiredHighlights();
   gameEditorDirty = false;
+  newGameEditorContentBaseline = gameEditorContentSnapshot();
   pauseAllPlayingTrailers();
   el.dialog.showModal();
   syncScrollLock();
@@ -12403,11 +12396,22 @@ async function saveFromForm(event) {
 }
 
 function requestGameEditorClose() {
-  if (gameEditorDirty) {
+  if (shouldConfirmGameEditorClose()) {
     showGameEditorUnsavedDialog();
     return;
   }
   el.dialog.close();
+}
+
+function shouldConfirmGameEditorClose() {
+  return gameEditorDirty && (Boolean(state.editingId) || gameEditorContentSnapshot() !== newGameEditorContentBaseline);
+}
+
+function gameEditorContentSnapshot() {
+  return JSON.stringify([...el.form.querySelectorAll("input, textarea, select")]
+    .filter((field) => !["checkbox", "radio", "button", "submit", "reset"].includes(field.type))
+    .filter((field) => field.id !== "gameId" && field.id !== "sectionInput" && !field.matches(".list-field"))
+    .map((field) => [field.id || field.name, field.type, field.value]));
 }
 
 function showGameEditorUnsavedDialog() {
@@ -12500,6 +12504,7 @@ async function saveCurrentFormGame() {
       steam: el.fields.steamUrl.value.trim(),
     },
     cover: el.fields.cover.value.trim(),
+    keyArt: el.fields.keyArt.value.trim(),
     notes: el.fields.notes ? el.fields.notes.value.trim() : existing?.notes || "",
     order: existing?.section === section ? existing.order : nextOrder(section),
     editedAt,
@@ -12614,6 +12619,7 @@ function startPlaying(id, { stream = false } = {}) {
   game.startedAt = game.startedAt || todayDate();
   markGameEdited(game);
   upsertGame(game);
+  void refreshPlayingKeyArt();
 }
 
 function finishSetupGame(id) {
@@ -13088,7 +13094,7 @@ function renderLookupResults(results) {
       if (cover.dataset.placeholderApplied) return;
       cover.dataset.placeholderApplied = "true";
       cover.classList.add("lookup-cover-placeholder");
-      cover.src = "assets/Icon.png";
+      cover.src = "assets/branding/Icon.png";
     });
     el.lookupResults.appendChild(row);
   });
@@ -13112,7 +13118,7 @@ function lookupPublisherDateLine(result) {
 function lookupTagsLine(result) {
   const tags = unique([...(result.genres || []), ...(result.tags || [])])
     .filter(Boolean)
-    .join(", ");
+    .map(tt).join(", ");
   return [tags, lookupPlaytimeText(result)].filter(Boolean).join(" • ");
 }
 
@@ -13143,6 +13149,7 @@ function applyLookup(result) {
   el.fields.igdbUrl.value = result.igdbUrl || el.fields.igdbUrl.value;
   el.fields.hltbUrl.value = normalizeGuideUrl(result.hltbUrl || result.howLongToBeatUrl) || hltbUrlFromId(result.hltbId || result.howLongToBeatId) || el.fields.hltbUrl.value;
   el.fields.trailerUrl.value = result.trailerUrl || el.fields.trailerUrl.value;
+  if (result.keyArt) el.fields.keyArt.value = result.keyArt;
   const links = normalizeStoreLinks(result.storeLinks);
   el.fields.playstationUrl.value = links.playstation || el.fields.playstationUrl.value;
   el.fields.nintendoUrl.value = links.nintendo || el.fields.nintendoUrl.value;
@@ -13152,7 +13159,7 @@ function applyLookup(result) {
   const current = state.games.find((game) => game.id === el.fields.id.value);
   if (current && !current.description && result.description) current.description = result.description;
   if (!current) state.pendingDescription = result.description || "";
-  if (result.genres?.length) el.fields.genres.value = result.genres.join(", ");
+  if (result.genres?.length) el.fields.genres.value = result.genres.map(tt).join(", ");
   const isBaseMinecraft = String(result.title || "").trim().toLocaleLowerCase() === "minecraft";
   if (result.dlc && !isBaseMinecraft) {
     el.fields.dlc.checked = true;
@@ -13201,6 +13208,7 @@ async function normalizeGameBeforeSave(game) {
       game.releaseText = result.releaseDate ? "" : (result.releaseText || "");
     }
     game.cover = game.cover || result.cover || "";
+    game.keyArt = game.keyArt || result.keyArt || "";
     game.description = game.description || result.description || "";
     game.igdbUrl = game.igdbUrl || result.igdbUrl || "";
     if (!game.trailerUrlRemoved) game.trailerUrl = game.trailerUrl || result.trailerUrl || "";
@@ -13368,6 +13376,7 @@ function applyFetchedGameData(game, result, options = {}) {
     }
   };
   setIfEmpty("cover", result.cover);
+  setIfEmpty("keyArt", result.keyArt);
   setIfEmpty("lengthHours", result.lengthHours);
   setIfEmpty("developer", result.developer);
   setIfEmpty("publisher", result.publisher);
@@ -13722,7 +13731,7 @@ function ensureCollectionWorkspace() {
     stats.hidden = true;
     document.body.append(stats);
     slots.stats = stats;
-    collectionUI = await mountCollectionWorkspace({ slots, openGame: openDetail, openSettings: openSettingsDialog, mediaChanged: setCollectionMedia, viewChanged: mode => { state.viewMode = mode; saveSharedViewMode(mode); render(); }, clearFilters: () => {
+    collectionUI = await mountCollectionWorkspace({ slots, openGame: openDetail, editGame: id => openEditor(id), openSettings: openSettingsDialog, mediaChanged: setCollectionMedia, viewChanged: mode => { state.viewMode = mode; saveSharedViewMode(mode); render(); }, clearFilters: () => {
       Object.assign(state.filters, { query: "", platform: "all", tag: "all", region: "all", condition: "all", preordered: false });
       el.searchInput.value = "";
       render();
@@ -13732,7 +13741,6 @@ function ensureCollectionWorkspace() {
     } });
     syncCollectionWorkspace();
     renderMobileTabs();
-    loginAnimation.refresh();
   })().catch(error => {
     collectionLoad = null;
     document.querySelector("#collectionLibrary").textContent = tt("Could not load your collection.");
