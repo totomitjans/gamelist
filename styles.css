@@ -3602,7 +3602,7 @@ h3 {
     color-mix(in srgb, var(--preorder-accent) 18%, transparent);
 }
 
-.preorder-count-pill .shopping-bag-icon {
+.preorder-count-pill :is(.shopping-bag-icon, .lend-hand-icon) {
   width: 13px;
   height: 13px;
   flex: 0 0 auto;
@@ -3630,6 +3630,7 @@ h3 {
 .column-head .preorder-count-pill {
   margin-left: 0;
   margin-right: 0;
+  margin-bottom: 0;
 }
 
 .preorder-store-list {
@@ -7599,7 +7600,7 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
 
 .playtime-date-pill.live-playtime-pill.is-expanded .live-playtime-expanded {
   position: static;
-  margin-top: 2px;
+  margin-top: 0;
   opacity: 1;
   transform: none;
 }
@@ -7650,7 +7651,7 @@ body.theme-kash .game-card.stream-card.completed-trophy-card {
     )
     .live-playtime-expanded {
     position: static;
-    margin-top: 2px;
+    margin-top: 0;
     opacity: 1;
     transform: none;
   }
@@ -25314,3 +25315,250 @@ textarea {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
+
+/* Shelf lending shares owner colors and the preorder count layout. */
+.lent-count-pill {
+  --preorder-accent: #b4ed32;
+  --preorder-accent-text: #152000;
+}
+:is(.game-card, .game-row).lent-card {
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--lent-color, var(--accent)) 14%, transparent) 0 6px, transparent 6px 12px), var(--panel) !important;
+  border-color: color-mix(in srgb, var(--lent-color, var(--accent)) 36%, transparent);
+}
+.shelf-lending-fields, .shelf-lending-fields > label, .shelf-lending-modal > label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.shelf-lending-fields { align-self: start; }
+.shelf-lending-fields input { width: 100%; min-width: 0; box-sizing: border-box; }
+.shelf-lending-dialog { width: min(440px, calc(100vw - 32px)); }
+.shelf-lending-modal { width: 100%; box-sizing: border-box; }
+.shelf-lending-modal > p { overflow-wrap: anywhere; }
+.shelf-lending-error { color: var(--danger, #ff7777); }
+.shelf-grid .game-card .card-actions:has(.shelf-lend-action) { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+.shelf-grid .shelf-lend-action { flex: 0 0 auto; white-space: nowrap; }
+.shelf-grid .game-row-actions-bottom:has(.shelf-lend-action) { display: flex; flex-wrap: wrap; gap: 6px; }
+.lent-badge { max-width: 100%; overflow-wrap: anywhere; }
+
+.shelf-lent-field[hidden] { display: none; }
+.shelf-lend-action svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  stroke: currentColor;
+}
+
+.shelf-lending-modal .modal-head { justify-content: space-between; align-items: flex-start; }
+.shelf-lending-modal .modal-head h2 { min-width: 0; margin: 0; }
+.shelf-lending-modal .modal-head > button { flex: 0 0 auto; margin-left: auto; }
+.shelf-lending-game { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.shelf-lending-game strong { min-width: 0; overflow-wrap: anywhere; }
+.shelf-lending-cover { width: 64px; height: 88px; flex: 0 0 64px; object-fit: contain; border-radius: 5px; background: var(--panel); }
+.shelf-lending-modal > label { gap: 4px; }
+.shelf-lending-modal > label > span { margin-bottom: 0; }
+
+/* Keep Shelf ownership, borrower and achievement inputs on the same baseline. */
+#addGameForm .shelf-lending-fields > label,
+#addGameForm .shelf-achievement-search-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+#addGameForm .shelf-lending-fields > label > span,
+#addGameForm .shelf-achievement-search-field > span { margin-bottom: 0; }
+#addGameForm .shelf-lending-fields input,
+#addGameForm .shelf-achievement-search-field input { height: 44px; min-height: 44px; box-sizing: border-box; }
+#addGameForm .shelf-lending-fields > .shelf-lent-field[hidden] { display: none; }
+@media (min-width: 690px) {
+  #addGameForm .shelf-lending-fields:has(> .shelf-lent-field:not([hidden])) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-self: end;
+    align-items: end;
+  }
+  #addGameForm .shelf-achievement-search-field { align-self: end; }
+}
+@media (max-width: 689px) {
+  #addGameForm .shelf-lending-fields { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+}
+
+.shelf-lending-info { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+
+/* Lending actions share a single row instead of inheriting fixed button widths. */
+.shelf-grid .game-card .card-actions > .shelf-lend-action,
+.shelf-grid .game-card .card-actions > .shelf-add-backlog-action {
+  width: auto;
+  min-width: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+@media (max-width: 689px) {
+  .shelf-grid .game-card .card-actions:has(.shelf-lend-action) > :is(.shelf-lend-action, .shelf-add-backlog-action) {
+    padding-inline: 8px;
+    gap: 5px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .shelf-grid .game-card .card-actions:has(.shelf-lend-action) { gap: 4px; }
+  .shelf-grid .game-card .card-actions:has(.shelf-lend-action) > :is(.shelf-lend-action, .shelf-add-backlog-action) {
+    padding-inline: 6px;
+    gap: 4px;
+    font-size: 11px;
+  }
+}
+
+/* Opaque controls keep the lending stripes behind their surfaces. */
+:is(.game-card, .game-row).lent-card :is(.card-actions, .game-row-actions) button,
+.game-card.lent-card .edit-action {
+  background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)), var(--bg);
+}
+:is(.game-card, .game-row).lent-card :is(.card-actions, .game-row-actions) .danger-button {
+  background: linear-gradient(rgba(255, 111, 133, 0.12), rgba(255, 111, 133, 0.12)), var(--bg);
+}
+:is(.game-card, .game-row).lent-card :is(.card-actions, .game-row-actions) button:hover {
+  background: linear-gradient(color-mix(in srgb, var(--accent) 20%, transparent), color-mix(in srgb, var(--accent) 20%, transparent)), var(--bg);
+}
+.shelf-return-action svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Fill Shelf cards with the same 36px action controls as the other lists. */
+.shelf-page .shelf-grid .game-card .card-actions:has(> .shelf-add-backlog-action) {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-self: stretch;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  gap: 8px;
+}
+.shelf-page .shelf-grid .game-card .card-actions:has(> .shelf-add-backlog-action) > button {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+}
+.shelf-page .shelf-grid .game-card .card-actions:has(> .shelf-add-backlog-action) > :is(.shelf-lend-action, .shelf-add-backlog-action) {
+  flex: 1 1 auto;
+  width: auto;
+  padding-block: 6px;
+}
+.shelf-page .shelf-grid .game-card .card-actions:has(> .shelf-add-backlog-action) > .shelf-card-delete-action {
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  padding: 0;
+}
+
+/* The edit control must not stretch Backlog's title row when hidden. */
+#backlog .card-list:not(.list-view) .game-card:not(.playing-card) .title-line {
+  padding-right: 42px;
+  grid-template-columns: minmax(0, 1fr);
+}
+#backlog .card-list:not(.list-view) .game-card:not(.playing-card) .title-line > .edit-action {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+#backlog .card-list:not(.list-view) .game-card.has-trailer .title-line { padding-right: 86px; }
+
+/* Keep list lending actions compact until the full desktop layout. */
+@media (max-width: 1919px) {
+  .shelf-grid.list-view .game-row .game-row-actions .game-row-actions-bottom > .shelf-lend-action {
+    box-sizing: border-box;
+    width: var(--list-icon-size, 36px);
+    min-width: var(--list-icon-size, 36px);
+    max-width: var(--list-icon-size, 36px);
+    height: var(--list-icon-size, 36px);
+    min-height: var(--list-icon-size, 36px);
+    max-height: var(--list-icon-size, 36px);
+    flex: 0 0 var(--list-icon-size, 36px);
+    aspect-ratio: 1;
+    padding: 0;
+    gap: 0;
+  }
+  .shelf-grid.list-view .game-row .game-row-actions .game-row-actions-bottom > .shelf-lend-action > span { display: none; }
+}
+
+@media (max-width: 1919px) {
+  .card-list.list-view .game-row .game-row-actions .game-row-actions-bottom > .shelf-return-action {
+    box-sizing: border-box;
+    width: var(--list-icon-size, 36px);
+    min-width: var(--list-icon-size, 36px);
+    max-width: var(--list-icon-size, 36px);
+    height: var(--list-icon-size, 36px);
+    min-height: var(--list-icon-size, 36px);
+    max-height: var(--list-icon-size, 36px);
+    flex: 0 0 var(--list-icon-size, 36px);
+    padding: 0;
+    gap: 0;
+  }
+  .card-list.list-view .game-row .game-row-actions .game-row-actions-bottom > .shelf-return-action > span { display: none; }
+}
+
+@media (max-width: 689px) {
+  .shelf-grid.list-view .game-row .game-row-actions-bottom:has(> .shelf-lend-action) {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+  }
+  .shelf-grid.list-view .game-row .game-row-actions-bottom:has(> .shelf-lend-action) > .shelf-add-backlog-action {
+    box-sizing: border-box;
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0;
+    height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: 5px 7px;
+    gap: 4px;
+    font-size: 10px;
+  }
+}
+
+/* Radar and Wishlist list actions use a shared control height. */
+:is(#upcoming, #wanted) .card-list.list-view .game-row-actions {
+  --list-action-height: 36px;
+}
+:is(#upcoming, #wanted) .card-list.list-view .game-row-actions :is(.row-edit-action, .row-delete-action, .row-backlog-action) {
+  box-sizing: border-box;
+  height: var(--list-action-height);
+  min-height: var(--list-action-height);
+  max-height: var(--list-action-height);
+  padding-block: 0;
+}
+@media (max-width: 689px) {
+  :is(#upcoming, #wanted) .card-list.list-view .game-row-actions { --list-action-height: 32px; }
+}
+
+.shelf-lending-modal .modal-actions .primary-button > svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  stroke: currentColor;
+}
+
+/* List lending controls follow the same desktop/mobile sizes as Edit and Delete. */
+@media (max-width: 689px) {
+  :is(.shelf-grid, .card-list).list-view .game-row-actions { --list-icon-size: 32px; }
+}
+
+/* On desktop, keep returning a lent game ahead of adding it to Backlog. */
+@media (min-width: 690px) {
+  .shelf-grid .card-actions > .shelf-lend-action[data-action="lend"],
+  .shelf-grid.list-view .game-row-actions-bottom > .shelf-lend-action[data-action="lend"] { order: 1; }
+  .shelf-grid .card-actions > .shelf-add-backlog-action,
+  .shelf-grid.list-view .game-row-actions-bottom > .shelf-add-backlog-action { order: 0; }
+  .shelf-grid .card-actions > .shelf-lend-action[data-action="returned"],
+  .shelf-grid.list-view .game-row-actions-bottom > .shelf-lend-action[data-action="returned"] { order: -1; }
+  .shelf-grid .card-actions > .shelf-card-delete-action { order: 2; }
+}
+
+.shelf-page .shelf-grid .game-card .card-actions > .shelf-add-backlog-action { padding-block: 6px; }
