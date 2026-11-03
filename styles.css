@@ -4198,6 +4198,16 @@ body.dialog-open .floating-edit-actions {
     0 0 20px color-mix(in srgb, var(--preorder-accent) 12%, transparent);
 }
 
+.release-day.today.has-preorder {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent-2) 22%, transparent);
+}
+
+.release-day.today.has-preorder > span {
+  color: #1b1000;
+}
+
 .release-day.today > span {
   position: relative;
   color: var(--accent-2);
@@ -14002,6 +14012,16 @@ html.theme-light .preorder-count-pill {
     color-mix(in srgb, var(--preorder-accent) 16%, transparent);
 }
 
+html.theme-light .release-day.today.has-preorder {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent-2) 22%, transparent);
+}
+
+html.theme-light .release-day.today.has-preorder > span {
+  color: #1b1000 !important;
+}
+
 html.theme-light .stat-release {
   --stat-color: var(--preorder-accent);
   --stat-glow: color-mix(in srgb, var(--preorder-accent) 24%, transparent);
@@ -22106,6 +22126,9 @@ body.mobile-app-mode.shelf-page .shelf-grid.list-view .game-row-cover-preview {
 .condition-loose {
   color: #ff6f85;
 }
+.condition-loose-plus {
+  color: #ff805e;
+}
 .play-status {
   color: #f7df69;
 }
@@ -23784,6 +23807,10 @@ textarea {
 .condition-pill.condition-loose {
   color: #ff7188;
   background: rgba(255, 91, 118, 0.1);
+}
+.condition-pill.condition-loose-plus {
+  color: #ff805e;
+  background: rgba(255, 128, 94, 0.1);
 }
 .condition-pill.condition-complete {
   color: #79f2ce;
